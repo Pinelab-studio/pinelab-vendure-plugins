@@ -192,7 +192,7 @@ export class GoedgepicktService
           orderCode: event.order.code,
           ctx: event.ctx.serialize(),
         },
-        { retries: 10 }
+        { retries: 3 }
       );
     });
     // Listen for Variant changes
@@ -668,7 +668,7 @@ export class GoedgepicktService
         shippingLastName: order.customer?.lastName,
         shippingCompany: order.shippingAddress.company,
         shippingAddress: order.shippingAddress.streetLine1,
-        shippingHouseNumber: houseNumber ?? 0,
+        shippingHouseNumber: houseNumber ?? '0',
         shippingHouseNumberAddition: addition,
         shippingZipcode: order.shippingAddress.postalCode,
         shippingCity: order.shippingAddress.city,
@@ -900,7 +900,7 @@ export class GoedgepicktService
   }
 
   static splitHouseNumberAndAddition(houseNumberString: string): {
-    houseNumber?: number;
+    houseNumber?: string;
     addition?: string;
   } {
     const result = houseNumberString.match(/[a-z]+|\d+/gi);
@@ -912,7 +912,7 @@ export class GoedgepicktService
     }
     const [houseNumber, ...addition] = result;
     return {
-      houseNumber: parseInt(houseNumber),
+      houseNumber: houseNumber,
       addition: addition.join() || undefined, // .join() can result in empty string
     };
   }
