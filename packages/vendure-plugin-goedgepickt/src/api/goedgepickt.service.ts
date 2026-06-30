@@ -192,7 +192,7 @@ export class GoedgepicktService
           orderCode: event.order.code,
           ctx: event.ctx.serialize(),
         },
-        { retries: 10 }
+        { retries: 3 }
       );
     });
     // Listen for Variant changes
