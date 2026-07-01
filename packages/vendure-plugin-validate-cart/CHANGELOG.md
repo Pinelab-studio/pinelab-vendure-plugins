@@ -1,3 +1,7 @@
+# 1.3.1 (2026-07-01)
+
+- Fixed error `The property totalQuantity on the Order entity requires the Order.lines relation to be joined` when querying calculated Order fields (e.g. `totalQuantity`, `total`, `totalWithTax`, `subTotal`) on the `validateActiveOrder` result. The `lines` relation is now always joined when refetching the order.
+
 # 1.3.0 (2026-07-01)
 
 - `validateActiveOrder` now returns a `ValidateActiveOrderResult` object with both `errors` and `order` fields.

@@ -60,10 +60,16 @@ export class ValidateCartService {
     ) {
       Logger.warn(`Active Order validation took ${duration}ms`, loggerCtx);
     }
+    // Always join `lines`, so calculated Order fields such as `totalQuantity`,
+    // `total`, `totalWithTax` and `subTotal` can be resolved regardless of the
+    // relations requested by the client.
+    const orderRelations = Array.from(
+      new Set<string>([...(relations ?? []), 'lines', 'surcharges'])
+    ) as RelationPaths<Order>;
     const order = await this.orderService.findOne(
       ctx,
       activeOrder.id,
-      relations
+      orderRelations
     );
     if (!order) {
       throw new UserInputError('No active order found');

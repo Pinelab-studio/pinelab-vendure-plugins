@@ -57,6 +57,20 @@ const VALIDATE_ACTIVE_ORDER = gql`
   }
 `;
 
+const VALIDATE_ACTIVE_ORDER_TOTAL_QUANTITY = gql`
+  mutation ValidateActiveOrderTotalQuantityMutation {
+    validateActiveOrder {
+      errors {
+        message
+      }
+      order {
+        id
+        totalQuantity
+      }
+    }
+  }
+`;
+
 let server: TestServer;
 let adminClient: SimpleGraphQLClient;
 let shopClient: SimpleGraphQLClient;
@@ -130,6 +144,17 @@ it('Logged a warning', async () => {
     expect.any(String),
     'ValidateCartPlugin'
   );
+});
+
+it('Validates cart and resolves calculated order field totalQuantity', async () => {
+  // Regression test: querying a calculated Order field (totalQuantity) that
+  // requires the `lines` relation should not throw, even though `lines` is not
+  // explicitly requested in the query.
+  const { validateActiveOrder } = await shopClient.query(
+    VALIDATE_ACTIVE_ORDER_TOTAL_QUANTITY
+  );
+  expect(validateActiveOrder.order).toBeDefined();
+  expect(validateActiveOrder.order.totalQuantity).toBe(4);
 });
 
 it('Updates stock for T_1 to 2', async () => {
