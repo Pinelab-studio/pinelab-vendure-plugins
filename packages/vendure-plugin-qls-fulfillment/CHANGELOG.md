@@ -1,3 +1,8 @@
+# 2.0.2 (2026-07-01)
+
+- Verify barcode deletion in QLS by fetching remaining barcodes after removal attempt
+- Emit `QlsVariantSyncFailedEvent` and log an error when barcodes fail to be removed from QLS
+
 # 2.0.1 (2026-06-15)
 
 - Fixed fulfillment product detail type

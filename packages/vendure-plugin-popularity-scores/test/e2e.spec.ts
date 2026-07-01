@@ -166,7 +166,9 @@ describe('Sort by Popularity Plugin', function () {
       products: { items: products },
     } = await adminClient.query(GET_PRODUCTS_WITH_POPULARITY_SCORES);
     const laptopProduct = products.find((p: any) => p.name === 'Laptop');
-    expect(laptopProduct.customFields.popularityScore).toBeGreaterThanOrEqual(0);
+    expect(laptopProduct.customFields.popularityScore).toBeGreaterThanOrEqual(
+      0
+    );
   });
 
   it('Fails for unauthenticated calls to calculate popularity endpoint', async () => {

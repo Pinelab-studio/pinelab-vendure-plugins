@@ -571,11 +571,26 @@ export class AcceptBlueClient {
     const converted: AdditionalChargeInput = { ...input };
     if (input.amount_details) {
       converted.amount_details = {
-        tax: input.amount_details.tax != null ? input.amount_details.tax / 100 : undefined,
-        surcharge: input.amount_details.surcharge != null ? input.amount_details.surcharge / 100 : undefined,
-        shipping: input.amount_details.shipping != null ? input.amount_details.shipping / 100 : undefined,
-        tip: input.amount_details.tip != null ? input.amount_details.tip / 100 : undefined,
-        discount: input.amount_details.discount != null ? input.amount_details.discount / 100 : undefined,
+        tax:
+          input.amount_details.tax != null
+            ? input.amount_details.tax / 100
+            : undefined,
+        surcharge:
+          input.amount_details.surcharge != null
+            ? input.amount_details.surcharge / 100
+            : undefined,
+        shipping:
+          input.amount_details.shipping != null
+            ? input.amount_details.shipping / 100
+            : undefined,
+        tip:
+          input.amount_details.tip != null
+            ? input.amount_details.tip / 100
+            : undefined,
+        discount:
+          input.amount_details.discount != null
+            ? input.amount_details.discount / 100
+            : undefined,
       };
     }
     if (input.line_items) {
@@ -583,7 +598,8 @@ export class AcceptBlueClient {
         ...item,
         cost: item.cost != null ? item.cost / 100 : undefined,
         tax_amount: item.tax_amount != null ? item.tax_amount / 100 : undefined,
-        discount_amount: item.discount_amount != null ? item.discount_amount / 100 : undefined,
+        discount_amount:
+          item.discount_amount != null ? item.discount_amount / 100 : undefined,
       }));
     }
     return converted;
