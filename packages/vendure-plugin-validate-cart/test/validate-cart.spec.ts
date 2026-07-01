@@ -38,9 +38,21 @@ const UPDATE_PRODUCT_VARIANTS = gql`
 const VALIDATE_ACTIVE_ORDER = gql`
   mutation ValidateActiveOrderMutation {
     validateActiveOrder {
-      message
-      errorCode
-      relatedOrderLineIds
+      errors {
+        message
+        errorCode
+        relatedOrderLineIds
+      }
+      order {
+        id
+        lines {
+          productVariant {
+            product {
+              id
+            }
+          }
+        }
+      }
     }
   }
 `;
@@ -105,7 +117,12 @@ it('Adds 4 items to cart', async () => {
 
 it('Validates cart without errors', async () => {
   const { validateActiveOrder } = await shopClient.query(VALIDATE_ACTIVE_ORDER);
-  expect(validateActiveOrder.length).toBe(0);
+  expect(validateActiveOrder.errors.length).toBe(0);
+  expect(validateActiveOrder.order).toBeDefined();
+  expect(validateActiveOrder.order.lines.length).toBe(1);
+  expect(validateActiveOrder.order.lines[0].productVariant.product.id).toBe(
+    'T_1'
+  );
 });
 
 it('Logged a warning', async () => {
@@ -138,12 +155,17 @@ it('Updates stock for T_1 to 2', async () => {
 
 it('Returns errors on validation', async () => {
   const { validateActiveOrder } = await shopClient.query(VALIDATE_ACTIVE_ORDER);
-  expect(validateActiveOrder.length).toBe(1);
-  expect(validateActiveOrder[0].message).toBe(
+  expect(validateActiveOrder.errors.length).toBe(1);
+  expect(validateActiveOrder.errors[0].message).toBe(
     "Insufficient stock for variants: 'Laptop 13 inch 8GB'"
   );
-  expect(validateActiveOrder[0].errorCode).toBe('ITEM_UNAVAILABLE');
-  expect(validateActiveOrder[0].relatedOrderLineIds).toEqual(['T_1']);
+  expect(validateActiveOrder.errors[0].errorCode).toBe('ITEM_UNAVAILABLE');
+  expect(validateActiveOrder.errors[0].relatedOrderLineIds).toEqual(['T_1']);
+  expect(validateActiveOrder.order).toBeDefined();
+  expect(validateActiveOrder.order.lines.length).toBe(1);
+  expect(validateActiveOrder.order.lines[0].productVariant.product.id).toBe(
+    'T_1'
+  );
 });
 
 afterAll(async () => {

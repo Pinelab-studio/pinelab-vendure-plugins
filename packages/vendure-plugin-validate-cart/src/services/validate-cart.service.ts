@@ -5,6 +5,9 @@ import {
   EntityHydrator,
   Injector,
   Logger,
+  Order,
+  OrderService,
+  RelationPaths,
   RequestContext,
   UserInputError,
 } from '@vendure/core';
@@ -21,33 +24,35 @@ export class ValidateCartService {
     private readonly options: ValidateCartInitOptions,
     private readonly activeOrderService: ActiveOrderService,
     private readonly entityHydrator: EntityHydrator,
+    private readonly orderService: OrderService,
     readonly moduleRef: ModuleRef
   ) {
     this.injector = new Injector(this.moduleRef);
   }
 
   async validateActiveOrder(
-    ctx: RequestContext
-  ): Promise<ActiveOrderValidationError[]> {
+    ctx: RequestContext,
+    relations: RelationPaths<Order>
+  ): Promise<{ errors: ActiveOrderValidationError[]; order: Order }> {
     const start = Date.now();
-    const validationStrategy = this.options.validationStrategy;
-    if (!validationStrategy) {
-      return []; // A bit strange, but no strategy means always valid
-    }
     const activeOrder = await this.activeOrderService.getActiveOrder(ctx, {});
     if (!activeOrder) {
       throw new UserInputError('No active order found');
     }
-    if (validationStrategy.loadOrderRelations) {
-      await this.entityHydrator.hydrate(ctx, activeOrder, {
-        relations: validationStrategy.loadOrderRelations,
-      });
+    const validationStrategy = this.options.validationStrategy;
+    let result: ActiveOrderValidationError[] = [];
+    if (validationStrategy) {
+      if (validationStrategy.loadOrderRelations) {
+        await this.entityHydrator.hydrate(ctx, activeOrder, {
+          relations: validationStrategy.loadOrderRelations,
+        });
+      }
+      result = await validationStrategy.validate(
+        ctx,
+        activeOrder,
+        this.injector
+      );
     }
-    const result = await validationStrategy.validate(
-      ctx,
-      activeOrder,
-      this.injector
-    );
     const duration = Date.now() - start;
     if (
       this.options.logWarningAfterMs &&
@@ -55,6 +60,14 @@ export class ValidateCartService {
     ) {
       Logger.warn(`Active Order validation took ${duration}ms`, loggerCtx);
     }
-    return result;
+    const order = await this.orderService.findOne(
+      ctx,
+      activeOrder.id,
+      relations
+    );
+    if (!order) {
+      throw new UserInputError('No active order found');
+    }
+    return { errors: result, order };
   }
 }
