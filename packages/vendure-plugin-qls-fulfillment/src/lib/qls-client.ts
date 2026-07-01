@@ -60,7 +60,7 @@ export class QlsClient {
   async getFulfillmentProductById(
     fulfillmentProductId: string
   ): Promise<FulfillmentProductDetail | undefined> {
-    const result = await this.rawRequest<any>(
+    const result = await this.rawRequest<FulfillmentProductDetail>(
       'GET',
       `fulfillment/products/${fulfillmentProductId}`
     );
@@ -149,6 +149,19 @@ export class QlsClient {
       );
     }
     return response.data;
+  }
+
+  /**
+   * Get all barcodes for a fulfillment product in QLS
+   */
+  async getBarcodes(
+    productId: string
+  ): Promise<FulfillmentProduct['barcodes']> {
+    const result = await this.rawRequest<FulfillmentProduct['barcodes']>(
+      'GET',
+      `fulfillment/products/${productId}/barcodes`
+    );
+    return result.data ?? [];
   }
 
   /**
