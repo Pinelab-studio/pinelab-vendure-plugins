@@ -40,6 +40,15 @@ export interface BetterSearchOptions {
    * the plugin will wait for 5 seconds for more events to come in, and then rebuild the index.
    */
   debounceIndexRebuildMs?: number;
+
+  /**
+   * Allows enabling/disabling the search plugin per channel.
+   * When this function returns `false` for a given channel, search queries
+   * will return empty results, and index building will be skipped for that channel.
+   *
+   * Default is enabled for all channels
+   */
+  isEnabled?: (ctx: RequestContext) => boolean | Promise<boolean>;
 }
 
 /**

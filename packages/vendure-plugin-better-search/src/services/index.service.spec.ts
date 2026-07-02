@@ -31,6 +31,7 @@ const mockRequestContext = {
 const createMockRepository = (overrides?: {
   findOne?: () => Promise<any>;
   save?: () => Promise<any>;
+  channelFind?: () => Promise<any[]>;
 }) => {
   const repo = {
     findOne: vi.fn().mockResolvedValue(undefined),
@@ -41,8 +42,14 @@ const createMockRepository = (overrides?: {
       ),
     ...overrides,
   };
+  const channelRepo = {
+    find: vi.fn().mockResolvedValue(overrides?.channelFind?.() ?? []),
+  };
   return {
     getRepository: vi.fn().mockReturnValue(repo),
+    rawConnection: {
+      getRepository: vi.fn().mockReturnValue(channelRepo),
+    },
   } as unknown as TransactionalConnection;
 };
 
@@ -55,9 +62,13 @@ describe('IndexService', () => {
   function createService(overrides?: {
     connection?: TransactionalConnection;
     debounceMs?: number;
+    isEnabled?: (ctx: RequestContext) => boolean | Promise<boolean>;
   }): IndexService {
     const connection = overrides?.connection ?? createMockRepository();
-    const options = { debounceIndexRebuildMs: overrides?.debounceMs ?? 50 };
+    const options = {
+      debounceIndexRebuildMs: overrides?.debounceMs ?? 50,
+      isEnabled: overrides?.isEnabled,
+    };
     return new IndexService(
       connection,
       options as any,
@@ -199,26 +210,13 @@ describe('IndexService', () => {
       mockBuildIndex.mockRestore();
     });
 
-    it('calls buildIndex when no cache and no DB record', async () => {
+    it('throws when no cache and no DB record exists', async () => {
       const connection = createMockRepository();
       const service = createService({ connection });
-      const builtIndex = { built: 'index' };
-      const mockBuildIndex = vi
-        .spyOn(service, 'buildIndex')
-        .mockImplementation(async () => {
-          (service as any).cachedIndices.set('test-channel-en', {
-            index: builtIndex,
-            updatedAt: new Date(),
-            lastCheckedAt: Date.now(),
-          });
-          return 1;
-        });
 
-      const result = await service.getIndex(mockRequestContext);
-
-      expect(result).toBe(builtIndex);
-      expect(mockBuildIndex).toHaveBeenCalledWith(mockRequestContext);
-      mockBuildIndex.mockRestore();
+      await expect(service.getIndex(mockRequestContext)).rejects.toThrow(
+        "No index found for channel 'test-channel' (en)"
+      );
     });
   });
 
@@ -289,6 +287,118 @@ describe('IndexService', () => {
       await p2;
 
       expect(triggerReindexSpy).toHaveBeenCalledTimes(2);
+      triggerReindexSpy.mockRestore();
+    });
+
+    it('returns immediately when isEnabled returns false', async () => {
+      vi.useFakeTimers();
+      const service = createService({
+        debounceMs: 100,
+        isEnabled: () => false,
+      });
+      const triggerReindexSpy = vi
+        .spyOn(service, 'triggerReindex')
+        .mockResolvedValue(undefined as any);
+
+      const p1 = service.debouncedRebuildIndex(mockRequestContext);
+      vi.advanceTimersByTime(100);
+      await p1;
+
+      expect(triggerReindexSpy).not.toHaveBeenCalled();
+      triggerReindexSpy.mockRestore();
+    });
+
+    it('proceeds when isEnabled returns true', async () => {
+      vi.useFakeTimers();
+      const service = createService({
+        debounceMs: 100,
+        isEnabled: () => true,
+      });
+      const triggerReindexSpy = vi
+        .spyOn(service, 'triggerReindex')
+        .mockResolvedValue(undefined as any);
+
+      const p1 = service.debouncedRebuildIndex(mockRequestContext);
+      // Flush microtasks so the await of isEnabled resolves and setTimeout is registered
+      await Promise.resolve();
+      vi.advanceTimersByTime(100);
+      await p1;
+
+      expect(triggerReindexSpy).toHaveBeenCalledTimes(1);
+      triggerReindexSpy.mockRestore();
+    });
+  });
+
+  describe('buildMissingIndexes', () => {
+    const channelA = {
+      id: '1',
+      token: 'channel-a',
+      availableLanguageCodes: ['en'],
+      defaultCurrencyCode: 'USD',
+      defaultLanguageCode: 'en',
+    };
+    const channelB = {
+      id: '2',
+      token: 'channel-b',
+      availableLanguageCodes: ['en', 'de'],
+      defaultCurrencyCode: 'USD',
+      defaultLanguageCode: 'en',
+    };
+
+    it('triggers reindex for channels without existing index', async () => {
+      const connection = createMockRepository({
+        channelFind: () => Promise.resolve([channelA, channelB]),
+      });
+      const service = createService({ connection });
+      const triggerReindexSpy = vi
+        .spyOn(service, 'triggerReindex')
+        .mockResolvedValue(undefined as any);
+
+      await (service as any).buildMissingIndexes();
+
+      // Should trigger 3 reindexes: channel-a-en, channel-b-en, channel-b-de
+      expect(triggerReindexSpy).toHaveBeenCalledTimes(3);
+      triggerReindexSpy.mockRestore();
+    });
+
+    it('skips channels where isEnabled returns false', async () => {
+      const connection = createMockRepository({
+        channelFind: () => Promise.resolve([channelA, channelB]),
+      });
+      const service = createService({
+        connection,
+        isEnabled: (ctx: RequestContext) => ctx.channel.token !== 'channel-b',
+      });
+      const triggerReindexSpy = vi
+        .spyOn(service, 'triggerReindex')
+        .mockResolvedValue(undefined as any);
+
+      await (service as any).buildMissingIndexes();
+
+      // Should only trigger for channel-a (1 language)
+      expect(triggerReindexSpy).toHaveBeenCalledTimes(1);
+      triggerReindexSpy.mockRestore();
+    });
+
+    it('skips channels where index already exists', async () => {
+      const connection = createMockRepository({
+        channelFind: () => Promise.resolve([channelA]),
+        findOne: () =>
+          Promise.resolve({
+            id: 'channel-a-en',
+            data: 'existing-index',
+            updatedAt: new Date(),
+          }),
+      });
+      const service = createService({ connection });
+      const triggerReindexSpy = vi
+        .spyOn(service, 'triggerReindex')
+        .mockResolvedValue(undefined as any);
+
+      await (service as any).buildMissingIndexes();
+
+      // Should not trigger any reindex because index already exists
+      expect(triggerReindexSpy).not.toHaveBeenCalled();
       triggerReindexSpy.mockRestore();
     });
   });

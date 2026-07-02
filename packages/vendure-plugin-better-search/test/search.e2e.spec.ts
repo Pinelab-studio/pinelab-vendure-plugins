@@ -1,3 +1,7 @@
+import {
+  CurrencyCode,
+  LanguageCode,
+} from '@vendure/common/lib/generated-types';
 import { DefaultLogger, EventBus, LogLevel, mergeConfig } from '@vendure/core';
 import {
   createTestEnvironment,
@@ -7,27 +11,21 @@ import {
   testConfig,
   TestServer,
 } from '@vendure/testing';
+import { beforeAll, describe, expect, it } from 'vitest';
+import { initialData } from '../../test/src/initial-data';
+import { waitFor } from '../../test/src/test-helpers';
+import { BetterSearchPlugin } from '../src';
+import { BetterSearchIndexEvent } from '../src/events/better-search-index.event';
 import {
-  LanguageCode,
-  CurrencyCode,
-} from '@vendure/common/lib/generated-types';
-import {
-  WARMUP_QUERY,
-  SEARCH_QUERY,
+  ASSIGN_PRODUCTS_TO_CHANNEL,
   CREATE_CHANNEL,
   GET_PRODUCTS,
-  ASSIGN_PRODUCTS_TO_CHANNEL,
-  UPDATE_CHANNEL,
-  UPDATE_PRODUCT,
   INSPECT_INDEX,
   INSPECT_SEARCH_INDEX,
+  SEARCH_QUERY,
+  UPDATE_PRODUCT,
+  WARMUP_QUERY,
 } from './helpers';
-import { firstValueFrom } from 'rxjs';
-import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
-import { BetterSearchIndexEvent } from '../src/events/better-search-index.event';
-import { initialData } from '../../test/src/initial-data';
-import { BetterSearchPlugin } from '../src';
-import { waitFor } from '../../test/src/test-helpers';
 
 /** Subset of Vendure's SearchResult we care about in these tests. */
 interface SearchResultItem {
@@ -48,19 +46,51 @@ beforeAll(async () => {
     plugins: [BetterSearchPlugin.init({})],
   });
 
+  // Listen for index build completion on the default channel before starting
+  let defaultChannelIndexBuilt = false;
   ({ server, adminClient, shopClient } = createTestEnvironment(config));
   await server.init({
     initialData,
     productsCsvPath: './test/search-products.csv',
   });
+
+  // Setup event listener for the default channel's index build
+  const subscription = server.app
+    .get(EventBus)
+    .ofType(BetterSearchIndexEvent)
+    .subscribe((e) => {
+      if (
+        e.ctx.channel.token === 'e2e-default-channel' &&
+        e.numberOfProductsIndexed > 0
+      ) {
+        defaultChannelIndexBuilt = true;
+      }
+    });
+
+  // Trigger a rebuild for the default channel by updating a product.
+  // buildMissingIndexes runs before products are imported, so the initial
+  // index has 0 products. We need to rebuild after product import.
+  await adminClient.asSuperAdmin();
+  const { products } = (await adminClient.query(GET_PRODUCTS)) as {
+    products: { items: Array<{ id: string }> };
+  };
+  if (products.items.length > 0) {
+    await adminClient.query(UPDATE_PRODUCT, {
+      input: {
+        id: products.items[0].id,
+        enabled: true,
+      },
+    });
+  }
+
+  // Wait for the index to be rebuilt with the imported products
+  await waitFor(() => defaultChannelIndexBuilt, 300);
+  subscription.unsubscribe();
+
   // Pre-warm the GraphQL/Nest pipeline with a dummy search so the first real
   // test doesn't pay schema-build / first-request latency.
   await shopClient.query(WARMUP_QUERY, { term: 'warmup' }).catch(() => {});
 }, 60000);
-
-afterAll(async () => {
-  await server.destroy();
-}, 100000);
 
 it('Started the server', () => {
   expect(server.app.getHttpServer()).toBeDefined();
@@ -273,12 +303,44 @@ describe('Multi-channel and multi-language', () => {
     );
     appleProductId = appleProduct!.id;
 
+    // Wait for the second channel's index to be built after assigning products
+    let secondChannelIndexBuilt = false;
+    const subscription = server.app
+      .get(EventBus)
+      .ofType(BetterSearchIndexEvent)
+      .subscribe((e) => {
+        if (e.ctx.channel.token === secondChannelToken) {
+          secondChannelIndexBuilt = true;
+        }
+      });
+
     await adminClient.query(ASSIGN_PRODUCTS_TO_CHANNEL, {
       input: {
         channelId: secondChannelId,
         productIds: [appleProductId],
       },
     });
+
+    // Switch to second channel context and trigger a rebuild by updating the product.
+    // assignProductsToChannel fires events with the admin's current (default) channel
+    // context, so we need to explicitly rebuild the second channel's index.
+    adminClient.setChannelToken(secondChannelToken);
+    await adminClient.query(UPDATE_PRODUCT, {
+      input: {
+        id: appleProductId,
+        translations: [
+          {
+            languageCode: LanguageCode.en,
+            name: 'Apple',
+            slug: 'apple',
+            description: 'Apple.',
+          },
+        ],
+      },
+    });
+
+    await waitFor(() => secondChannelIndexBuilt, 10000);
+    subscription.unsubscribe();
   }, 30000);
 
   it('finds only products assigned to the second channel', async () => {

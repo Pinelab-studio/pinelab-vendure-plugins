@@ -4,8 +4,8 @@ import {
   OnApplicationBootstrap,
   OnModuleInit,
 } from '@nestjs/common';
-import { ModuleRef } from '@nestjs/core';
 import {
+  Channel,
   EventBus,
   JobQueue,
   JobQueueService,
@@ -14,20 +14,16 @@ import {
   ProductEvent,
   ProductService,
   ProductVariantEvent,
-  ProductVariantService,
   RequestContext,
   SerializedRequestContext,
   TransactionalConnection,
 } from '@vendure/core';
 import { asError } from 'catch-unknown';
 import { BETTER_SEARCH_PLUGIN_OPTIONS, engine, loggerCtx } from '../constants';
+import { BetterSearchIndex } from '../entities/better-search-index.entity';
+import { BetterSearchIndexEvent } from '../events/better-search-index.event';
 import { BetterSearchOptions } from '../types';
 import { createIndexKey } from './util';
-import { BetterSearchIndex } from '../entities/better-search-index.entity';
-import {
-  BetterSearchIndexEvent,
-  BetterSearchIndexType,
-} from '../events/better-search-index.event';
 
 /**
  * Cache TTL for keeping the search index in memory, before fetching it again from the DB
@@ -54,9 +50,7 @@ export class IndexService implements OnModuleInit, OnApplicationBootstrap {
     private options: BetterSearchOptions,
     private jobQueueService: JobQueueService,
     private productService: ProductService,
-    private productVariantService: ProductVariantService,
-    private eventBus: EventBus,
-    private moduleRef: ModuleRef
+    private eventBus: EventBus
   ) {}
 
   onApplicationBootstrap() {
@@ -81,6 +75,16 @@ export class IndexService implements OnModuleInit, OnApplicationBootstrap {
           error.stack
         );
       });
+    });
+
+    // Build initial indexes for enabled channels that don't have one yet
+    this.buildMissingIndexes().catch((e) => {
+      const error = asError(e);
+      Logger.error(
+        `Failed to build missing indexes: ${error.message}`,
+        loggerCtx,
+        error.stack
+      );
     });
   }
 
@@ -108,9 +112,76 @@ export class IndexService implements OnModuleInit, OnApplicationBootstrap {
   }
 
   /**
-   * Fetches all products, let the search engine create the index, and saves the index to the database.
+   * Iterates over all channels and builds an initial search index for each
+   * enabled channel that does not yet have an index stored in the database.
+   */
+  private async buildMissingIndexes(): Promise<void> {
+    const channels = await this.connection.rawConnection
+      .getRepository(Channel)
+      .find();
+    for (const channel of channels) {
+      const ctx = new RequestContext({
+        isAuthorized: true,
+        authorizedAsOwnerOnly: false,
+        apiType: 'admin',
+        channel,
+      });
+      // Skip if search is disabled for this channel
+      if (this.options.isEnabled && !(await this.options.isEnabled(ctx))) {
+        Logger.info(
+          `Skipping initial index build for channel '${channel.token}' — search is disabled`,
+          loggerCtx
+        );
+        continue;
+      }
+      for (const languageCode of channel.availableLanguageCodes) {
+        const indexKey = createIndexKey(
+          new RequestContext({
+            isAuthorized: true,
+            authorizedAsOwnerOnly: false,
+            apiType: 'admin',
+            channel,
+            languageCode,
+          })
+        );
+        const existing = await this.connection
+          .getRepository(ctx, BetterSearchIndex)
+          .findOne({ where: { id: indexKey } });
+        if (!existing) {
+          Logger.info(
+            `No index found for channel '${channel.token}' (${languageCode}), triggering initial build`,
+            loggerCtx
+          );
+          const langCtx = new RequestContext({
+            isAuthorized: true,
+            authorizedAsOwnerOnly: false,
+            apiType: 'admin',
+            channel,
+            languageCode,
+          });
+          this.triggerReindex(langCtx).catch((e) => {
+            const error = asError(e);
+            Logger.error(
+              `Failed to trigger initial index build for '${indexKey}': ${error.message}`,
+              loggerCtx,
+              error.stack
+            );
+          });
+        }
+      }
+    }
+  }
+
+  /**
+   * Fetches all products, lets the search engine create the index, and saves the index to the database.
    */
   async buildIndex(_ctx: RequestContext): Promise<number> {
+    // Skip if search is disabled for this channel
+    if (this.options.isEnabled && !(await this.options.isEnabled(_ctx))) {
+      throw new Error(
+        `Cannot build index: search is disabled for channel '${_ctx.channel.token}' (${_ctx.languageCode}) `
+      );
+    }
     let productCount = 0;
     for (const languageCode of _ctx.channel.availableLanguageCodes) {
       const ctx = new RequestContext({
@@ -145,7 +216,6 @@ export class IndexService implements OnModuleInit, OnApplicationBootstrap {
               },
             },
           },
-          // FIXME we might need to optimize this, instead of too many joins
           ['featuredAsset', 'facetValues.translations', 'variants.collections']
         );
         skip += take;
@@ -259,17 +329,9 @@ export class IndexService implements OnModuleInit, OnApplicationBootstrap {
       return deserialized;
     }
 
-    // 4. Nothing in DB — build fresh
-    Logger.info(
-      `No index found for '${indexKey}' in cache or database, building new index...`,
-      loggerCtx
+    throw new Error(
+      `No index found for channel '${ctx.channel.token}' (${ctx.languageCode})`
     );
-    await this.buildIndex(ctx);
-    const rebuilt = this.cachedIndices.get(indexKey);
-    if (!rebuilt) {
-      throw new Error(`Index not found for ${indexKey}`);
-    }
-    return rebuilt.index;
   }
 
   /**
@@ -285,6 +347,10 @@ export class IndexService implements OnModuleInit, OnApplicationBootstrap {
    * Adds index rebuild to the queue, and waits for more events to come in before triggering an index rebuild, for improved performance.
    */
   async debouncedRebuildIndex(ctx: RequestContext) {
+    // Skip if search is disabled for this channel
+    if (this.options.isEnabled && !(await this.options.isEnabled(ctx))) {
+      return;
+    }
     const key = createIndexKey(ctx);
     this.rebuildIndicesQueue.set(key, ctx);
     // Wait for debounce time, so that more rebuilds can be added to the rebuild queue and are deduplicated
