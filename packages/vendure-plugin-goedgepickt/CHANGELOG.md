@@ -1,3 +1,7 @@
+# 2.3.2 (2026-07-02)
+
+- Fix image placeholder detection so Vendure images are sent when Goedgepickt's placeholder is `.jpg` and so new products get the Vendure image
+
 # 2.3.1 (2026-06-30)
 
 - Send house numbers as strings to Goedgepickt API to prevent "Billing house number moet een tekst zijn" errors

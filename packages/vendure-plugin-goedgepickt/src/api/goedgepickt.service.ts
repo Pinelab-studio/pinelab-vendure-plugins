@@ -536,7 +536,10 @@ export class GoedgepicktService
       const ggProductInput = this.mapToProductInput(variant);
       const existing = await client.findProductBySku(sku);
       const uuid = existing?.uuid;
-      if (!existing?.picture?.toLowerCase().includes('image_placeholder.png')) {
+      if (
+        existing &&
+        !existing.picture?.toLowerCase().includes('image_placeholder')
+      ) {
         // The picture on GG is not a placeholder, so don't update it again.
         ggProductInput.picture = undefined; // Don't update picture on existing product
       }
