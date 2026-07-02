@@ -21,14 +21,15 @@ type GuideWithImage = CollectionEntry<'guides'> & {
 const guidesWithImages: GuideWithImage[] = await Promise.all(
   guides.map(async (g) => {
     let optimizedImage: Awaited<ReturnType<typeof getImage>> | undefined;
-    if (g.data.heroImage) {
+    const imageSrc = g.data.heroImageSmall ?? g.data.heroImage;
+    if (imageSrc) {
       optimizedImage = await getImage({
-        src: g.data.heroImage,
+        src: imageSrc,
         inferSize: true,
         format: 'webp',
         quality: 80,
-        width: 600,
-        height: 315,
+        width: 500,
+        height: 263,
       });
     }
     return { ...g, optimizedImage };
@@ -79,8 +80,8 @@ const structuredData = [
                   <img
                     src={g.optimizedImage.src}
                     alt={g.data.heroImageAlt ?? g.data.title}
-                    width={600}
-                    height={315}
+                    width={500}
+                    height={263}
                     class="h-48 w-full object-cover"
                   />
                 )}

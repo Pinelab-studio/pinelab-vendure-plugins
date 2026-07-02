@@ -11,3 +11,4 @@ generates:
       scalars:
         DateTime: Date
         ID: string | number
+        Order: '@vendure/core#Order'

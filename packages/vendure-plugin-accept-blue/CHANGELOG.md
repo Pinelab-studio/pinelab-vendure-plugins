@@ -1,3 +1,7 @@
+# 3.9.1 (2026-06-29)
+
+- Fix `additionalChargeInput` monetary amounts not being divided by 100 before sending to Accept Blue. Amounts in `amount_details` and `line_items` are now automatically converted from Vendure cents to dollars.
+
 # 3.9.0 (2026-08-05)
 
 - Upgraded to Vendure 3.6.3

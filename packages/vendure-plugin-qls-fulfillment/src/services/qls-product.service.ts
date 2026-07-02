@@ -516,7 +516,8 @@ export class QlsProductService implements OnModuleInit, OnApplicationBootstrap {
         ctx,
         client,
         qlsProduct,
-        additionalEANs
+        additionalEANs,
+        variant
       );
       if (createdOrUpdated === 'not-changed' && updatedEANs) {
         // If nothing changed so far, but EANs changed, then we did update the product in QLS
@@ -539,7 +540,8 @@ export class QlsProductService implements OnModuleInit, OnApplicationBootstrap {
     ctx: RequestContext,
     client: QlsClient,
     qlsProduct: FulfillmentProduct,
-    additionalEANs: string[] | undefined
+    additionalEANs: string[] | undefined,
+    variant: ProductVariant
   ): Promise<boolean> {
     const existingAdditionalEANs = qlsProduct?.barcodes_and_ean.filter(
       (ean) => ean !== qlsProduct.ean
@@ -580,9 +582,24 @@ export class QlsProductService implements OnModuleInit, OnApplicationBootstrap {
         client.removeBarcode(qlsProduct.id, barcodeId)
       )
     );
-    if (eansToUpdate.eansToRemove.length > 0) {
+    // Fetch remaining barcodes from QLS to verify deletion worked
+    const remainingBarcodes = await client.getBarcodes(qlsProduct.id);
+    const remainingEansToRemove = eansToUpdate.eansToRemove.filter((ean) =>
+      remainingBarcodes.some((barcode) => barcode.barcode === ean)
+    );
+    if (remainingEansToRemove.length > 0) {
+      const errorMessage = `Failed to remove EANs '${remainingEansToRemove.join(
+        ','
+      )}' from product '${
+        qlsProduct.sku
+      }' in QLS. Barcodes still present after deletion attempt.`;
+      Logger.error(errorMessage, loggerCtx);
+      await this.eventBus.publish(
+        new QlsVariantSyncFailedEvent(ctx, variant, new Date(), errorMessage)
+      );
+    } else if (eansToUpdate.eansToRemove.length > 0) {
       Logger.info(
-        `Removed EANs '${eansToUpdate.eansToRemove.join(',')} from product '${
+        `Removed EANs '${eansToUpdate.eansToRemove.join(',')}' from product '${
           qlsProduct.sku
         }' in QLS`,
         loggerCtx

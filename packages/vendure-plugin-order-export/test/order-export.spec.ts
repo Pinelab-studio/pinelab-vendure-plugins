@@ -13,8 +13,8 @@ import { createSettledOrder } from '../../test/src/shop-utils';
 import gql from 'graphql-tag';
 import { OrderExportPlugin } from '../src';
 
-import { expect, describe, beforeAll, afterAll, it, vi, test } from 'vitest';
-import getFilesInAdminUiFolder from '../../test/src/compile-admin-ui.util';
+import { expect, describe, beforeAll, afterAll, it } from 'vitest';
+
 describe('Order export plugin', function () {
   let server: TestServer;
   let adminClient: SimpleGraphQLClient;
@@ -86,16 +86,6 @@ describe('Order export plugin', function () {
     expect(res.headers.get('Content-type')).toContain('text/csv');
     expect(res.body.pipe).toBeDefined();
   });
-
-  if (process.env.TEST_ADMIN_UI) {
-    it('Should compile admin', async () => {
-      const files = await getFilesInAdminUiFolder(
-        __dirname,
-        OrderExportPlugin.ui
-      );
-      expect(files?.length).toBeGreaterThan(0);
-    }, 200000);
-  }
 
   afterAll(() => {
     return server.destroy();

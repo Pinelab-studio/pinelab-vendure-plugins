@@ -32,14 +32,26 @@ Depending on your validation strategy, you probably want to call the `validateAc
 ```gql
 mutation ValidateActiveOrderMutation {
   validateActiveOrder {
-    message
-    errorCode
-    relatedOrderLineIds
+    errors {
+      message
+      errorCode
+      relatedOrderLineIds
+    }
+    order {
+      id
+      lines {
+        productVariant {
+          product {
+            id
+          }
+        }
+      }
+    }
   }
 }
 ```
 
-If any validation errors are returned, you can display the error to the user with the corresponding order lines. You could even automatically remove the items from the cart based on the `relatedOrderLineIds`.
+If any validation errors are returned, you can display the error to the user with the corresponding order lines. You could even automatically remove the items from the cart based on the `relatedOrderLineIds`. The `order` field returns the active order after validation, including any modifications made by a custom validation strategy.
 
 This action is a mutation rather than a query, because your custom validation logic might need to modify the order, for example to 'lock' an order after validation until payment is completed.
 

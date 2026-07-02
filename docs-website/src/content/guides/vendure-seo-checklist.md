@@ -4,7 +4,8 @@ title: SEO checklist for Vendure
 description: A practical SEO implementation guid for Vendure shops; meta tags, JSON-LD structured data, image alt text, robots.txt and sitemaps.
 pubDate: 2026-05-06
 author: Martijn
-heroImage: https://images.unsplash.com/photo-1560472354-b33ff0c44a43
+heroImage: https://images.unsplash.com/photo-1560472354-b33ff0c44a43?ixlib=rb-4.1.0&q=85&fm=jpg&crop=entropy&cs=srgb&w=2000
+heroImageSmall: https://images.unsplash.com/photo-1560472354-b33ff0c44a43?ixlib=rb-4.1.0&q=85&fm=jpg&crop=entropy&cs=srgb&w=500
 heroImageAlt: SEO analytics dashboard on a laptop screen
 ---
 

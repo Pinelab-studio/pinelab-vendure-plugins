@@ -475,7 +475,7 @@ describe('Payment with Saved Payment Method', () => {
     expect(recurringRequests.length).toBe(1);
     expect(recurringRequests[0].amount).toBe(9);
     expect(recurringRequests[0].receipt_email).toBeUndefined(); // Because we disabled sending receipt emails in plugin config
-    expect(chargeRequests[0].amount_details.surcharge).toBe(1); // Make sure additional input is passed to AB
+    expect(chargeRequests[0].amount_details.surcharge).toBe(0.01); // Surcharge of 1 cent is converted to $0.01
   });
 
   it('Order has metadata for both declined and settled payments', async () => {
