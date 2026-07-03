@@ -286,10 +286,6 @@ describe('searchSuggestions', () => {
   });
 });
 
-// describe('Filtering', () => {
-//   // TODO implement later, when we have decided on what search algorithm to use based on performance and relevance.
-// });
-
 describe('Multi-channel and multi-language', () => {
   let secondChannelId: string;
   let secondChannelToken: string;
