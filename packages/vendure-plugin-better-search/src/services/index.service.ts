@@ -41,7 +41,19 @@ export class IndexService implements OnModuleInit, OnApplicationBootstrap {
   /** In-memory cache of deserialized indices plus metadata to check TTL. */
   private cachedIndices = new Map<
     string,
-    { index: unknown; updatedAt: Date; lastCheckedAt: number }
+    {
+      index: unknown;
+      /**
+       * The updatedAt timestamp of the index in the database,
+       * used to compare in memory cached index with the database index
+       */
+      updatedAt: Date;
+      /**
+       * Used to check if we need to check the DB for a newer index,
+       * or if we can return the cached index because it was already checked recently.
+       */
+      lastCheckedAt: number;
+    }
   >();
 
   constructor(
@@ -266,7 +278,7 @@ export class IndexService implements OnModuleInit, OnApplicationBootstrap {
 
   /**
    * Gets the index from cache (respecting a 10-second TTL), falling back to
-   * the database, and finally rebuilding in-memory if neither has it.
+   * the database if the updateAt of de index in DB is newer. If it is not, it keeps the cached in memory index
    *
    * @param ignoreCacheTtl When true, always return the cached index without
    *   checking whether the DB record has been updated.

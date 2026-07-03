@@ -2,7 +2,6 @@ import {
   EventBus,
   JobQueueService,
   ProductService,
-  ProductVariantService,
   RequestContext,
   TransactionalConnection,
 } from '@vendure/core';
@@ -74,11 +73,9 @@ describe('IndexService', () => {
       options as any,
       { createQueue: vi.fn() } as unknown as JobQueueService,
       {} as ProductService,
-      {} as ProductVariantService,
       {
         ofType: vi.fn().mockReturnValue({ subscribe: vi.fn() }),
-      } as unknown as EventBus,
-      {} as any
+      } as unknown as EventBus
     );
   }
 

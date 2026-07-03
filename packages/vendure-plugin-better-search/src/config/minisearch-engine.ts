@@ -9,7 +9,7 @@ import {
   ID,
 } from '@vendure/core';
 import MiniSearch from 'minisearch';
-import { BetterSearchDocument, SearchEngine } from '../types';
+import { BetterSearchDocument, SearchEngine, SearchSuggestion } from '../types';
 
 /** One document per variant: searchable text + stored fields for building BetterSearchDocument. */
 export interface MinisearchDocument {
@@ -201,6 +201,37 @@ export class MinisearchEngine implements SearchEngine {
           } satisfies BetterSearchDocument)
       )
     );
+  }
+
+  /**
+   * Suggests search terms based on the current index using MiniSearch's
+   * autoSuggest. Returns up to 10 unique suggestions.
+   */
+  searchSuggestions(
+    ctx: RequestContext,
+    searchIndex: unknown,
+    term: string
+  ): SearchSuggestion[] {
+    const miniSearch = searchIndex as MiniSearch<MinisearchDocument>;
+    if (!miniSearch?.autoSuggest) {
+      throw new Error('Invalid search index');
+    }
+    const results = miniSearch.autoSuggest(term, {
+      prefix: true,
+      fuzzy: 0.2,
+    });
+    const seen = new Set<string>();
+    const suggestions: SearchSuggestion[] = [];
+    for (const result of results) {
+      if (!seen.has(result.suggestion)) {
+        seen.add(result.suggestion);
+        suggestions.push({ suggestion: result.suggestion });
+        if (suggestions.length >= 10) {
+          break;
+        }
+      }
+    }
+    return suggestions;
   }
 
   serializeIndex(searchIndex: unknown): string {

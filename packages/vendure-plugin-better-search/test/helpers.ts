@@ -22,6 +22,14 @@ export const SEARCH_QUERY = gql`
   }
 `;
 
+export const SEARCH_SUGGESTIONS_QUERY = gql`
+  query SearchSuggestions($term: String!) {
+    searchSuggestions(term: $term) {
+      suggestion
+    }
+  }
+`;
+
 export const CREATE_CHANNEL = gql`
   mutation CreateChannel($input: CreateChannelInput!) {
     createChannel(input: $input) {

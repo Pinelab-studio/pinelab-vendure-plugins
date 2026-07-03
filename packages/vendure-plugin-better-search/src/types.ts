@@ -52,6 +52,14 @@ export interface BetterSearchOptions {
 }
 
 /**
+ * A lightweight search suggestion returned by the search-as-you-type endpoint.
+ */
+export interface SearchSuggestion {
+  /** The suggested search term. */
+  suggestion: string;
+}
+
+/**
  * A strategy to create a search index and search for results.
  */
 export interface SearchEngine {
@@ -69,6 +77,17 @@ export interface SearchEngine {
     searchIndex: unknown,
     term: string
   ): Promise<BetterSearchDocument[]>;
+
+  /**
+   * Returns a list of lightweight search suggestions for the given term.
+   * The implementation is engine-specific and should not include the term
+   * itself in the result.
+   */
+  searchSuggestions(
+    ctx: RequestContext,
+    searchIndex: unknown,
+    term: string
+  ): Promise<SearchSuggestion[]> | SearchSuggestion[];
 
   /**
    * Extracts stored documents from the index for inspection purposes.

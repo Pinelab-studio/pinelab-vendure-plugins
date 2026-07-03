@@ -6,7 +6,11 @@ import type {
   SearchResult,
 } from '@vendure/common/lib/generated-types';
 import { BETTER_SEARCH_PLUGIN_OPTIONS, engine } from '../constants';
-import { BetterSearchDocument, BetterSearchOptions } from '../types';
+import {
+  BetterSearchDocument,
+  BetterSearchOptions,
+  SearchSuggestion,
+} from '../types';
 import { IndexService } from './index.service';
 
 @Injectable()
@@ -43,6 +47,22 @@ export class SearchService {
       facetValues: [],
       collections: [],
     };
+  }
+
+  /**
+   * Returns a list of lightweight search suggestions for the given term.
+   * Intended for search-as-you-type use cases. This bypasses the index cache
+   * TTL check to keep the endpoint fast.
+   */
+  async searchSuggestions(
+    ctx: RequestContext,
+    term: string
+  ): Promise<SearchSuggestion[]> {
+    if (term.length < 2) {
+      return [];
+    }
+    const index = await this.indexService.getIndex(ctx, true);
+    return engine.searchSuggestions(ctx, index, term);
   }
 
   /**

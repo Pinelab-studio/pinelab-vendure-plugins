@@ -23,6 +23,7 @@ import {
   INSPECT_INDEX,
   INSPECT_SEARCH_INDEX,
   SEARCH_QUERY,
+  SEARCH_SUGGESTIONS_QUERY,
   UPDATE_PRODUCT,
   WARMUP_QUERY,
 } from './helpers';
@@ -265,6 +266,23 @@ describe('inspectSearchIndex', () => {
     expect(data[0]).toHaveProperty('id');
     expect(data[0]).toHaveProperty('sku');
     expect(data[0]).toHaveProperty('productName');
+  });
+});
+
+// describe('Filtering', () => {
+//   // TODO implement later, when we have decided on what search algorithm to use based on performance and relevance.
+// });
+
+describe('searchSuggestions', () => {
+  it('returns suggestions for a 2-letter term', async () => {
+    const result = (await shopClient.query(SEARCH_SUGGESTIONS_QUERY, {
+      term: 'ap',
+    })) as {
+      searchSuggestions: { suggestion: string }[];
+    };
+    expect(result.searchSuggestions.length).toBeGreaterThan(0);
+    expect(result.searchSuggestions[0]).toHaveProperty('suggestion');
+    expect(result.searchSuggestions[0].suggestion).toBeTruthy();
   });
 });
 

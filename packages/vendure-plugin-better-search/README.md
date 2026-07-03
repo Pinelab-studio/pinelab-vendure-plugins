@@ -99,3 +99,17 @@ import { BetterSearchPlugin } from '@pinelab/vendure-plugin-better-search';
 - Monitor your database CPU usage. If this is high, you can increase the `debounceIndexRebuildMs` to reduce the number of rebuilds.
 
 If these tips don't work, your dataset might be too large for the Better Search Plugin.
+
+## Search-as-you-type suggestions
+
+For live search-as-you-type interfaces (e.g. autocomplete), use the `searchSuggestions` query instead of the full `search` query. This endpoint only returns suggestion strings and skips the index cache TTL check, making it much cheaper than a full search.
+
+```graphql
+query SearchSuggestions($term: String!) {
+  searchSuggestions(term: $term) {
+    suggestion
+  }
+}
+```
+
+Only use the `search` query when the user submits the search or when you actually need the full result set.
