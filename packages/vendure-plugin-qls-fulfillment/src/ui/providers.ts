@@ -104,4 +104,47 @@ export default [
         });
     },
   }),
+  addActionBarDropdownMenuItem({
+    id: 'qls-fulfillment-add-ean',
+    label: 'Add additional EAN to QLS',
+    locationId: 'product-variant-detail',
+    icon: 'resistor',
+    requiresPermission: ['QLSFullSync'],
+    onClick: (_, { route, dataService, notificationService }) => {
+      const ean = window.prompt('Enter additional EAN to add to QLS:');
+      if (!ean) {
+        return;
+      }
+      const variantId = route.snapshot.params.id;
+      dataService
+        .mutate(
+          gql`
+            mutation AddAdditionalEANSToQLS(
+              $variantId: ID!
+              $additionalEANS: [String!]!
+            ) {
+              addAdditionalEANSToQLS(
+                variantId: $variantId
+                additionalEANS: $additionalEANS
+              )
+            }
+          `,
+          { variantId, additionalEANS: [ean] }
+        )
+        .subscribe({
+          next: () => {
+            notificationService.notify({
+              message: `Added EAN ${ean} to QLS`,
+              type: 'success',
+            });
+          },
+          error: (err) => {
+            notificationService.notify({
+              message: err.message,
+              type: 'error',
+            });
+          },
+        });
+    },
+  }),
 ];
