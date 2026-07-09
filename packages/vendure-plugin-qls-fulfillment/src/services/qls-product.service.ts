@@ -403,7 +403,7 @@ export class QlsProductService implements OnModuleInit, OnApplicationBootstrap {
 
   /**
    * Add additional EANs/barcodes to an existing QLS product.
-   * Only adds EANs that do not already exist in QLS. Removal of EANs must be done in QLS itself.
+   * Removal of EANs must be done in QLS itself.
    */
   async addAdditionalEANsToQls(
     ctx: RequestContext,
@@ -414,12 +414,7 @@ export class QlsProductService implements OnModuleInit, OnApplicationBootstrap {
     if (!client) {
       throw new Error(`QLS not enabled for channel ${ctx.channel.token}`);
     }
-    const variant = await this.variantService.findOne(ctx, variantId, [
-      'featuredAsset',
-      'taxCategory',
-      'channels',
-      'product.featuredAsset',
-    ]);
+    const variant = await this.variantService.findOne(ctx, variantId, []);
     if (!variant) {
       throw new Error(`Variant with id ${variantId} not found`);
     }
@@ -429,29 +424,22 @@ export class QlsProductService implements OnModuleInit, OnApplicationBootstrap {
         `Variant '${variant.sku}' does not have a QLS product ID. Sync the variant to QLS first.`
       );
     }
-    const qlsProduct = await client.getFulfillmentProductById(qlsProductId);
-    if (!qlsProduct) {
-      throw new Error(
-        `QLS product with id ${qlsProductId} not found for variant '${variant.sku}'`
-      );
-    }
-    const existingEANs = qlsProduct.barcodes_and_ean.map((ean) => ean.trim());
     const eansToAdd = additionalEANs
       .map((ean) => ean.trim())
-      .filter((ean) => ean.length > 0 && !existingEANs.includes(ean));
+      .filter((ean) => ean.length > 0);
     await Promise.all(
-      eansToAdd.map((ean) => client.addBarcode(qlsProduct.id, ean))
+      eansToAdd.map((ean) => client.addBarcode(qlsProductId, ean))
     );
     if (eansToAdd.length > 0) {
       Logger.info(
-        `Added additional EANs: ${eansToAdd.join(',')} to product '${
-          qlsProduct.sku
+        `Added additional EANs: ${eansToAdd.join(',')} to variant '${
+          variant.sku
         }' in QLS`,
         loggerCtx
       );
     }
     await this.triggerSyncVariants(ctx, [variantId]);
-    return [...new Set([...existingEANs, ...eansToAdd])].sort();
+    return eansToAdd;
   }
 
   /**
