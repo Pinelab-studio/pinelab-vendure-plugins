@@ -19,13 +19,8 @@ export class LocalFileStrategy implements LocalStorageStrategy {
     channelToken: string,
     isCreditInvoice: boolean
   ) {
-    if (!(await exists(this.invoiceDir))) {
-      await fs.mkdir(this.invoiceDir);
-    }
     const channelDir = `${this.invoiceDir}/${channelToken}`;
-    if (!(await exists(channelDir))) {
-      await fs.mkdir(channelDir);
-    }
+    await fs.mkdir(channelDir, { recursive: true });
     let name = `${invoiceNumber}.pdf`;
     if (isCreditInvoice) {
       name = `${invoiceNumber}-credit.pdf`;
