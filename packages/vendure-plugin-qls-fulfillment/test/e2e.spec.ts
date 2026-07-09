@@ -41,7 +41,6 @@ beforeAll(async () => {
         productSync: {
           getAdditionalVariantFields: (ctx, variant) => ({
             ean: variant.sku,
-            additionalEANs: ['1234567890'],
           }),
         },
         orderSync: {
@@ -95,21 +94,9 @@ it('Should start successfully', async () => {
 it('Runs full sync', async () => {
   let createdProducts: FulfillmentProduct[] = [];
   let updatedProducts: FulfillmentProduct[] = [];
-  let updatedAdditionalEANs: string[] = [];
   vi.stubGlobal(
     'fetch',
     vi.fn((url, { method, body }) => {
-      // Mock the update of additional EANs
-      if (method === 'POST' && url.includes('/barcodes')) {
-        updatedAdditionalEANs.push(body);
-        return createMockResponse({
-          data: {
-            id: '1',
-            barcodes_and_ean: [],
-            barcodes: [],
-          },
-        });
-      }
       // Mock get all fulfillment products
       if (method === 'GET' && url.includes('fulfillment/products')) {
         return createMockResponse({
@@ -166,7 +153,6 @@ it('Runs full sync', async () => {
   expect(updatedProducts[0]).toEqual(
     '{"sku":"L2201508","name":"Laptop 15 inch 8GB","ean":"L2201508"}'
   );
-  expect(updatedAdditionalEANs[0]).toEqual('{"barcode":"1234567890"}');
   const variants = await getAllVariants(adminClient);
   // This is the variant that should have received stock from QLS
   const productFromQLS = variants.find((variant) => variant.sku === 'L2201508');

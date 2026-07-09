@@ -177,16 +177,6 @@ export class QlsClient {
     );
   }
 
-  /**
-   * Add an extra barcode to a fulfillment product in QLS
-   */
-  async removeBarcode(productId: string, barcodeId: number): Promise<void> {
-    await this.rawRequest<void>(
-      'DELETE',
-      `fulfillment/products/${productId}/barcodes/${barcodeId}`
-    );
-  }
-
   async getServicePoints(
     countryCode: string,
     postalCode: string

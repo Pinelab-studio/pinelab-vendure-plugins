@@ -35,7 +35,6 @@ import {
   QlsPluginOptions,
   QlsProductJobData,
 } from '../types';
-import { getEansToUpdate, normalizeEans } from './util';
 import { QlsVariantSyncFailedEvent } from './qls-variant-sync-failed-event';
 import { ModuleRef } from '@nestjs/core';
 
@@ -403,6 +402,47 @@ export class QlsProductService implements OnModuleInit, OnApplicationBootstrap {
   }
 
   /**
+   * Add additional EANs/barcodes to an existing QLS product.
+   * Removal of EANs must be done in QLS itself.
+   */
+  async addAdditionalEANsToQls(
+    ctx: RequestContext,
+    variantId: ID,
+    additionalEANs: string[]
+  ): Promise<string[]> {
+    const client = await getQlsClient(ctx, this.options);
+    if (!client) {
+      throw new Error(`QLS not enabled for channel ${ctx.channel.token}`);
+    }
+    const variant = await this.variantService.findOne(ctx, variantId, []);
+    if (!variant) {
+      throw new Error(`Variant with id ${variantId} not found`);
+    }
+    const qlsProductId = variant.customFields.qlsProductId;
+    if (!qlsProductId) {
+      throw new Error(
+        `Variant '${variant.sku}' does not have a QLS product ID. Sync the variant to QLS first.`
+      );
+    }
+    const eansToAdd = additionalEANs
+      .map((ean) => ean.trim())
+      .filter((ean) => ean.length > 0);
+    await Promise.all(
+      eansToAdd.map((ean) => client.addBarcode(qlsProductId, ean))
+    );
+    if (eansToAdd.length > 0) {
+      Logger.info(
+        `Added additional EANs: ${eansToAdd.join(',')} to variant '${
+          variant.sku
+        }' in QLS`,
+        loggerCtx
+      );
+    }
+    await this.triggerSyncVariants(ctx, [variantId]);
+    return eansToAdd;
+  }
+
+  /**
    * Update the stock level for a variant based on the given available stock
    */
   async updateStockBySku(
@@ -471,7 +511,7 @@ export class QlsProductService implements OnModuleInit, OnApplicationBootstrap {
     }
     let qlsProduct = existingProduct;
     let createdOrUpdated: 'created' | 'updated' | 'not-changed' = 'not-changed';
-    const { additionalEANs, ...additionalVariantFields } =
+    const additionalVariantFields =
       this.options.productSync.getAdditionalVariantFields(ctx, variant);
     if (!existingProduct) {
       const result = await client.createFulfillmentProduct({
@@ -511,19 +551,8 @@ export class QlsProductService implements OnModuleInit, OnApplicationBootstrap {
         loggerCtx
       );
     }
-    if (qlsProduct) {
-      const updatedEANs = await this.updateAdditionalEANs(
-        ctx,
-        client,
-        qlsProduct,
-        additionalEANs,
-        variant
-      );
-      if (createdOrUpdated === 'not-changed' && updatedEANs) {
-        // If nothing changed so far, but EANs changed, then we did update the product in QLS
-        createdOrUpdated = 'updated';
-      }
-    }
+    // Note: additional EANs are no longer synced automatically during product sync.
+    // Use the addAdditionalEANsToQls mutation to add EANs manually.
     if (createdOrUpdated === 'not-changed') {
       Logger.info(
         `Variant '${variant.sku}' not updated in QLS, because no changes were found.`,
@@ -531,81 +560,6 @@ export class QlsProductService implements OnModuleInit, OnApplicationBootstrap {
       );
     }
     return { status: createdOrUpdated, qlsProductId: qlsProduct?.id };
-  }
-
-  /**
-   * Update the additional EANs/barcodes for a product in QLS if needed
-   */
-  private async updateAdditionalEANs(
-    ctx: RequestContext,
-    client: QlsClient,
-    qlsProduct: FulfillmentProduct,
-    additionalEANs: string[] | undefined,
-    variant: ProductVariant
-  ): Promise<boolean> {
-    const existingAdditionalEANs = qlsProduct?.barcodes_and_ean.filter(
-      (ean) => ean !== qlsProduct.ean
-    ); // Remove the main EAN
-    const eansToUpdate = getEansToUpdate({
-      existingEans: existingAdditionalEANs,
-      desiredEans: additionalEANs,
-    });
-    if (
-      !eansToUpdate ||
-      (eansToUpdate.eansToAdd.length === 0 &&
-        eansToUpdate.eansToRemove.length === 0)
-    ) {
-      // No updates needed
-      return false;
-    }
-    // Add additional EANs
-    eansToUpdate.eansToAdd = normalizeEans(eansToUpdate.eansToAdd);
-    await Promise.all(
-      eansToUpdate.eansToAdd.map((ean) => client.addBarcode(qlsProduct.id, ean))
-    );
-    if (eansToUpdate.eansToAdd.length > 0) {
-      Logger.info(
-        `Added additional EANs: ${eansToUpdate.eansToAdd.join(
-          ','
-        )} to product '${qlsProduct.sku}' in QLS`,
-        loggerCtx
-      );
-    }
-    // Remove EANs, normalize first
-    eansToUpdate.eansToRemove = normalizeEans(eansToUpdate.eansToRemove);
-    // get barcode ID's to remove, because deletion goes via barcode ID, not barcode value
-    const barcodeIdsToRemove = qlsProduct.barcodes
-      .filter((barcode) => eansToUpdate.eansToRemove.includes(barcode.barcode))
-      .map((barcode) => barcode.id);
-    await Promise.all(
-      barcodeIdsToRemove.map((barcodeId) =>
-        client.removeBarcode(qlsProduct.id, barcodeId)
-      )
-    );
-    // Fetch remaining barcodes from QLS to verify deletion worked
-    const remainingBarcodes = await client.getBarcodes(qlsProduct.id);
-    const remainingEansToRemove = eansToUpdate.eansToRemove.filter((ean) =>
-      remainingBarcodes.some((barcode) => barcode.barcode === ean)
-    );
-    if (remainingEansToRemove.length > 0) {
-      const errorMessage = `Failed to remove EANs '${remainingEansToRemove.join(
-        ','
-      )}' from product '${
-        qlsProduct.sku
-      }' in QLS. Barcodes still present after deletion attempt.`;
-      Logger.error(errorMessage, loggerCtx);
-      await this.eventBus.publish(
-        new QlsVariantSyncFailedEvent(ctx, variant, new Date(), errorMessage)
-      );
-    } else if (eansToUpdate.eansToRemove.length > 0) {
-      Logger.info(
-        `Removed EANs '${eansToUpdate.eansToRemove.join(',')}' from product '${
-          qlsProduct.sku
-        }' in QLS`,
-        loggerCtx
-      );
-    }
-    return true;
   }
 
   /**

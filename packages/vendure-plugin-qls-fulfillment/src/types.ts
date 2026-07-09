@@ -138,7 +138,7 @@ export interface QlsPluginOptions {
  * Additional fields for a product variant that are used to create or update a product in QLS
  */
 export type AdditionalVariantFields = Partial<
-  FulfillmentProductInput & { ean: string; additionalEANs?: string[] }
+  FulfillmentProductInput & { ean: string }
 >;
 
 export interface AdditionalOrderFields {

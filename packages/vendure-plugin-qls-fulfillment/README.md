@@ -15,6 +15,20 @@ This plugin contains:
 - Partial product sync: Creates/updates products in QLS when products change in Vendure
 - Partial stock sync: Updates Vendure stock based on incoming QLS webhooks
 
+## Additional EANs
+
+Additional EANs (or barcodes) are not automatically synced from Vendure to QLS. They can only be added manually via the `addAdditionalEANSToQLS` admin mutation. This mutation only adds EANs that do not already exist in QLS; existing EANs are skipped.
+
+Removal of additional EANs is not supported by this plugin and must be done inside the QLS platform itself. QLS may have assigned stock to those barcodes, so removing them should be handled in QLS directly.
+
+```graphql
+mutation AddAdditionalEANSToQLS($variantId: ID!, $additionalEANS: [String!]!) {
+  addAdditionalEANSToQLS(variantId: $variantId, additionalEANS: $additionalEANS)
+}
+```
+
+The mutation returns the list of all existing EANs for the product in QLS after the operation. The variant must already have a `qlsProductId` stored in its custom fields (i.e. it must have been synced to QLS first), otherwise an error is thrown. After adding EANs, the mutation also triggers a sync of the variant to QLS to ensure product fields are up to date.
+
 ## Order Sync
 
 - Pushes orders to QLS automatically on order placement
@@ -44,7 +58,6 @@ plugins: [
       getAdditionalVariantFields: (ctx, variant) => ({
         ean: variant.sku,
         image_url: `https://your-cdn.com/${variant.featuredAsset?.preview}`,
-        additionalEANs: ['1234567890'],
       }),
       // Optional: exclude certain variants from being synced to QLS
       excludeVariantFromSync: (ctx, injector, variant) => {

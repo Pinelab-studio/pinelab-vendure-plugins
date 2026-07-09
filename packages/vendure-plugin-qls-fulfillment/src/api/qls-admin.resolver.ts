@@ -19,7 +19,10 @@ import {
 } from '../config/permissions';
 import { QlsOrderService } from '../services/qls-order.service';
 import { QlsProductService } from '../services/qls-product.service';
-import { MutationPushOrderToQlsArgs } from './generated/graphql';
+import {
+  MutationAddAdditionalEansToQlsArgs,
+  MutationPushOrderToQlsArgs,
+} from './generated/graphql';
 
 @Resolver()
 export class QlsAdminResolver {
@@ -45,6 +48,20 @@ export class QlsAdminResolver {
   async triggerQlsProductSync(@Ctx() ctx: RequestContext) {
     await this.qlsProductService.triggerFullSync(ctx);
     return true;
+  }
+
+  @Mutation()
+  @Transaction()
+  @Allow(qlsFullSyncPermission.Permission)
+  async addAdditionalEANSToQLS(
+    @Ctx() ctx: RequestContext,
+    @Args() input: MutationAddAdditionalEansToQlsArgs
+  ): Promise<string[]> {
+    return await this.qlsProductService.addAdditionalEANsToQls(
+      ctx,
+      input.variantId,
+      input.additionalEANS
+    );
   }
 
   @Mutation()

@@ -1,6 +1,6 @@
 {
   "name": "@pinelab/vendure-plugin-qls-fulfillment",
-  "version": "2.0.2",
+  "version": "2.1.0",
   "description": "Vendure plugin to fulfill orders via QLS.",
   "keywords": [
     "fulfillment",

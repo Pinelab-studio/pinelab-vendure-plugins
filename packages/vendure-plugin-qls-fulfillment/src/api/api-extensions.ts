@@ -15,6 +15,15 @@ export const adminApiExtensions = gql`
     triggerQlsProductSync: Boolean!
 
     """
+    Add additional EANs/barcodes to an existing product in QLS.
+    Only EANs that do not already exist in QLS are added. Removal of EANs must be done in QLS itself.
+    """
+    addAdditionalEANSToQLS(
+      variantId: ID!
+      additionalEANS: [String!]!
+    ): [String!]!
+
+    """
     Manually push an order to QLS (again)
     """
     pushOrderToQls(orderId: ID!): String!

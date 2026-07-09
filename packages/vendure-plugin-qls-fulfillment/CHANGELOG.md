@@ -1,3 +1,10 @@
+# 2.1.0 (2026-07-08)
+
+- Added `addAdditionalEANSToQLS` admin mutation to manually add additional EANs/barcodes to existing QLS products.
+- Added admin UI action on the product variant detail page to prompt for and add a single additional EAN.
+- Removed automatic syncing of additional EANs during product sync; EANs must now be added manually via the mutation.
+- Removed obsolete `util.ts`, `util.spec.ts`, and `removeBarcode` QLS client method.
+
 # 2.0.2 (2026-07-01)
 
 - Verify barcode deletion in QLS by fetching remaining barcodes after removal attempt
