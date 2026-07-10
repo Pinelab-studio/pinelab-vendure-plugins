@@ -66,7 +66,11 @@ export class GoogleSheetService implements OnModuleInit {
     const sheetMetadata = dataStrategy.getSheetMetadata(ctx) as SheetMetadata; // We know it's a SheetMetadata because the strategy returned metadata above
     const sheets: SheetContent[] = [];
     for (const sheetName of sheetMetadata.sheets) {
-      const requestUrl = `${GOOGLE_SPREADSHEET_URL}/${sheetMetadata.spreadSheetId}/values/${sheetName}?key=${this.options.googleApiKey}`;
+      const requestUrl = `${GOOGLE_SPREADSHEET_URL}/${
+        sheetMetadata.spreadSheetId
+      }/values/${encodeURIComponent(sheetName)}?key=${
+        this.options.googleApiKey
+      }`;
       const result = await fetch(requestUrl);
       if (!result.ok) {
         throw new UserInputError(
