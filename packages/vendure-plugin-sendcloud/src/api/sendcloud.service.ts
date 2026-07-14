@@ -6,7 +6,6 @@ import {
   ErrorResult,
   EventBus,
   FulfillmentStateTransitionError,
-  HistoryService,
   ID,
   Injector,
   JobQueue,
@@ -26,7 +25,6 @@ import {
 import { Fulfillment } from '@vendure/core/dist/entity/fulfillment/fulfillment.entity';
 import { toParcelInput } from './sendcloud.adapter';
 import { loggerCtx, PLUGIN_OPTIONS } from './constants';
-import { SendcloudConfigEntity } from './sendcloud-config.entity';
 import { SendcloudClient } from './sendcloud.client';
 import { sendcloudHandler } from './sendcloud.handler';
 import { Parcel, ParcelInputItem } from './types/sendcloud-api.types';
@@ -51,8 +49,7 @@ export class SendcloudService implements OnApplicationBootstrap {
     private jobQueueService: JobQueueService,
     private moduleRef: ModuleRef,
     @Inject(PLUGIN_OPTIONS) private options: SendcloudPluginOptions,
-    private entityHydrator: EntityHydrator,
-    private historyService: HistoryService
+    private entityHydrator: EntityHydrator
   ) {}
 
   async onApplicationBootstrap(): Promise<void> {
@@ -126,39 +123,22 @@ export class SendcloudService implements OnApplicationBootstrap {
     }
   }
 
-  async upsertConfig(
-    ctx: RequestContext,
-    config: {
-      secret: string;
-      publicKey: string;
-      defaultPhoneNr: string;
+  /**
+   * Get the SendCloud config for the current channel from its custom fields.
+   * Returns null when secret or publicKey is missing for the channel.
+   */
+  async getConfig(ctx: RequestContext): Promise<SendcloudChannelConfig | null> {
+    const { sendcloudSecret, sendcloudPublicKey, sendcloudDefaultPhoneNr } =
+      ctx.channel.customFields;
+    if (!sendcloudSecret || !sendcloudPublicKey) {
+      return null;
     }
-  ): Promise<SendcloudConfigEntity> {
-    const repo = this.connection.getRepository(ctx, SendcloudConfigEntity);
-    const existing = await repo.findOne({
-      where: { channelId: String(ctx.channelId) },
-    });
-    if (existing) {
-      await repo.update(existing.id, {
-        secret: config.secret,
-        publicKey: config.publicKey,
-        defaultPhoneNr: config.defaultPhoneNr,
-      });
-    } else {
-      await repo.insert({
-        channelId: String(ctx.channelId),
-        secret: config.secret,
-        publicKey: config.publicKey,
-        defaultPhoneNr: config.defaultPhoneNr,
-      });
-    }
-    return repo.findOneOrFail({ where: { channelId: String(ctx.channelId) } });
-  }
-
-  async getConfig(ctx: RequestContext): Promise<SendcloudConfigEntity | null> {
-    return this.connection
-      .getRepository(ctx, SendcloudConfigEntity)
-      .findOne({ where: { channelId: String(ctx.channelId) } });
+    return {
+      channelId: String(ctx.channelId),
+      secret: sendcloudSecret,
+      publicKey: sendcloudPublicKey,
+      defaultPhoneNr: sendcloudDefaultPhoneNr,
+    };
   }
 
   async getClient(
@@ -235,22 +215,16 @@ export class SendcloudService implements OnApplicationBootstrap {
     orderId: ID,
     error?: unknown
   ): Promise<void> {
-    let prettifiedError = error
-      ? JSON.parse(JSON.stringify(error, Object.getOwnPropertyNames(error)))
-      : undefined; // Make sure its serializable
-    await this.historyService.createHistoryEntryForOrder(
-      {
-        ctx,
-        orderId,
-        type: 'SENDCLOUD_NOTIFICATION' as any,
-        data: {
-          name: 'SendCloud',
-          valid: !error,
-          error: prettifiedError,
-        },
-      },
-      false
-    );
+    const note = error
+      ? `Failed to sync to SendCloud: ${
+          error instanceof Error ? error.message : JSON.stringify(error)
+        }`
+      : `Successfully synced to SendCloud`;
+    await this.orderService.addNoteToOrder(ctx, {
+      id: orderId,
+      isPublic: false,
+      note,
+    });
   }
 
   /**
@@ -460,4 +434,11 @@ export class SendcloudService implements OnApplicationBootstrap {
       );
     }
   }
+}
+
+export interface SendcloudChannelConfig {
+  channelId: string;
+  secret: string;
+  publicKey: string;
+  defaultPhoneNr?: string;
 }

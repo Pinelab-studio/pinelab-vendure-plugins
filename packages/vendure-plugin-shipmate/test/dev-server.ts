@@ -1,65 +1,26 @@
-require('dotenv').config();
 import {
   createTestEnvironment,
   registerInitializer,
   SqljsInitializer,
-  testConfig,
 } from '@vendure/testing';
-import {
-  ChannelService,
-  DefaultLogger,
-  DefaultSearchPlugin,
-  LogLevel,
-  mergeConfig,
-  Order,
-  RequestContext,
-} from '@vendure/core';
+import { ChannelService, RequestContext, VendureConfig } from '@vendure/core';
 import { initialData } from '../../test/src/initial-data';
-import { ShipmatePlugin } from '../src/shipmate.plugin';
-import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
-import { compileUiExtensions } from '@vendure/ui-devkit/compiler/';
-import path from 'node:path';
-import { ShipmateConfigService } from '../src/api/shipmate-config.service';
 import { createSettledOrder } from '../../test/src/shop-utils';
+import { config } from './vendure-config';
 
 (async () => {
-  const config = mergeConfig(testConfig, {
-    logger: new DefaultLogger({ level: LogLevel.Debug }),
-    plugins: [
-      ShipmatePlugin.init({
-        apiUrl: process.env.SHIPMATE_BASE_URL as any,
-        shouldSendOrder: function (
-          ctx: RequestContext,
-          order: Order
-        ): Promise<boolean> | boolean {
-          return true;
-        },
-      }),
-      DefaultSearchPlugin,
-      AdminUiPlugin.init({
-        port: 3002,
-        route: 'admin',
-        // app: compileUiExtensions({
-        //   outputPath: path.join(__dirname, '__admin-ui'),
-        //   extensions: [ShipmatePlugin.ui],
-        //   devMode: true,
-        // }),
-      }),
-    ],
-    apiOptions: {
-      shopApiPlayground: true,
-      adminApiPlayground: true,
-    },
-    authOptions: {
-      tokenMethod: 'bearer',
-    },
-    paymentOptions: {
-      paymentMethodHandlers: [testPaymentMethod],
-    },
-  });
   registerInitializer('sqljs', new SqljsInitializer('__data__'));
-  const { server, shopClient } = createTestEnvironment(config);
+  // Override cors after merge, because testConfig sets cors: true (boolean)
+  // which mergeConfig can't properly replace with an object
+  config.apiOptions.cors = {
+    origin: 'http://localhost:5173',
+    credentials: true,
+  };
+
+  const { server, shopClient } = createTestEnvironment(
+    config as Required<VendureConfig>
+  );
   await server.init({
     initialData: {
       ...initialData,
@@ -80,18 +41,18 @@ import { createSettledOrder } from '../../test/src/shop-utils';
     authorizedAsOwnerOnly: false,
     channel,
   });
-  const result = await server.app
-    .get(ShipmateConfigService)
-    .upsertConfig(
-      ctx,
-      process.env.SHIPMATE_API_KEY!,
-      process.env.SHIPMATE_USERNAME!,
-      process.env.SHIPMATE_PASSWORD!,
-      [
+  await server.app.get(ChannelService).update(ctx, {
+    id: ctx.channelId,
+    customFields: {
+      shipmateApiKey: process.env.SHIPMATE_API_KEY!,
+      shipmateUsername: process.env.SHIPMATE_USERNAME!,
+      shipmatePassword: process.env.SHIPMATE_PASSWORD!,
+      shipmateWebhookAuthTokens: [
         process.env.SHIPMATE_WEBHOOK_AUTH_TOKEN1!,
         process.env.SHIPMATE_WEBHOOK_AUTH_TOKEN2!,
-      ]
-    );
+      ],
+    },
+  });
   console.log('Created Shipmate Config');
   const res = await createSettledOrder(
     shopClient,

@@ -6,6 +6,8 @@ import {
 import {
   Address,
   AssetService,
+  Channel,
+  ChannelEvent,
   ChannelService,
   ConfigService,
   Customer,
@@ -38,12 +40,6 @@ import currency from 'currency.js';
 import util from 'util';
 import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
 import { PicqerOptions } from '../picqer.plugin';
-import {
-  PicqerConfig,
-  PicqerConfigInput,
-  TestPicqerInput,
-} from '../ui/generated/graphql';
-import { PicqerConfigEntity } from './picqer-config.entity';
 import { PicqerClient, PicqerClientInput } from './picqer.client';
 import { picqerHandler } from './picqer.handler';
 import {
@@ -191,6 +187,25 @@ export class PicqerService implements OnApplicationBootstrap {
     this.eventBus.ofType(OrderPlacedEvent).subscribe(async ({ ctx, order }) => {
       await this.addPushOrderJob(ctx, order);
     });
+    // Re-register webhooks whenever a channel's Picqer config is updated
+    // eslint-disable-next-line @typescript-eslint/no-misused-promises
+    this.eventBus.ofType(ChannelEvent).subscribe(async (event) => {
+      if (event.type !== 'updated') {
+        return;
+      }
+      const ctx = await this.getCtxForChannel(event.entity.token);
+      const config = await this.getConfig(ctx);
+      if (!config) {
+        return;
+      }
+      await this.registerWebhooks(ctx, config).catch((e) =>
+        Logger.error(
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+          `Failed to register webhooks for channel ${ctx.channel.token}: ${e?.message}`,
+          loggerCtx
+        )
+      );
+    });
     // Register webhooks on app start
     for (const config of await this.getAllConfigs()) {
       const ctx = await this.getCtxForChannel(config.channelId);
@@ -212,7 +227,7 @@ export class PicqerService implements OnApplicationBootstrap {
    */
   async registerWebhooks(
     ctx: RequestContext,
-    config: PicqerConfig
+    config: PicqerChannelConfig
   ): Promise<void> {
     const hookUrl = `${this.options.vendureHost}/picqer/hooks/${ctx.channel.token}`;
     const client = await this.getClient(ctx, config);
@@ -931,45 +946,6 @@ export class PicqerService implements OnApplicationBootstrap {
   }
 
   /**
-   * Create or update config for the current channel and register webhooks after saving.
-   */
-  async upsertConfig(
-    ctx: RequestContext,
-    input: PicqerConfigInput
-  ): Promise<PicqerConfig> {
-    const repository = this.connection.getRepository(ctx, PicqerConfigEntity);
-    const existing = await repository.findOne({
-      where: {
-        channelId: String(ctx.channelId),
-      },
-    });
-    if (existing) {
-      (input as Partial<PicqerConfigEntity>).id = existing.id;
-    }
-    await repository.save({
-      ...input,
-      channelId: ctx.channelId,
-    } as PicqerConfigEntity);
-    Logger.info(
-      `Picqer config updated for channel ${ctx.channel.token} by user ${ctx.activeUserId}`,
-      loggerCtx
-    );
-    const config = await repository.findOneOrFail({
-      where: {
-        channelId: String(ctx.channelId),
-      },
-    });
-    await this.registerWebhooks(ctx, config).catch((e) =>
-      Logger.error(
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-        `Failed to register webhooks for channel ${ctx.channel.token}: ${e?.message}`,
-        loggerCtx
-      )
-    );
-    return config;
-  }
-
-  /**
    * Create a new RequestContext with the default language of the current channel.
    */
   createDefaultLanguageContext(ctx: RequestContext): RequestContext {
@@ -987,7 +963,7 @@ export class PicqerService implements OnApplicationBootstrap {
    */
   async getClient(
     ctx: RequestContext,
-    config?: PicqerConfig
+    config?: PicqerChannelConfig
   ): Promise<PicqerClient | undefined> {
     if (!config) {
       config = (await this.getConfig(ctx)) ?? undefined;
@@ -1054,23 +1030,76 @@ export class PicqerService implements OnApplicationBootstrap {
   }
 
   /**
-   * Get the Picqer config for the current channel based on given context
+   * Get the Picqer config for the current channel from its custom fields.
+   * Returns null when Picqer is disabled or the config is incomplete for the channel.
    */
-  async getConfig(ctx: RequestContext): Promise<PicqerConfig | null> {
-    const repository = this.connection.getRepository(ctx, PicqerConfigEntity);
-    return repository.findOne({ where: { channelId: String(ctx.channelId) } });
+  async getConfig(ctx: RequestContext): Promise<PicqerChannelConfig | null> {
+    const {
+      picqerEnabled,
+      picqerApiKey,
+      picqerApiEndpoint,
+      picqerStorefrontUrl,
+      picqerSupportEmail,
+    } = ctx.channel.customFields;
+    if (
+      !picqerEnabled ||
+      !picqerApiKey ||
+      !picqerApiEndpoint ||
+      !picqerStorefrontUrl ||
+      !picqerSupportEmail
+    ) {
+      return null;
+    }
+    return {
+      channelId: String(ctx.channelId),
+      enabled: picqerEnabled,
+      apiKey: picqerApiKey,
+      apiEndpoint: picqerApiEndpoint,
+      storefrontUrl: picqerStorefrontUrl,
+      supportEmail: picqerSupportEmail,
+    };
   }
 
-  async getAllConfigs(): Promise<PicqerConfigEntity[]> {
-    const repository =
-      this.connection.rawConnection.getRepository(PicqerConfigEntity);
-    return repository.find();
+  /**
+   * All channels that have Picqer enabled with a complete config.
+   */
+  async getAllConfigs(): Promise<PicqerChannelConfig[]> {
+    const channels = await this.connection.rawConnection
+      .getRepository(Channel)
+      .find();
+    const configs: PicqerChannelConfig[] = [];
+    for (const channel of channels) {
+      const {
+        picqerEnabled,
+        picqerApiKey,
+        picqerApiEndpoint,
+        picqerStorefrontUrl,
+        picqerSupportEmail,
+      } = channel.customFields;
+      if (
+        picqerEnabled &&
+        picqerApiKey &&
+        picqerApiEndpoint &&
+        picqerStorefrontUrl &&
+        picqerSupportEmail
+      ) {
+        configs.push({
+          channelId: String(channel.id),
+          enabled: picqerEnabled,
+          apiKey: picqerApiKey,
+          apiEndpoint: picqerApiEndpoint,
+          storefrontUrl: picqerStorefrontUrl,
+          supportEmail: picqerSupportEmail,
+        });
+      }
+    }
+    return configs;
   }
 
   /**
    * Validate Picqer credentials by requesting `stats` from Picqer
    */
-  async testRequest(input: TestPicqerInput): Promise<boolean> {
+  async testRequest(input: PicqerClientInput): Promise<boolean> {
     const client = new PicqerClient(input);
     // If getStatus() doesn't throw, the request is valid
     try {
@@ -1230,4 +1259,13 @@ export class PicqerService implements OnApplicationBootstrap {
     }
     return [name, contactname];
   }
+}
+
+export interface PicqerChannelConfig {
+  channelId: string;
+  enabled: boolean;
+  apiKey: string;
+  apiEndpoint: string;
+  storefrontUrl: string;
+  supportEmail: string;
 }

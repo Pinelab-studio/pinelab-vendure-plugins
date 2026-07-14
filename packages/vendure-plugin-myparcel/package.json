@@ -19,7 +19,10 @@
   ],
   "scripts": {
     "start": "yarn ts-node test/dev-server.ts",
-    "build": "rimraf dist && yarn graphql-codegen && tsc && copyfiles -u 1 'src/ui/**/*' dist/",
+    "serve": "nodemon --exec ts-node --swc test/dev-server.ts",
+    "build": "rimraf dist && yarn graphql-codegen && tsc",
+    "build:dashboard": "vite build --config ./vite.config.mts",
+    "dev:dashboard": "vite --clearScreen false",
     "test": "vitest run",
     "lint": "echo 'No linting configured'"
   },
@@ -27,5 +30,8 @@
     "axios": "0.26.1"
   },
   "gitHead": "476f36da3aafea41fbf21c70774a30306f1d238f",
-  "devDependencies": {}
+  "devDependencies": {
+    "@babel/preset-react": "7.26.3",
+    "@babel/preset-typescript": "7.26.0"
+  }
 }

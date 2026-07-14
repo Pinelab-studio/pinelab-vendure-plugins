@@ -20,30 +20,27 @@ plugins: [
       return order.totalQuantity < 5;
     }
   }),
-  AdminUiPlugin.init({
-    port: 3002,
-    route: 'admin',
-    app: compileUiExtensions({
-      outputPath: path.join(__dirname, '__admin-ui'),
-      extensions: [
-        ShipmatePlugin.ui
-        ... // your other plugin UI extensions
-      ],
-    }),
-  }),
 ... // your other plugins
 ]
 
 ```
 
-2. [Compile the admin UI](https://docs.vendure.io/guides/extending-the-admin-ui/getting-started/#setup) to include the Shipmate configuration page
-3. Log in to your Shipmate account.
-4. Note down your API key from Profile > Settings > API Keys
-5. Create two webhooks. One with trigger `Tracking Status updates to Collected` and one with `Tracking Status updates to Delivered`, pointing to url `https://<your Vendure server>/shipmate`. Set `JSON` as format. This will make sure your Vendure Order is synced when the shipment is being Shipped or Delivered.
-6. Start Vendure, log in, and navigate to Settings > Shipmate
-7. Fill in your API Key, username and password. The plugin will authenticate as the given user when creating shipments.
-8. Fill in both Auth tokens from the created webhooks that were created in Shipmate. You can find it on the webhook detail screen. The plugin uses this token to validate if incoming events are really from Shipmate.
-9. Click 'Save'
+2. Log in to your Shipmate account.
+3. Note down your API key from Profile > Settings > API Keys
+4. Create two webhooks. One with trigger `Tracking Status updates to Collected` and one with `Tracking Status updates to Delivered`, pointing to url `https://<your Vendure server>/shipmate`. Set `JSON` as format. This will make sure your Vendure Order is synced when the shipment is being Shipped or Delivered.
+5. Start Vendure and go to `Settings` > `Channels`, open the channel you want
+   to configure and select the **Shipmate** tab. Configuration is stored per
+   channel as Channel custom fields, so no Admin UI extension needs to be
+   compiled.
+6. Fill in your `API key`, `Username` and `Password`. The plugin will
+   authenticate as the given user when creating shipments.
+7. Fill in both auth tokens from the webhooks created in Shipmate under
+   `Webhook auth tokens` (one entry per token). You can find each token on the
+   webhook detail screen. The plugin uses these tokens to validate that
+   incoming events are really from Shipmate.
+
+> Shipmate is considered enabled for a channel once `API key`, `Username` and
+> `Password` are all set.
 
 ### Test the plugin
 

@@ -7,6 +7,7 @@ import {
   TestServer,
 } from '@vendure/testing';
 import {
+  ChannelService,
   configureDefaultOrderProcess,
   DefaultLogger,
   Injector,
@@ -24,7 +25,7 @@ import {
   sendcloudHandler,
   SendcloudPlugin,
 } from '../src';
-import { getSendCloudConfig, updateSendCloudConfig } from './test.helpers';
+import { updateSendCloudConfig } from './test.helpers';
 import {
   addShippingMethod,
   fulfill,
@@ -38,14 +39,13 @@ import nock from 'nock';
 import gql from 'graphql-tag';
 import { expect, describe, beforeAll, afterAll, it } from 'vitest';
 import { GlobalFlag } from '../../test/src/generated/admin-graphql';
-import getFilesInAdminUiFolder from '../../test/src/compile-admin-ui.util';
-
 describe('SendCloud', () => {
   let shopClient: SimpleGraphQLClient;
   let adminClient: SimpleGraphQLClient;
   let server: TestServer;
   let orderCode: string | undefined;
   let orderId: string | undefined;
+  let channelId: string;
 
   beforeAll(async () => {
     registerInitializer('sqljs', new SqljsInitializer('__data__'));
@@ -113,6 +113,10 @@ describe('SendCloud', () => {
       { id: 'T_1', trackInventory: GlobalFlag.True },
       { id: 'T_2', trackInventory: GlobalFlag.True },
     ]);
+    const defaultChannel = await server.app
+      .get(ChannelService)
+      .getDefaultChannel();
+    channelId = String(defaultChannel.id);
   }, 60000);
 
   let authHeader: any | undefined;
@@ -140,6 +144,7 @@ describe('SendCloud', () => {
     await expect(
       updateSendCloudConfig(
         adminClient,
+        channelId,
         'test-secret',
         'test-public',
         '06123456789'
@@ -149,17 +154,16 @@ describe('SendCloud', () => {
 
   it('Updates SendCloudConfig as superadmin', async () => {
     await adminClient.asSuperAdmin();
-    await updateSendCloudConfig(
+    const config = await updateSendCloudConfig(
       adminClient,
+      channelId,
       'test-secret',
       'test-public',
       '06123456789'
     );
-    const config = await getSendCloudConfig(adminClient);
-    expect(config.secret).toBe('test-secret');
-    expect(config.publicKey).toBe('test-public');
-    expect(config.defaultPhoneNr).toBe('06123456789');
-    expect(config.id).toBeDefined();
+    expect(config.sendcloudSecret).toBe('test-secret');
+    expect(config.sendcloudPublicKey).toBe('test-public');
+    expect(config.sendcloudDefaultPhoneNr).toBe('06123456789');
   });
 
   it('Syncs order to SendCloud after placement without fulfilling', async () => {
@@ -351,16 +355,6 @@ describe('SendCloud', () => {
     expect(v2After.stockAllocated).toBe(0);
     expect(v2After.stockOnHand).toBe(94);
   });
-
-  if (process.env.TEST_ADMIN_UI) {
-    it('Should compile admin', async () => {
-      const files = await getFilesInAdminUiFolder(
-        __dirname,
-        SendcloudPlugin.ui
-      );
-      expect(files?.length).toBeGreaterThan(0);
-    }, 200000);
-  }
 
   afterAll(async () => {
     await server.destroy();

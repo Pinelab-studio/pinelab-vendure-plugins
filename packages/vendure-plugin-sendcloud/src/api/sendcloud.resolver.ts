@@ -1,20 +1,8 @@
-import { Args, Mutation, Resolver, Query } from '@nestjs/graphql';
-import {
-  Allow,
-  Ctx,
-  Logger,
-  OrderService,
-  Permission,
-  RequestContext,
-  PermissionDefinition,
-} from '@vendure/core';
+import { Args, Mutation, Resolver } from '@nestjs/graphql';
+import { Ctx, Logger, OrderService, Permission, RequestContext } from '@vendure/core';
+import { Allow } from '@vendure/core';
 import { SendcloudService } from './sendcloud.service';
-import { SendcloudConfigEntity } from './sendcloud-config.entity';
 
-export const sendcloudPermission = new PermissionDefinition({
-  name: 'SetSendCloudConfig',
-  description: 'Allows setting SendCloud configuration',
-});
 @Resolver()
 export class SendcloudResolver {
   constructor(
@@ -37,23 +25,5 @@ export class SendcloudResolver {
     );
     await this.service.createOrderInSendcloud(ctx, order);
     return true;
-  }
-
-  @Query()
-  @Allow(sendcloudPermission.Permission)
-  async sendCloudConfig(
-    @Ctx() ctx: RequestContext
-  ): Promise<SendcloudConfigEntity | null> {
-    return this.service.getConfig(ctx);
-  }
-
-  @Mutation()
-  @Allow(sendcloudPermission.Permission)
-  async updateSendCloudConfig(
-    @Ctx() ctx: RequestContext,
-    @Args('input')
-    input: { secret: string; publicKey: string; defaultPhoneNr: string }
-  ): Promise<SendcloudConfigEntity> {
-    return this.service.upsertConfig(ctx, input);
   }
 }

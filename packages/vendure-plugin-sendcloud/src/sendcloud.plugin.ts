@@ -1,40 +1,17 @@
-import { PluginCommonModule, VendurePlugin } from '@vendure/core';
+import { PluginCommonModule, RuntimeVendureConfig, VendurePlugin } from '@vendure/core';
 import { gql } from 'graphql-tag';
-import path from 'path';
-import { AdminUiExtension } from '@vendure/ui-devkit/compiler';
 import { SendcloudPluginOptions } from './api/types/sendcloud.types';
-import {
-  SendcloudResolver,
-  sendcloudPermission,
-} from './api/sendcloud.resolver';
+import { SendcloudResolver } from './api/sendcloud.resolver';
 import { SendcloudService } from './api/sendcloud.service';
 import { PLUGIN_OPTIONS } from './api/constants';
-import { SendcloudConfigEntity } from './api/sendcloud-config.entity';
 import { sendcloudHandler } from './api/sendcloud.handler';
+import { channelCustomFields, sendcloudPermission } from './custom-fields';
 
 @VendurePlugin({
   adminApiExtensions: {
     schema: gql`
-      extend enum HistoryEntryType {
-        SENDCLOUD_NOTIFICATION
-      }
-      type SendCloudConfig {
-        id: ID!
-        secret: String
-        publicKey: String
-        defaultPhoneNr: String
-      }
-      input SendCloudConfigInput {
-        secret: String
-        publicKey: String
-        defaultPhoneNr: String
-      }
       extend type Mutation {
         sendToSendCloud(orderId: ID!): Boolean!
-        updateSendCloudConfig(input: SendCloudConfigInput): SendCloudConfig!
-      }
-      extend type Query {
-        sendCloudConfig: SendCloudConfig
       }
     `,
     resolvers: [SendcloudResolver],
@@ -47,10 +24,10 @@ import { sendcloudHandler } from './api/sendcloud.handler';
     },
   ],
   imports: [PluginCommonModule],
-  entities: [SendcloudConfigEntity],
-  configuration: (config) => {
+  configuration: (config: RuntimeVendureConfig) => {
     config.shippingOptions.fulfillmentHandlers.push(sendcloudHandler);
     config.authOptions.customPermissions.push(sendcloudPermission);
+    config.customFields.Channel.push(...channelCustomFields);
     return config;
   },
   compatibility: '>=3.1.0',
@@ -62,21 +39,4 @@ export class SendcloudPlugin {
     this.options = options;
     return SendcloudPlugin;
   }
-
-  static ui: AdminUiExtension = {
-    extensionPath: path.join(__dirname, 'ui'),
-    ngModules: [
-      {
-        type: 'lazy',
-        route: 'sendcloud',
-        ngModuleFileName: 'sendcloud.module.ts',
-        ngModuleName: 'SendcloudModule',
-      },
-      {
-        type: 'shared',
-        ngModuleFileName: 'sendcloud-nav.module.ts',
-        ngModuleName: 'SendcloudNavModule',
-      },
-    ],
-  };
 }

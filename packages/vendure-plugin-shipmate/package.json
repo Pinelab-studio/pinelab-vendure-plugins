@@ -19,7 +19,9 @@
     "CHANGELOG.md"
   ],
   "scripts": {
-    "build": "rimraf dist && tsc && copyfiles -u 1 'src/ui/**/*' dist/",
+    "build": "rimraf dist && tsc",
+    "build:dashboard": "vite build --config ./vite.config.mts",
+    "dev:dashboard": "vite --clearScreen false",
     "test": "vitest run",
     "start": "yarn ts-node test/dev-server.ts",
     "lint": "eslint ."
@@ -28,5 +30,9 @@
     "@nestjs/axios": "^3.0.2",
     "catch-unknown": "2.0.0"
   },
-  "gitHead": "476f36da3aafea41fbf21c70774a30306f1d238f"
+  "gitHead": "476f36da3aafea41fbf21c70774a30306f1d238f",
+  "devDependencies": {
+    "@babel/preset-react": "7.26.3",
+    "@babel/preset-typescript": "7.26.0"
+  }
 }
