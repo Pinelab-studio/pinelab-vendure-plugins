@@ -1,8 +1,10 @@
 import {
   addActionBarDropdownMenuItem,
+  addActionBarItem,
   ModalService,
 } from '@vendure/admin-ui/core';
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, of } from 'rxjs';
+import { map, catchError } from 'rxjs/operators';
 import gql from 'graphql-tag';
 
 export default [
@@ -36,6 +38,82 @@ export default [
             });
           },
         });
+    },
+  }),
+  // QLS order link button on order detail page
+  addActionBarItem({
+    id: 'qls-visit-order',
+    label: 'QLS',
+    locationId: 'order-detail',
+    buttonColor: 'primary',
+    buttonStyle: 'outline',
+    icon: 'link',
+    buttonState: (context) => {
+      return context.entity$.pipe(
+        map((entity) => ({
+          visible: !!entity?.orderPlacedAt,
+          disabled: false,
+        }))
+      );
+    },
+    onClick: async (event, { route, dataService, notificationService }) => {
+      const orderId = route.snapshot.params.id;
+      const res = await firstValueFrom(
+        dataService.query(
+          gql`
+            query Order($orderId: ID!) {
+              order(id: $orderId) {
+                id
+                qlsOrderUrl
+              }
+            }
+          `,
+          { orderId }
+        ).single$
+      );
+      const url = (res as any).order.qlsOrderUrl;
+      if (url) {
+        window.open(url, '_blank');
+      } else {
+        notificationService.notify({
+          message: 'No QLS order found for this order.',
+          type: 'error',
+        });
+      }
+    },
+  }),
+  // QLS product link button on product variant detail page
+  addActionBarItem({
+    id: 'qls-visit-product',
+    label: 'QLS',
+    locationId: 'product-variant-detail',
+    buttonColor: 'primary',
+    buttonStyle: 'outline',
+    icon: 'link',
+    onClick: async (event, { route, dataService, notificationService }) => {
+      const variantId = route.snapshot.params.id;
+      const res = await firstValueFrom(
+        dataService.query(
+          gql`
+            query ProductVariant($id: ID!) {
+              productVariant(id: $id) {
+                id
+                qlsProductUrl
+              }
+            }
+          `,
+          { id: variantId }
+        ).single$
+      );
+      const url = (res as any).productVariant.qlsProductUrl;
+      if (url) {
+        window.open(url, '_blank');
+      } else {
+        notificationService.notify({
+          message: 'No QLS product found for this variant.',
+          type: 'error',
+        });
+      }
     },
   }),
   // Push order to QLS button on order detail page
