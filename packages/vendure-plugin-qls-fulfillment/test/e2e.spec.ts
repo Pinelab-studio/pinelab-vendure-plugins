@@ -1,4 +1,10 @@
-import { DefaultLogger, EventBus, LogLevel, mergeConfig } from '@vendure/core';
+import {
+  DefaultLogger,
+  EventBus,
+  LogLevel,
+  mergeConfig,
+  StockMovementEvent,
+} from '@vendure/core';
 import {
   createTestEnvironment,
   E2E_DEFAULT_CHANNEL_TOKEN,
@@ -170,6 +176,20 @@ it('Throws forbidden for invalid secret when updating stock via webhook', async 
 });
 
 it('Updates stock via webhook', async () => {
+  const events: StockMovementEvent[] = [];
+  server.app
+    .get(EventBus)
+    .ofType(StockMovementEvent)
+    .subscribe((event) => events.push(event));
+
+  await adminClient.asSuperAdmin();
+  // Get initial stock before webhook
+  const variantsBefore = await getAllVariants(adminClient);
+  const productBefore = variantsBefore.find(
+    (variant) => variant.sku === 'L2201308'
+  );
+  const initialStock = productBefore?.stockOnHand ?? 0;
+
   const res = await adminClient.fetch(
     `http://localhost:3050/qls/webhook/${E2E_DEFAULT_CHANNEL_TOKEN}?secret=1234`,
     {
@@ -182,6 +202,12 @@ it('Updates stock via webhook', async () => {
     }
   );
   expect(res.status).toBe(201);
+  await waitFor(() => events.length > 0);
+  expect(events.length).toBe(1);
+  const event = events[0];
+  expect(event.type).toBe('ADJUSTMENT');
+  expect(event.stockMovements.length).toBe(1);
+  expect(event.stockMovements[0].quantity).toBe(12 - initialStock);
   const variants = await getAllVariants(adminClient);
   const productFromQLS = variants.find((variant) => variant.sku === 'L2201308');
   expect(productFromQLS?.stockOnHand).toBe(12);

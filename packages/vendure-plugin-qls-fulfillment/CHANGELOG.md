@@ -1,3 +1,7 @@
+# 2.2.1 (2026-07-15)
+
+- Emit `StockMovementEvent` with corresponding `StockAdjustment` whenever a QLS webhook updates stock of a variant.
+
 # 2.2.0 (2026-07-15)
 
 - Added buttons on variant and order detail to view the product and order in QLS dashboard.

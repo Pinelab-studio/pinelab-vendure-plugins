@@ -18,9 +18,11 @@ import {
   ProductVariantEvent,
   ProductVariantService,
   RequestContext,
+  StockAdjustment,
   StockLevel,
   StockLevelService,
   StockLocationService,
+  StockMovementEvent,
   TransactionalConnection,
   translateDeep,
 } from '@vendure/core';
@@ -462,21 +464,23 @@ export class QlsProductService implements OnModuleInit, OnApplicationBootstrap {
   }
 
   /**
-   * Update the stock level for a variant based on the given available stock
+   * Update the stock level for a variant based on the given available stock.
+   * Returns true if the stock changed
    */
   async updateStockBySku(
     ctx: RequestContext,
     sku: string,
     availableStock: number
-  ): Promise<void> {
+  ): Promise<boolean> {
     const result = await this.variantService.findAll(ctx, {
       filter: { sku: { eq: sku } },
     });
     if (!result.items.length) {
-      return Logger.info(
+      Logger.info(
         `Variant with sku '${sku}' not found, not updating stock`,
         loggerCtx
       );
+      return false;
     }
     const variant = result.items[0];
     if (result.items.length > 1) {
@@ -485,7 +489,7 @@ export class QlsProductService implements OnModuleInit, OnApplicationBootstrap {
         loggerCtx
       );
     }
-    await this.updateStock(ctx, variant.id, availableStock);
+    return await this.updateStock(ctx, variant.id, availableStock);
   }
 
   /**
@@ -651,38 +655,56 @@ export class QlsProductService implements OnModuleInit, OnApplicationBootstrap {
   }
 
   /**
-   * Update stock level for a variant based on the given available stock
+   * Update stock level for a variant based on the given available stock.
+   * Returns true if the stock changed.
    */
   private async updateStock(
     ctx: RequestContext,
     variantId: ID,
     availableStock: number
-  ) {
+  ): Promise<boolean> {
     if (!this.options.productSync.synchronizeStockLevels) {
       Logger.warn(
         `Stock sync disabled. Not updating stock for variant '${variantId}'`,
         loggerCtx
       );
-      return;
+      return false;
     }
     // Find default Stock Location
     const defaultStockLocation =
       await this.stockLocationService.defaultStockLocation(ctx);
-    // Get current stock level id
-    const { id: stockLevelId } = await this.stockLevelService.getStockLevel(
+    // Get current stock level
+    const stockLevel = await this.stockLevelService.getStockLevel(
       ctx,
       variantId,
       defaultStockLocation.id
     );
-    // Update stock level
-    await this.connection.getRepository(ctx, StockLevel).save({
-      id: stockLevelId,
-      stockOnHand: availableStock,
-      stockAllocated: 0, // Reset allocations, because allocation is handled by QLS
-    });
+    const delta = availableStock - stockLevel.stockOnHand;
+    if (delta !== 0) {
+      const adjustment = new StockAdjustment({
+        quantity: delta,
+        stockLocation: { id: defaultStockLocation.id },
+        productVariant: { id: variantId },
+      });
+      // Update stock level
+      await this.connection.getRepository(ctx, StockLevel).save({
+        id: stockLevel.id,
+        stockOnHand: availableStock,
+        stockAllocated: 0, // Reset allocations, because allocation is handled by QLS
+      });
+      await this.eventBus.publish(new StockMovementEvent(ctx, [adjustment]));
+    } else {
+      // No stock change, but still reset allocations to ensure consistency
+      await this.connection.getRepository(ctx, StockLevel).save({
+        id: stockLevel.id,
+        stockOnHand: availableStock,
+        stockAllocated: 0, // Reset allocations, because allocation is handled by QLS
+      });
+    }
     Logger.info(
       `Updated stock for variant ${variantId} to ${availableStock}`,
       loggerCtx
     );
+    return delta !== 0;
   }
 }
