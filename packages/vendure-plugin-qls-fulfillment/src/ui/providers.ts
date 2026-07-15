@@ -48,28 +48,13 @@ export default [
     buttonColor: 'primary',
     buttonStyle: 'outline',
     icon: 'link',
-    requiresPermission: ['QLSPushOrder'],
     buttonState: (context) => {
-      const orderId = context.route.snapshot.params.id;
-      return context.dataService
-        .query(
-          gql`
-            query Order($orderId: ID!) {
-              order(id: $orderId) {
-                id
-                qlsOrderUrl
-              }
-            }
-          `,
-          { orderId }
-        )
-        .single$.pipe(
-          map((data: any) => ({
-            visible: !!data.order?.qlsOrderUrl,
-            disabled: false,
-          })),
-          catchError(() => of({ visible: false, disabled: false }))
-        );
+      return context.entity$.pipe(
+        map((entity) => ({
+          visible: !!entity?.orderPlacedAt,
+          disabled: false,
+        }))
+      );
     },
     onClick: async (event, { route, dataService, notificationService }) => {
       const orderId = route.snapshot.params.id;
@@ -92,6 +77,40 @@ export default [
       } else {
         notificationService.notify({
           message: 'No QLS order found for this order.',
+          type: 'error',
+        });
+      }
+    },
+  }),
+  // QLS product link button on product variant detail page
+  addActionBarItem({
+    id: 'qls-visit-product',
+    label: 'QLS',
+    locationId: 'product-variant-detail',
+    buttonColor: 'primary',
+    buttonStyle: 'outline',
+    icon: 'link',
+    onClick: async (event, { route, dataService, notificationService }) => {
+      const variantId = route.snapshot.params.id;
+      const res = await firstValueFrom(
+        dataService.query(
+          gql`
+            query ProductVariant($id: ID!) {
+              productVariant(id: $id) {
+                id
+                qlsProductUrl
+              }
+            }
+          `,
+          { id: variantId }
+        ).single$
+      );
+      const url = (res as any).productVariant.qlsProductUrl;
+      if (url) {
+        window.open(url, '_blank');
+      } else {
+        notificationService.notify({
+          message: 'No QLS product found for this variant.',
           type: 'error',
         });
       }

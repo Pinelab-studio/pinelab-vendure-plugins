@@ -13,6 +13,13 @@ export const adminApiExtensions = gql`
     qlsOrderUrl: String
   }
 
+  extend type ProductVariant {
+    """
+    Direct URL to the QLS product for this Vendure variant, or null if none exists.
+    """
+    qlsProductUrl: String
+  }
+
   extend type Mutation {
     """
     Trigger a sync to create or update all products in Vendure to QLS, and pull in stock levels from QLS.

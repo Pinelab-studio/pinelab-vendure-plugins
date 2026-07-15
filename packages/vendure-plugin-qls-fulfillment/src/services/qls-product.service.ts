@@ -402,6 +402,25 @@ export class QlsProductService implements OnModuleInit, OnApplicationBootstrap {
   }
 
   /**
+   * Get the direct URL to the QLS product for a Vendure product variant.
+   * Returns the URL or null if no QLS product exists.
+   */
+  async getQlsProductUrl(
+    ctx: RequestContext,
+    productVariant: ProductVariant
+  ): Promise<string | null> {
+    const qlsProductId = productVariant.customFields?.qlsProductId;
+    if (!qlsProductId) {
+      return null;
+    }
+    const config = await Promise.resolve(this.options.getConfig(ctx));
+    if (!config) {
+      return null;
+    }
+    return `https://mijn.pakketdienstqls.nl/company/${config.companyId}/fulfillment/product/${qlsProductId}`;
+  }
+
+  /**
    * Add additional EANs/barcodes to an existing QLS product.
    * Removal of EANs must be done in QLS itself.
    */

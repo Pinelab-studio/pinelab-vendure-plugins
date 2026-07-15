@@ -10,6 +10,7 @@ import {
   Ctx,
   Order,
   Permission,
+  ProductVariant,
   RequestContext,
   Transaction,
 } from '@vendure/core';
@@ -51,6 +52,15 @@ export class QlsAdminResolver {
     @Parent() order: Order
   ): Promise<string | null> {
     return this.qlsOrderService.getQlsOrderUrl(ctx, order.id);
+  }
+
+  @ResolveField()
+  @Resolver('ProductVariant')
+  async qlsProductUrl(
+    @Ctx() ctx: RequestContext,
+    @Parent() productVariant: ProductVariant
+  ): Promise<string | null> {
+    return this.qlsProductService.getQlsProductUrl(ctx, productVariant);
   }
 
   @Mutation()
