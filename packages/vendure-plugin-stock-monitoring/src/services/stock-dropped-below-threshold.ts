@@ -1,4 +1,4 @@
-import { Order, RequestContext, VendureEvent } from '@vendure/core';
+import { RequestContext, VendureEvent } from '@vendure/core';
 import { ProductVariant } from '@vendure/core';
 
 /**

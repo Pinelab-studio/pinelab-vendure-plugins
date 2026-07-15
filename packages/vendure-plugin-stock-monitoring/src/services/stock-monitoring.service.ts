@@ -78,10 +78,13 @@ export class StockMonitoringService
       // Create jobs for stock movements that decrease saleable stock
       for (const movement of event.stockMovements) {
         let stockDecrement: number | undefined;
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-enum-comparison
         if (event.type === 'ALLOCATION') {
           stockDecrement = movement.quantity; // Allocation movements are positive, because they add to allocated stock
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-enum-comparison
         } else if (event.type === 'SALE') {
           stockDecrement = Math.abs(movement.quantity); // Sale movements are negative
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-enum-comparison
         } else if (event.type === 'ADJUSTMENT' && movement.quantity < 0) {
           stockDecrement = Math.abs(movement.quantity);
         }
@@ -182,7 +185,7 @@ export class StockMonitoringService
       stockBeforeAdjustment >= threshold &&
       stockAfterAdjustment < threshold
     ) {
-      this.eventBus.publish(
+      void this.eventBus.publish(
         new StockDroppedBelowThresholdEvent(
           ctx,
           variant,
