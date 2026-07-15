@@ -418,8 +418,33 @@ export class QlsOrderService implements OnModuleInit, OnApplicationBootstrap {
       .getRepository(ctx, QlsOrderEntity)
       .find({
         where: { vendureOrderId: orderId },
+        order: { createdAt: 'DESC' },
       });
     return entities.map((e) => String(e.qlsOrderId));
+  }
+
+  /**
+   * Get the direct URL to the most recent QLS order for a Vendure order (for Order.qlsOrderUrl field).
+   * Returns the URL or null if no QLS order exists.
+   */
+  async getQlsOrderUrl(
+    ctx: RequestContext,
+    orderId: ID
+  ): Promise<string | null> {
+    const entities = await this.connection
+      .getRepository(ctx, QlsOrderEntity)
+      .find({
+        where: { vendureOrderId: orderId },
+        order: { createdAt: 'DESC' },
+      });
+    if (entities.length === 0) {
+      return null;
+    }
+    const config = await Promise.resolve(this.options.getConfig(ctx));
+    if (!config) {
+      return null;
+    }
+    return `https://mijn.pakketdienstqls.nl/company/${config.companyId}/fulfillment/order/${entities[0].qlsOrderId}`;
   }
 
   async getServicePoints(

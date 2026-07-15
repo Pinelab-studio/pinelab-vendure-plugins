@@ -1,8 +1,10 @@
 import {
   addActionBarDropdownMenuItem,
+  addActionBarItem,
   ModalService,
 } from '@vendure/admin-ui/core';
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, of } from 'rxjs';
+import { map, catchError } from 'rxjs/operators';
 import gql from 'graphql-tag';
 
 export default [
@@ -36,6 +38,63 @@ export default [
             });
           },
         });
+    },
+  }),
+  // QLS order link button on order detail page
+  addActionBarItem({
+    id: 'qls-visit-order',
+    label: 'QLS',
+    locationId: 'order-detail',
+    buttonColor: 'primary',
+    buttonStyle: 'outline',
+    icon: 'link',
+    requiresPermission: ['QLSPushOrder'],
+    buttonState: (context) => {
+      const orderId = context.route.snapshot.params.id;
+      return context.dataService
+        .query(
+          gql`
+            query Order($orderId: ID!) {
+              order(id: $orderId) {
+                id
+                qlsOrderUrl
+              }
+            }
+          `,
+          { orderId }
+        )
+        .single$.pipe(
+          map((data: any) => ({
+            visible: !!data.order?.qlsOrderUrl,
+            disabled: false,
+          })),
+          catchError(() => of({ visible: false, disabled: false }))
+        );
+    },
+    onClick: async (event, { route, dataService, notificationService }) => {
+      const orderId = route.snapshot.params.id;
+      const res = await firstValueFrom(
+        dataService.query(
+          gql`
+            query Order($orderId: ID!) {
+              order(id: $orderId) {
+                id
+                qlsOrderUrl
+              }
+            }
+          `,
+          { orderId }
+        ).single$
+      );
+      const url = (res as any).order.qlsOrderUrl;
+      if (url) {
+        window.open(url, '_blank');
+      } else {
+        notificationService.notify({
+          message: 'No QLS order found for this order.',
+          type: 'error',
+        });
+      }
     },
   }),
   // Push order to QLS button on order detail page

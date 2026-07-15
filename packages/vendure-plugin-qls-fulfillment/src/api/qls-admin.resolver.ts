@@ -42,6 +42,17 @@ export class QlsAdminResolver {
     return this.qlsOrderService.getQlsOrderIdsForOrder(ctx, order.id);
   }
 
+  @ResolveField()
+  @Resolver('Order')
+  @Allow(qlsPushOrderPermission.Permission)
+  @Allow(Permission.UpdateAdministrator)
+  async qlsOrderUrl(
+    @Ctx() ctx: RequestContext,
+    @Parent() order: Order
+  ): Promise<string | null> {
+    return this.qlsOrderService.getQlsOrderUrl(ctx, order.id);
+  }
+
   @Mutation()
   @Transaction()
   @Allow(qlsFullSyncPermission.Permission)

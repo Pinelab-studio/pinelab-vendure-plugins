@@ -6,6 +6,11 @@ export const adminApiExtensions = gql`
     QLS order id(s) for this Vendure order.
     """
     qlsOrderIds: [String!]!
+
+    """
+    Direct URL to the most recent QLS order for this Vendure order, or null if none exists.
+    """
+    qlsOrderUrl: String
   }
 
   extend type Mutation {
