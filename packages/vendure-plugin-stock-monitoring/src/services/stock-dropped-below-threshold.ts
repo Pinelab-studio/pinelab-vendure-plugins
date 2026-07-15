@@ -8,9 +8,8 @@ export class StockDroppedBelowThresholdEvent extends VendureEvent {
   constructor(
     public ctx: RequestContext,
     public productVariant: ProductVariant,
-    public stockBeforeOrder: number,
-    public stockAfterOrder: number,
-    public order?: Order
+    public stockBeforeAdjustment: number,
+    public stockAfterAdjustment: number
   ) {
     super();
   }
