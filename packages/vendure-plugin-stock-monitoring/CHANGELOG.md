@@ -1,3 +1,10 @@
+# 3.0.0 (2026-07-15)
+
+- Listen to StockMovementEvent for ALLOCATION, SALE, and ADJUSTMENT movements to check if stock dropped below threshold
+- Removed OrderPlacedEvent-based stock monitoring in favor of StockMovementEvent-based monitoring
+- Renamed `StockDroppedBelowThresholdEvent` fields from `stockBeforeOrder`/`stockAfterOrder` to `stockBeforeAdjustment`/`stockAfterAdjustment`
+- Removed `order` field from `StockDroppedBelowThresholdEvent`
+
 # 2.2.1 (2026-05-29)
 
 - Fixed stock-monitoring widget to display items sorted from lowest to highest available stock
