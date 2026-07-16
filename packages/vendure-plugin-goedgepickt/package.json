@@ -20,7 +20,9 @@
   "scripts": {
     "serve": "nodemon --watch \"src/**\" --ext \"ts,json\" --exec \"ts-node --swc test/dev-server.ts\"",
     "start": "ts-node --swc test/dev-server.ts",
-    "build": "rimraf dist && yarn graphql-codegen && tsc && copyfiles -u 1 'src/ui/**/*' dist/",
+    "build": "rimraf dist && yarn graphql-codegen && tsc",
+    "build:dashboard": "vite build --config ./vite.config.mts",
+    "dev:dashboard": "vite --clearScreen false",
     "test": "vitest run --bail 1",
     "lint": "echo 'No linting configured'"
   },
@@ -28,5 +30,9 @@
     "catch-unknown": "^2.0.0",
     "node-fetch": "2"
   },
-  "gitHead": "476f36da3aafea41fbf21c70774a30306f1d238f"
+  "gitHead": "476f36da3aafea41fbf21c70774a30306f1d238f",
+  "devDependencies": {
+    "@babel/preset-react": "7.26.3",
+    "@babel/preset-typescript": "7.26.0"
+  }
 }

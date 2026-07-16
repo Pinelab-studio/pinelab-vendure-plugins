@@ -23,23 +23,9 @@ plugins: [
 ]
 ```
 
-2. Add this plugin to your Admin UI and compile.
-
-```ts
-plugins: [
-  AdminUiPlugin.init({
-    port: 3002,
-    route: 'admin',
-    app: compileUiExtensions({
-      outputPath: path.join(__dirname, '__admin-ui'),
-      extensions: [GoogleSheetLoaderPlugin.ui],
-    }),
-  }),
-];
-```
-
-Read more about Admin UI compilation in the Vendure
-[docs](https://www.vendure.io/docs/plugins/extending-the-admin-ui/#compiling-as-a-deployment-step)
+2. The "Load Google Sheet data" action is added as a dropdown item in the
+   product list page's action bar via the React Dashboard extension API — no
+   Admin UI compilation step is needed.
 
 Before you can use this plugin, you need to implement your own data loading strategy. This strategy determines what will be done with the data from the sheet.
 

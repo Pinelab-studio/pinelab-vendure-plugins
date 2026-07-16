@@ -7,6 +7,7 @@ import {
 } from '@vendure/testing';
 import { initialData } from '../../test/src/initial-data';
 import {
+  ConfigService,
   DefaultLogger,
   InitialData,
   LogLevel,
@@ -14,7 +15,12 @@ import {
 } from '@vendure/core';
 import { TestServer } from '@vendure/testing/lib/test-server';
 import { expect, describe, beforeAll, afterAll, it, vi, test } from 'vitest';
-import { FrequentlyBoughtTogetherPlugin } from '../src';
+import { Injector } from '@vendure/core';
+import { ModuleRef } from '@nestjs/core';
+import {
+  FrequentlyBoughtTogetherPlugin,
+  frequentlyBoughtTogetherTask,
+} from '../src';
 import gql from 'graphql-tag';
 import { GetProductById, UpdateProductMutation } from './queries';
 import { createSettledOrder } from '../../test/src/shop-utils';
@@ -56,6 +62,13 @@ afterAll(() => {
 
 it('Server should start', async () => {
   await expect(server.app.getHttpServer()).toBeDefined();
+});
+
+it('Registers the recalculation scheduled task by default', () => {
+  const tasks = server.app.get(ConfigService).schedulerOptions.tasks ?? [];
+  expect(
+    tasks.some((t) => t.id === 'frequently-bought-together-calculation')
+  ).toBe(true);
 });
 
 it('Manually adds a related product', async () => {
@@ -117,6 +130,12 @@ it('Triggers bought together calculation via admin API', async () => {
       return product;
     }
   });
+});
+
+it('Runs the scheduled task, queueing calculation for all channels', async () => {
+  const injector = new Injector(server.app.get(ModuleRef));
+  const result = await frequentlyBoughtTogetherTask.execute(injector);
+  expect(result.channelsQueued).toBeGreaterThanOrEqual(1);
 });
 
 it('Get sorted relations via shop API', async () => {

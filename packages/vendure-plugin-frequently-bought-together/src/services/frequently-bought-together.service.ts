@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { Inject, Injectable, OnApplicationBootstrap } from '@nestjs/common';
 import {
+  Channel,
   EntityHydrator,
   ID,
   JobQueue,
@@ -248,5 +249,24 @@ export class FrequentlyBoughtTogetherService implements OnApplicationBootstrap {
   async triggerCalculation(ctx: RequestContext): Promise<boolean> {
     await this.jobQueue.add({ ctx: ctx.serialize() }, { retries: 5 });
     return true;
+  }
+
+  /**
+   * Create a calculation job for every channel. Used by the scheduled task.
+   */
+  async triggerCalculationForAllChannels(): Promise<number> {
+    const channels = await this.connection.rawConnection
+      .getRepository(Channel)
+      .find();
+    for (const channel of channels) {
+      const ctx = new RequestContext({
+        apiType: 'admin',
+        isAuthorized: true,
+        authorizedAsOwnerOnly: false,
+        channel,
+      });
+      await this.triggerCalculation(ctx);
+    }
+    return channels.length;
   }
 }

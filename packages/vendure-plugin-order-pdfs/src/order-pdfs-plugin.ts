@@ -4,8 +4,6 @@ import {
   Type,
   VendurePlugin,
 } from '@vendure/core';
-import { AdminUiExtension } from '@vendure/ui-devkit/compiler';
-import path from 'path';
 import { OrderPDFsService } from './api/order-pdfs.service';
 import {
   PDFTemplateAdminResolver,
@@ -63,6 +61,7 @@ export interface PDFTemplatePluginOptions {
     config.authOptions.customPermissions.push(pdfDownloadPermission);
     return config;
   },
+  dashboard: './dashboard/index.tsx',
   compatibility: '>=2.2.0',
 })
 export class OrderPDFsPlugin {
@@ -77,10 +76,4 @@ export class OrderPDFsPlugin {
     };
     return OrderPDFsPlugin;
   }
-
-  static ui: AdminUiExtension = {
-    extensionPath: path.join(__dirname, 'ui'),
-    providers: ['providers.ts'],
-    routes: [{ route: 'pdf-templates', filePath: 'routes.ts' }],
-  };
 }

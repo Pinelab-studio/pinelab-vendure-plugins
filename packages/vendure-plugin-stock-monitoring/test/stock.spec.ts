@@ -12,7 +12,6 @@ import * as fs from 'fs';
 import gql from 'graphql-tag';
 import * as path from 'path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import getFilesInAdminUiFolder from '../../test/src/compile-admin-ui.util';
 import { initialData } from '../../test/src/initial-data';
 import { createSettledOrder } from '../../test/src/shop-utils';
 import { waitFor } from '../../test/src/test-helpers';
@@ -171,19 +170,9 @@ describe('Stock monitoring plugin', function () {
     expect(emittedEvents[0].order?.id).toBe(1);
   });
 
-  if (process.env.TEST_ADMIN_UI) {
-    it('Should compile admin', async () => {
-      const files = await getFilesInAdminUiFolder(
-        __dirname,
-        StockMonitoringPlugin.ui
-      );
-      expect(files?.length).toBeGreaterThan(0);
-    }, 200000);
-
-    afterAll(async () => {
-      await server.destroy();
-    }, 100000);
-  }
+  afterAll(async () => {
+    await server.destroy();
+  }, 100000);
 });
 
 export const GET_OUT_OF_STOCK_VARIANTS = gql`

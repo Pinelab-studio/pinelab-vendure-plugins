@@ -20,7 +20,9 @@
   "scripts": {
     "serve": "yarn start && nodemon --watch \"src/**\" --ext \"ts,json\" --exec \"ts-node test/dev-server.ts\"",
     "start": "ts-node test/dev-server.ts",
-    "build": "rimraf dist && yarn generate && tsc && copyfiles -u 1 'src/ui/**/*' dist/",
+    "build": "rimraf dist && yarn generate && tsc",
+    "build:dashboard": "vite build --config ./vite.config.mts",
+    "dev:dashboard": "vite --clearScreen false",
     "test": "vitest run --bail 1",
     "generate": "graphql-codegen",
     "lint": "echo 'No linting configured'"
@@ -31,6 +33,8 @@
     "puppeteer": "23.1.0"
   },
   "devDependencies": {
-    "@types/adm-zip": "0.4.34"
+    "@types/adm-zip": "0.4.34",
+    "@babel/preset-react": "7.26.3",
+    "@babel/preset-typescript": "7.26.0"
   }
 }

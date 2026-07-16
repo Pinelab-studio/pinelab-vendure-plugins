@@ -1,4 +1,5 @@
 import {
+  ActionBarItem,
   api,
   Button,
   DashboardRouteDefinition,
@@ -6,11 +7,9 @@ import {
   Input,
   Page,
   PageActionBar,
-  PageActionBarRight,
   PageBlock,
   PageLayout,
   PageTitle,
-  PermissionGuard,
   Switch,
   Textarea,
 } from '@vendure/dashboard';
@@ -131,19 +130,20 @@ function InvoiceConfigPageComponent() {
       <Page pageId="invoice-config">
         <PageTitle>Invoice Settings</PageTitle>
         <PageActionBar>
-          <PageActionBarRight>
-            <PermissionGuard requires={['AllowInvoicesPermission']}>
-              <Button
-                type="button"
-                disabled={!form.formState.isDirty || saving}
-                onClick={form.handleSubmit((values: ConfigFormValues) =>
-                  saveConfig(values)
-                )}
-              >
-                {saving ? 'Saving...' : 'Update'}
-              </Button>
-            </PermissionGuard>
-          </PageActionBarRight>
+          <ActionBarItem
+            itemId="save-button"
+            requiresPermission={['AllowInvoicesPermission']}
+          >
+            <Button
+              type="button"
+              disabled={!form.formState.isDirty || saving}
+              onClick={form.handleSubmit((values: ConfigFormValues) =>
+                saveConfig(values)
+              )}
+            >
+              {saving ? 'Saving...' : 'Update'}
+            </Button>
+          </ActionBarItem>
         </PageActionBar>
         <PageLayout>
           <PageBlock column="main" blockId="invoice-config-form">

@@ -17,19 +17,13 @@ import { LimitedProductsPlugin } from "@pinelab/vendure-plugin-limited-products"
 
 plugins: [
    LimitedProductsPlugin,
-   AdminUiPlugin.init({
-    port: 3002,
-    route: 'admin',
-    app: compileUiExtensions({
-      outputPath: path.join(__dirname, '__admin-ui'),
-      extensions: [
-         // Include the admin UI extensions of this plugin
-         LimitedProductsPlugin.uiExtensions
-      ],
-   }),
 ];
 
 ```
+
+The custom field input for `Maximum amount per order` and `Multiple of per
+order` is provided as a React Dashboard extension — no Admin UI compilation
+step is needed.
 
 2. Run a database migration to add the custom fields.
 3. Start Vendure, login and go to the product you want to limit.

@@ -5,8 +5,6 @@ import {
   VendurePlugin,
 } from '@vendure/core';
 import { adminApiExtensions } from './api/schema.graphql';
-import { AdminUiExtension } from '@vendure/ui-devkit/compiler';
-import path from 'path';
 import { AdminResolver } from './api/admin.resolver';
 
 @VendurePlugin({
@@ -64,11 +62,7 @@ import { AdminResolver } from './api/admin.resolver';
     schema: adminApiExtensions,
     resolvers: [AdminResolver],
   },
+  dashboard: './dashboard/index.tsx',
   compatibility: '>=2.2.0',
 })
-export class FacetSuggestionsPlugin {
-  static ui: AdminUiExtension = {
-    extensionPath: path.join(__dirname, 'ui'),
-    providers: ['providers.ts'],
-  };
-}
+export class FacetSuggestionsPlugin {}

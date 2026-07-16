@@ -18,8 +18,15 @@ export default defineConfig({
       // Use a local temp dir instead of the default inside node_modules
       tempCompilationDir: join(__dirname, '.vendure-dashboard-temp'),
       // Monorepo path adapter: TS preserves directory structure relative
-      // to the monorepo root in the compiled output
+      // to the monorepo root in the compiled output.
+      // sourceRoot MUST be set to the packages/ folder (not left at its default,
+      // the vendure-config.ts's own directory), otherwise any relative import that
+      // escapes this plugin's test/ dir (e.g. '../src/...' or '../../test/src/...')
+      // resolves to a negative offset and the compiler writes the transpiled .js
+      // outside of outputPath entirely — directly into this plugin's real src/,
+      // or even into a sibling package's src/.
       pathAdapter: {
+        sourceRoot: join(monorepoRoot, 'packages'),
         getCompiledConfigPath: ({
           inputRootDir,
           outputPath,

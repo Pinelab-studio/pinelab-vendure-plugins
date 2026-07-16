@@ -7,7 +7,7 @@ You can implement your own strategy to determine what and how data is exported.
 
 ## Getting started
 
-1. Add the server and admin UI extensions in your `vendure-config.ts`
+1. Add the plugin to your `vendure-config.ts`
 
 ```ts
 import { OrderExportPlugin } from '@pinelab/vendure-plugin-order-export';
@@ -18,17 +18,12 @@ plugins: [
     // Optionally add your own strategies here
     exportStrategies: [],
   }),
-   AdminUiPlugin.init({
-      port: 3002,
-      route: 'admin',
-      app: compileUiExtensions({
-         outputPath: path.join(__dirname, '__admin-ui'),
-         extensions: [OrderExportPlugin.ui],
-      }),
-   }),
    ...
 ];
 ```
+
+The `Export orders` page is provided as a React Dashboard extension — no Admin
+UI compilation step is needed.
 
 2. Make sure your user has the permission `ExportOrders`
 3. After starting your server, you should be able to see the `Export orders` in the menu on the left side, under '

@@ -1,18 +1,6 @@
-import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
-import {
-  Allow,
-  Ctx,
-  PermissionDefinition,
-  RequestContext,
-} from '@vendure/core';
-import {
-  CreatePdfTemplateMutationVariables,
-  DeletePdfTemplateMutationVariables,
-  PdfTemplate,
-  PdfTemplateInput,
-  PdfTemplateList,
-  UpdatePdfTemplateMutationVariables,
-} from '../ui/generated/graphql';
+import { Query, Resolver } from '@nestjs/graphql';
+import { Ctx, RequestContext } from '@vendure/core';
+import { PdfTemplate } from '../generated/graphql';
 import { OrderPDFsService } from './order-pdfs.service';
 
 @Resolver()

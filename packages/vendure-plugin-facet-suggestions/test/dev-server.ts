@@ -1,61 +1,53 @@
-/* eslint-disable */
-import {
-  DefaultLogger,
-  DefaultSearchPlugin,
-  LogLevel,
-  dummyPaymentHandler,
-  mergeConfig,
-} from '@vendure/core';
 import {
   createTestEnvironment,
   registerInitializer,
-  SimpleGraphQLClient,
   SqljsInitializer,
-  testConfig,
 } from '@vendure/testing';
-import { TestServer } from '@vendure/testing/lib/test-server';
-import { FacetSuggestionsPlugin } from '../src/';
-import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
-import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
-import path from 'path';
+import { VendureConfig } from '@vendure/core';
+import gql from 'graphql-tag';
 import { initialData } from '../../test/src/initial-data';
+import { config } from './vendure-config';
 
 (async () => {
-  let server: TestServer;
-  let adminClient: SimpleGraphQLClient;
-  let shopClient: SimpleGraphQLClient;
-  const serverStarted = false;
-
   registerInitializer('sqljs', new SqljsInitializer('__data__'));
-  const config = mergeConfig(testConfig, {
-    logger: new DefaultLogger({ level: LogLevel.Debug }),
-    apiOptions: {
-      adminApiPlayground: true,
-      shopApiPlayground: true,
-    },
-    plugins: [
-      FacetSuggestionsPlugin,
-      DefaultSearchPlugin,
-      AdminUiPlugin.init({
-        port: 3002,
-        route: 'admin',
-        app: compileUiExtensions({
-          outputPath: path.join(__dirname, '__admin-ui'),
-          extensions: [FacetSuggestionsPlugin.ui],
-          devMode: true,
-        }),
-      }),
-    ],
-    paymentOptions: {
-      paymentMethodHandlers: [dummyPaymentHandler],
-    },
-  });
+  // Override cors after merge, because testConfig sets cors: true (boolean)
+  // which mergeConfig can't properly replace with an object
+  config.apiOptions.cors = {
+    origin: 'http://localhost:5173',
+    credentials: true,
+  };
 
-  ({ server, adminClient, shopClient } = createTestEnvironment(config));
+  const { server, adminClient } = createTestEnvironment(
+    config as Required<VendureConfig>
+  );
   await server.init({
     initialData,
     productsCsvPath: '../test/src/products-import.csv',
   });
-})().catch((err) => {
-  console.error(err);
-});
+
+  // Seed a facet that's always suggested on the product detail page,
+  // so the "Suggested facets" block has something to show.
+  await adminClient.asSuperAdmin();
+  await adminClient.query(
+    gql`
+      mutation CreateFacet($input: CreateFacetInput!) {
+        createFacet(input: $input) {
+          id
+        }
+      }
+    `,
+    {
+      input: {
+        code: 'material',
+        isPrivate: false,
+        translations: [{ languageCode: 'en', name: 'Material' }],
+        values: [
+          { code: 'cotton', translations: [{ languageCode: 'en', name: 'Cotton' }] },
+          { code: 'wool', translations: [{ languageCode: 'en', name: 'Wool' }] },
+        ],
+        customFields: { showOnProductDetail: true },
+      },
+    }
+  );
+  console.log('Seeded "Material" facet with showOnProductDetail: true');
+})();

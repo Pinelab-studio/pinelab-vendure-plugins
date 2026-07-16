@@ -1,6 +1,4 @@
 import { PluginCommonModule, Type, VendurePlugin } from '@vendure/core';
-import path from 'path';
-import { AdminUiExtension } from '@vendure/ui-devkit/compiler';
 import {
   OrderExportController,
   OrderExportResolver,
@@ -36,6 +34,7 @@ export interface ExportPluginConfig {
     config.authOptions.customPermissions.push(orderExportPermission);
     return config;
   },
+  dashboard: './dashboard/index.tsx',
   compatibility: '>=2.2.0',
 })
 export class OrderExportPlugin {
@@ -48,21 +47,4 @@ export class OrderExportPlugin {
     OrderExportPlugin.config = config;
     return this;
   }
-
-  static ui: AdminUiExtension = {
-    extensionPath: path.join(__dirname, 'ui'),
-    ngModules: [
-      {
-        type: 'lazy',
-        route: 'export-orders',
-        ngModuleFileName: 'order-export.module.ts',
-        ngModuleName: 'OrderExportModule',
-      },
-      {
-        type: 'shared',
-        ngModuleFileName: 'order-export-nav.module.ts',
-        ngModuleName: 'OrderExportNavModule',
-      },
-    ],
-  };
 }

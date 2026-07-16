@@ -28,12 +28,18 @@
     "CHANGELOG.md"
   ],
   "scripts": {
-    "build": "rimraf dist && tsc && copyfiles -u 1 'src/ui/**/*' dist/",
+    "build": "rimraf dist && tsc",
+    "build:dashboard": "vite build --config ./vite.config.mts",
+    "dev:dashboard": "vite --clearScreen false",
     "start": "ts-node --swc --transpile-only test/dev-server.ts",
     "test": "vitest run --bail 1",
     "lint": "eslint ."
   },
   "dependencies": {
     "catch-unknown": "^2.0.0"
+  },
+  "devDependencies": {
+    "@babel/preset-react": "7.26.3",
+    "@babel/preset-typescript": "7.26.0"
   }
 }
