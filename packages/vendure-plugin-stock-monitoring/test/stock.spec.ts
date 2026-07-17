@@ -165,9 +165,8 @@ describe('Stock monitoring plugin', function () {
     await waitFor(() => emittedEvents.length === 1);
     expect(emittedEvents.length).toBe(1);
     expect(emittedEvents[0].productVariant.id).toBe(1);
-    expect(emittedEvents[0].stockBeforeOrder).toBe(105);
-    expect(emittedEvents[0].stockAfterOrder).toBe(103);
-    expect(emittedEvents[0].order?.id).toBe(1);
+    expect(emittedEvents[0].stockBeforeAdjustment).toBe(105);
+    expect(emittedEvents[0].stockAfterAdjustment).toBe(103);
   });
 
   afterAll(async () => {

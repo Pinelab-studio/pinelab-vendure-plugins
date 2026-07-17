@@ -11,9 +11,6 @@ import {
   JobQueue,
   JobQueueService,
   Logger,
-  Order,
-  OrderPlacedEvent,
-  OrderService,
   ProductVariant,
   ProductVariantService,
   RequestContext,
@@ -29,12 +26,14 @@ import { StockDroppedBelowThresholdEvent } from './stock-dropped-below-threshold
 
 type StockMonitoringJobData = {
   ctx: SerializedRequestContext;
-  orderId: ID;
-  lines: Array<{
-    variantId: ID;
-    variantStockThreshold?: number;
-    orderLineQuantity: number;
-  }>;
+  variantId: ID;
+  /**
+   * The amount with which the stock was decreased. E.g. 3 means stock was decreased by 3.
+   * This decrement already happened by the time this job is created.
+   *
+   * Decrement could be caused by adjustments, sales, or allocations.
+   */
+  saleableStockDecrement: number;
 };
 
 @Injectable()
@@ -51,8 +50,7 @@ export class StockMonitoringService
     private readonly variantService: ProductVariantService,
     private readonly cacheService: CacheService,
     private readonly stockLevelService: StockLevelService,
-    private readonly eventBus: EventBus,
-    private readonly orderService: OrderService
+    private readonly eventBus: EventBus
   ) {}
 
   async onModuleInit(): Promise<void> {
@@ -67,18 +65,8 @@ export class StockMonitoringService
   }
 
   onApplicationBootstrap(): void {
-    // Trigger stock monitoring event for each Order Placed Event
-    this.eventBus.ofType(OrderPlacedEvent).subscribe((event) => {
-      this.triggerStockMonitoring(event.ctx, event.order).catch((e) => {
-        Logger.error(
-          `Error triggering stock monitoring for order ${event.order.code}: ${e}`,
-          loggerCtx,
-          asError(e).stack
-        );
-      });
-    });
-    // Bust cache when stock is updated
     this.eventBus.ofType(StockMovementEvent).subscribe((event) => {
+      // Bust cache when stock is updated. This cache is used to cache variants that are out of stock (or below threshold)
       const cacheKey = this.getCacheKey(event.ctx);
       this.cacheService.delete(cacheKey).catch((e) => {
         Logger.error(
@@ -87,6 +75,35 @@ export class StockMonitoringService
           asError(e).stack
         );
       });
+      // Create jobs for stock movements that decrease saleable stock
+      for (const movement of event.stockMovements) {
+        let stockDecrement: number | undefined;
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-enum-comparison
+        if (event.type === 'ALLOCATION') {
+          stockDecrement = movement.quantity; // Allocation movements are positive, because they add to allocated stock
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-enum-comparison
+        } else if (event.type === 'SALE') {
+          stockDecrement = Math.abs(movement.quantity); // Sale movements are negative
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-enum-comparison
+        } else if (event.type === 'ADJUSTMENT' && movement.quantity < 0) {
+          stockDecrement = Math.abs(movement.quantity);
+        }
+        if (stockDecrement !== undefined) {
+          this.jobQueue
+            .add({
+              ctx: event.ctx.serialize(),
+              variantId: movement.productVariant.id,
+              saleableStockDecrement: stockDecrement,
+            })
+            .catch((e) => {
+              Logger.error(
+                `Error adding stock monitoring job for variant ${movement.productVariant.id}: ${e}`,
+                loggerCtx,
+                asError(e).stack
+              );
+            });
+        }
+      }
     });
   }
 
@@ -136,62 +153,46 @@ export class StockMonitoringService
     return variants;
   }
 
-  async triggerStockMonitoring(
-    ctx: RequestContext,
-    order: Order
-  ): Promise<void> {
-    await this.jobQueue.add({
-      ctx: ctx.serialize(),
-      lines: order.lines.map((line) => ({
-        variantId: line.productVariant.id,
-        variantStockThreshold:
-          line.productVariant.customFields.stockMonitoringThreshold,
-        orderLineQuantity: line.quantity,
-      })),
-      orderId: order.id,
-    });
-  }
-
   /**
-   * Emit event when the stock level of a variant dropped below its threshold by a placed order.
+   * Emit event when the stock level of a variant dropped below its threshold.
    */
   async handleStockMonitoringJob(
     ctx: RequestContext,
     jobData: StockMonitoringJobData
   ): Promise<void> {
-    for (const line of jobData.lines) {
-      const threshold =
-        line.variantStockThreshold || this.options.globalThreshold;
-      const stockLevels = await this.stockLevelService.getAvailableStock(
-        ctx,
-        line.variantId
+    const stockLevels = await this.stockLevelService.getAvailableStock(
+      ctx,
+      jobData.variantId
+    );
+    const stockAfterAdjustment =
+      stockLevels.stockOnHand - stockLevels.stockAllocated;
+    const stockBeforeAdjustment =
+      stockAfterAdjustment + jobData.saleableStockDecrement;
+    const [variant] = await this.variantService.findByIds(ctx, [
+      jobData.variantId,
+    ]);
+    if (!variant) {
+      Logger.error(
+        `Variant ${jobData.variantId} not found while handling stock monitoring job`,
+        loggerCtx
       );
-      const currentStock = stockLevels.stockOnHand - stockLevels.stockAllocated;
-      const stockBeforeOrder = currentStock + line.orderLineQuantity;
-      const stockAfterOrder = currentStock;
-      if (stockAfterOrder <= threshold && stockBeforeOrder >= threshold) {
-        const productVariant = await this.variantService.findOne(
+      return;
+    }
+    const threshold =
+      variant.customFields.stockMonitoringThreshold ??
+      this.options.globalThreshold;
+    if (
+      stockBeforeAdjustment >= threshold &&
+      stockAfterAdjustment < threshold
+    ) {
+      void this.eventBus.publish(
+        new StockDroppedBelowThresholdEvent(
           ctx,
-          line.variantId
-        );
-        if (!productVariant) {
-          Logger.error(
-            `Product variant not found for id ${line.variantId}. Can not emit stock notification event.`,
-            loggerCtx
-          );
-          continue;
-        }
-        const order = await this.orderService.findOne(ctx, jobData.orderId);
-        await this.eventBus.publish(
-          new StockDroppedBelowThresholdEvent(
-            ctx,
-            productVariant,
-            stockBeforeOrder,
-            stockAfterOrder,
-            order
-          )
-        );
-      }
+          variant,
+          stockBeforeAdjustment,
+          stockAfterAdjustment
+        )
+      );
     }
   }
 

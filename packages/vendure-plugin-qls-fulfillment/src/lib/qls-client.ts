@@ -5,6 +5,7 @@ import type {
   FulfillmentOrder,
   FulfillmentOrderInput,
   FulfillmentProduct,
+  FulfillmentProductDetail,
   FulfillmentProductInput,
   QlsApiResponse,
 } from './client-types';
@@ -58,8 +59,8 @@ export class QlsClient {
 
   async getFulfillmentProductById(
     fulfillmentProductId: string
-  ): Promise<FulfillmentProduct | undefined> {
-    const result = await this.rawRequest<FulfillmentProduct>(
+  ): Promise<FulfillmentProductDetail | undefined> {
+    const result = await this.rawRequest<FulfillmentProductDetail>(
       'GET',
       `fulfillment/products/${fulfillmentProductId}`
     );
@@ -151,6 +152,19 @@ export class QlsClient {
   }
 
   /**
+   * Get all barcodes for a fulfillment product in QLS
+   */
+  async getBarcodes(
+    productId: string
+  ): Promise<FulfillmentProduct['barcodes']> {
+    const result = await this.rawRequest<FulfillmentProduct['barcodes']>(
+      'GET',
+      `fulfillment/products/${productId}/barcodes`
+    );
+    return result.data ?? [];
+  }
+
+  /**
    * Add an extra barcode to a fulfillment product in QLS
    */
   async addBarcode(productId: string, barcode: string): Promise<void> {
@@ -160,16 +174,6 @@ export class QlsClient {
       {
         barcode,
       }
-    );
-  }
-
-  /**
-   * Add an extra barcode to a fulfillment product in QLS
-   */
-  async removeBarcode(productId: string, barcodeId: number): Promise<void> {
-    await this.rawRequest<void>(
-      'DELETE',
-      `fulfillment/products/${productId}/barcodes/${barcodeId}`
     );
   }
 

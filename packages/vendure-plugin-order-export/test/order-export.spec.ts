@@ -13,7 +13,8 @@ import { createSettledOrder } from '../../test/src/shop-utils';
 import gql from 'graphql-tag';
 import { OrderExportPlugin } from '../src';
 
-import { expect, describe, beforeAll, afterAll, it, vi, test } from 'vitest';
+import { expect, describe, beforeAll, afterAll, it } from 'vitest';
+
 describe('Order export plugin', function () {
   let server: TestServer;
   let adminClient: SimpleGraphQLClient;

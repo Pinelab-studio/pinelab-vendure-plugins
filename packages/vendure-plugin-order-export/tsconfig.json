@@ -3,6 +3,8 @@
   "compilerOptions": {
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
+    "lib": ["es2022", "DOM", "esnext.asynciterable"],
+    "skipLibCheck": true,
     "outDir": "dist",
     "jsx": "react-jsx",
     "types": ["node", "vite/client"],
@@ -13,7 +15,7 @@
       ]
     }
   },
-  "include": ["src/"],
+  "include": ["src/", "src/index.ts", "test/xero-uk-export-strategy.spec.ts"],
   "exclude": ["src/gql", "src/dashboard"],
   "references": [
     {

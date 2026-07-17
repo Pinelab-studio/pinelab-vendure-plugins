@@ -18,9 +18,11 @@ import {
   ProductVariantEvent,
   ProductVariantService,
   RequestContext,
+  StockAdjustment,
   StockLevel,
   StockLevelService,
   StockLocationService,
+  StockMovementEvent,
   TransactionalConnection,
   translateDeep,
 } from '@vendure/core';
@@ -35,7 +37,6 @@ import {
   QlsPluginOptions,
   QlsProductJobData,
 } from '../types';
-import { getEansToUpdate, normalizeEans } from './util';
 import { QlsVariantSyncFailedEvent } from './qls-variant-sync-failed-event';
 import { ModuleRef } from '@nestjs/core';
 
@@ -321,13 +322,16 @@ export class QlsProductService implements OnModuleInit, OnApplicationBootstrap {
         } else if (result.status === 'updated') {
           updatedInQls.push(variant);
         }
-        if (result.qlsProductId && this.options.saveAdditionalData) {
+        if (
+          result.qlsProductId &&
+          this.options.productSync.saveAdditionalVariantData
+        ) {
           try {
             const qlsProduct = await client.getFulfillmentProductById(
               result.qlsProductId
             );
             if (qlsProduct) {
-              await this.options.saveAdditionalData(
+              await this.options.productSync.saveAdditionalVariantData(
                 ctx,
                 new Injector(this.moduleRef),
                 qlsProduct,
@@ -400,21 +404,83 @@ export class QlsProductService implements OnModuleInit, OnApplicationBootstrap {
   }
 
   /**
-   * Update the stock level for a variant based on the given available stock
+   * Get the direct URL to the QLS product for a Vendure product variant.
+   * Returns the URL or null if no QLS product exists.
+   */
+  async getQlsProductUrl(
+    ctx: RequestContext,
+    productVariant: ProductVariant
+  ): Promise<string | null> {
+    const qlsProductId = productVariant.customFields?.qlsProductId;
+    if (!qlsProductId) {
+      return null;
+    }
+    const config = await Promise.resolve(this.options.getConfig(ctx));
+    if (!config) {
+      return null;
+    }
+    return `https://mijn.pakketdienstqls.nl/company/${config.companyId}/fulfillment/product/${qlsProductId}`;
+  }
+
+  /**
+   * Add additional EANs/barcodes to an existing QLS product.
+   * Removal of EANs must be done in QLS itself.
+   */
+  async addAdditionalEANsToQls(
+    ctx: RequestContext,
+    variantId: ID,
+    additionalEANs: string[]
+  ): Promise<string[]> {
+    const client = await getQlsClient(ctx, this.options);
+    if (!client) {
+      throw new Error(`QLS not enabled for channel ${ctx.channel.token}`);
+    }
+    const variant = await this.variantService.findOne(ctx, variantId, []);
+    if (!variant) {
+      throw new Error(`Variant with id ${variantId} not found`);
+    }
+    const qlsProductId = variant.customFields.qlsProductId;
+    if (!qlsProductId) {
+      throw new Error(
+        `Variant '${variant.sku}' does not have a QLS product ID. Sync the variant to QLS first.`
+      );
+    }
+    const eansToAdd = additionalEANs
+      .map((ean) => ean.trim())
+      .filter((ean) => ean.length > 0);
+    await Promise.all(
+      eansToAdd.map((ean) => client.addBarcode(qlsProductId, ean))
+    );
+    if (eansToAdd.length > 0) {
+      Logger.info(
+        `Added additional EANs: ${eansToAdd.join(',')} to variant '${
+          variant.sku
+        }' in QLS`,
+        loggerCtx
+      );
+    }
+    await this.triggerSyncVariants(ctx, [variantId]);
+    return eansToAdd;
+  }
+
+  /**
+   * Update the stock level for a variant based on the given available stock.
+   * Returns true if the stock changed
    */
   async updateStockBySku(
     ctx: RequestContext,
     sku: string,
     availableStock: number
-  ): Promise<void> {
+  ): Promise<boolean> {
     const result = await this.variantService.findAll(ctx, {
       filter: { sku: { eq: sku } },
     });
     if (!result.items.length) {
-      return Logger.info(
+      Logger.info(
         `Variant with sku '${sku}' not found, not updating stock`,
         loggerCtx
       );
+      return false;
     }
     const variant = result.items[0];
     if (result.items.length > 1) {
@@ -423,7 +489,7 @@ export class QlsProductService implements OnModuleInit, OnApplicationBootstrap {
         loggerCtx
       );
     }
-    await this.updateStock(ctx, variant.id, availableStock);
+    return await this.updateStock(ctx, variant.id, availableStock);
   }
 
   /**
@@ -439,7 +505,7 @@ export class QlsProductService implements OnModuleInit, OnApplicationBootstrap {
     qlsProductId?: string;
   }> {
     if (
-      await this.options.excludeVariantFromSync?.(
+      await this.options.productSync.excludeVariantFromSync?.(
         ctx,
         new Injector(this.moduleRef),
         variant
@@ -468,8 +534,8 @@ export class QlsProductService implements OnModuleInit, OnApplicationBootstrap {
     }
     let qlsProduct = existingProduct;
     let createdOrUpdated: 'created' | 'updated' | 'not-changed' = 'not-changed';
-    const { additionalEANs, ...additionalVariantFields } =
-      this.options.getAdditionalVariantFields(ctx, variant);
+    const additionalVariantFields =
+      this.options.productSync.getAdditionalVariantFields(ctx, variant);
     if (!existingProduct) {
       const result = await client.createFulfillmentProduct({
         name: variant.name,
@@ -508,18 +574,8 @@ export class QlsProductService implements OnModuleInit, OnApplicationBootstrap {
         loggerCtx
       );
     }
-    if (qlsProduct) {
-      const updatedEANs = await this.updateAdditionalEANs(
-        ctx,
-        client,
-        qlsProduct,
-        additionalEANs
-      );
-      if (createdOrUpdated === 'not-changed' && updatedEANs) {
-        // If nothing changed so far, but EANs changed, then we did update the product in QLS
-        createdOrUpdated = 'updated';
-      }
-    }
+    // Note: additional EANs are no longer synced automatically during product sync.
+    // Use the addAdditionalEANsToQls mutation to add EANs manually.
     if (createdOrUpdated === 'not-changed') {
       Logger.info(
         `Variant '${variant.sku}' not updated in QLS, because no changes were found.`,
@@ -527,65 +583,6 @@ export class QlsProductService implements OnModuleInit, OnApplicationBootstrap {
       );
     }
     return { status: createdOrUpdated, qlsProductId: qlsProduct?.id };
-  }
-
-  /**
-   * Update the additional EANs/barcodes for a product in QLS if needed
-   */
-  private async updateAdditionalEANs(
-    ctx: RequestContext,
-    client: QlsClient,
-    qlsProduct: FulfillmentProduct,
-    additionalEANs: string[] | undefined
-  ): Promise<boolean> {
-    const existingAdditionalEANs = qlsProduct?.barcodes_and_ean.filter(
-      (ean) => ean !== qlsProduct.ean
-    ); // Remove the main EAN
-    const eansToUpdate = getEansToUpdate({
-      existingEans: existingAdditionalEANs,
-      desiredEans: additionalEANs,
-    });
-    if (
-      !eansToUpdate ||
-      (eansToUpdate.eansToAdd.length === 0 &&
-        eansToUpdate.eansToRemove.length === 0)
-    ) {
-      // No updates needed
-      return false;
-    }
-    // Add additional EANs
-    eansToUpdate.eansToAdd = normalizeEans(eansToUpdate.eansToAdd);
-    await Promise.all(
-      eansToUpdate.eansToAdd.map((ean) => client.addBarcode(qlsProduct.id, ean))
-    );
-    if (eansToUpdate.eansToAdd.length > 0) {
-      Logger.info(
-        `Added additional EANs: ${eansToUpdate.eansToAdd.join(
-          ','
-        )} to product '${qlsProduct.sku}' in QLS`,
-        loggerCtx
-      );
-    }
-    // Remove EANs, normalize first
-    eansToUpdate.eansToRemove = normalizeEans(eansToUpdate.eansToRemove);
-    // get barcode ID's to remove, because deletion goes via barcode ID, not barcode value
-    const barcodeIdsToRemove = qlsProduct.barcodes
-      .filter((barcode) => eansToUpdate.eansToRemove.includes(barcode.barcode))
-      .map((barcode) => barcode.id);
-    await Promise.all(
-      barcodeIdsToRemove.map((barcodeId) =>
-        client.removeBarcode(qlsProduct.id, barcodeId)
-      )
-    );
-    if (eansToUpdate.eansToRemove.length > 0) {
-      Logger.info(
-        `Removed EANs '${eansToUpdate.eansToRemove.join(',')} from product '${
-          qlsProduct.sku
-        }' in QLS`,
-        loggerCtx
-      );
-    }
-    return true;
   }
 
   /**
@@ -658,38 +655,56 @@ export class QlsProductService implements OnModuleInit, OnApplicationBootstrap {
   }
 
   /**
-   * Update stock level for a variant based on the given available stock
+   * Update stock level for a variant based on the given available stock.
+   * Returns true if the stock changed.
    */
   private async updateStock(
     ctx: RequestContext,
     variantId: ID,
     availableStock: number
-  ) {
-    if (!this.options.synchronizeStockLevels) {
+  ): Promise<boolean> {
+    if (!this.options.productSync.synchronizeStockLevels) {
       Logger.warn(
         `Stock sync disabled. Not updating stock for variant '${variantId}'`,
         loggerCtx
       );
-      return;
+      return false;
     }
     // Find default Stock Location
     const defaultStockLocation =
       await this.stockLocationService.defaultStockLocation(ctx);
-    // Get current stock level id
-    const { id: stockLevelId } = await this.stockLevelService.getStockLevel(
+    // Get current stock level
+    const stockLevel = await this.stockLevelService.getStockLevel(
       ctx,
       variantId,
       defaultStockLocation.id
     );
-    // Update stock level
-    await this.connection.getRepository(ctx, StockLevel).save({
-      id: stockLevelId,
-      stockOnHand: availableStock,
-      stockAllocated: 0, // Reset allocations, because allocation is handled by QLS
-    });
+    const delta = availableStock - stockLevel.stockOnHand;
+    if (delta !== 0) {
+      const adjustment = new StockAdjustment({
+        quantity: delta,
+        stockLocation: { id: defaultStockLocation.id },
+        productVariant: { id: variantId },
+      });
+      // Update stock level
+      await this.connection.getRepository(ctx, StockLevel).save({
+        id: stockLevel.id,
+        stockOnHand: availableStock,
+        stockAllocated: 0, // Reset allocations, because allocation is handled by QLS
+      });
+      await this.eventBus.publish(new StockMovementEvent(ctx, [adjustment]));
+    } else {
+      // No stock change, but still reset allocations to ensure consistency
+      await this.connection.getRepository(ctx, StockLevel).save({
+        id: stockLevel.id,
+        stockOnHand: availableStock,
+        stockAllocated: 0, // Reset allocations, because allocation is handled by QLS
+      });
+    }
     Logger.info(
       `Updated stock for variant ${variantId} to ${availableStock}`,
       loggerCtx
     );
+    return delta !== 0;
   }
 }

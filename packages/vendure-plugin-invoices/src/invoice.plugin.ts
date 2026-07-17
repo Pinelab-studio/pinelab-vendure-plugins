@@ -8,6 +8,7 @@ import {
   Type,
   VendurePlugin,
 } from '@vendure/core';
+import type { PuppeteerLaunchOptions } from 'puppeteer';
 import {
   adminSchemaExtensions,
   shopSchemaExtensions,
@@ -49,6 +50,12 @@ export interface InvoicePluginConfigInput {
    * You can supply accounting export strategies per channel, which will export the invoices to your accounting software.
    */
   accountingExports?: AccountingExportStrategy[];
+  /**
+   * Custom Puppeteer launch options merged over the plugin defaults.
+   * Useful for specifying `executablePath`, custom `args`, `timeout`, etc.
+   * The env var `PUPPETEER_EXECUTABLE_PATH` takes precedence over `executablePath` set here.
+   */
+  puppeteerLaunchOptions?: PuppeteerLaunchOptions;
 }
 
 export interface InvoicePluginConfig extends InvoicePluginConfigInput {

@@ -38,9 +38,35 @@ const UPDATE_PRODUCT_VARIANTS = gql`
 const VALIDATE_ACTIVE_ORDER = gql`
   mutation ValidateActiveOrderMutation {
     validateActiveOrder {
-      message
-      errorCode
-      relatedOrderLineIds
+      errors {
+        message
+        errorCode
+        relatedOrderLineIds
+      }
+      order {
+        id
+        lines {
+          productVariant {
+            product {
+              id
+            }
+          }
+        }
+      }
+    }
+  }
+`;
+
+const VALIDATE_ACTIVE_ORDER_TOTAL_QUANTITY = gql`
+  mutation ValidateActiveOrderTotalQuantityMutation {
+    validateActiveOrder {
+      errors {
+        message
+      }
+      order {
+        id
+        totalQuantity
+      }
     }
   }
 `;
@@ -105,7 +131,12 @@ it('Adds 4 items to cart', async () => {
 
 it('Validates cart without errors', async () => {
   const { validateActiveOrder } = await shopClient.query(VALIDATE_ACTIVE_ORDER);
-  expect(validateActiveOrder.length).toBe(0);
+  expect(validateActiveOrder.errors.length).toBe(0);
+  expect(validateActiveOrder.order).toBeDefined();
+  expect(validateActiveOrder.order.lines.length).toBe(1);
+  expect(validateActiveOrder.order.lines[0].productVariant.product.id).toBe(
+    'T_1'
+  );
 });
 
 it('Logged a warning', async () => {
@@ -113,6 +144,17 @@ it('Logged a warning', async () => {
     expect.any(String),
     'ValidateCartPlugin'
   );
+});
+
+it('Validates cart and resolves calculated order field totalQuantity', async () => {
+  // Regression test: querying a calculated Order field (totalQuantity) that
+  // requires the `lines` relation should not throw, even though `lines` is not
+  // explicitly requested in the query.
+  const { validateActiveOrder } = await shopClient.query(
+    VALIDATE_ACTIVE_ORDER_TOTAL_QUANTITY
+  );
+  expect(validateActiveOrder.order).toBeDefined();
+  expect(validateActiveOrder.order.totalQuantity).toBe(4);
 });
 
 it('Updates stock for T_1 to 2', async () => {
@@ -138,12 +180,17 @@ it('Updates stock for T_1 to 2', async () => {
 
 it('Returns errors on validation', async () => {
   const { validateActiveOrder } = await shopClient.query(VALIDATE_ACTIVE_ORDER);
-  expect(validateActiveOrder.length).toBe(1);
-  expect(validateActiveOrder[0].message).toBe(
+  expect(validateActiveOrder.errors.length).toBe(1);
+  expect(validateActiveOrder.errors[0].message).toBe(
     "Insufficient stock for variants: 'Laptop 13 inch 8GB'"
   );
-  expect(validateActiveOrder[0].errorCode).toBe('ITEM_UNAVAILABLE');
-  expect(validateActiveOrder[0].relatedOrderLineIds).toEqual(['T_1']);
+  expect(validateActiveOrder.errors[0].errorCode).toBe('ITEM_UNAVAILABLE');
+  expect(validateActiveOrder.errors[0].relatedOrderLineIds).toEqual(['T_1']);
+  expect(validateActiveOrder.order).toBeDefined();
+  expect(validateActiveOrder.order.lines.length).toBe(1);
+  expect(validateActiveOrder.order.lines[0].productVariant.product.id).toBe(
+    'T_1'
+  );
 });
 
 afterAll(async () => {

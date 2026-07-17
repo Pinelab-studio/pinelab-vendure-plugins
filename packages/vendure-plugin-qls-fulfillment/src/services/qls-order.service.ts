@@ -53,7 +53,7 @@ export class QlsOrderService implements OnModuleInit, OnApplicationBootstrap {
   onApplicationBootstrap(): void {
     // Listen for OrderPlacedEvent and add a job to the queue
     this.eventBus.ofType(OrderPlacedEvent).subscribe((event) => {
-      if (!this.options.autoPushOrders) {
+      if (!this.options.orderSync.autoPushOrders) {
         Logger.info(
           `Auto push orders disabled, not triggering push order job for order ${event.order.code}`,
           loggerCtx
@@ -150,7 +150,7 @@ export class QlsOrderService implements OnModuleInit, OnApplicationBootstrap {
         order.lines.map(async (line) => {
           // Check if product variant should be excluded from sync
           if (
-            await this.options.excludeVariantFromSync?.(
+            await this.options.productSync.excludeVariantFromSync?.(
               ctx,
               new Injector(this.moduleRef),
               line.productVariant
@@ -178,7 +178,7 @@ export class QlsOrderService implements OnModuleInit, OnApplicationBootstrap {
       // Add additional order items, if any
       try {
         const additionalOrderItems =
-          await this.options.addAdditionalOrderItems?.(
+          await this.options.orderSync.addAdditionalOrderItems?.(
             ctx,
             new Injector(this.moduleRef),
             order
@@ -203,7 +203,7 @@ export class QlsOrderService implements OnModuleInit, OnApplicationBootstrap {
         return message;
       }
       const additionalOrderFields =
-        await this.options.getAdditionalOrderFields?.(
+        await this.options.orderSync.pushAdditionalOrderFields?.(
           ctx,
           new Injector(this.moduleRef),
           order
@@ -234,8 +234,12 @@ export class QlsOrderService implements OnModuleInit, OnApplicationBootstrap {
         );
       }
       const processable =
-        (await this.options.processOrderFrom?.(ctx, order)) ?? new Date();
-      const receiverContact = this.options.getReceiverContact?.(ctx, order);
+        (await this.options.orderSync.processOrderFrom?.(ctx, order)) ??
+        new Date();
+      const receiverContact = this.options.orderSync.getReceiverContact?.(
+        ctx,
+        order
+      );
       const qlsOrder: Omit<FulfillmentOrderInput, 'brand_id'> = {
         customer_reference: order.code,
         processable: processable.toISOString(),
@@ -292,6 +296,21 @@ export class QlsOrderService implements OnModuleInit, OnApplicationBootstrap {
             error.stack
           );
         });
+      try {
+        await this.options.orderSync.pullAdditionalOrderFields?.(
+          ctx,
+          new Injector(this.moduleRef),
+          order,
+          result
+        );
+      } catch (e) {
+        const error = asError(e);
+        Logger.error(
+          `Error in pullAdditionalOrderFields for order '${order.code}': ${error.message}`,
+          loggerCtx,
+          error.stack
+        );
+      }
       return `Order '${order.code}' created in QLS with id '${result.id}'`;
     } catch (e) {
       const error = asError(e);
@@ -399,8 +418,33 @@ export class QlsOrderService implements OnModuleInit, OnApplicationBootstrap {
       .getRepository(ctx, QlsOrderEntity)
       .find({
         where: { vendureOrderId: orderId },
+        order: { createdAt: 'DESC' },
       });
     return entities.map((e) => String(e.qlsOrderId));
+  }
+
+  /**
+   * Get the direct URL to the most recent QLS order for a Vendure order (for Order.qlsOrderUrl field).
+   * Returns the URL or null if no QLS order exists.
+   */
+  async getQlsOrderUrl(
+    ctx: RequestContext,
+    orderId: ID
+  ): Promise<string | null> {
+    const entities = await this.connection
+      .getRepository(ctx, QlsOrderEntity)
+      .find({
+        where: { vendureOrderId: orderId },
+        order: { createdAt: 'DESC' },
+      });
+    if (entities.length === 0) {
+      return null;
+    }
+    const config = await Promise.resolve(this.options.getConfig(ctx));
+    if (!config) {
+      return null;
+    }
+    return `https://mijn.pakketdienstqls.nl/company/${config.companyId}/fulfillment/order/${entities[0].qlsOrderId}`;
   }
 
   async getServicePoints(

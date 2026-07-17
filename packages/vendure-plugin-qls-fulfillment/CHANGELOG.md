@@ -1,3 +1,33 @@
+# 2.2.1 (2026-07-15)
+
+- Emit `StockMovementEvent` with corresponding `StockAdjustment` whenever a QLS webhook updates stock of a variant.
+
+# 2.2.0 (2026-07-15)
+
+- Added buttons on variant and order detail to view the product and order in QLS dashboard.
+
+# 2.1.0 (2026-07-08)
+
+- Added `addAdditionalEANSToQLS` admin mutation to manually add additional EANs/barcodes to existing QLS products.
+- Added admin UI action on the product variant detail page to prompt for and add a single additional EAN.
+- Removed automatic syncing of additional EANs during product sync; EANs must now be added manually via the mutation.
+- Removed obsolete `util.ts`, `util.spec.ts`, and `removeBarcode` QLS client method.
+
+# 2.0.2 (2026-07-01)
+
+- Verify barcode deletion in QLS by fetching remaining barcodes after removal attempt
+- Emit `QlsVariantSyncFailedEvent` and log an error when barcodes fail to be removed from QLS
+
+# 2.0.1 (2026-06-15)
+
+- Fixed fulfillment product detail type
+
+# 2.0.0 (2026-06-10)
+
+- Restructure plugin options into nested `orderSync` and `productSync` objects. This is a **breaking change**: all plugin options must now be organized under `orderSync` (for order-related hooks) and `productSync` (for product-related hooks).
+- Renamed `getAdditionalOrderFields` to `pushAdditionalOrderFields` in `orderSync` options.
+- Added `pullAdditionalOrderFields` hook in `orderSync` options, called after an order is successfully created in QLS. Errors in this hook are caught and logged, and will not fail the order push job.
+
 # 1.9.0 (2026-08-05)
 
 - Upgraded to Vendure 3.6.3

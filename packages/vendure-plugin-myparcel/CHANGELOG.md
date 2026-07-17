@@ -1,3 +1,7 @@
+# 1.7.1 (2026-06-17)
+
+- Improved error logging when fulfilling to MyParcel fails
+
 # 1.7.0 (2026-08-05)
 
 - Upgraded to Vendure 3.6.3

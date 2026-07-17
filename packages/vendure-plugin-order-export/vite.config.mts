@@ -1,9 +1,9 @@
 import { vendureDashboardPlugin } from '@vendure/dashboard/vite';
-import { join, resolve } from 'path';
-import { pathToFileURL } from 'url';
+import { dirname, join, resolve } from 'path';
+import { fileURLToPath, pathToFileURL } from 'url';
 import { defineConfig } from 'vite';
 
-const monorepoRoot = resolve(__dirname, '../..');
+const __dirname = dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
   base: '/dashboard',
@@ -13,29 +13,25 @@ export default defineConfig({
   plugins: [
     vendureDashboardPlugin({
       vendureConfigPath: pathToFileURL('./test/vendure-config.ts'),
-      api: { host: 'http://localhost', port: '3050' },
+      api: { host: 'http://localhost', port: 3050 },
       gqlOutputPath: './src/gql',
-      // Use a local temp dir instead of the default inside node_modules
       tempCompilationDir: join(__dirname, '.vendure-dashboard-temp'),
-      // Monorepo path adapter: TS preserves directory structure relative
-      // to the monorepo root in the compiled output.
-      // sourceRoot MUST be set to the packages/ folder (not left at its default,
-      // the vendure-config.ts's own directory), otherwise any relative import that
-      // escapes this plugin's test/ dir (e.g. '../src/...' or '../../test/src/...')
-      // resolves to a negative offset and the compiler writes the transpiled .js
-      // outside of outputPath entirely — directly into this plugin's real src/,
-      // or even into a sibling package's src/.
       pathAdapter: {
-        sourceRoot: join(monorepoRoot, 'packages'),
-        getCompiledConfigPath: ({
-          inputRootDir,
-          outputPath,
-          configFileName,
-        }) => {
-          // TS compiler uses monorepoRoot/packages/ as rootDir,
-          // so strip everything up to and including 'packages/'
-          const relPath = inputRootDir.split('/packages/')[1] ?? '';
-          return join(outputPath, relPath, configFileName);
+        // sourceRoot = package root → compiled files land inside tempDir
+        // (default sourceRoot = dirname(vendureConfigPath) = test/, which
+        // causes src/ files to compile to tempDir/../src/ outside tempDir
+        // where plugin discovery cannot find them)
+        sourceRoot: __dirname,
+        /**
+         * Resolves the absolute path to the compiled Vendure config file
+         * inside the temp compilation directory.
+         *
+         * @param outputPath The root directory where compiled files are written
+         * @param configFileName The filename of the compiled config (e.g. vendure-config.js)
+         * @returns The absolute path to the compiled config file under the test/ subdirectory
+         */
+        getCompiledConfigPath: ({ outputPath, configFileName }) => {
+          return join(outputPath, 'test', configFileName);
         },
       },
     }),

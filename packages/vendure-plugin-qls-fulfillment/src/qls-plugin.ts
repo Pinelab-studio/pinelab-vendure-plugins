@@ -31,7 +31,9 @@ import { QlsOrderEntity } from './entities/qls-order-entity.entity';
     config.authOptions.customPermissions.push(qlsFullSyncPermission);
     config.authOptions.customPermissions.push(qlsPushOrderPermission);
     config.customFields.ProductVariant.push(
-      ...getVariantCustomFields(QlsPlugin.options?.qlsProductIdUiTab)
+      ...getVariantCustomFields(
+        QlsPlugin.options?.productSync?.qlsProductIdUiTab
+      )
     );
     config.customFields.Order.push(...orderCustomFields);
     return config;
@@ -52,10 +54,16 @@ export class QlsPlugin {
 
   static init(options: QlsPluginOptions): Type<QlsPlugin> {
     this.options = {
-      synchronizeStockLevels: true,
-      autoPushOrders: true,
-      qlsProductIdUiTab: 'QLS',
       ...options,
+      orderSync: {
+        autoPushOrders: true,
+        ...options.orderSync,
+      },
+      productSync: {
+        synchronizeStockLevels: true,
+        qlsProductIdUiTab: 'QLS',
+        ...options.productSync,
+      },
     };
     return QlsPlugin;
   }

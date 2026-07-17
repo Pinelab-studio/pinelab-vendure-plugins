@@ -71,7 +71,7 @@ export interface OrderInput {
   shippingLastName?: string;
   shippingCompany?: string;
   shippingAddress: string;
-  shippingHouseNumber: number;
+  shippingHouseNumber: string;
   shippingHouseNumberAddition?: string;
   shippingAddress2?: string;
   shippingZipcode?: string;
@@ -82,7 +82,7 @@ export interface OrderInput {
   billingFirstName?: string;
   billingLastName?: string;
   billingCompany?: string;
-  billingHouseNumber?: number;
+  billingHouseNumber?: string;
   billingHouseNumberAddition?: string;
   billingZipcode?: string;
   billingCity?: string;

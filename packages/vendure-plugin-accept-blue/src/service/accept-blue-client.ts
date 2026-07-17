@@ -385,12 +385,15 @@ export class AcceptBlueClient {
     additionalChargeInput?: AdditionalChargeInput
   ): Promise<AcceptBlueChargeTransaction> {
     const amount = amountInCents / 100;
+    const convertedChargeInput = additionalChargeInput
+      ? this.convertAdditionalChargeInputToDollars(additionalChargeInput)
+      : {};
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const result = await this.request('post', `transactions/charge`, {
       source: `pm-${paymentMethodId}`,
       amount,
       custom_fields: customFields,
-      ...(additionalChargeInput ? additionalChargeInput : {}),
+      ...convertedChargeInput,
     });
     if (
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
@@ -421,6 +424,9 @@ export class AcceptBlueClient {
     customFields: CustomFields,
     additionalChargeInput?: AdditionalChargeInput
   ): Promise<AcceptBlueChargeTransaction> {
+    const convertedChargeInput = additionalChargeInput
+      ? this.convertAdditionalChargeInputToDollars(additionalChargeInput)
+      : {};
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const result = await this.request('post', `transactions/charge`, {
       amount: input.amount,
@@ -429,7 +435,7 @@ export class AcceptBlueClient {
       avs_zip: input.avs_zip,
       avs_address: input.avs_address,
       custom_fields: customFields,
-      ...(additionalChargeInput ? additionalChargeInput : {}),
+      ...convertedChargeInput,
     });
     if (
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
@@ -553,6 +559,50 @@ export class AcceptBlueClient {
     }
     // eslint-disable-next-line @typescript-eslint/no-unsafe-return
     return result.data;
+  }
+
+  /**
+   * Convert monetary fields in AdditionalChargeInput from Vendure cents to Accept Blue dollars.
+   * Non-monetary fields (tax_rate, discount_rate, etc.) are passed through unchanged.
+   */
+  private convertAdditionalChargeInputToDollars(
+    input: AdditionalChargeInput
+  ): AdditionalChargeInput {
+    const converted: AdditionalChargeInput = { ...input };
+    if (input.amount_details) {
+      converted.amount_details = {
+        tax:
+          input.amount_details.tax != null
+            ? input.amount_details.tax / 100
+            : undefined,
+        surcharge:
+          input.amount_details.surcharge != null
+            ? input.amount_details.surcharge / 100
+            : undefined,
+        shipping:
+          input.amount_details.shipping != null
+            ? input.amount_details.shipping / 100
+            : undefined,
+        tip:
+          input.amount_details.tip != null
+            ? input.amount_details.tip / 100
+            : undefined,
+        discount:
+          input.amount_details.discount != null
+            ? input.amount_details.discount / 100
+            : undefined,
+      };
+    }
+    if (input.line_items) {
+      converted.line_items = input.line_items.map((item) => ({
+        ...item,
+        cost: item.cost != null ? item.cost / 100 : undefined,
+        tax_amount: item.tax_amount != null ? item.tax_amount / 100 : undefined,
+        discount_amount:
+          item.discount_amount != null ? item.discount_amount / 100 : undefined,
+      }));
+    }
+    return converted;
   }
 
   /**

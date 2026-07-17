@@ -4,9 +4,16 @@
     "module": "ESNext",
     "moduleResolution": "bundler",
     "jsx": "react-jsx",
+    "skipLibCheck": true,
     "paths": {
       "@/gql": ["./src/gql/graphql.ts"],
       "@/vdb/*": ["../../node_modules/@vendure/dashboard/src/lib/*"],
+      "@vendure/dashboard": [
+        "../../node_modules/@vendure/dashboard/src/lib/index.ts"
+      ],
+      "virtual:*": [
+        "../../node_modules/@vendure/dashboard/src/lib/virtual.d.ts"
+      ],
       "virtual-*": [
         "../../node_modules/@vendure/dashboard/src/lib/virtual.d.ts"
       ]
@@ -14,7 +21,6 @@
   },
   "include": [
     "src/gql/**/*.ts",
-    "src/dashboard/**/*.ts",
     "src/dashboard/**/*.tsx",
     "vite.*.*ts",
     "test/vite.config.mts"

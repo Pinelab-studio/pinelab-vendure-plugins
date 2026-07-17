@@ -60,7 +60,7 @@ export class SendcloudService implements OnApplicationBootstrap {
           orderCode: event.order.code,
           ctx: event.ctx.serialize(),
         },
-        { retries: 20 }
+        { retries: this.options.maxRetries ?? 10 }
       );
     });
     // Handle jobs

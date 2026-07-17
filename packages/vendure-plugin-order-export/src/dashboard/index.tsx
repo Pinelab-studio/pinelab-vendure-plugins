@@ -1,6 +1,17 @@
 import { defineDashboardExtension } from '@vendure/dashboard';
-import { orderExportRoute } from './components/OrderExportPage';
+import { OrderExportComponent } from './components/OrderExport';
 
 defineDashboardExtension({
-  routes: [orderExportRoute],
+  routes: [
+    {
+      path: '/export-orders',
+      component: OrderExportComponent,
+      navMenuItem: {
+        sectionId: 'sales',
+        id: 'export-orders',
+        title: 'Export orders',
+        url: '/export-orders',
+      },
+    },
+  ],
 });

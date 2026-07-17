@@ -80,11 +80,11 @@ import { testPaymentMethod } from '../../test/src/test-payment-method';
         subscriptionStrategy: new TestSubscriptionStrategy(),
         sendReceiptEmail: false,
         additionalChargeInput: async (ctx, injector, order) => {
-          // Here you can construct the additional input based on the order and the context
+          // Amounts should be in Vendure cents - they are automatically converted to dollars before being sent to Accept Blue
           // See https://docs.accept.blue/api/v2#tag/processing-charges for the fields available
           return {
             amount_details: {
-              surcharge: 1,
+              surcharge: 100,
             },
             transaction_details: {
               description: 'Test description',
@@ -114,10 +114,10 @@ import { testPaymentMethod } from '../../test/src/test-payment-method';
                 sku: '1234567890',
                 name: 'Test item',
                 description: 'Test description',
-                cost: 100,
+                cost: 10000,
                 quantity: 1,
                 tax_rate: 0.1,
-                tax_amount: 10,
+                tax_amount: 1000,
               },
             ],
           };

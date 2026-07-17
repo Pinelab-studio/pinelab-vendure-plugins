@@ -1,3 +1,7 @@
+# 2.0.0 (2026-04-24)
+
+- **BREAKING:** Removed legacy Angular admin UI (`src/ui/`). The plugin now exclusively uses the React Dashboard via `@vendure/dashboard`.
+
 # 1.6.0 (2026-08-05)
 
 - Upgraded to Vendure 3.6.3

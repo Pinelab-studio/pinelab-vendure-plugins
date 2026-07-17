@@ -1,4 +1,6 @@
 import { PluginCommonModule, Type, VendurePlugin } from '@vendure/core';
+import path from 'path';
+import { AdminUiExtension } from '@vendure/ui-devkit/compiler';
 import {
   OrderExportController,
   OrderExportResolver,
@@ -15,6 +17,7 @@ export interface ExportPluginConfig {
 
 @VendurePlugin({
   imports: [PluginCommonModule],
+  dashboard: './dashboard/index.tsx',
   providers: [
     {
       provide: PLUGIN_INIT_OPTIONS,
@@ -34,7 +37,6 @@ export interface ExportPluginConfig {
     config.authOptions.customPermissions.push(orderExportPermission);
     return config;
   },
-  dashboard: './dashboard/index.tsx',
   compatibility: '>=2.2.0',
 })
 export class OrderExportPlugin {

@@ -1,49 +1,45 @@
-require('dotenv').config();
-
 import {
-  DefaultLogger,
-  DefaultSearchPlugin,
-  LogLevel,
   mergeConfig,
+  DefaultLogger,
+  LogLevel,
+  DefaultSearchPlugin,
   VendureConfig,
 } from '@vendure/core';
-import { testConfig } from '@vendure/testing';
 import { DashboardPlugin } from '@vendure/dashboard/plugin';
-import path from 'path';
+import { testConfig } from '@vendure/testing';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
-import { DefaultExportStrategy, OrderExportPlugin } from '../src';
+import path from 'path';
+import { OrderExportPlugin } from '../src/order-export.plugin';
+import { DefaultExportStrategy } from '../src/api/export-strategy';
+
+require('dotenv').config();
 
 export const config: VendureConfig = mergeConfig(testConfig, {
   logger: new DefaultLogger({ level: LogLevel.Debug }),
   apiOptions: {
-    adminApiPlayground: {},
-    shopApiPlayground: {},
-  },
-  authOptions: {
-    tokenMethod: ['cookie', 'bearer'],
+    adminApiPlayground: true,
+    shopApiPlayground: true,
   },
   dbConnectionOptions: {
-    autoSave: true,
+    autoSave: false,
   },
-  // Register the test payment handler so the dev-server's seeded payment
-  // method (and createSettledOrder) can resolve it. Without this, populate
-  // fails with `no-configurable-operation-def-with-code-found` and order
-  // seeding fails with `payment-method-not-found`.
   paymentOptions: {
     paymentMethodHandlers: [testPaymentMethod],
   },
   plugins: [
-    DefaultSearchPlugin,
     OrderExportPlugin.init({
       exportStrategies: [new DefaultExportStrategy()],
     }),
+    DefaultSearchPlugin,
     DashboardPlugin.init({
-      // The route should correspond to the `base` setting
-      // in the vite.config.mts file
       route: 'dashboard',
-      // This appDir should correspond to the `build.outDir`
-      // setting in the vite.config.mts file
       appDir: path.join(__dirname, '../dist/dashboard'),
     }),
   ],
 });
+// Override cors after merge, because testConfig sets cors: true (boolean)
+// which mergeConfig can't properly replace with an object
+config.apiOptions.cors = {
+  origin: true,
+  credentials: true,
+};
