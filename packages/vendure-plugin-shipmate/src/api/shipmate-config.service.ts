@@ -1,5 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import { Channel, RequestContext, TransactionalConnection } from '@vendure/core';
+import {
+  Channel,
+  RequestContext,
+  TransactionalConnection,
+} from '@vendure/core';
 
 export interface ShipmateChannelConfig {
   channelId: string;
@@ -17,9 +21,14 @@ export class ShipmateConfigService {
    * Get the Shipmate config for the current channel from its custom fields.
    * Returns null when apiKey, username or password is missing for the channel.
    */
+  // eslint-disable-next-line @typescript-eslint/require-await
   async getConfig(ctx: RequestContext): Promise<ShipmateChannelConfig | null> {
-    const { shipmateApiKey, shipmateUsername, shipmatePassword, shipmateWebhookAuthTokens } =
-      ctx.channel.customFields;
+    const {
+      shipmateApiKey,
+      shipmateUsername,
+      shipmatePassword,
+      shipmateWebhookAuthTokens,
+    } = ctx.channel.customFields;
     if (!shipmateApiKey || !shipmateUsername || !shipmatePassword) {
       return null;
     }

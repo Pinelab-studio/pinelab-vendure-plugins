@@ -987,7 +987,7 @@ export class PicqerService implements OnApplicationBootstrap {
       );
       return;
     }
-    return new PicqerClient(config as PicqerClientInput); // Safe, because we checked for undefined values
+    return new PicqerClient(config); // Safe, because we checked for undefined values
   }
 
   /**
@@ -1033,6 +1033,7 @@ export class PicqerService implements OnApplicationBootstrap {
    * Get the Picqer config for the current channel from its custom fields.
    * Returns null when Picqer is disabled or the config is incomplete for the channel.
    */
+  // eslint-disable-next-line @typescript-eslint/require-await
   async getConfig(ctx: RequestContext): Promise<PicqerChannelConfig | null> {
     const {
       picqerEnabled,
