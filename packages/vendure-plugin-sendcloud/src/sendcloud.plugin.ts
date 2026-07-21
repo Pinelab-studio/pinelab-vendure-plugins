@@ -1,4 +1,8 @@
-import { PluginCommonModule, RuntimeVendureConfig, VendurePlugin } from '@vendure/core';
+import {
+  PluginCommonModule,
+  RuntimeVendureConfig,
+  VendurePlugin,
+} from '@vendure/core';
 import { gql } from 'graphql-tag';
 import { SendcloudPluginOptions } from './api/types/sendcloud.types';
 import { SendcloudResolver } from './api/sendcloud.resolver';

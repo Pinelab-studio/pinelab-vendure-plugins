@@ -42,8 +42,14 @@ import { config } from './vendure-config';
         isPrivate: false,
         translations: [{ languageCode: 'en', name: 'Material' }],
         values: [
-          { code: 'cotton', translations: [{ languageCode: 'en', name: 'Cotton' }] },
-          { code: 'wool', translations: [{ languageCode: 'en', name: 'Wool' }] },
+          {
+            code: 'cotton',
+            translations: [{ languageCode: 'en', name: 'Cotton' }],
+          },
+          {
+            code: 'wool',
+            translations: [{ languageCode: 'en', name: 'Wool' }],
+          },
         ],
         customFields: { showOnProductDetail: true },
       },

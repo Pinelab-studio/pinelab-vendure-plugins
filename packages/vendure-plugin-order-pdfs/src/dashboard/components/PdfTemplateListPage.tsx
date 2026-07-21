@@ -56,10 +56,7 @@ export const pdfTemplateListRoute: DashboardRouteDefinition = {
       customizeColumns={{
         name: {
           cell: ({ row }: any) => (
-            <DetailPageButton
-              id={row.original.id}
-              label={row.original.name}
-            />
+            <DetailPageButton id={row.original.id} label={row.original.name} />
           ),
         },
         enabled: {

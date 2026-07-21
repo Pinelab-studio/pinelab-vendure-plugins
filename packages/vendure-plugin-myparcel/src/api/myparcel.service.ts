@@ -154,7 +154,8 @@ export class MyparcelService implements OnApplicationBootstrap {
       .find();
     const channel = channels.find(
       (c) =>
-        c.customFields.myparcelEnabled && c.customFields.myparcelApiKey === apiKey
+        c.customFields.myparcelEnabled &&
+        c.customFields.myparcelApiKey === apiKey
     );
     if (!channel) {
       throw new MyParcelError(`No config found for apiKey ${apiKey}`);
@@ -170,7 +171,9 @@ export class MyparcelService implements OnApplicationBootstrap {
       .getRepository(Channel)
       .find();
     return channels
-      .filter((c) => c.customFields.myparcelEnabled && c.customFields.myparcelApiKey)
+      .filter(
+        (c) => c.customFields.myparcelEnabled && c.customFields.myparcelApiKey
+      )
       .map((c) => ({
         channelId: c.id as string,
         apiKey: c.customFields.myparcelApiKey as string,

@@ -1,4 +1,8 @@
-import { PluginCommonModule, RuntimeVendureConfig, VendurePlugin } from '@vendure/core';
+import {
+  PluginCommonModule,
+  RuntimeVendureConfig,
+  VendurePlugin,
+} from '@vendure/core';
 import { EBoekhoudenService } from './api/e-boekhouden.service';
 import { EBoekhoudenOptions } from './api/types';
 import { channelCustomFields, eBoekhoudenPermission } from './custom-fields';

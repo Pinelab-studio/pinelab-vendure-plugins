@@ -4,11 +4,7 @@ import {
   registerInitializer,
   SqljsInitializer,
 } from '@vendure/testing';
-import {
-  ChannelService,
-  RequestContext,
-  VendureConfig,
-} from '@vendure/core';
+import { ChannelService, RequestContext, VendureConfig } from '@vendure/core';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
 import { sendcloudHandler } from '../src';
 import { addShippingMethod, updateVariants } from '../../test/src/admin-utils';

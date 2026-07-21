@@ -1,3 +1,7 @@
+# 2.2.0 (2026-07-21)
+
+- Moved configurations from DB into code
+
 # 2.1.1 (2026-06-10)
 
 - Made the number of job queue retries for syncing orders to SendCloud configurable via `maxRetries` plugin option (default: 10, previously hardcoded to 20).

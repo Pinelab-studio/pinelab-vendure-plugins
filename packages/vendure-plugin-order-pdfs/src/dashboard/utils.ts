@@ -72,6 +72,8 @@ export async function downloadOrderPdfs(
   const fileName =
     orderCodes.length > 1
       ? 'orders.zip'
-      : `${orderCodes[0]}-${fileNameHint.toLowerCase().replace(/\s+/g, '_')}.pdf`;
+      : `${orderCodes[0]}-${fileNameHint
+          .toLowerCase()
+          .replace(/\s+/g, '_')}.pdf`;
   downloadBlob(blob, fileName, orderCodes.length === 1);
 }

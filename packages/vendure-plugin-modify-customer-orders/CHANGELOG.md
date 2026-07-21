@@ -1,3 +1,7 @@
+# 1.9.0 (2026-07-21)
+
+- Migrated to React Dashboard
+
 # 1.8.0 (2026-08-05)
 
 - Upgraded to Vendure 3.6.3

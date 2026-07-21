@@ -78,7 +78,10 @@ export function UtmParametersBlock({ orderId }: { orderId?: string }) {
             <TableCell>
               {param.attributedValue ? (
                 <>
-                  <Money value={param.attributedValue} currency={currencyCode} />
+                  <Money
+                    value={param.attributedValue}
+                    currency={currencyCode}
+                  />
                   {' ('}
                   {Math.round((param.attributedPercentage ?? 0) * 100)}
                   {'%)'}

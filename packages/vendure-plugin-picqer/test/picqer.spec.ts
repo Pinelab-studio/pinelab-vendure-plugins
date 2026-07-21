@@ -188,9 +188,7 @@ describe('Plugin setup', function () {
       'https://test-picqer.io/'
     );
     expect(channel.customFields.picqerStorefrontUrl).toBe('mystore.io');
-    expect(channel.customFields.picqerSupportEmail).toBe(
-      'support@mystore.io'
-    );
+    expect(channel.customFields.picqerSupportEmail).toBe('support@mystore.io');
     // Webhook registration is triggered asynchronously off the ChannelEvent,
     // so wait for the hooks to appear before nock mocks are torn down in afterEach.
     await waitFor(() => createdHooks.length === 3);

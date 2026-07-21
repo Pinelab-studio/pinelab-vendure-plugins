@@ -1,5 +1,10 @@
 import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
-import { Allow, Ctx, PermissionDefinition, RequestContext } from '@vendure/core';
+import {
+  Allow,
+  Ctx,
+  PermissionDefinition,
+  RequestContext,
+} from '@vendure/core';
 import {
   DeletionResponse,
   DeletionResult,

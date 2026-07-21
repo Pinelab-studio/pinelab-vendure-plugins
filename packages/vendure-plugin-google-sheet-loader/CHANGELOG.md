@@ -1,3 +1,7 @@
+# 1.3.0 (2026-07-21)
+
+- Migrated to React Dashboard
+
 # 1.2.1 (2026-07-10)
 
 - Fixed URL encoding of sheet names in Google Sheets API requests

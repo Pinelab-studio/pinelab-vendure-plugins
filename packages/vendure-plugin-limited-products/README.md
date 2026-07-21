@@ -13,12 +13,9 @@ This plugin allows you to:
 1. Add the following config to your `vendure-config.ts`:
 
 ```ts
-import { LimitedProductsPlugin } from "@pinelab/vendure-plugin-limited-products"
+import { LimitedProductsPlugin } from '@pinelab/vendure-plugin-limited-products';
 
-plugins: [
-   LimitedProductsPlugin,
-];
-
+plugins: [LimitedProductsPlugin];
 ```
 
 The custom field input for `Maximum amount per order` and `Multiple of per

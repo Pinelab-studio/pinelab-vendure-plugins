@@ -1,5 +1,9 @@
 import { ChannelService, RequestContext, VendureConfig } from '@vendure/core';
-import { createTestEnvironment, registerInitializer, SqljsInitializer } from '@vendure/testing';
+import {
+  createTestEnvironment,
+  registerInitializer,
+  SqljsInitializer,
+} from '@vendure/testing';
 import { addShippingMethod } from '../../test/src/admin-utils';
 import { initialData } from '../../test/src/initial-data';
 import { createSettledOrder } from '../../test/src/shop-utils';

@@ -1,3 +1,7 @@
+# 3.1.0 (2026-07-21)
+
+- Migrated to React Dashboard
+
 # 3.0.0 (2026-07-15)
 
 - Listen to StockMovementEvent for ALLOCATION, SALE, and ADJUSTMENT movements to check if stock dropped below threshold

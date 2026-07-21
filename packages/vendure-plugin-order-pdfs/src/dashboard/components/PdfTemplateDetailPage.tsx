@@ -119,7 +119,7 @@ function PdfTemplateDetailPageComponent({ route }: { route: any }) {
   return (
     <Page pageId={pageId} form={form} submitHandler={submitHandler}>
       <PageTitle>
-        {creatingNewEntity ? 'New PDF template' : (entity?.name ?? '')}
+        {creatingNewEntity ? 'New PDF template' : entity?.name ?? ''}
       </PageTitle>
       <PageActionBar>
         <ActionBarItem itemId="preview-button">
@@ -136,10 +136,7 @@ function PdfTemplateDetailPageComponent({ route }: { route: any }) {
           itemId="save-button"
           requiresPermission={['AllowPDFDownload']}
         >
-          <Button
-            type="submit"
-            disabled={!form.formState.isDirty || isPending}
-          >
+          <Button type="submit" disabled={!form.formState.isDirty || isPending}>
             {creatingNewEntity ? 'Create' : 'Update'}
           </Button>
         </ActionBarItem>

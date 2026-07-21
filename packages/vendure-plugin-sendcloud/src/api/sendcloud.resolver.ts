@@ -1,5 +1,11 @@
 import { Args, Mutation, Resolver } from '@nestjs/graphql';
-import { Ctx, Logger, OrderService, Permission, RequestContext } from '@vendure/core';
+import {
+  Ctx,
+  Logger,
+  OrderService,
+  Permission,
+  RequestContext,
+} from '@vendure/core';
 import { Allow } from '@vendure/core';
 import { SendcloudService } from './sendcloud.service';
 

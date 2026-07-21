@@ -39,8 +39,7 @@ export const config: VendureConfig = mergeConfig(testConfig, {
       getCustomsInformationFn: (orderLine) => {
         return {
           weightInGrams:
-            (orderLine.productVariant.product.customFields as any)?.weight ||
-            0,
+            (orderLine.productVariant.product.customFields as any)?.weight || 0,
           classification:
             (orderLine.productVariant.product.customFields as any)?.hsCode ||
             '0181',

@@ -278,7 +278,6 @@ describe('UTM parameters plugin', function () {
     expect(recent5.attributedPercentage).toBe(0); // 0, because it's not the first click
     expect(recent5.attributedValue).toBe(null); // 0, because it's not the first click
   });
-
 });
 
 const ADD_UTM_PARAMETERS = gql`
