@@ -1,31 +1,17 @@
-import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
-import {
-  DefaultLogger,
-  DefaultSearchPlugin,
-  LanguageCode,
-  LogLevel,
-  mergeConfig,
-  RequestContextService,
-} from '@vendure/core';
+import { LanguageCode, VendureConfig } from '@vendure/core';
 import {
   createTestEnvironment,
   registerInitializer,
   SqljsInitializer,
 } from '@vendure/testing';
-import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
-import path from 'path';
-import {
-  StripeSubscriptionIntent,
-  StripeSubscriptionPlugin,
-  StripeSubscriptionService,
-} from '../src/';
+import { StripeSubscriptionIntent } from '../src/';
 import {
   ADD_ITEM_TO_ORDER,
   CREATE_SHOP_PAYMENT_LINK,
   CREATE_PAYMENT_METHOD,
   setShipping,
 } from './helpers/graphql-helpers';
-import { StripeTestCheckoutPlugin } from './helpers/stripe-test-checkout.plugin';
+import { config } from './vendure-config';
 
 export let intent: StripeSubscriptionIntent;
 
@@ -37,41 +23,17 @@ export let intent: StripeSubscriptionIntent;
  * The logs will display a link that can be used to subscribe via Stripe
  */
 (async () => {
-  require('dotenv').config();
-  const { testConfig } = require('@vendure/testing');
   registerInitializer('sqljs', new SqljsInitializer('__data__'));
-  const config = mergeConfig(testConfig, {
-    logger: new DefaultLogger({ level: LogLevel.Debug }),
-    authOptions: {
-      cookieOptions: {
-        secret: '123',
-      },
-    },
-    apiOptions: {
-      adminApiPlayground: {},
-      shopApiPlayground: {},
-    },
-    plugins: [
-      StripeTestCheckoutPlugin,
-      StripeSubscriptionPlugin.init({
-        vendureHost: process.env.VENDURE_HOST!,
-        // subscriptionStrategy: new DownPaymentSubscriptionStrategy(),
-      }),
-      DefaultSearchPlugin,
-      AdminUiPlugin.init({
-        port: 3002,
-        route: 'admin',
-        app: process.env.COMPILE_ADMIN
-          ? compileUiExtensions({
-              outputPath: path.join(__dirname, '__admin-ui'),
-              extensions: [StripeSubscriptionPlugin.ui],
-              devMode: true,
-            })
-          : undefined,
-      }),
-    ],
-  });
-  const { server, shopClient, adminClient } = createTestEnvironment(config);
+  // Override cors after merge, because testConfig sets cors: true (boolean)
+  // which mergeConfig can't properly replace with an object
+  config.apiOptions.cors = {
+    origin: 'http://localhost:5173',
+    credentials: true,
+  };
+
+  const { server, shopClient, adminClient } = createTestEnvironment(
+    config as Required<VendureConfig>
+  );
   await server.init({
     initialData: {
       ...require('../../test/src/initial-data').initialData,

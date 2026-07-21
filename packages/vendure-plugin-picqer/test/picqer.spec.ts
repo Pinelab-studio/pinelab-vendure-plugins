@@ -1,4 +1,5 @@
 import {
+  ChannelService,
   configureDefaultOrderProcess,
   DefaultLogger,
   EventBus,
@@ -7,6 +8,7 @@ import {
   Order,
   OrderProcess,
   OrderStateTransitionEvent,
+  RequestContext,
 } from '@vendure/core';
 import {
   createTestEnvironment,
@@ -33,7 +35,6 @@ import {
   getOrder,
   updateVariants,
 } from '../../test/src/admin-utils';
-import getFilesInAdminUiFolder from '../../test/src/compile-admin-ui.util';
 import {
   GetVariantsQuery,
   GlobalFlag,
@@ -43,10 +44,16 @@ import { createSettledOrder } from '../../test/src/shop-utils';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
 import { IncomingOrderStatusWebhook, PicqerPlugin, VatGroup } from '../src';
 import { picqerHandler } from '../src/api/picqer.handler';
-import { FULL_SYNC, GET_CONFIG, UPSERT_CONFIG } from '../src/ui/queries';
 import { createSignature } from './test-helpers';
 import { filter } from 'rxjs';
 import { waitFor } from '../../test/src/test-helpers';
+import gql from 'graphql-tag';
+
+const FULL_SYNC = gql`
+  mutation triggerPicqerFullSync {
+    triggerPicqerFullSync
+  }
+`;
 
 let server: TestServer;
 let adminClient: SimpleGraphQLClient;
@@ -144,7 +151,7 @@ describe('Plugin setup', function () {
   // Caught webhook creation requests
   const createdHooks: any[] = [];
 
-  it('Should update Picqer config via admin api', async () => {
+  it('Should update Picqer config via Channel custom fields', async () => {
     nock(nockBaseUrl).get('/hooks?offset=0').reply(200, []).persist();
     nock(nockBaseUrl)
       .post('/hooks', (reqBody) => {
@@ -154,23 +161,37 @@ describe('Plugin setup', function () {
       .reply(200, { idhook: 'mockHookId' })
       .persist();
     await adminClient.asSuperAdmin();
-    const { upsertPicqerConfig: config } = await adminClient.query(
-      UPSERT_CONFIG,
-      {
-        input: {
-          enabled: true,
-          apiKey: 'test-api-key',
-          apiEndpoint: 'https://test-picqer.io/',
-          storefrontUrl: 'mystore.io',
-          supportEmail: 'support@mystore.io',
-        },
-      }
+    const ctx = new RequestContext({
+      apiType: 'admin',
+      isAuthorized: true,
+      authorizedAsOwnerOnly: false,
+      channel: await server.app
+        .get(ChannelService)
+        .getChannelFromToken(E2E_DEFAULT_CHANNEL_TOKEN),
+    });
+    await server.app.get(ChannelService).update(ctx, {
+      id: ctx.channelId,
+      customFields: {
+        picqerEnabled: true,
+        picqerApiKey: 'test-api-key',
+        picqerApiEndpoint: 'https://test-picqer.io/',
+        picqerStorefrontUrl: 'mystore.io',
+        picqerSupportEmail: 'support@mystore.io',
+      },
+    });
+    const channel = await server.app
+      .get(ChannelService)
+      .getChannelFromToken(E2E_DEFAULT_CHANNEL_TOKEN);
+    expect(channel.customFields.picqerEnabled).toBe(true);
+    expect(channel.customFields.picqerApiKey).toBe('test-api-key');
+    expect(channel.customFields.picqerApiEndpoint).toBe(
+      'https://test-picqer.io/'
     );
-    await expect(config.enabled).toBe(true);
-    await expect(config.apiKey).toBe('test-api-key');
-    await expect(config.apiEndpoint).toBe('https://test-picqer.io/');
-    await expect(config.storefrontUrl).toBe('mystore.io');
-    await expect(config.supportEmail).toBe('support@mystore.io');
+    expect(channel.customFields.picqerStorefrontUrl).toBe('mystore.io');
+    expect(channel.customFields.picqerSupportEmail).toBe('support@mystore.io');
+    // Webhook registration is triggered asynchronously off the ChannelEvent,
+    // so wait for the hooks to appear before nock mocks are torn down in afterEach.
+    await waitFor(() => createdHooks.length === 3);
   });
 
   it('Should have created hooks when config was updated', async () => {
@@ -186,16 +207,6 @@ describe('Plugin setup', function () {
     await expect(createdHooks[2].event).toBe(
       'products.assembled_stock_changed'
     );
-  });
-
-  it('Should get Picqer config after upsert', async () => {
-    await adminClient.asSuperAdmin();
-    const { picqerConfig: config } = await adminClient.query(GET_CONFIG);
-    await expect(config.enabled).toBe(true);
-    await expect(config.apiKey).toBe('test-api-key');
-    await expect(config.apiEndpoint).toBe('https://test-picqer.io/');
-    await expect(config.storefrontUrl).toBe('mystore.io');
-    await expect(config.supportEmail).toBe('support@mystore.io');
   });
 
   it('Should create a shipping method with Picqer handler', async () => {
@@ -598,13 +609,6 @@ describe('Periodical stock updates', function () {
     expect(res.status).toBe(200);
   });
 });
-
-if (process.env.TEST_ADMIN_UI) {
-  it('Should compile admin', async () => {
-    const files = await getFilesInAdminUiFolder(__dirname, PicqerPlugin.ui);
-    expect(files?.length).toBeGreaterThan(0);
-  }, 200000);
-}
 
 afterAll(async () => {
   await server.destroy();

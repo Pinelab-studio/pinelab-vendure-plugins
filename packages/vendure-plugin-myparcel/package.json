@@ -1,6 +1,6 @@
 {
   "name": "@pinelab/vendure-plugin-myparcel",
-  "version": "1.7.1",
+  "version": "1.8.0",
   "description": "Vendure plugin for MyParcel fulfillment",
   "author": "Martijn van de Brug <martijn@pinelab.studio>",
   "homepage": "https://plugins.pinelab.studio/",
@@ -19,13 +19,15 @@
   ],
   "scripts": {
     "start": "yarn ts-node test/dev-server.ts",
-    "build": "rimraf dist && yarn graphql-codegen && tsc && copyfiles -u 1 'src/ui/**/*' dist/",
+    "serve": "nodemon --exec ts-node --swc test/dev-server.ts",
+    "build": "rimraf dist && yarn graphql-codegen && tsc",
+    "build:dashboard": "vite build --config ./vite.config.mts",
+    "dev:dashboard": "vite --clearScreen false",
     "test": "vitest run",
     "lint": "echo 'No linting configured'"
   },
   "dependencies": {
     "axios": "0.26.1"
   },
-  "gitHead": "476f36da3aafea41fbf21c70774a30306f1d238f",
-  "devDependencies": {}
+  "gitHead": "476f36da3aafea41fbf21c70774a30306f1d238f"
 }

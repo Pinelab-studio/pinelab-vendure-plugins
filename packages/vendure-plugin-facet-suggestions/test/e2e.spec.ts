@@ -15,10 +15,32 @@ import {
 import { TestServer } from '@vendure/testing/lib/test-server';
 import nock from 'nock';
 import { afterAll, afterEach, beforeAll, expect, it } from 'vitest';
-import getFilesInAdminUiFolder from '../../test/src/compile-admin-ui.util';
+import gql from 'graphql-tag';
 import { initialData } from '../../test/src/initial-data';
 import { FacetSuggestionsPlugin } from '../src';
-import { GET_REQUIRED_FACETS } from '../src/ui/suggested-facets-component/queries.graphql';
+
+const GET_REQUIRED_FACETS = gql`
+  query GetRequiredFacets {
+    requiredFacets {
+      id
+      name
+      customFields {
+        showOnProductDetail
+        showOnProductDetailIf {
+          id
+        }
+      }
+      values {
+        id
+        name
+        facet {
+          id
+          name
+        }
+      }
+    }
+  }
+`;
 
 let server: TestServer;
 let adminClient: SimpleGraphQLClient;
@@ -50,16 +72,6 @@ it('Fetches required facets', async () => {
   const { requiredFacets } = await adminClient.query(GET_REQUIRED_FACETS);
   await expect(requiredFacets).toEqual([]);
 });
-
-if (process.env.TEST_ADMIN_UI) {
-  it('Should compile admin', async () => {
-    const files = await getFilesInAdminUiFolder(
-      __dirname,
-      FacetSuggestionsPlugin.ui
-    );
-    expect(files?.length).toBeGreaterThan(0);
-  }, 200000);
-}
 
 afterAll(async () => {
   await server.destroy();

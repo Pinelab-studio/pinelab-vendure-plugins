@@ -48,23 +48,21 @@ plugins: [
           // By default custom field updates will not trigger a sync to picqer
           shouldSyncOnProductVariantCustomFields: ['noLongerAvailable']
         }),
-  AdminUiPlugin.init({
-    port: 3002,
-    route: 'admin',
-    app: compileUiExtensions({
-      outputPath: path.join(__dirname, '__admin-ui'),
-      extensions: [
-        PicqerPlugin.ui,
-        ... // your other plugin UI extensions
-      ],
-    }),
-  }),
 ... // your other plugins
 ]
 
 ```
 
-Start the server and set the fulfillment handler to `picqer: Fulfill with Picqer` for all shipping methods that should be handled via Picqer.
+Start the server and go to `Settings` > `Channels`, open the channel you want to
+configure and select the **Picqer** tab. Tick `Enabled` and fill in your Picqer
+`API key`, `API endpoint`, `Storefront URL` and `Support email address`.
+Configuration is stored per channel as Channel custom fields, so no Admin UI
+extension needs to be compiled.
+
+> The `picqerEnabled` toggle controls whether Picqer is active for a channel.
+> When it is off (or the config is incomplete), the plugin is disabled for that channel.
+
+Set the fulfillment handler to `picqer: Fulfill with Picqer` for all shipping methods that should be handled via Picqer.
 
 ## Stock levels
 

@@ -1,6 +1,6 @@
 {
   "name": "@pinelab/vendure-plugin-facet-suggestions",
-  "version": "1.5.0",
+  "version": "1.6.0",
   "description": "A vendure plugin that allows you to define suggested facets for all products, or suggested facets based on other facets.",
   "author": "Surafel Tariku <surafelmelese09@gmail.com>",
   "homepage": "https://plugins.pinelab.studio/",
@@ -20,7 +20,9 @@
   "scripts": {
     "start": "yarn ts-node test/dev-server.ts",
     "serve": "nodemon --watch \"src/**\" --ext \"ts,json\" --exec \"ts-node test/dev-server.ts\"",
-    "build": "rimraf dist && tsc && copyfiles -u 1 'src/ui/**/*' dist/",
+    "build": "rimraf dist && tsc",
+    "build:dashboard": "vite build --config ./vite.config.mts",
+    "dev:dashboard": "vite --clearScreen false",
     "test": "vitest run",
     "lint": "echo 'No linting configured'"
   },

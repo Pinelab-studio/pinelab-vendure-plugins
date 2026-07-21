@@ -1,3 +1,7 @@
+# 2.4.0 (2026-07-21)
+
+- Migrated to React Dashboard
+
 # 2.3.2 (2026-07-02)
 
 - Fix image placeholder detection so Vendure images are sent when Goedgepickt's placeholder is `.jpg` and so new products get the Vendure image

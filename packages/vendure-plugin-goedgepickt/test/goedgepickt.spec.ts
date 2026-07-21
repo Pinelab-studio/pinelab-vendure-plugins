@@ -29,7 +29,6 @@ import { TestServer } from '@vendure/testing/lib/test-server';
 import gql from 'graphql-tag';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { getOrder, updateVariants } from '../../test/src/admin-utils';
-import getFilesInAdminUiFolder from '../../test/src/compile-admin-ui.util';
 import { initialData } from '../../test/src/initial-data';
 import {
   addItem,
@@ -458,16 +457,6 @@ describe('Goedgepickt plugin', function () {
     );
     expect(payload.sku).toBe('sku123');
   });
-
-  if (process.env.TEST_ADMIN_UI) {
-    it('Should compile admin', async () => {
-      const files = await getFilesInAdminUiFolder(
-        __dirname,
-        GoedgepicktPlugin.ui
-      );
-      expect(files?.length).toBeGreaterThan(0);
-    }, 200000);
-  }
 
   afterAll(async () => {
     await server.destroy();

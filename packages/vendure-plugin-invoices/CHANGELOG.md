@@ -1,3 +1,7 @@
+# 6.2.0 (2026-07-21)
+
+- Migrated to React Dashboard
+
 # 6.1.0 (2026-07-09)
 
 - Local storage strategy now saves invoices in a subfolder per channel (`invoices/<channelToken>/<filename>`), consistent with the Google Storage strategy. No need to migrate old paths, references stay in tact.

@@ -1,3 +1,7 @@
+# 1.8.0 (2026-07-21)
+
+- Moved configurations from DB into code
+
 # 1.7.1 (2026-06-17)
 
 - Improved error logging when fulfilling to MyParcel fails

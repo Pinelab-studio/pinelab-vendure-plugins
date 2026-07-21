@@ -9,7 +9,6 @@ import {
   ConfigService,
   EntityHydrator,
   EventBus,
-  HistoryService,
   ID,
   JobQueue,
   JobQueueService,
@@ -126,8 +125,7 @@ export class GoedgepicktService
     private entityHydrator: EntityHydrator,
     private listQueryBuilder: ListQueryBuilder,
     private eventBus: EventBus,
-    private productPriceApplicator: ProductPriceApplicator,
-    private historyService: HistoryService
+    private productPriceApplicator: ProductPriceApplicator
   ) {
     this.queryLimit = configService.apiOptions.adminListQueryLimit;
   }
@@ -561,22 +559,16 @@ export class GoedgepicktService
     orderId: ID,
     error?: unknown
   ): Promise<void> {
-    let prettifiedError = error
-      ? JSON.parse(JSON.stringify(error, Object.getOwnPropertyNames(error)))
-      : undefined; // Make sure its serializable
-    await this.historyService.createHistoryEntryForOrder(
-      {
-        ctx,
-        orderId,
-        type: 'GOEDGEPICKT_NOTIFICATION' as any,
-        data: {
-          name: 'GoedGepickt',
-          valid: !error,
-          error: prettifiedError,
-        },
-      },
-      false
-    );
+    const note = error
+      ? `Failed to sync to GoedGepickt: ${
+          error instanceof Error ? error.message : JSON.stringify(error)
+        }`
+      : `Successfully synced to GoedGepickt`;
+    await this.orderService.addNoteToOrder(ctx, {
+      id: orderId,
+      isPublic: false,
+      note,
+    });
   }
 
   /**

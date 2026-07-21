@@ -1,6 +1,6 @@
 {
   "name": "@pinelab/vendure-plugin-stock-monitoring",
-  "version": "3.0.0",
+  "version": "3.1.0",
   "description": "Vendure plugin for monitoring stock levels per variant. View low stock in your dashboard or get notified through an event.",
   "author": "Martijn van de Brug <martijn@pinelab.studio>",
   "homepage": "https://plugins.pinelab.studio/",
@@ -18,7 +18,9 @@
     "CHANGELOG.md"
   ],
   "scripts": {
-    "build": "rimraf dist && tsc && copyfiles -u 1 'src/ui/**/*' dist/",
+    "build": "rimraf dist && tsc",
+    "build:dashboard": "vite build --config ./vite.config.mts",
+    "dev:dashboard": "vite --clearScreen false",
     "test": "vitest run --bail 1",
     "start": "yarn ts-node test/dev-server.ts",
     "lint": "eslint ."

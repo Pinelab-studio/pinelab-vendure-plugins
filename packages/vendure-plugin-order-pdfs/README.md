@@ -15,19 +15,12 @@ plugins: [
     OrderPDFsPlugin.init({
         allowPublicDownload: true // This is optional
     }),
-    // Add the plugin to your Admin UI extensions
-    AdminUiPlugin.init({
-        port: 3002,
-        route: 'admin',
-        app: compileUiExtensions({
-        outputPath: path.join(__dirname, '__admin-ui'),
-        extensions: [
-            OrderPDFsPlugin.ui
-        ],
-    }),
-    }),
 ],
 ```
+
+The PDF template list, order-detail download button and order-list bulk download
+are all provided as React Dashboard extensions — no Admin UI compilation step is
+needed.
 
 2. Run a database migration to add the new entities to your database.
 3. This plugin uses Puppeteer to generate PDF files. If you are running your app via a Docker image, see the [Docker](#docker) section below.
@@ -38,27 +31,6 @@ plugins: [
 8. Go to a placed order, select the top right drop-down menu and select `Download PDF`
 
 You can also download multiple PDF's in the order list. This is currently limited to 10 files, because PDF generation runs in the main instance, not the worker.
-
-## Troubleshooting
-
-### 403 Error Despite Proper Permissions
-
-If you're encountering a `403 Forbidden` error in the Admin UI even after granting the correct permissions to your user (e.g., SuperAdmin), you may need to explicitly configure the token method used by the Admin UI to match your server configuration.
-
-Add the following to your `AdminUiPlugin` configuration to ensure compatibility:
-
-```ts
-AdminUiPlugin.init({
-  adminUiConfig: {
-    tokenMethod: 'bearer', // ← switch from default 'cookie' to match server settings
-    // The following are the defaults and should match your server config
-    authTokenHeaderKey: 'vendure-auth-token',
-    channelTokenKey: 'vendure-token',
-  },
-}),
-```
-
-This ensures that the Admin UI and the Vendure server are using the same token method (`bearer`), which is particularly important if your server is configured with both `"bearer"` and `"cookie"` token methods.
 
 ## Docker
 

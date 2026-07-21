@@ -1,3 +1,7 @@
+# 2.4.0 (2026-07-21)
+
+- Migrated to React Dashboard
+
 # 2.3.1 (2026-07-10)
 
 - Fixed repository URL in package.json for npm provenance verification

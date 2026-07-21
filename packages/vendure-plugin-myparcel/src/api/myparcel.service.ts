@@ -16,7 +16,6 @@ import { OrderAddress } from '@vendure/common/lib/generated-types';
 
 import axios from 'axios';
 import { Fulfillment } from '@vendure/core';
-import { MyparcelConfigEntity } from './myparcel-config.entity';
 import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
 import {
   MyparcelDropOffPoint,
@@ -94,35 +93,6 @@ export class MyparcelService implements OnApplicationBootstrap {
     );
   }
 
-  /**
-   * Upserts a MyparcelConfig. Deletes record if apiKey is null/undefined/empty string
-   * @param config
-   */
-  async upsertConfig(
-    ctx: RequestContext,
-    apiKey: string
-  ): Promise<MyparcelConfigEntity | null> {
-    const existing = await this.connection
-      .getRepository(ctx, MyparcelConfigEntity)
-      .findOne({ where: { channelId: ctx.channelId as string } });
-    if ((!apiKey || apiKey === '') && existing) {
-      await this.connection
-        .getRepository(ctx, MyparcelConfigEntity)
-        .delete(existing.id);
-    } else if (existing) {
-      await this.connection
-        .getRepository(ctx, MyparcelConfigEntity)
-        .update(existing.id, { apiKey: apiKey });
-    } else {
-      await this.connection
-        .getRepository(ctx, MyparcelConfigEntity)
-        .insert({ apiKey, channelId: ctx.channelId as string });
-    }
-    return this.connection
-      .getRepository(ctx, MyparcelConfigEntity)
-      .findOne({ where: { channelId: ctx.channelId as string } });
-  }
-
   async getDropOffPoints(
     ctx: RequestContext,
     input: MyparcelDropOffPointInput
@@ -159,30 +129,55 @@ export class MyparcelService implements OnApplicationBootstrap {
     return results.slice(0, 10);
   }
 
-  async getConfig(ctx: RequestContext): Promise<MyparcelConfigEntity | null> {
-    return this.connection
-      .getRepository(ctx, MyparcelConfigEntity)
-      .findOne({ where: { channelId: ctx.channelId as string } });
+  /**
+   * Resolve the MyParcel config for the current channel from its custom fields.
+   * Returns undefined when MyParcel is disabled or no API key is set for the channel.
+   */
+  getConfig(ctx: RequestContext): MyparcelChannelConfig | undefined {
+    const { myparcelEnabled, myparcelApiKey } = ctx.channel.customFields;
+    if (!myparcelEnabled || !myparcelApiKey) {
+      return undefined;
+    }
+    return { channelId: ctx.channelId as string, apiKey: myparcelApiKey };
   }
 
+  /**
+   * Reverse-lookup used by incoming webhooks: find the enabled channel whose
+   * MyParcel API key matches the given key.
+   */
   async getConfigByKey(
     ctx: RequestContext,
     apiKey: string
-  ): Promise<MyparcelConfigEntity> {
-    const config = await this.connection
-      .getRepository(ctx, MyparcelConfigEntity)
-      .findOne({ where: { apiKey } });
-    if (!config) {
+  ): Promise<MyparcelChannelConfig> {
+    const channels = await this.connection.rawConnection
+      .getRepository(Channel)
+      .find();
+    const channel = channels.find(
+      (c) =>
+        c.customFields.myparcelEnabled &&
+        c.customFields.myparcelApiKey === apiKey
+    );
+    if (!channel) {
       throw new MyParcelError(`No config found for apiKey ${apiKey}`);
     }
-    return config;
+    return { channelId: channel.id as string, apiKey };
   }
 
-  async getAllConfigs(ctx: RequestContext): Promise<MyparcelConfigEntity[]> {
-    const configs = await this.connection
-      .getRepository(ctx, MyparcelConfigEntity)
+  /**
+   * All channels that have MyParcel enabled with an API key set.
+   */
+  async getAllConfigs(ctx: RequestContext): Promise<MyparcelChannelConfig[]> {
+    const channels = await this.connection.rawConnection
+      .getRepository(Channel)
       .find();
-    return configs || [];
+    return channels
+      .filter(
+        (c) => c.customFields.myparcelEnabled && c.customFields.myparcelApiKey
+      )
+      .map((c) => ({
+        channelId: c.id as string,
+        apiKey: c.customFields.myparcelApiKey as string,
+      }));
   }
 
   async updateStatus(
@@ -354,6 +349,11 @@ export class MyparcelService implements OnApplicationBootstrap {
       throw err;
     }
   }
+}
+
+export interface MyparcelChannelConfig {
+  channelId: string;
+  apiKey: string;
 }
 
 export interface WebhookSubscription {

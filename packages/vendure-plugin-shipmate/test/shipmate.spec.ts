@@ -1,4 +1,5 @@
 import {
+  ChannelService,
   DefaultLogger,
   DefaultOrderCodeStrategy,
   isGraphQlErrorResult,
@@ -28,7 +29,6 @@ import { getSuperadminContext } from '@vendure/testing/lib/utils/get-superadmin-
 import axios from 'axios';
 import { createSettledOrder } from '../../test/src/shop-utils';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
-import { ShipmateConfigService } from '../src/api/shipmate-config.service';
 import { ShipmatePlugin } from '../src/shipmate.plugin';
 import type { TrackingEventPayload } from '../src/types';
 import {
@@ -90,15 +90,15 @@ describe('Shipmate plugin', async () => {
       customerCount: 2,
     });
     ctx = await getSuperadminContext(server.app);
-    await server.app
-      .get(ShipmateConfigService)
-      .upsertConfig(
-        ctx,
-        'SHIPMATE_API_KEY',
-        'SHIPMATE_USERNAME',
-        'SHIPMATE_PASSWORD',
-        [authToken]
-      );
+    await server.app.get(ChannelService).update(ctx, {
+      id: ctx.channelId,
+      customFields: {
+        shipmateApiKey: 'SHIPMATE_API_KEY',
+        shipmateUsername: 'SHIPMATE_USERNAME',
+        shipmatePassword: 'SHIPMATE_PASSWORD',
+        shipmateWebhookAuthTokens: [authToken],
+      },
+    });
   }, 60000);
 
   it('Should start successfully', () => {

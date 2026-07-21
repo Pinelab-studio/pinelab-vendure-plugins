@@ -1,6 +1,6 @@
 {
   "name": "@pinelab/pinelab-invoice-plugin",
-  "version": "6.1.0",
+  "version": "6.2.0",
   "description": "Vendure plugin for PDF invoice generation",
   "author": "Martijn van de Brug <martijn@pinelab.studio>",
   "homepage": "https://plugins.pinelab.studio/",
@@ -34,8 +34,6 @@
   },
   "gitHead": "476f36da3aafea41fbf21c70774a30306f1d238f",
   "devDependencies": {
-    "@babel/preset-react": "7.26.3",
-    "@babel/preset-typescript": "7.26.0",
     "xero-node": "9.2.0"
   }
 }

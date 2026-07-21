@@ -1,8 +1,6 @@
 import { PluginCommonModule, VendurePlugin } from '@vendure/core';
-import { AdminUiExtension } from '@vendure/ui-devkit/compiler';
 import { adminApiExtension } from './api/api.extension';
 import { AdminApiResolver } from './api/api.resolver';
-import { convertToDraftButton } from './ui';
 import { PLUGIN_INIT_OPTIONS } from './constants';
 import { convertToDraft } from './custom-order-process';
 import { ModifyCustomerOrderService } from './api/modify-customer-order.service';
@@ -32,6 +30,7 @@ export interface ModifyCustomerOrdersPluginOptions {
     config.orderOptions.process.push(convertToDraft);
     return config;
   },
+  dashboard: './dashboard/index.tsx',
   compatibility: '>=2.2.0',
   exports: [ModifyCustomerOrderService],
 })
@@ -39,7 +38,6 @@ export class ModifyCustomerOrdersPlugin {
   static options: ModifyCustomerOrdersPluginOptions = {
     autoAssignDraftOrdersToCustomer: false,
   };
-  static ui: AdminUiExtension = convertToDraftButton;
   static init(
     options: ModifyCustomerOrdersPluginOptions
   ): typeof ModifyCustomerOrdersPlugin {

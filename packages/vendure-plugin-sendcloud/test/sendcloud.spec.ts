@@ -7,6 +7,7 @@ import {
   TestServer,
 } from '@vendure/testing';
 import {
+  ChannelService,
   configureDefaultOrderProcess,
   DefaultLogger,
   Injector,
@@ -24,7 +25,7 @@ import {
   sendcloudHandler,
   SendcloudPlugin,
 } from '../src';
-import { getSendCloudConfig, updateSendCloudConfig } from './test.helpers';
+import { updateSendCloudConfig } from './test.helpers';
 import {
   addShippingMethod,
   fulfill,
@@ -38,14 +39,13 @@ import nock from 'nock';
 import gql from 'graphql-tag';
 import { expect, describe, beforeAll, afterAll, it } from 'vitest';
 import { GlobalFlag } from '../../test/src/generated/admin-graphql';
-import getFilesInAdminUiFolder from '../../test/src/compile-admin-ui.util';
-
 describe('SendCloud', () => {
   let shopClient: SimpleGraphQLClient;
   let adminClient: SimpleGraphQLClient;
   let server: TestServer;
   let orderCode: string | undefined;
   let orderId: string | undefined;
+  let channelId: string;
 
   beforeAll(async () => {
     registerInitializer('sqljs', new SqljsInitializer('__data__'));
@@ -114,6 +114,10 @@ describe('SendCloud', () => {
       { id: 'T_1', trackInventory: GlobalFlag.True },
       { id: 'T_2', trackInventory: GlobalFlag.True },
     ]);
+    const defaultChannel = await server.app
+      .get(ChannelService)
+      .getDefaultChannel();
+    channelId = String(defaultChannel.id);
   }, 60000);
 
   let authHeader: any | undefined;
@@ -141,6 +145,7 @@ describe('SendCloud', () => {
     await expect(
       updateSendCloudConfig(
         adminClient,
+        channelId,
         'test-secret',
         'test-public',
         '06123456789'
@@ -150,17 +155,16 @@ describe('SendCloud', () => {
 
   it('Updates SendCloudConfig as superadmin', async () => {
     await adminClient.asSuperAdmin();
-    await updateSendCloudConfig(
+    const config = await updateSendCloudConfig(
       adminClient,
+      channelId,
       'test-secret',
       'test-public',
       '06123456789'
     );
-    const config = await getSendCloudConfig(adminClient);
-    expect(config.secret).toBe('test-secret');
-    expect(config.publicKey).toBe('test-public');
-    expect(config.defaultPhoneNr).toBe('06123456789');
-    expect(config.id).toBeDefined();
+    expect(config.sendcloudSecret).toBe('test-secret');
+    expect(config.sendcloudPublicKey).toBe('test-public');
+    expect(config.sendcloudDefaultPhoneNr).toBe('06123456789');
   });
 
   it('Syncs order to SendCloud after placement without fulfilling', async () => {
@@ -370,18 +374,20 @@ describe('SendCloud', () => {
       const o = await getOrder(adminClient, String(failedOrderId));
       return o?.state === 'PaymentSettled' ? true : undefined;
     });
-    // Wait for all retries to complete by polling history entries
+    // Each failed sync attempt is recorded as a private order note. The custom
+    // SENDCLOUD_NOTIFICATION history entry was replaced by the built-in
+    // "add note to order" feature, so we count those error notes instead.
+    const isSendcloudErrorNote = (h: any) =>
+      typeof h.data?.note === 'string' &&
+      h.data.note.startsWith('Failed to sync to SendCloud');
+    // Wait for all retries to complete by polling the order's notes
     await waitFor(
       async () => {
         const { order } = await adminClient.query(
           gql`
             query OrderHistory($id: ID!) {
               order(id: $id) {
-                history(
-                  options: {
-                    filter: { type: { eq: "SENDCLOUD_NOTIFICATION" } }
-                  }
-                ) {
+                history(options: { filter: { type: { eq: "ORDER_NOTE" } } }) {
                   totalItems
                   items {
                     data
@@ -392,10 +398,9 @@ describe('SendCloud', () => {
           `,
           { id: failedOrderId }
         );
-        const errorEntries = order?.history?.items?.filter(
-          (h: any) => h.data?.valid === 'false' || h.data?.valid === false
-        );
-        // Expect exactly 3 error entries: 1 initial attempt + 2 retries
+        const errorEntries =
+          order?.history?.items?.filter(isSendcloudErrorNote);
+        // Expect exactly 3 error notes: 1 initial attempt + 2 retries
         return errorEntries?.length >= 3 ? errorEntries : undefined;
       },
       500,
@@ -405,9 +410,7 @@ describe('SendCloud', () => {
       gql`
         query OrderHistory($id: ID!) {
           order(id: $id) {
-            history(
-              options: { filter: { type: { eq: "SENDCLOUD_NOTIFICATION" } } }
-            ) {
+            history(options: { filter: { type: { eq: "ORDER_NOTE" } } }) {
               totalItems
               items {
                 data
@@ -418,9 +421,8 @@ describe('SendCloud', () => {
       `,
       { id: failedOrderId }
     );
-    const errorEntries = finalOrder?.history?.items?.filter(
-      (h: any) => h.data?.valid === 'false' || h.data?.valid === false
-    );
+    const errorEntries =
+      finalOrder?.history?.items?.filter(isSendcloudErrorNote);
     // With maxRetries defaulting to 2: 1 initial + 2 retries = 3 total attempts
     expect(errorEntries.length).toBe(3);
     // Re-enable the persistent success interceptor for remaining tests
@@ -430,16 +432,6 @@ describe('SendCloud', () => {
       .post('/api/v2/parcels')
       .reply(200, { parcel: { id: 'test-id' } });
   }, 60000);
-
-  if (process.env.TEST_ADMIN_UI) {
-    it('Should compile admin', async () => {
-      const files = await getFilesInAdminUiFolder(
-        __dirname,
-        SendcloudPlugin.ui
-      );
-      expect(files?.length).toBeGreaterThan(0);
-    }, 200000);
-  }
 
   afterAll(async () => {
     await server.destroy();

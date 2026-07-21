@@ -1,10 +1,6 @@
 import gql from 'graphql-tag';
 
 export const schema = gql`
-  extend enum HistoryEntryType {
-    GOEDGEPICKT_NOTIFICATION
-  }
-
   input GoedgepicktConfigInput {
     enabled: Boolean
     apiKey: String

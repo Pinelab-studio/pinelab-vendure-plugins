@@ -3,86 +3,27 @@ import {
   createTestEnvironment,
   registerInitializer,
   SqljsInitializer,
-  testConfig,
 } from '@vendure/testing';
-import {
-  configureDefaultOrderProcess,
-  DefaultLogger,
-  DefaultSchedulerPlugin,
-  DefaultSearchPlugin,
-  LogLevel,
-  mergeConfig,
-  Order,
-  OrderState,
-  RequestContext,
-  StockAllocationStrategy,
-} from '@vendure/core';
-import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
+import { ChannelService, RequestContext, VendureConfig } from '@vendure/core';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
-import {
-  fulfillSettledOrdersTask,
-  getCouponCodes,
-  getNrOfOrders,
-  ParcelInputItem,
-  sendcloudHandler,
-  SendcloudPlugin,
-} from '../src';
+import { sendcloudHandler } from '../src';
 import { addShippingMethod, updateVariants } from '../../test/src/admin-utils';
 import { createSettledOrder } from '../../test/src/shop-utils';
-import { updateSendCloudConfig } from './test.helpers';
-import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
-import * as path from 'path';
 import { GlobalFlag } from '../../test/src/generated/admin-graphql';
-
-require('dotenv').config();
+import { config } from './vendure-config';
 
 (async () => {
   registerInitializer('sqljs', new SqljsInitializer('__data__'));
-  const devConfig = mergeConfig(testConfig, {
-    logger: new DefaultLogger({ level: LogLevel.Debug }),
-    apiOptions: {
-      adminApiPlayground: true,
-      shopApiPlayground: true,
-    },
-    plugins: [
-      SendcloudPlugin.init({
-        additionalParcelItemsFn: async (ctx, injector, order) => {
-          const additionalInputs: ParcelInputItem[] = [];
-          additionalInputs.push(await getNrOfOrders(ctx, injector, order));
-          const coupons = getCouponCodes(order);
-          if (coupons) {
-            additionalInputs.push(coupons);
-          }
-          return additionalInputs;
-        },
-      }),
-      DefaultSchedulerPlugin,
-      DefaultSearchPlugin,
-      AdminUiPlugin.init({
-        port: 3002,
-        route: 'admin',
-        // Uncomment the following line to also run the Admin Ui customization
-        // app: compileUiExtensions({
-        //   outputPath: path.join(__dirname, '__admin-ui'),
-        //   extensions: [SendcloudPlugin.ui],
-        //   devMode: true,
-        // }),
-      }),
-    ],
-    paymentOptions: {
-      paymentMethodHandlers: [testPaymentMethod],
-    },
-    schedulerOptions: {
-      runTasksInWorkerOnly: false,
-      tasks: [fulfillSettledOrdersTask],
-    },
-    orderOptions: {
-      process: [
-        configureDefaultOrderProcess({ checkFulfillmentStates: false }) as any,
-      ],
-    },
-  });
-  const { server, adminClient, shopClient } = createTestEnvironment(devConfig);
+  // Override cors after merge, because testConfig sets cors: true (boolean)
+  // which mergeConfig can't properly replace with an object
+  config.apiOptions.cors = {
+    origin: 'http://localhost:5173',
+    credentials: true,
+  };
+
+  const { server, adminClient, shopClient } = createTestEnvironment(
+    config as Required<VendureConfig>
+  );
   await server.init({
     initialData: {
       ...initialData,
@@ -99,12 +40,23 @@ require('dotenv').config();
   });
   await addShippingMethod(adminClient, sendcloudHandler.code);
   await adminClient.asSuperAdmin();
-  await updateSendCloudConfig(
-    adminClient,
-    process.env.SECRET!,
-    process.env.PUBLIC!,
-    '058123456789'
-  );
+
+  const channel = await server.app.get(ChannelService).getDefaultChannel();
+  const ctx = new RequestContext({
+    apiType: 'admin',
+    isAuthorized: true,
+    authorizedAsOwnerOnly: false,
+    channel,
+  });
+  await server.app.get(ChannelService).update(ctx, {
+    id: ctx.channelId,
+    customFields: {
+      sendcloudSecret: process.env.SECRET!,
+      sendcloudPublicKey: process.env.PUBLIC!,
+      sendcloudDefaultPhoneNr: '058123456789',
+    },
+  });
+
   await updateVariants(adminClient, [
     { id: 'T_1', trackInventory: GlobalFlag.True },
   ]);

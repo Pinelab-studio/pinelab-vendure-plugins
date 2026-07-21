@@ -1,5 +1,19 @@
-import { ID, RequestContext } from '@vendure/core';
+import { ID, RequestContext, ScheduledTaskConfig } from '@vendure/core';
 import { Itemset } from 'node-fpgrowth';
+
+/**
+ * @description
+ * Configures the built-in scheduled task that recalculates "frequently bought
+ * together" relations for all channels. The task is **always enabled**; this
+ * only lets you change when it runs. Requires the `DefaultSchedulerPlugin` to
+ * actually run.
+ *
+ * Defaults to nightly at 3:00 AM. Override the `schedule` (and optionally
+ * `timeout`), e.g. `{ schedule: (cron) => cron.everyDayAt(4, 0) }`.
+ */
+export type ScheduledTaskOption = Partial<
+  Pick<ScheduledTaskConfig, 'schedule' | 'timeout'>
+>;
 
 /**
  * @description
@@ -25,6 +39,11 @@ export interface PluginInitOptions {
    * The maximum number of related products to store per product
    */
   maxRelatedProducts: number;
+  /**
+   * The recalculation scheduled task is always enabled (nightly at 3:00 AM).
+   * Use this to change when it runs. See {@link ScheduledTaskOption}.
+   */
+  scheduledTask?: ScheduledTaskOption;
 }
 
 export interface FrequentlyBoughtTogetherCalculationResult {

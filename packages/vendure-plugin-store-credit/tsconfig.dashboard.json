@@ -12,5 +12,11 @@
       ]
     }
   },
-  "include": ["src/gql/**/*.ts", "vite.*.*ts", "test/vite.config.mts"]
+  "include": [
+    "src/gql/**/*.ts",
+    "src/dashboard/**/*.ts",
+    "src/dashboard/**/*.tsx",
+    "vite.*.*ts",
+    "test/vite.config.mts"
+  ]
 }

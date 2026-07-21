@@ -12,22 +12,8 @@ import fetch from 'node-fetch';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { initialData } from '../../test/src/initial-data';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
-import { defaultTemplate } from '../src/ui/default-template';
-import getFilesInAdminUiFolder from '../../test/src/compile-admin-ui.util';
 import { createSettledOrder, SettledOrder } from '../../test/src/shop-utils';
 import { OrderPDFsPlugin } from '../src';
-import {
-  createPDFTemplate,
-  getPDFTemplates,
-  updatePDFTemplate,
-} from '../src/ui/queries.graphql';
-import {
-  CreatePdfTemplateMutation,
-  CreatePdfTemplateMutationVariables,
-  PdfTemplatesQuery,
-  UpdatePdfTemplateMutation,
-  UpdatePdfTemplateMutationVariables,
-} from '../src/ui/generated/graphql';
 import gql from 'graphql-tag';
 
 let server: TestServer;
@@ -35,6 +21,7 @@ let adminClient: SimpleGraphQLClient;
 let shopClient: SimpleGraphQLClient;
 let serverStarted = false;
 let order: SettledOrder;
+let templateId: string;
 
 beforeAll(async () => {
   registerInitializer('sqljs', new SqljsInitializer('__data__'));
@@ -81,17 +68,18 @@ it('Creates a settled order', async () => {
 
 it('Creates a private PDF template', async () => {
   await adminClient.asSuperAdmin();
-  const { createPDFTemplate: template } = await adminClient.query<
-    CreatePdfTemplateMutation,
-    CreatePdfTemplateMutationVariables
-  >(createPDFTemplate, {
-    input: {
-      name: 'Example PDF Template',
-      enabled: true,
-      public: false,
-      templateString: '<html><body><h1>Example PDF</h1></body></html>',
-    },
-  });
+  const { createPDFTemplate: template } = await adminClient.query(
+    createPDFTemplateMutation,
+    {
+      input: {
+        name: 'Example PDF Template',
+        enabled: true,
+        public: false,
+        templateString: '<html><body><h1>Example PDF</h1></body></html>',
+      },
+    }
+  );
+  templateId = template.id;
   expect(template.id).toBeDefined();
   expect(template.createdAt).toBeDefined();
   expect(template.updatedAt).toBeDefined();
@@ -105,12 +93,19 @@ it('Creates a private PDF template', async () => {
 
 it('Gets all PDF templates as admin', async () => {
   await adminClient.asSuperAdmin();
-  const { pdfTemplates } = await adminClient.query<PdfTemplatesQuery>(
-    getPDFTemplates
-  );
+  const { pdfTemplates } = await adminClient.query(getPDFTemplatesQuery);
   expect(pdfTemplates.totalItems).toBe(1);
   expect(pdfTemplates.items.length).toBe(1);
   expect(pdfTemplates.items[0].name).toBe('Example PDF Template');
+});
+
+it('Gets a single PDF template by id', async () => {
+  await adminClient.asSuperAdmin();
+  const { pdfTemplate } = await adminClient.query(getPDFTemplateQuery, {
+    id: templateId,
+  });
+  expect(pdfTemplate.id).toBe(templateId);
+  expect(pdfTemplate.name).toBe('Example PDF Template');
 });
 
 it('Downloads private PDF as admin', async () => {
@@ -146,18 +141,18 @@ it('Does not allow downloading of private template as customer', async () => {
 
 it('Updates the PDF template to public', async () => {
   await adminClient.asSuperAdmin();
-  const { updatePDFTemplate: template } = await adminClient.query<
-    UpdatePdfTemplateMutation,
-    UpdatePdfTemplateMutationVariables
-  >(updatePDFTemplate, {
-    id: 'T_1',
-    input: {
-      enabled: true,
-      templateString: '<html>New HTML</html>',
-      public: true,
-      name: 'Public PDF Template',
-    },
-  });
+  const { updatePDFTemplate: template } = await adminClient.query(
+    updatePDFTemplateMutation,
+    {
+      input: {
+        id: templateId,
+        enabled: true,
+        templateString: '<html>New HTML</html>',
+        public: true,
+        name: 'Public PDF Template',
+      },
+    }
+  );
   expect(template.templateString).toBe('<html>New HTML</html>');
   expect(template.public).toBe(true);
   expect(template.name).toBe('Public PDF Template');
@@ -221,12 +216,16 @@ it('Downloads multiple PDFs as ZIP file', async () => {
   expect(res.ok).toBe(true);
 });
 
-if (process.env.TEST_ADMIN_UI) {
-  it('Should compile admin', async () => {
-    const files = await getFilesInAdminUiFolder(__dirname, OrderPDFsPlugin.ui);
-    expect(files?.length).toBeGreaterThan(0);
-  }, 200000);
-}
+it('Deletes the PDF template', async () => {
+  await adminClient.asSuperAdmin();
+  const { deletePDFTemplate } = await adminClient.query(
+    deletePDFTemplateMutation,
+    { id: templateId }
+  );
+  expect(deletePDFTemplate.result).toBe('DELETED');
+  const { pdfTemplates } = await adminClient.query(getPDFTemplatesQuery);
+  expect(pdfTemplates.totalItems).toBe(0);
+});
 
 afterAll(async () => {
   await server.destroy();
@@ -241,4 +240,64 @@ export const availablePDFTemplatesQuery = gql`
       name
     }
   }
+`;
+
+const pdfTemplateFields = gql`
+  fragment PDFTemplateFields on PDFTemplate {
+    id
+    createdAt
+    updatedAt
+    name
+    enabled
+    public
+    templateString
+  }
+`;
+
+const createPDFTemplateMutation = gql`
+  mutation createPDFTemplate($input: CreatePDFTemplateInput!) {
+    createPDFTemplate(input: $input) {
+      ...PDFTemplateFields
+    }
+  }
+  ${pdfTemplateFields}
+`;
+
+const updatePDFTemplateMutation = gql`
+  mutation updatePDFTemplate($input: UpdatePDFTemplateInput!) {
+    updatePDFTemplate(input: $input) {
+      ...PDFTemplateFields
+    }
+  }
+  ${pdfTemplateFields}
+`;
+
+const deletePDFTemplateMutation = gql`
+  mutation deletePDFTemplate($id: ID!) {
+    deletePDFTemplate(id: $id) {
+      result
+      message
+    }
+  }
+`;
+
+const getPDFTemplatesQuery = gql`
+  query pdfTemplates {
+    pdfTemplates {
+      items {
+        ...PDFTemplateFields
+      }
+      totalItems
+    }
+  }
+  ${pdfTemplateFields}
+`;
+
+const getPDFTemplateQuery = gql`
+  query pdfTemplate($id: ID!) {
+    pdfTemplate(id: $id) {
+      ...PDFTemplateFields
+    }
+  }
+  ${pdfTemplateFields}
 `;

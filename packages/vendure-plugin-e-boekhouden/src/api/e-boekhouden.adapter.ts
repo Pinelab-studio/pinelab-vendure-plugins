@@ -1,6 +1,6 @@
 import { CMutatieRegel, OMut } from '../client';
 import { Logger, Order, RequestContext } from '@vendure/core';
-import { EBoekhoudenConfigEntity } from './e-boekhouden-config.entity';
+import { EBoekhoudenChannelConfig } from './e-boekhouden.service';
 import { loggerCtx } from '../constants';
 import { OrderTaxSummary } from '@vendure/common/lib/generated-types';
 import { EBoekhoudenPlugin } from '../e-boekhouden.plugin';
@@ -33,7 +33,7 @@ export class EBoekhoudenAdapter {
   static toMutation(
     ctx: RequestContext,
     order: Order,
-    config: EBoekhoudenConfigEntity
+    config: EBoekhoudenChannelConfig
   ): OMut {
     const description = `Order ${order.code} - ${order.customer?.firstName} ${order.customer?.lastName} (${order.customer?.emailAddress})`;
     const cMutatieRegel = order.taxSummary.map((summary) =>
@@ -55,7 +55,7 @@ export class EBoekhoudenAdapter {
     ctx: RequestContext,
     tax: OrderTaxSummary,
     order: Order,
-    config: EBoekhoudenConfigEntity
+    config: EBoekhoudenChannelConfig
   ): CMutatieRegel {
     const recalculatedTax = recalculateTaxFromTotalIncVAT(tax);
     return {

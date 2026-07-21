@@ -37,7 +37,7 @@ You can easily define your own subscriptions with a [custom subscription strateg
 
 ## Installation
 
-1. Add the plugin to your `vendure-config.ts` plugins and admin UI compilation:
+1. Add the plugin to your `vendure-config.ts`:
 
 ```ts
 import { StripeSubscriptionPlugin } from '@pinelab/vendure-plugin-stripe-subscription';
@@ -46,16 +46,11 @@ plugins: [
   StripeSubscriptionPlugin.init({
     vendureHost: process.env.VENDURE_HOST!,
   }),
-  AdminUiPlugin.init({
-    port: 3002,
-    route: 'admin',
-    app: compileUiExtensions({
-      outputPath: path.join(__dirname, '__admin-ui'),
-      extensions: [StripeSubscriptionPlugin.ui],
-    }),
-  }),
 ];
 ```
+
+Subscription events are logged as history entries on the order, rendered via a React Dashboard extension — no
+Admin UI compilation step is needed.
 
 2. Start the Vendure server and login to the admin UI
 3. Create a payment method and select `Stripe Subscription` as handler

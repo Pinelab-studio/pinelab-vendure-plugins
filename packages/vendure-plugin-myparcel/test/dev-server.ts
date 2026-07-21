@@ -1,22 +1,16 @@
 import { initialData } from '../../test/src/initial-data';
-import { MyparcelPlugin } from '../src/myparcel.plugin';
 import {
   createTestEnvironment,
   registerInitializer,
   SqljsInitializer,
-  testConfig,
 } from '@vendure/testing';
 import {
   ChannelService,
-  DefaultLogger,
-  DefaultSearchPlugin,
   LanguageCode,
-  LogLevel,
-  mergeConfig,
   PaymentMethodService,
   RequestContext,
+  VendureConfig,
 } from '@vendure/core';
-import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
 import {
   addItem,
   addPaymentToOrder,
@@ -25,62 +19,26 @@ import {
 import { testPaymentMethod } from '../../test/src/test-payment-method';
 import { addShippingMethod } from '../../test/src/admin-utils';
 import localtunnel from 'localtunnel';
-import { MyparcelService } from '../src/api/myparcel.service';
-import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
-import path from 'path';
+import { MyparcelPlugin } from '../src/myparcel.plugin';
+import { config } from './vendure-config';
 
 require('dotenv').config();
 
 (async () => {
   const tunnel = await localtunnel({ port: 3050 });
   registerInitializer('sqljs', new SqljsInitializer('__data__'));
-  const devConfig = mergeConfig(testConfig, {
-    logger: new DefaultLogger({ level: LogLevel.Debug }),
-    apiOptions: {
-      adminApiPlayground: true,
-      shopApiPlayground: true,
-    },
-    customFields: {
-      Product: [
-        {
-          name: 'weight',
-          label: [{ value: 'Weight', languageCode: LanguageCode.en }],
-          type: 'int',
-          ui: { component: 'text-form-input' },
-        },
-      ],
-    },
-    plugins: [
-      MyparcelPlugin.init({
-        vendureHost: tunnel.url,
-        getCustomsInformationFn: (orderLine) => {
-          return {
-            weightInGrams:
-              (orderLine.productVariant.product.customFields as any)?.weight ||
-              0,
-            classification:
-              (orderLine.productVariant.product.customFields as any)?.hsCode ||
-              '0181',
-            countryCodeOfOrigin: 'NL',
-          };
-        },
-      }),
-      DefaultSearchPlugin,
-      AdminUiPlugin.init({
-        port: 3002,
-        route: 'admin',
-        app: compileUiExtensions({
-          outputPath: path.join(__dirname, '__admin-ui'),
-          extensions: [MyparcelPlugin.ui],
-          devMode: true,
-        }),
-      }),
-    ],
-    paymentOptions: {
-      paymentMethodHandlers: [testPaymentMethod],
-    },
-  });
-  const { server, adminClient, shopClient } = createTestEnvironment(devConfig);
+  // Override the placeholder host from vendure-config.ts now that we have a real tunnel URL
+  MyparcelPlugin.init({ ...MyparcelPlugin.config, vendureHost: tunnel.url });
+  // Override cors after merge, because testConfig sets cors: true (boolean)
+  // which mergeConfig can't properly replace with an object
+  config.apiOptions.cors = {
+    origin: 'http://localhost:5173',
+    credentials: true,
+  };
+
+  const { server, adminClient, shopClient } = createTestEnvironment(
+    config as Required<VendureConfig>
+  );
   await server.init({
     initialData,
     productsCsvPath: '../test/src/products-import.csv',
@@ -93,9 +51,13 @@ require('dotenv').config();
     authorizedAsOwnerOnly: false,
     channel,
   });
-  await server.app
-    .get(MyparcelService)
-    .upsertConfig(ctx, process.env.MYPARCEL_APIKEY!);
+  await server.app.get(ChannelService).update(ctx, {
+    id: ctx.channelId,
+    customFields: {
+      myparcelEnabled: true,
+      myparcelApiKey: process.env.MYPARCEL_APIKEY!,
+    },
+  });
   await server.app.get(PaymentMethodService).create(ctx, {
     code: 'test-payment-method',
     enabled: true,
