@@ -1,6 +1,6 @@
-# 2.3.0 (2026-07-21)
+# 3.0.0 (2026-07-21)
 
-- Moved configurations from DB into code
+- Migrated to channel custom fields
 
 # 2.2.0 (2026-08-05)
 

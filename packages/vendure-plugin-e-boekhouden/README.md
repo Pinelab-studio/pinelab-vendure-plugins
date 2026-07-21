@@ -36,8 +36,7 @@ plugins: [
 2. Start the server and go to `Settings` > `Channels`, open the channel you want
    to configure and select the **E-boekhouden** tab. Tick `Enabled` and fill in
    your `Username`, `Security code 1`, `Security code 2`, `Account` and
-   `Contra account`. Configuration is stored per channel as Channel custom
-   fields, so no Admin UI extension needs to be compiled.
+   `Contra account`. Credentials are stored per channel as Channel custom fields.
 
 > The `eBoekhoudenEnabled` toggle controls whether e-Boekhouden is active for a
 > channel. When it is off (or the config is incomplete), the plugin is disabled
