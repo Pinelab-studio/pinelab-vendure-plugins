@@ -33,8 +33,6 @@
     "puppeteer": "23.1.0"
   },
   "devDependencies": {
-    "@types/adm-zip": "0.4.34",
-    "@babel/preset-react": "7.26.3",
-    "@babel/preset-typescript": "7.26.0"
+    "@types/adm-zip": "0.4.34"
   }
 }

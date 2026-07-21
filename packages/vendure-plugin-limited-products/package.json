@@ -26,9 +26,5 @@
     "test": "vitest run",
     "lint": "eslint ."
   },
-  "gitHead": "476f36da3aafea41fbf21c70774a30306f1d238f",
-  "devDependencies": {
-    "@babel/preset-react": "7.26.3",
-    "@babel/preset-typescript": "7.26.0"
-  }
+  "gitHead": "476f36da3aafea41fbf21c70774a30306f1d238f"
 }
