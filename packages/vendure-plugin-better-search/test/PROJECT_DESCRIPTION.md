@@ -82,10 +82,65 @@ Next step: implement minisearch as Vendure Search plugin, see next step below.
 - Make channel and language aware, and allow only enabling for specific channel
 - Index in worker and serialize index to database
 - Lighter search as you type endpoint, instead of a full search
-
-> > We are here now
-
 - Run search in worker thread, in main instance, because we need to expose it via shop-api `search` query
+
+# Worker thread benchmarking result
+
+We have tested running the searches in a worker in a concurrency benchmark setup, but searching in a worker thread was actually **slower**
+
+- Test setup: Benchmark script spins up server in process 1, and a client in process 2. The client concurrently queries the search api (worker thread) + fetching a product (main event loop)
+- Worker implementation: A Node.js worker thread is started, and is handed the search term and a serialized version of the search index. Searching then happens outside of the main event loop/process
+- Results when running search operation in a separate worker:
+
+```
+=== Concurrent Benchmark Results ===
+Concurrency:       20 workers
+Duration:          5.0s
+
+Search queries:
+  Total:           1466
+  Success:         1466
+  Error:           0
+  Per second:      291.9
+
+Product queries:
+  Total:           1524
+  Success:         1524
+  Error:           0
+  Per second:      303.4
+
+Total requests:    2990
+Total per second:  595.3
+Benchmark finished.
+```
+
+- Results without separate worker thread (searching in the main eventloop/process)
+
+```=== Concurrent Benchmark Results ===
+Concurrency:       20 workers
+Duration:          5.0s
+
+Search queries:
+  Total:           1737
+  Success:         1737
+  Error:           0
+  Per second:      345.9
+
+Product queries:
+  Total:           1641
+  Success:         1641
+  Error:           0
+  Per second:      326.8
+
+Total requests:    3378
+Total per second:  672.6
+Benchmark finished.
+```
+
+Searching in worker has been consistently slower. Assumption is that serializing the index everytime has too much overhead to be beneficial.
+
+Conclusion: We will stick with the current path: Index in a Vendure worker instance, search in the main process and not offload search to a Node worker thread
+
 - Cache index in worker thread, but allow cache busting. (Get last updated date from column in DB?)
 - Partial reindexing >> debounce should remember what variants/products should be reindexed
 - Basic analytics to evaluate live usage

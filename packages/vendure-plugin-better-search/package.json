@@ -27,7 +27,6 @@
     "benchmark:semantic": "node --expose-gc --predictable --max-old-space-size=512 dist-benchmark/test/benchmark-engines.js --engine=semantic",
     "benchmark:minisearch": "node --expose-gc --predictable --max-old-space-size=512 dist-benchmark/test/benchmark-engines.js --engine=minisearch",
     "benchmark:orama-qps": "node --expose-gc --predictable --max-old-space-size=512 dist-benchmark/test/benchmark-engines.js --engine=orama-qps",
-    "benchmark:concurrency": "ts-node --swc test/concurrency-benchmark.ts --concurrency=10 --duration=20",
     "serve": "nodemon --exec ts-node --swc test/dev-server.ts",
     "generate": "graphql-codegen",
     "test": "vitest run",
