@@ -9,6 +9,7 @@ import {
   idsAreEqual,
   LogLevel,
   mergeConfig,
+  OrderLine,
   PaymentMethod,
   Product,
   ProductVariant,
@@ -16,6 +17,7 @@ import {
   RequestContext,
   ShippingMethod,
   StockLocation,
+  TransactionalConnection,
 } from '@vendure/core';
 import {
   createTestEnvironment,
@@ -71,7 +73,7 @@ import {
 } from './helpers';
 import gql from 'graphql-tag';
 import { createWalletsForCustomers } from '../src/services/exported-helpers';
-import { GiftCardWalletCreatedEvent } from '../src/events/gift-card-wallet-created.event';
+import { GiftCardsCreatedEvent } from '../src/events/gift-cards-created.event';
 import { firstValueFrom } from 'rxjs';
 import { filter, take, toArray } from 'rxjs/operators';
 
@@ -1051,7 +1053,7 @@ describe('Auto-creation on OrderPlacedEvent', () => {
     const eventBus = server.app.get(EventBus);
 
     const eventsPromise = firstValueFrom(
-      eventBus.ofType(GiftCardWalletCreatedEvent).pipe(take(1), toArray())
+      eventBus.ofType(GiftCardsCreatedEvent).pipe(take(1), toArray())
     );
     await shopClient.asUserWithCredentials(
       'hayden.zieme12@hotmail.com',
@@ -1098,10 +1100,10 @@ describe('Auto-creation on OrderPlacedEvent', () => {
 
   it('Should not create a Wallet for a non Gift Card Product', async () => {
     const eventBus = server.app.get(EventBus);
-    const capturedEvents: GiftCardWalletCreatedEvent[] = [];
+    const capturedEvents: GiftCardsCreatedEvent[] = [];
 
     const sub = eventBus
-      .ofType(GiftCardWalletCreatedEvent)
+      .ofType(GiftCardsCreatedEvent)
       .subscribe((event) => capturedEvents.push(event));
 
     await shopClient.asUserWithCredentials(
@@ -1120,6 +1122,43 @@ describe('Auto-creation on OrderPlacedEvent', () => {
 
     sub.unsubscribe();
     expect(capturedEvents.length).toBe(0);
+  });
+
+  it('Should save giftCardCodes to the order line custom fields', async () => {
+    const eventBus = server.app.get(EventBus);
+    const eventsPromise = firstValueFrom(
+      eventBus.ofType(GiftCardsCreatedEvent).pipe(take(1), toArray())
+    );
+
+    await shopClient.asUserWithCredentials(
+      'hayden.zieme12@hotmail.com',
+      'test'
+    );
+
+    const order = await createSettledOrder(shopClient, 1, true, [
+      {
+        id: 'T_5',
+        quantity: 2,
+      },
+    ]);
+
+    const events = await eventsPromise;
+    expect(events).toHaveLength(1);
+    expect(events[0].wallets).toHaveLength(2);
+
+    const orderLineRepo = server.app
+      .get(TransactionalConnection)
+      .getRepository(ctx, OrderLine);
+    const lines = await orderLineRepo.find();
+
+    const giftCardLine = lines.find(
+      (l) => l.customFields?.giftCardCodes?.length === 2
+    );
+    expect(giftCardLine).toBeDefined();
+    expect(giftCardLine!.customFields.giftCardCodes).toHaveLength(2);
+    expect(giftCardLine!.customFields.giftCardCodes![0]).toMatch(
+      /^8pZ2nL9qX5mB/
+    );
   });
 
   it("Should fail to pay with another Customer's wallet", async () => {
@@ -1188,7 +1227,7 @@ describe('Refunding Order using gift card wallet', () => {
     const eventBus = server.app.get(EventBus);
 
     const eventsPromise = firstValueFrom(
-      eventBus.ofType(GiftCardWalletCreatedEvent).pipe(
+      eventBus.ofType(GiftCardsCreatedEvent).pipe(
         filter((event) => event.wallets.length > 0),
         take(1),
         toArray()
@@ -1517,7 +1556,10 @@ describe('Gift Card Wallet Channel awareness', () => {
     );
     expect((err as any)?.errorCode).toBe('PAYMENT_DECLINED_ERROR');
     expect((err as any)?.paymentErrorMessage).toBe(
-      'Wallet with id 20 is not assigned to the current channel'
+      `Wallet with id ${String(walletForChannel6.id).replace(
+        'T_',
+        ''
+      )} is not assigned to the current channel`
     );
   });
 
@@ -1589,7 +1631,7 @@ async function createGiftCardWalletForChannel(
 ): Promise<Wallet> {
   const eventBus = server.app.get(EventBus);
   const eventsPromise = firstValueFrom(
-    eventBus.ofType(GiftCardWalletCreatedEvent).pipe(
+    eventBus.ofType(GiftCardsCreatedEvent).pipe(
       filter((event) => event.wallets.length > 0),
       take(1),
       toArray()

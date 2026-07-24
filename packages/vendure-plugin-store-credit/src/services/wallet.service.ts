@@ -40,7 +40,7 @@ import { loggerCtx, STORE_CREDIT_PLUGIN_OPTIONS } from '../constants';
 import { WalletAdjustment } from '../entities/wallet-adjustment.entity';
 import { Wallet } from '../entities/wallet.entity';
 import { QueryFailedError, IsNull, Not } from 'typeorm';
-import { GiftCardWalletCreatedEvent } from '../events/gift-card-wallet-created.event';
+import { GiftCardsCreatedEvent } from '../events/gift-cards-created.event';
 import { StoreCreditPluginOptions } from '../types';
 import { ModuleRef } from '@nestjs/core';
 
@@ -98,7 +98,7 @@ export class WalletService implements OnApplicationBootstrap {
     }
     if (createdWallets.length > 0) {
       void this.eventBus.publish(
-        new GiftCardWalletCreatedEvent(ctx, createdWallets, order)
+        new GiftCardsCreatedEvent(ctx, createdWallets, order)
       );
     }
   }
@@ -114,22 +114,21 @@ export class WalletService implements OnApplicationBootstrap {
     order: Order,
     line: OrderLine
   ): Promise<Wallet[]> {
-    const result = await this.options?.createGiftCardWallet?.(
-      ctx,
-      new Injector(this.moduleRef),
-      order,
-      line
-    );
-
-    if (!result) {
-      return [];
-    }
-
     const createdWallets: Wallet[] = [];
 
-    const { price, cardCode } = result;
-
     for (let i = 0; i < line.quantity; i++) {
+      const result = await this.options?.createGiftCardWallet?.(
+        ctx,
+        new Injector(this.moduleRef),
+        order,
+        line
+      );
+
+      if (!result) {
+        continue;
+      }
+
+      const { price, cardCode } = result;
       const finalCode = await this.getUniqueCode(ctx, cardCode);
 
       const wallet = await this.create(
@@ -154,6 +153,21 @@ export class WalletService implements OnApplicationBootstrap {
           price / 100
         } for product with id ${line.productVariant?.productId}`,
         isPublic: false,
+      });
+    }
+
+    if (createdWallets.length > 0) {
+      // Save created gift card codes on orderline
+      const orderLineRepo = this.connection.getRepository(ctx, OrderLine);
+      line.customFields = {
+        ...(line.customFields ?? {}),
+        giftCardCodes: createdWallets.map((w) => w.code),
+      };
+      await orderLineRepo.save({
+        id: line.id,
+        customFields: {
+          giftCardCodes: createdWallets.map((w) => w.code),
+        },
       });
     }
 

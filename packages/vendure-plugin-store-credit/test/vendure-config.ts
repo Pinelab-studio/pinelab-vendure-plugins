@@ -28,7 +28,12 @@ export const config: VendureConfig = mergeConfig(testConfig, {
     paymentMethodHandlers: [storeCreditPaymentHandler, testPaymentMethod],
   },
   plugins: [
-    StoreCreditPlugin,
+    StoreCreditPlugin.init({
+      createGiftCardWallet: async () => ({
+        price: 1000,
+        cardCode: 'GIFT-DEMO-' + Date.now(),
+      }),
+    }),
     DefaultSearchPlugin,
     AdminUiPlugin.init({
       port: 3002,
