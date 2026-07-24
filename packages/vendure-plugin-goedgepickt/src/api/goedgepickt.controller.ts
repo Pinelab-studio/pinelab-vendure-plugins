@@ -1,50 +1,16 @@
-import {
-  Body,
-  Controller,
-  Get,
-  Headers,
-  Inject,
-  Param,
-  Post,
-  Req,
-} from '@nestjs/common';
-import { Channel, Logger, TransactionalConnection } from '@vendure/core';
+import { Body, Controller, Headers, Param, Post, Req } from '@nestjs/common';
+import { Logger } from '@vendure/core';
 import { Request } from 'express';
-import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
+import { loggerCtx } from '../constants';
 import { GoedgepicktService } from './goedgepickt.service';
 import {
-  GoedgepicktPluginConfig,
   IncomingOrderStatusEvent,
   IncomingStockUpdateEvent,
 } from './goedgepickt.types';
 
 @Controller('goedgepickt')
 export class GoedgepicktController {
-  constructor(
-    private service: GoedgepicktService,
-    private connection: TransactionalConnection,
-    @Inject(PLUGIN_INIT_OPTIONS) private config: GoedgepicktPluginConfig
-  ) {}
-
-  @Get('fullsync/:secret')
-  async sync(@Param('secret') secret: string): Promise<void> {
-    if (secret !== this.config.endpointSecret) {
-      Logger.warn(
-        `Invalid incoming fullsync request with secret ${secret}`,
-        loggerCtx
-      );
-      return;
-    }
-    const channels = await this.connection.getRepository(Channel).find();
-    for (const channel of channels.filter((c) => c.customFields?.ggEnabled)) {
-      await this.service.doFullSync(channel.token).catch((err) => {
-        Logger.error(
-          `Failed to create fullsync jobs for channel ${channel.id}: ${err.message}`,
-          loggerCtx
-        );
-      });
-    }
-  }
+  constructor(private service: GoedgepicktService) {}
 
   @Post('webhook/:channelToken')
   async webhook(

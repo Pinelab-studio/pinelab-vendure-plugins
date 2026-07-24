@@ -1,4 +1,4 @@
-import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
+import { Args, Mutation, Resolver } from '@nestjs/graphql';
 import {
   Allow,
   Ctx,
@@ -6,14 +6,8 @@ import {
   RequestContext,
   PermissionDefinition,
 } from '@vendure/core';
-import {
-  GoedgepicktConfig,
-  GoedgepicktPluginConfig,
-  MutationSyncOrderToGoedgepicktArgs,
-} from '../index';
+import { MutationSyncOrderToGoedgepicktArgs } from '../index';
 import { GoedgepicktService } from './goedgepickt.service';
-import { PLUGIN_INIT_OPTIONS } from '../constants';
-import { Inject } from '@nestjs/common';
 
 export const goedgepicktPermission = new PermissionDefinition({
   name: 'SetGoedgepicktConfig',
@@ -21,21 +15,7 @@ export const goedgepicktPermission = new PermissionDefinition({
 });
 @Resolver()
 export class GoedgepicktResolver {
-  constructor(
-    private service: GoedgepicktService,
-    @Inject(PLUGIN_INIT_OPTIONS) private pluginConfig: GoedgepicktPluginConfig
-  ) {}
-
-  @Mutation()
-  @Allow(goedgepicktPermission.Permission)
-  async runGoedgepicktFullSync(@Ctx() ctx: RequestContext): Promise<boolean> {
-    const channelToken = ctx.channel.token;
-    await this.service.doFullSync(channelToken);
-    if (this.pluginConfig.setWebhook) {
-      await this.service.registerWebhooks(ctx);
-    }
-    return true;
-  }
+  constructor(private service: GoedgepicktService) {}
 
   @Mutation()
   @Allow(Permission.UpdateOrder)

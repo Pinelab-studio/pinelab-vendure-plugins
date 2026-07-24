@@ -2,6 +2,7 @@ require('dotenv').config();
 
 import {
   DefaultLogger,
+  DefaultSchedulerPlugin,
   DefaultSearchPlugin,
   LogLevel,
   mergeConfig,
@@ -29,11 +30,11 @@ export const config: VendureConfig = mergeConfig(testConfig, {
   plugins: [
     GoedgepicktPlugin.init({
       vendureHost: process.env.WEBHOOK_ENDPOINT!,
-      endpointSecret: 'test',
       setWebhook: true,
       determineOrderStatus: async (ctx, order) => 'on_hold' as const,
     }),
     DefaultSearchPlugin,
+    DefaultSchedulerPlugin.init(),
     AssetServerPlugin.init({
       assetUploadDir: path.join(__dirname, '__data__/assets'),
       route: 'assets',

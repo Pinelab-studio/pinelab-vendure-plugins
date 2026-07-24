@@ -59,7 +59,6 @@ describe('Goedgepickt plugin', function () {
     webshopUuid: 'test-webshop-uuid',
   };
 
-  let webhookPayloads: any[] = [];
   let createOrderPayload: OrderInput;
   let order: SettledOrder;
   const apiUrl = 'https://account.goedgepickt.nl/';
@@ -83,7 +82,6 @@ describe('Goedgepickt plugin', function () {
       plugins: [
         GoedgepicktPlugin.init({
           vendureHost: 'https://test-host',
-          endpointSecret: 'test',
         }),
       ],
       paymentOptions: {
@@ -148,19 +146,6 @@ describe('Goedgepickt plugin', function () {
   });
 
   it('Pushes products and updates stock level on full sync', async () => {
-    // Pretend there are no webhooks set
-    nock(apiUrl)
-      .persist(true)
-      .get('/api/v1/webhooks')
-      .reply(200, { items: [] });
-    // Catch the creation of webhooks
-    nock(apiUrl)
-      .persist(true)
-      .post('/api/v1/webhooks', (reqBody: any) => {
-        webhookPayloads.push(reqBody);
-        return true;
-      })
-      .reply(200, { webhookSecret: 'test-secret' });
     // Catch the lookup of products
     nock(apiUrl)
       .persist(true)
@@ -195,13 +180,7 @@ describe('Goedgepickt plugin', function () {
           },
         ],
       });
-    await adminClient.query(
-      gql`
-        mutation {
-          runGoedgepicktFullSync
-        }
-      `
-    );
+    await server.app.get(GoedgepicktService).doFullSync('e2e-default-channel');
     const laptopPayload = await waitFor(() => {
       const laptopPayload = pushProductsPayloads.find(
         (p) => p.sku === 'L2201516'
@@ -224,8 +203,6 @@ describe('Goedgepickt plugin', function () {
     const stock = await getAvailableStock(updatedVariant?.id!);
     expect(stock.stockOnHand).toBe(33);
     expect(stock.stockAllocated).toBe(0);
-    await waitFor(() => webhookPayloads.length >= 2);
-    expect(webhookPayloads.length).toBe(2);
   });
 
   it('Set goedgepickt as fulfillment handler', async () => {

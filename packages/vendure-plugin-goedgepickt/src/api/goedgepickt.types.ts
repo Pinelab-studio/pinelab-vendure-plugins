@@ -3,10 +3,6 @@ import { RequestContext, Order as VendureOrder } from '@vendure/core';
 export interface GoedgepicktPluginConfig {
   vendureHost: string;
   /**
-   * Used to validate incoming sync webhook
-   */
-  endpointSecret: string;
-  /**
    * Set webhook in Goedgepickt when saving credentials
    */
   setWebhook?: boolean;

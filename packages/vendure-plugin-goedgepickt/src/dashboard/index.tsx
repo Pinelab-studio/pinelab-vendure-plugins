@@ -1,6 +1,5 @@
 import { defineDashboardExtension } from '@vendure/dashboard';
 import { PushToGoedgepicktMenuItem } from './components/PushToGoedgepicktMenuItem';
-import { GoedgepicktFullSyncMenuItem } from './components/GoedgepicktFullSyncMenuItem';
 
 defineDashboardExtension({
   actionBarItems: [
@@ -11,12 +10,6 @@ defineDashboardExtension({
       component: ({ context }) => (
         <PushToGoedgepicktMenuItem context={context} />
       ),
-    },
-    {
-      pageId: 'product-list',
-      type: 'dropdown',
-      requiresPermission: 'SetGoedgepicktConfig',
-      component: () => <GoedgepicktFullSyncMenuItem />,
     },
   ],
 });

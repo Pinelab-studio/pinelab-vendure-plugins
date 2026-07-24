@@ -25,8 +25,6 @@ export const schema = gql`
     updateGoedgepicktConfig(
       input: GoedgepicktConfigInput!
     ): GoedgepicktConfigUpdateResult
-    # Push products and pull stocklevels
-    runGoedgepicktFullSync: Boolean
     syncOrderToGoedgepickt(orderCode: String!): Boolean
   }
 
