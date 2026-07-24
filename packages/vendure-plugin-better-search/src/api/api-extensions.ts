@@ -1,53 +1,24 @@
 import gql from 'graphql-tag';
-import { BetterSearchPlugin } from '../better-search.plugin';
 
-export const shopApiExtensions = () => {
-  // Map the custom fields to the graphql schema. E.g. "facetValueNames: [String!]!"
-  const customFields = Object.entries(
-    BetterSearchPlugin.options.indexableFields
-  )
-    // Only include fields that have a graphqlFieldType
-    .filter(([, value]) => value.graphqlFieldType)
-    .map(([key, value]) => {
-      return `${key}: ${value.graphqlFieldType}`;
-    })
-    .join('\n');
+/**
+ * Just to satisfy graphql codegen
+ */
+const scalars = gql`
+  scalar JSON
+`;
 
-  return gql`
-  type BetterSearchResult {
-    productId: ID!
-    slug: String!
-    productName: String!
-    productAsset: BetterSearchResultAsset
-    lowestPrice: Float!
-    lowestPriceWithTax: Float!
-    highestPrice: Float!
-    highestPriceWithTax: Float!
-    facetValueIds: [ID!]!
-    collectionIds: [ID!]!
-    collectionNames: [String!]!
-    skus: [String!]!
-    ${customFields}
+export const adminApiExtensions = gql`
+  extend type Query {
+    inspectSearchIndex(skip: Int, take: Int): JSON!
   }
+`;
 
-  type BetterSearchResultAsset {
-    id: ID!
-    preview: String!
-  }
-
-  type BetterSearchResultList {
-    items: [BetterSearchResult!]!
-    totalItems: Int!
-  }
-
-  input BetterSearchInput {
-    term: String!
-    skip: Int
-    take: Int
+export const shopApiExtensions = gql`
+  type SearchSuggestion {
+    suggestion: String!
   }
 
   extend type Query {
-    betterSearch(input: BetterSearchInput!): BetterSearchResultList!
+    searchSuggestions(term: String!): [SearchSuggestion!]!
   }
 `;
-};
