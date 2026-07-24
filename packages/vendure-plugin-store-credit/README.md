@@ -161,7 +161,7 @@ StoreCreditPlugin.init({
 });
 ```
 
-The hook is called **once per order line item** (i.e. once per quantity). For example, if a customer orders 3 gift cards, the hook is invoked 3 times, allowing you to return a different `price` or `cardCode` for each individual gift card.
+The hook is called **once for each quantity per order line item**. For example, if an order has 1 order line with a giftcard, and the quantity is 3, the hook is invoked 3 times, allowing you to return a different `cardCode` for each individual gift card.
 
 The generated gift card codes are saved to the order line's `giftCardCodes` custom field, so you can reference them later (e.g. for email delivery or customer notifications).
 

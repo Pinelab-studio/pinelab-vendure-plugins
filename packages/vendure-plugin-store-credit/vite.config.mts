@@ -3,6 +3,8 @@ import { join, resolve } from 'path';
 import { pathToFileURL } from 'url';
 import { defineConfig } from 'vite';
 
+const monorepoRoot = resolve(__dirname, '../..');
+
 export default defineConfig({
   base: '/dashboard',
   build: {
