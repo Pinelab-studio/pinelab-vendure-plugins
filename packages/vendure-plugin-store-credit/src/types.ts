@@ -9,8 +9,13 @@ export interface StoreCreditPluginOptions {
    * @description
    * Determines if a gift card wallet should be created for a given OrderLine.
    *
+   * This hook is called **once per order line item** (i.e. once per
+   * quantity). For example, if an order line has a quantity of 3, the hook
+   * is invoked 3 times, allowing you to return a different `price` or
+   * `cardCode` for each individual gift card.
+   *
    * Creates a gift card wallet when the hook returns an object with `price`
-   * and `cardCode`. Returning `false` skips wallet creation for that line.
+   * and `cardCode`. Returning `false` skips wallet creation for that item.
    *
    * **Important:** `cardCode` is used to authorize spending against the
    * wallet, so it must be unguessable. Always return a cryptographically

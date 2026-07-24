@@ -61,6 +61,12 @@ import { LanguageCode } from '@vendure/core';
   // Create settled order with test method, to test refunding
   await createSettledOrder(shopClient, 1, true);
 
+  // Create a settled order with a gift card product (auto-creates gift card wallets)
+  const giftCardOrder = await createSettledOrder(shopClient, 1, true, [
+    { id: 'T_5', quantity: 2 },
+  ]);
+  console.log(`Created gift card order ${giftCardOrder.code}`);
+
   // Create wallets for all customers with a special promotion balance
   const wallets = await createWalletsForCustomers(
     server.app,

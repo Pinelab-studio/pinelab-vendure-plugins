@@ -1,4 +1,9 @@
-import { PluginCommonModule, Type, VendurePlugin } from '@vendure/core';
+import {
+  PluginCommonModule,
+  Type,
+  VendurePlugin,
+  LanguageCode,
+} from '@vendure/core';
 import { WalletAdjustment } from './entities/wallet-adjustment.entity';
 import { Wallet } from './entities/wallet.entity';
 import { WalletService } from './services/wallet.service';
@@ -28,6 +33,19 @@ import { StoreCreditPluginOptions } from './types';
     resolvers: [CommonResolver, AdminResolver],
   },
   configuration: (config) => {
+    config.customFields = {
+      ...config.customFields,
+      OrderLine: [
+        ...(config.customFields?.OrderLine ?? []),
+        {
+          name: 'giftCardCodes',
+          type: 'string',
+          list: true,
+          nullable: true,
+          label: [{ languageCode: LanguageCode.en, value: 'Gift Card Codes' }],
+        },
+      ],
+    };
     config.paymentOptions.paymentMethodHandlers.push(storeCreditPaymentHandler);
     return config;
   },

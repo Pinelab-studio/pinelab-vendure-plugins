@@ -6,7 +6,7 @@ import { Wallet } from '../entities/wallet.entity';
  * This event is fired once per order after all gift card wallets for that
  * order have been created.
  */
-export class GiftCardWalletCreatedEvent extends VendureEvent {
+export class GiftCardsCreatedEvent extends VendureEvent {
   constructor(
     public readonly ctx: RequestContext,
     public readonly wallets: Wallet[],

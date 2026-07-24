@@ -148,6 +148,23 @@ query Wallet($id: ID!) {
 }
 ```
 
+## Gift cards
+
+You can configure the plugin to automatically create gift card wallets when certain products are ordered. Use the `createGiftCardWallet` hook in the plugin options:
+
+```ts
+StoreCreditPlugin.init({
+  createGiftCardWallet: async (ctx, injector, order, orderLine) => {
+    // Return { price, cardCode } to create a gift card wallet for this item
+    // Returning false skips this item
+  },
+});
+```
+
+The hook is called **once per order line item** (i.e. once per quantity). For example, if a customer orders 3 gift cards, the hook is invoked 3 times, allowing you to return a different `price` or `cardCode` for each individual gift card.
+
+The generated gift card codes are saved to the order line's `giftCardCodes` custom field, so you can reference them later (e.g. for email delivery or customer notifications).
+
 ## Gift card code security
 
 Gift card wallets are identified by their `code`. Treat this code like cash:

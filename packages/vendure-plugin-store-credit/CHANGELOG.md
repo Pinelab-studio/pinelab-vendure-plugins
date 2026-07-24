@@ -1,3 +1,10 @@
+# 2.0.0 (2026-07-21)
+
+- **BREAKING**: The `createGiftCardWallet` hook is now called once per order line quantity instead of once per order line. This allows returning different gift card configurations for each individual item when the quantity of an order line is > 1.
+- Added `giftCardCodes` custom field to `OrderLine` to store generated gift card codes.
+- Renamed `GiftCardWalletCreatedEvent` to `GiftCardsCreatedEvent`. The old class name is kept as a deprecated alias.
+- A database migration is required due to the new custom field.
+
 # 1.7.0 (2026-07-21)
 
 - Migrated to React Dashboard
