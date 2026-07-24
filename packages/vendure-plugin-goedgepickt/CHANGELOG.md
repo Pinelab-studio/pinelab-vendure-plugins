@@ -1,3 +1,7 @@
+# 3.0.1 (2026-07-24)
+
+- Include dashboard extensions in dist.
+
 # 3.0.0 (2026-07-24)
 
 - Replaced manual full sync with an automated nightly scheduled task. The plugin now registers a `ScheduledTask` that runs every night at 2:00 UTC (4:00 CEST) and syncs all enabled channels.
