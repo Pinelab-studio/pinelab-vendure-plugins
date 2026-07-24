@@ -42,6 +42,8 @@ import {
   OrderInput,
   OrderItemInput,
   ProductInput,
+  PullStockError,
+  PullStockResult,
 } from './goedgepickt.types';
 import {
   CreateProductVariantInput,
@@ -580,10 +582,10 @@ export class GoedgepicktService
   ): Promise<ProductVariant[]> {
     const variantsWithStock = stockInput.map((input) => ({
       id: input.variantId,
-      stockOnHand: input.stock,
+      stockOnHand: Math.max(0, input.stock), // No negative stock allowed
     }));
     const variants = await this.variantService.update(ctx, variantsWithStock);
-    // Set allocated of each variant to 0
+    // Set allocated of each variant to 0, because allocation is handled by GG, we just copy whatever stock GG gives us
     const variantIds = variantsWithStock.map((v) => v.id);
     if (!variantIds.length) {
       return [];
@@ -603,6 +605,84 @@ export class GoedgepicktService
       loggerCtx
     );
     return variants;
+  }
+
+  /**
+   * Pull stock for all variants of a product from Goedgepickt and update
+   * the stock levels in Vendure.
+   */
+  async pullStockForProduct(
+    ctx: RequestContext,
+    productId: ID
+  ): Promise<PullStockResult> {
+    const client = this.getClientForChannel(ctx);
+    if (!client) {
+      return {
+        success: false,
+        updatedVariants: 0,
+        errors: [
+          {
+            sku: 'N/A',
+            message:
+              'Goedgepickt is not configured or enabled for this channel',
+          },
+        ],
+      };
+    }
+
+    const variants = await this.getVariants(ctx, undefined, productId);
+    if (!variants.length) {
+      return {
+        success: true,
+        updatedVariants: 0,
+        errors: [],
+      };
+    }
+
+    const stockInputs: StockInput[] = [];
+    const errors: PullStockError[] = [];
+
+    for (const variant of variants) {
+      try {
+        const ggProduct = await client.findProductBySku(variant.sku);
+        if (!ggProduct) {
+          errors.push({
+            sku: variant.sku,
+            message: `Product with SKU '${variant.sku}' not found in Goedgepickt`,
+          });
+          continue;
+        }
+        const ggStock = ggProduct.stock?.freeStock;
+        if (ggStock === null || ggStock === undefined) {
+          errors.push({
+            sku: variant.sku,
+            message: `No freeStock available for SKU '${variant.sku}' in Goedgepickt`,
+          });
+          continue;
+        }
+        stockInputs.push({
+          variantId: variant.id,
+          stock: ggStock,
+        });
+      } catch (error: unknown) {
+        errors.push({
+          sku: variant.sku,
+          message: `Failed to fetch stock for SKU '${variant.sku}': ${
+            error instanceof Error ? error.message : String(error)
+          }`,
+        });
+      }
+    }
+
+    if (stockInputs.length > 0) {
+      await this.updateVendureStock(ctx, stockInputs);
+    }
+
+    return {
+      success: errors.length === 0,
+      updatedVariants: stockInputs.length,
+      errors,
+    };
   }
 
   /**
@@ -737,7 +817,8 @@ export class GoedgepicktService
    */
   private async getVariants(
     ctx: RequestContext,
-    sku?: string
+    sku?: string,
+    productId?: ID
   ): Promise<VariantWithImage[]> {
     const translatedVariants: VariantWithImage[] = [];
     const take = 100;
@@ -769,6 +850,9 @@ export class GoedgepicktService
         // We've had some problems where numeric SKUs were not found
         const skuParam = /^\d+$/.test(sku) ? parseInt(sku, 10) : sku;
         query.andWhere('sku = :sku', { sku: skuParam });
+      }
+      if (productId) {
+        query.andWhere('productId = :productId', { productId });
       }
       const variants = await query.getMany();
       hasMore = !!variants.length;

@@ -3,10 +3,6 @@ import { RequestContext, Order as VendureOrder } from '@vendure/core';
 export interface GoedgepicktPluginConfig {
   vendureHost: string;
   /**
-   * Used to validate incoming sync webhook
-   */
-  endpointSecret: string;
-  /**
    * Set webhook in Goedgepickt when saving credentials
    */
   setWebhook?: boolean;
@@ -154,4 +150,15 @@ export interface Webshop {
 export enum GoedgepicktEvent {
   stockChanged = 'product.stockChanged',
   orderStatusChanged = 'order.statusChanged',
+}
+
+export interface PullStockError {
+  sku: string;
+  message: string;
+}
+
+export interface PullStockResult {
+  success: boolean;
+  updatedVariants: number;
+  errors: PullStockError[];
 }

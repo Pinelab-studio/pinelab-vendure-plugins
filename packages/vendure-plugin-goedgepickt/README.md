@@ -19,7 +19,6 @@ import { GoedgepicktPlugin } from '@pinelab/vendure-plugin-goedgepickt';
 plugins: [
   GoedgepicktPlugin.init({
     vendureHost: 'https://your-vendure-server.io/',
-    endpointSecret: 'some-secret', // Used to validate incoming requests to /fullsync
     setWebhook: true // Automatically set webhooks in Goedgepickt or not
     // You can optionally set orders 'on_hold' in Goedgepickt if you'd like
     determineOrderStatus: (ctx, order) => {
@@ -44,10 +43,8 @@ When you save the credentials, the plugin will make sure the configured vendureH
 stock updates. **The plugin will never delete webhooks**, so if you ever change your url, you should manually delete the
 old webhook via GoedGepickt.
 
-5. Full sync can be run manually via the **GoedGepickt full sync** action on the product list page, or via a GET
-   request to endpoint`/goedgepickt/fullsync/<webhook-secret>/`. A full sync is processed in the worker and can take
-   a few hours to finish
-6. Orders can be manually (re-)pushed to GoedGepickt via the **Push to Goedgepickt** action in the order detail
+1. Full sync is automatically handled by a nightly scheduled task that runs at 2:00 UTC. Make sure you have `DefaultSchedulerPlugin` configured in your Vendure config.
+2. Orders can be manually (re-)pushed to GoedGepickt via the **Push to Goedgepickt** action in the order detail
    page's action bar dropdown.
 
 ### Pickup points / drop off points
