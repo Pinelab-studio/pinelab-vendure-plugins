@@ -43,8 +43,8 @@ When you save the credentials, the plugin will make sure the configured vendureH
 stock updates. **The plugin will never delete webhooks**, so if you ever change your url, you should manually delete the
 old webhook via GoedGepickt.
 
-5. Full sync is automatically handled by a nightly scheduled task that runs at 2:00 UTC (4:00 CEST). Make sure you have `DefaultSchedulerPlugin` configured in your Vendure config.
-6. Orders can be manually (re-)pushed to GoedGepickt via the **Push to Goedgepickt** action in the order detail
+1. Full sync is automatically handled by a nightly scheduled task that runs at 2:00 UTC. Make sure you have `DefaultSchedulerPlugin` configured in your Vendure config.
+2. Orders can be manually (re-)pushed to GoedGepickt via the **Push to Goedgepickt** action in the order detail
    page's action bar dropdown.
 
 ### Pickup points / drop off points
