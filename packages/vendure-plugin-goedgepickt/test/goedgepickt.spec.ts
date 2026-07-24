@@ -458,6 +458,52 @@ describe('Goedgepickt plugin', function () {
     expect(payload.sku).toBe('sku123');
   });
 
+  it('Handles negative freeStock via webhook by clamping stockOnHand to 0', async () => {
+    nock(apiUrl)
+      .persist(true)
+      .get(
+        /\/api\/v1\/products\?searchAttribute=sku&searchDelimiter=%3D&searchValue=*/
+      )
+      .reply(200, {
+        items: [
+          {
+            uuid: 'test-uuid',
+            sku: 'L2201308',
+            stock: {
+              freeStock: -5,
+            },
+          },
+        ],
+      });
+    const body: IncomingStockUpdateEvent = {
+      event: 'stockUpdated',
+      newStock: 'doesnt matter',
+      productSku: 'L2201308',
+      productUuid: 'doesntmatter',
+    };
+    const res = await shopClient.fetch(
+      `http://localhost:3105/goedgepickt/webhook/${defaultChannelToken}`,
+      {
+        method: 'POST',
+        body: JSON.stringify(body),
+        headers: {
+          signature: 'some-sample-signature',
+        },
+      }
+    );
+    const updatedVariant = await findVariantBySku('L2201308');
+    expect(res.ok).toBe(true);
+    expect(updatedVariant).toBeDefined();
+    const stock = await waitFor(async () => {
+      const stock = await getAvailableStock(updatedVariant?.id!);
+      if (stock.stockOnHand === 0) {
+        return stock;
+      }
+    });
+    expect(stock.stockOnHand).toBe(0);
+    expect(stock.stockAllocated).toBe(0);
+  });
+
   afterAll(async () => {
     await server.destroy();
   }, 100000);

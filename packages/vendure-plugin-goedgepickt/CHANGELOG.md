@@ -1,3 +1,7 @@
+# 2.4.1 (2026-07-24)
+
+- Fix negative freeStock from Goedgepickt by clamping stockOnHand to 0, preventing `error.stockonhand-cannot-be-negative` errors
+
 # 2.4.0 (2026-07-21)
 
 - Migrated to React Dashboard

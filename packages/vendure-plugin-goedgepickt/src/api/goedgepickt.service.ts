@@ -580,10 +580,10 @@ export class GoedgepicktService
   ): Promise<ProductVariant[]> {
     const variantsWithStock = stockInput.map((input) => ({
       id: input.variantId,
-      stockOnHand: input.stock,
+      stockOnHand: Math.max(0, input.stock), // No negative stock allowed
     }));
     const variants = await this.variantService.update(ctx, variantsWithStock);
-    // Set allocated of each variant to 0
+    // Set allocated of each variant to 0, because allocation is handled by GG, we just copy whatever stock GG gives us
     const variantIds = variantsWithStock.map((v) => v.id);
     if (!variantIds.length) {
       return [];
