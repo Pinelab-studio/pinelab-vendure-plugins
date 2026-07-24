@@ -1,9 +1,10 @@
 # 3.0.0 (2026-07-24)
 
 - Replaced manual full sync with an automated nightly scheduled task. The plugin now registers a `ScheduledTask` that runs every night at 2:00 UTC (4:00 CEST) and syncs all enabled channels.
+- Pull stock levels from GoedGepickt via a button on the product detail page.
 - **Breaking:** Removed `endpointSecret` from `GoedgepicktPluginConfig`. The `/goedgepickt/fullsync/:secret` endpoint has been removed.
 - **Breaking:** Removed the `runGoedgepicktFullSync` GraphQL mutation.
-- **Breaking:** Removed the `GoedGepickt full sync` action bar item from the product list page in the dashboard.
+- **Breaking:** Removed the `GoedGepickt full sync` action bar item from the product list page in the dashboard. Use the scheduled task UI to trigger a full sync.
 - **Breaking:** The `DefaultSchedulerPlugin` must now be present in your Vendure config for the full sync to run automatically.
 
 # 2.4.1 (2026-07-24)

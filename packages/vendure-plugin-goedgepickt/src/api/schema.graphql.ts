@@ -21,11 +21,23 @@ export const schema = gql`
 
   union GoedgepicktConfigUpdateResult = GoedgepicktConfig | GoedgepicktError
 
+  type GoedgepicktPullStockError {
+    sku: String!
+    message: String!
+  }
+
+  type GoedgepicktPullStockResult {
+    success: Boolean!
+    updatedVariants: Int!
+    errors: [GoedgepicktPullStockError!]!
+  }
+
   extend type Mutation {
     updateGoedgepicktConfig(
       input: GoedgepicktConfigInput!
     ): GoedgepicktConfigUpdateResult
     syncOrderToGoedgepickt(orderCode: String!): Boolean
+    pullGoedgepicktStock(productId: ID!): GoedgepicktPullStockResult!
   }
 
   extend type Query {

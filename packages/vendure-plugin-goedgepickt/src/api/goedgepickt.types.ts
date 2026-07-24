@@ -151,3 +151,14 @@ export enum GoedgepicktEvent {
   stockChanged = 'product.stockChanged',
   orderStatusChanged = 'order.statusChanged',
 }
+
+export interface PullStockError {
+  sku: string;
+  message: string;
+}
+
+export interface PullStockResult {
+  success: boolean;
+  updatedVariants: number;
+  errors: PullStockError[];
+}
