@@ -43,7 +43,9 @@ When you save the credentials, the plugin will make sure the configured vendureH
 stock updates. **The plugin will never delete webhooks**, so if you ever change your url, you should manually delete the
 old webhook via GoedGepickt.
 
-1. Full sync is automatically handled by a nightly scheduled task that runs at 2:00 UTC. Make sure you have `DefaultSchedulerPlugin` configured in your Vendure config.
+1. The plugin registers two scheduled tasks. Make sure you have `DefaultSchedulerPlugin` configured in your Vendure config:
+   - **Stock sync** runs every night at 2:00 UTC and pulls stock levels from GoedGepickt into Vendure.
+   - **Product push** runs every Monday at 6:00 UTC and pushes all Vendure products to GoedGepickt.
 2. Orders can be manually (re-)pushed to GoedGepickt via the **Push to Goedgepickt** action in the order detail
    page's action bar dropdown.
 
@@ -79,6 +81,10 @@ mutation {
   }
 }
 ```
+
+### Stock locations
+
+This plugin **only works with a single stock location** in Vendure. It will not work correctly when you have multiple stock locations configured. GoedGepickt should manage stock for all your locations, and Vendure should only have a single stock location that reflects the total stock managed by GoedGepickt.
 
 ## Monitoring and Alerting
 
