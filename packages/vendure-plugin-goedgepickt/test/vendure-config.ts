@@ -21,6 +21,9 @@ export const config: VendureConfig = mergeConfig(testConfig, {
     adminApiPlayground: {},
     shopApiPlayground: {},
   },
+  schedulerOptions: {
+    runTasksInWorkerOnly: false,
+  },
   authOptions: {
     tokenMethod: ['cookie', 'bearer'],
   },
@@ -34,7 +37,7 @@ export const config: VendureConfig = mergeConfig(testConfig, {
       determineOrderStatus: async (ctx, order) => 'on_hold' as const,
     }),
     DefaultSearchPlugin,
-    DefaultSchedulerPlugin.init(),
+    DefaultSchedulerPlugin.init({}),
     AssetServerPlugin.init({
       assetUploadDir: path.join(__dirname, '__data__/assets'),
       route: 'assets',

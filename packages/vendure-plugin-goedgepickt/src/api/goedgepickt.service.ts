@@ -347,10 +347,6 @@ export class GoedgepicktService
       stock: ggStock,
     }));
     await this.updateVendureStock(ctx, stockInput);
-    Logger.info(
-      `Updated stock for ${productSku} to ${ggStock} via incoming webhook`,
-      loggerCtx
-    );
   }
 
   /**
