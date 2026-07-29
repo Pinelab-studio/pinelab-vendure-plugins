@@ -15,7 +15,10 @@ import {
 import { PLUGIN_INIT_OPTIONS } from './constants';
 import { schema } from './api/schema.graphql';
 import { channelCustomFields, orderCustomFields } from './custom-fields';
-import { goedgepicktFullSyncTask } from './config/goedgepickt-scheduled-task';
+import {
+  goedgepicktPushProductsTask,
+  goedgepicktSyncStockTask,
+} from './config/goedgepickt-scheduled-task';
 
 @VendurePlugin({
   imports: [PluginCommonModule],
@@ -36,7 +39,8 @@ import { goedgepicktFullSyncTask } from './config/goedgepickt-scheduled-task';
     config.authOptions.customPermissions.push(goedgepicktPermission);
     config.customFields.Order.push(...orderCustomFields);
     config.customFields.Channel.push(...channelCustomFields);
-    config.schedulerOptions.tasks.push(goedgepicktFullSyncTask);
+    config.schedulerOptions.tasks.push(goedgepicktSyncStockTask);
+    config.schedulerOptions.tasks.push(goedgepicktPushProductsTask);
 
     return config;
   },

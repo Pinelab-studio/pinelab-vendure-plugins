@@ -8,12 +8,11 @@ import { GoedgepicktService } from '../api/goedgepickt.service';
 import { loggerCtx } from '../constants';
 
 /**
- * Scheduled task that runs a full GoedGepickt sync for all enabled channels.
- * Pushes all Vendure products to GoedGepickt and updates stock levels.
+ * Scheduled task that pulls stock levels from GoedGepickt for all enabled channels.
  */
-export const goedgepicktFullSyncTask = new ScheduledTask({
-  id: 'goedgepickt-full-sync',
-  description: 'Sync products and stock with GoedGepickt',
+export const goedgepicktSyncStockTask = new ScheduledTask({
+  id: 'goedgepickt-sync-stock',
+  description: 'Sync stock levels from GoedGepickt',
   schedule: (cron) => cron.everyDayAt(2, 0),
   async execute({ injector }) {
     const connection = injector.get(TransactionalConnection);
@@ -22,14 +21,40 @@ export const goedgepicktFullSyncTask = new ScheduledTask({
     const enabledChannels = channels.filter((c) => c.customFields?.ggEnabled);
     let syncedChannels = 0;
     for (const channel of enabledChannels) {
-      await service.doFullSync(channel.token).catch((err) => {
+      await service.pullAllStocklevels(channel.token).catch((err) => {
         Logger.error(
-          `Failed to create fullsync jobs for channel ${channel.id}: ${err.message}`,
+          `Failed to pull stock levels for channel ${channel.id}: ${err.message}`,
           loggerCtx
         );
       });
       syncedChannels++;
     }
     return { syncedChannels };
+  },
+});
+
+/**
+ * Scheduled task that pushes all Vendure products to GoedGepickt for all enabled channels.
+ */
+export const goedgepicktPushProductsTask = new ScheduledTask({
+  id: 'goedgepickt-push-products',
+  description: 'Push all products to GoedGepickt',
+  schedule: (cron) => cron.everyMondayAt(6, 0),
+  async execute({ injector }) {
+    const connection = injector.get(TransactionalConnection);
+    const service = injector.get(GoedgepicktService);
+    const channels = await connection.getRepository(Channel).find();
+    const enabledChannels = channels.filter((c) => c.customFields?.ggEnabled);
+    let pushedChannels = 0;
+    for (const channel of enabledChannels) {
+      await service.pushAllProductsToGoedgepickt(channel.token).catch((err) => {
+        Logger.error(
+          `Failed to push products for channel ${channel.id}: ${err.message}`,
+          loggerCtx
+        );
+      });
+      pushedChannels++;
+    }
+    return { pushedChannels };
   },
 });

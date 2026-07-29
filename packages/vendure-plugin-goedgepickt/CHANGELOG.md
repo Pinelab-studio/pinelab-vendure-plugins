@@ -1,3 +1,10 @@
+# 3.1.0 (2026-07-29)
+
+- Split the single nightly full sync scheduled task into two separate tasks:
+  - `goedgepickt-sync-stock` runs every night at 2:00 AM to pull stock levels from GoedGepickt
+  - `goedgepickt-push-products` runs every Monday at 6:00 AM to push all Vendure products to GoedGepickt
+- Split `doFullSync()` into `pullAllStocklevels()` and `pushAllProductsToGoedgepickt()` in `GoedgepicktService`
+
 # 3.0.1 (2026-07-24)
 
 - Include dashboard extensions in dist.

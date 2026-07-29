@@ -145,26 +145,7 @@ describe('Goedgepickt plugin', function () {
     );
   });
 
-  it('Pushes products and updates stock level on full sync', async () => {
-    // Catch the lookup of products
-    nock(apiUrl)
-      .persist(true)
-      .get(
-        /\/api\/v1\/products\?searchAttribute=sku&searchDelimiter=%3D&searchValue=*/
-      )
-      .reply(200, {
-        items: [],
-      });
-    // Catch the creation of products
-    let pushProductsPayloads: any[] = [];
-    nock(apiUrl)
-      .persist(true)
-      .post('/api/v1/products', (reqBody: any) => {
-        pushProductsPayloads.push(reqBody);
-        return true;
-      })
-      .reply(200, []);
-
+  it('Pulls stock levels from GoedGepickt', async () => {
     nock(apiUrl)
       .persist(true)
       .get('/api/v1/products')
@@ -180,7 +161,36 @@ describe('Goedgepickt plugin', function () {
           },
         ],
       });
-    await server.app.get(GoedgepicktService).doFullSync('e2e-default-channel');
+    await server.app
+      .get(GoedgepicktService)
+      .pullAllStocklevels('e2e-default-channel');
+    const updatedVariant = await findVariantBySku('L2201308');
+    expect(updatedVariant).toBeDefined();
+    const stock = await getAvailableStock(updatedVariant?.id!);
+    expect(stock.stockOnHand).toBe(33);
+    expect(stock.stockAllocated).toBe(0);
+  });
+
+  it('Pushes all products to GoedGepickt', async () => {
+    let pushProductsPayloads: any[] = [];
+    nock(apiUrl)
+      .persist(true)
+      .get(
+        /\/api\/v1\/products\?searchAttribute=sku&searchDelimiter=%3D&searchValue=*/
+      )
+      .reply(200, {
+        items: [],
+      });
+    nock(apiUrl)
+      .persist(true)
+      .post('/api/v1/products', (reqBody: any) => {
+        pushProductsPayloads.push(reqBody);
+        return true;
+      })
+      .reply(200, []);
+    await server.app
+      .get(GoedgepicktService)
+      .pushAllProductsToGoedgepickt('e2e-default-channel');
     const laptopPayload = await waitFor(() => {
       const laptopPayload = pushProductsPayloads.find(
         (p) => p.sku === 'L2201516'
@@ -198,11 +208,6 @@ describe('Goedgepickt plugin', function () {
     await expect(laptopPayload.url).toBe(
       `https://test-host/admin/catalog/products/1;id=1;tab=variants`
     );
-    const updatedVariant = await findVariantBySku('L2201308');
-    expect(updatedVariant).toBeDefined();
-    const stock = await getAvailableStock(updatedVariant?.id!);
-    expect(stock.stockOnHand).toBe(33);
-    expect(stock.stockAllocated).toBe(0);
   });
 
   it('Set goedgepickt as fulfillment handler', async () => {

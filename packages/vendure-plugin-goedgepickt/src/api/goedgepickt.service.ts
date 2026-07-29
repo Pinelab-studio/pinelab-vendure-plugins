@@ -30,7 +30,7 @@ import {
   translateDeep,
   UserInputError,
 } from '@vendure/core';
-import { IsNull } from 'typeorm';
+import { In, IsNull } from 'typeorm';
 import util from 'util';
 import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
 import { GoedgepicktClient } from './goedgepickt.client';
@@ -456,11 +456,9 @@ export class GoedgepicktService
   }
 
   /**
-   * 1. Gets all products from GG
-   * 2. Updates stock in Vendure based on GG products
-   * 3. Creates jobs for pushing products to GG
+   * Pull all stock levels from GoedGepickt and update Vendure stock
    */
-  async doFullSync(channelToken: string): Promise<void> {
+  async pullAllStocklevels(channelToken: string): Promise<void> {
     const ctx = await this.getCtxForChannel(channelToken);
     const client = this.getClientForChannel(ctx);
     if (!client) {
@@ -473,7 +471,7 @@ export class GoedgepicktService
       this.getVariants(ctx),
     ]);
     Logger.info(
-      `Full sync: Pushing ${variants.length} Vendure variants for channel ${channelToken} to GoedGepickt and fetching stock levels for those variants from GoedGepickt`,
+      `Pull stock: Fetching stock levels for ${variants.length} variants from GoedGepickt for channel ${channelToken}`,
       loggerCtx
     );
     // Update stock levels based on GG products
@@ -504,7 +502,28 @@ export class GoedgepicktService
     for (const batch of stockLevelBatches) {
       await this.updateVendureStock(ctx, batch);
     }
-    // Create 'push-products' jobs
+    Logger.info(
+      `Pulled stock levels for ${stockLevelInputs.length} variants for channel ${channelToken}`,
+      loggerCtx
+    );
+  }
+
+  /**
+   * Push all Vendure products to GoedGepickt
+   */
+  async pushAllProductsToGoedgepickt(channelToken: string): Promise<void> {
+    const ctx = await this.getCtxForChannel(channelToken);
+    const client = this.getClientForChannel(ctx);
+    if (!client) {
+      throw new UserInputError(
+        `GoedGepickt is not configured for channel ${channelToken}`
+      );
+    }
+    const variants = await this.getVariants(ctx);
+    Logger.info(
+      `Push products: Pushing ${variants.length} Vendure variants for channel ${channelToken} to GoedGepickt`,
+      loggerCtx
+    );
     const skus = variants.map((v) => v.sku);
     this.createPushProductJobs(ctx, skus);
   }
@@ -580,28 +599,36 @@ export class GoedgepicktService
     ctx: RequestContext,
     stockInput: StockInput[]
   ): Promise<ProductVariant[]> {
-    const variantsWithStock = stockInput.map((input) => ({
-      id: input.variantId,
-      stockOnHand: Math.max(0, input.stock), // No negative stock allowed
-    }));
-    const variants = await this.variantService.update(ctx, variantsWithStock);
-    // Set allocated of each variant to 0, because allocation is handled by GG, we just copy whatever stock GG gives us
-    const variantIds = variantsWithStock.map((v) => v.id);
-    if (!variantIds.length) {
+    if (!stockInput.length) {
       return [];
     }
-    await this.connection
-      .getRepository(ctx, StockLevel)
-      .createQueryBuilder()
-      .update()
-      .set({ stockAllocated: 0 })
-      .where('productVariantId IN (:...variantIds)', { variantIds })
-      .execute();
-    const skus = variants.map((v) => v.sku);
+    // Absolute SET (not delta-based) to avoid a race condition when multiple
+    // webhooks for the same variant fire concurrently across channels.
+    // variantService.update() uses a read-modify-write cycle to compute a delta
+    // for a StockAdjustment, so two concurrent calls can double-apply the delta.
+    // We also set stockAllocated to 0 because allocation is handled by GG.
+    const stockLevelRepo = this.connection.getRepository(ctx, StockLevel);
+    for (const input of stockInput) {
+      await stockLevelRepo
+        .createQueryBuilder()
+        .update()
+        .set({
+          stockOnHand: Math.max(0, input.stock),
+          stockAllocated: 0,
+        })
+        .where('productVariantId = :variantId', { variantId: input.variantId })
+        .execute();
+    }
+    const variantIds = stockInput.map((s) => s.variantId);
+    const variants = await this.connection
+      .getRepository(ctx, ProductVariant)
+      .findBy({ id: In(variantIds) });
+    const stockMap = new Map(stockInput.map((s) => [s.variantId, s.stock]));
+    const stockLog = variants
+      .map((v) => `${v.sku}=${stockMap.get(v.id) ?? '?'}`)
+      .join(', ');
     Logger.info(
-      `Updated stock of variants for channel ${ctx.channel.token}: ${skus.join(
-        ','
-      )}`,
+      `Updated stock of variants for channel ${ctx.channel.token}: ${stockLog}`,
       loggerCtx
     );
     return variants;
