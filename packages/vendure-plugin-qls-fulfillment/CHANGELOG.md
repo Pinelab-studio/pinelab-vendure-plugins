@@ -1,3 +1,10 @@
+# 3.0.0 (2026-07-29)
+
+- Migrated to React Dashboard.
+- Added React Dashboard action bar items for product sync, order link, push order, variant link, and adding additional EANs.
+- Kept legacy Angular Admin UI action bar items for backward compatibility.
+- Corrected the UI permission for the "Push order to QLS" action to `QLSPushOrder`.
+
 # 2.2.1 (2026-07-15)
 
 - Emit `StockMovementEvent` with corresponding `StockAdjustment` whenever a QLS webhook updates stock of a variant.

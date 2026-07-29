@@ -1,6 +1,6 @@
 {
   "name": "@pinelab/vendure-plugin-qls-fulfillment",
-  "version": "2.2.1",
+  "version": "3.0.0",
   "description": "Vendure plugin to fulfill orders via QLS.",
   "keywords": [
     "fulfillment",
@@ -23,7 +23,9 @@
     "CHANGELOG.md"
   ],
   "scripts": {
-    "build": "rimraf dist && yarn generate && tsc && copyfiles -u 1 'src/ui/**/*' dist/",
+    "build": "rimraf dist && yarn generate && tsc && copyfiles -u 1 'src/ui/**/*' 'src/dashboard/**/*' dist/",
+    "build:dashboard": "vite build --config ./vite.config.mts",
+    "dev:dashboard": "vite --clearScreen false",
     "start": "nodemon --watch src --exec ts-node test/dev-server.ts",
     "generate": "graphql-codegen",
     "test": "vitest run --bail 1",
