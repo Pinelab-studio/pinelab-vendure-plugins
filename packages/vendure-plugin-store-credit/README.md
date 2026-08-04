@@ -165,6 +165,41 @@ The hook is called **once for each quantity per order line item**. For example, 
 
 The generated gift card codes are saved to the order line's `giftCardCodes` custom field, so you can reference them later (e.g. for email delivery or customer notifications).
 
+### Paying with a gift card code
+
+Customers can pay for an order by providing the gift card code at checkout. The full wallet balance will be applied to the order (up to the outstanding amount).
+
+```graphql
+mutation {
+  addPaymentToOrder(
+    input: { method: "store-credit", metadata: { giftCardCode: "ABC123" } }
+  ) {
+    ... on Order {
+      id
+      code
+    }
+  }
+}
+```
+
+To only pay a specific amount with the gift card, include the `amount` in the metadata:
+
+```graphql
+mutation {
+  addPaymentToOrder(
+    input: {
+      method: "store-credit"
+      metadata: { giftCardCode: "ABC123", amount: 100000 }
+    }
+  ) {
+    ... on Order {
+      id
+      code
+    }
+  }
+}
+```
+
 ## Gift card code security
 
 Gift card wallets are identified by their `code`. Treat this code like cash:
