@@ -134,7 +134,6 @@ export class WalletService implements OnApplicationBootstrap {
       const wallet = await this.create(
         ctx,
         {
-          customerId: order.customerId,
           name: finalCode,
         },
         finalCode

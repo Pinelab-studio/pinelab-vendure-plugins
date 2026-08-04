@@ -1161,6 +1161,103 @@ describe('Auto-creation on OrderPlacedEvent', () => {
     );
   });
 
+  it('Should allow a different customer to pay with an auto-created gift card', async () => {
+    shopClient.setChannelToken(E2E_DEFAULT_CHANNEL_TOKEN);
+    adminClient.setChannelToken(E2E_DEFAULT_CHANNEL_TOKEN);
+    const eventBus = server.app.get(EventBus);
+    const eventsPromise = firstValueFrom(
+      eventBus.ofType(GiftCardsCreatedEvent).pipe(
+        filter((event) => event.wallets.length > 0),
+        take(1),
+        toArray()
+      )
+    );
+
+    // Customer 1 purchases a gift card product
+    await shopClient.asUserWithCredentials(
+      'hayden.zieme12@hotmail.com',
+      'test'
+    );
+    await createSettledOrder(shopClient, 1, true, [
+      {
+        id: 'T_5',
+        quantity: 1,
+      },
+    ]);
+
+    const events = await eventsPromise;
+    expect(events).toHaveLength(1);
+    const giftCardWallet = events[0].wallets[0];
+    expect(giftCardWallet.code).toMatch(/^8pZ2nL9qX5mB/);
+    expect(giftCardWallet.balance).toBe(100);
+
+    // A different (anonymous) customer uses the gift card to pay for a different order
+    await shopClient.asAnonymousUser();
+    // Clear the stale auth token so subsequent requests are truly anonymous
+    delete (shopClient as any).authToken;
+    delete (shopClient as any).headers.Authorization;
+    const order = await addItem(shopClient, 'T_1', 1);
+    const setCustomerRes = await shopClient.query(
+      gql`
+        mutation SetCustomerForOrder($input: CreateCustomerInput!) {
+          setCustomerForOrder(input: $input) {
+            ... on Order {
+              id
+              state
+            }
+            ... on ErrorResult {
+              errorCode
+              message
+            }
+          }
+        }
+      `,
+      {
+        input: {
+          emailAddress: 'giftcard-receiver@example.com',
+          firstName: 'Gift',
+          lastName: 'Receiver',
+        },
+      }
+    );
+    expect((setCustomerRes as any)?.errorCode).toBeUndefined();
+
+    const transitionRes = await proceedToArrangingPayment(shopClient, 1, {
+      input: {
+        fullName: 'Gift Receiver',
+        streetLine1: 'Verzetsstraat',
+        streetLine2: '12a',
+        city: 'Liwwa',
+        postalCode: '8923CP',
+        countryCode: 'NL',
+      },
+    });
+    expect((transitionRes as any)?.errorCode).toBeUndefined();
+    expect(order.totalWithTax).toBe(155880);
+
+    const { wallet: walletBefore } = await adminClient.query(
+      GET_WALLET_WITH_ADJUSTMENTS,
+      { id: giftCardWallet.id }
+    );
+
+    const { addPaymentToOrder } = await shopClient.query(AddPaymentToOrder, {
+      input: {
+        method: 'store-credit',
+        metadata: { giftCardCode: giftCardWallet.code, amount: 50 },
+      },
+    });
+    expect((addPaymentToOrder as any)?.errorCode).toBeUndefined();
+    const paidOrder = addPaymentToOrder;
+    expect(paidOrder.id).toBeDefined();
+    expect(paidOrder.state).toBe('ArrangingPayment');
+
+    const { wallet: walletAfter } = await adminClient.query(
+      GET_WALLET_WITH_ADJUSTMENTS,
+      { id: giftCardWallet.id }
+    );
+    expect(walletAfter.balance).toBe(walletBefore.balance - 50);
+  });
+
   it("Should fail to pay with another Customer's wallet", async () => {
     const { createWallet: wallet } = await adminClient.query<
       { createWallet: Wallet },
