@@ -1,3 +1,9 @@
+# 2.0.2 (2026-08-04)
+
+- Auto-created gift cards are no longer linked to the purchasing customer, so they can be used by any customer with the gift card code.
+- Made `WalletAdjustment.mutatedBy` optional, allowing gift-card payments to be recorded without an active user (e.g. anonymous/guest customers).
+- **BREAKING**: A database migration is required. Drop the `NOT NULL` constraint on `wallet_adjustment.mutatedById` so that adjustments can be created without an associated user.
+
 # 2.0.1 (2026-08-04)
 
 - Added documentation for paying with a gift card code, with and without a specified amount.
