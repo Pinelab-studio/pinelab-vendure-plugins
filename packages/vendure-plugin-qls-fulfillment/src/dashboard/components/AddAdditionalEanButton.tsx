@@ -1,13 +1,13 @@
 import {
   api,
   Button,
+  ConfirmationDialog,
   Dialog,
   DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DropdownMenuItem,
   Input,
   Label,
 } from '@vendure/dashboard';
@@ -18,18 +18,27 @@ import { toast } from 'sonner';
 
 import { addAdditionalEanToQlsDocument } from '../qls-dashboard.graphql';
 
-interface AddAdditionalEanMenuItemProps {
+interface AddAdditionalEanButtonProps {
   context: { entity?: any };
 }
 
 /**
- * Dropdown action bar item on the product variant detail page that prompts
+ * Action bar button on the product variant detail page that prompts
  * for an additional EAN and sends it to QLS.
+ *
+ * NOTE: This is deliberately a regular action bar button and NOT a dropdown
+ * (`type: 'dropdown'`) action bar item. Dropdown items are rendered inside a
+ * Base UI menu popup, which unmounts its children when the menu closes, and
+ * while the (modal) menu is open it intercepts keyboard events. Both make it
+ * impossible to have a working dialog with a text input inside a dropdown
+ * item. Vendure itself only uses button-only AlertDialogs inside dropdown
+ * menus; dialogs with inputs are always opened from outside a menu.
  */
-export function AddAdditionalEanMenuItem({
+export function AddAdditionalEanButton({
   context,
-}: AddAdditionalEanMenuItemProps) {
+}: AddAdditionalEanButtonProps) {
   const variantId = context.entity?.id;
+  const variantName = context.entity?.name;
   const [dialogOpen, setDialogOpen] = useState(false);
   const [ean, setEan] = useState('');
 
@@ -58,13 +67,14 @@ export function AddAdditionalEanMenuItem({
 
   return (
     <>
-      <DropdownMenuItem
+      <Button
+        variant="outline"
         disabled={!variantId}
         onClick={() => setDialogOpen(true)}
       >
         <QrCode className="mr-2 h-4 w-4" />
-        Add additional EAN to QLS
-      </DropdownMenuItem>
+        Add EAN
+      </Button>
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent>
           <DialogHeader>
@@ -94,13 +104,15 @@ export function AddAdditionalEanMenuItem({
             >
               Cancel
             </Button>
-            <Button
-              type="button"
-              disabled={!ean.trim() || isPending}
-              onClick={handleConfirm}
+            <ConfirmationDialog
+              title="Weet je het zeker?"
+              description={`Wil je EAN "${ean}" toevoegen aan product "${variantName}"?`}
+              onConfirm={handleConfirm}
             >
-              Add EAN
-            </Button>
+              <Button type="button" disabled={!ean.trim() || isPending}>
+                Add EAN
+              </Button>
+            </ConfirmationDialog>
           </DialogFooter>
         </DialogContent>
       </Dialog>

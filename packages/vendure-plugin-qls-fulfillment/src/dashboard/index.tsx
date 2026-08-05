@@ -1,6 +1,6 @@
 import { defineDashboardExtension } from '@vendure/dashboard';
 
-import { AddAdditionalEanMenuItem } from './components/AddAdditionalEanMenuItem';
+import { AddAdditionalEanButton } from './components/AddAdditionalEanButton';
 import { PushOrderToQlsMenuItem } from './components/PushOrderToQlsMenuItem';
 import { SyncProductsMenuItem } from './components/SyncProductsMenuItem';
 import { VisitQlsOrderButton } from './components/VisitQlsOrderButton';
@@ -40,11 +40,9 @@ defineDashboardExtension({
     {
       id: 'qls-add-ean',
       pageId: 'product-variant-detail',
-      type: 'dropdown',
+      // NOTE: intentionally not `type: 'dropdown'`, see AddAdditionalEanButton
       requiresPermission: 'QLSFullSync',
-      component: ({ context }) => (
-        <AddAdditionalEanMenuItem context={context} />
-      ),
+      component: ({ context }) => <AddAdditionalEanButton context={context} />,
     },
   ],
 });
