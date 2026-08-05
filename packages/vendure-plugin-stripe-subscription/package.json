@@ -1,6 +1,6 @@
 {
   "name": "@pinelab/vendure-plugin-stripe-subscription",
-  "version": "2.12.0",
+  "version": "2.12.1",
   "description": "Vendure plugin for selling subscriptions via Stripe",
   "author": "Martijn van de Brug <martijn@pinelab.studio>",
   "homepage": "https://plugins.pinelab.studio/",
@@ -18,7 +18,7 @@
     "CHANGELOG.md"
   ],
   "scripts": {
-    "build": "rimraf dist && yarn generate && tsc",
+    "build": "rimraf dist && yarn generate && tsc && copyfiles -u 0 \"src/dashboard/**/*\" dist/vendure-plugin-stripe-subscription/",
     "build:dashboard": "vite build --config ./vite.config.mts",
     "dev:dashboard": "vite --clearScreen false",
     "test": "vitest run --bail 1",
