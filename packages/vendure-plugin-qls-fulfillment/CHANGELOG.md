@@ -1,3 +1,7 @@
+# 2.3.0 (2026-08-05)
+
+- Extra prompt before adding an additional EAN
+
 # 2.2.1 (2026-07-15)
 
 - Emit `StockMovementEvent` with corresponding `StockAdjustment` whenever a QLS webhook updates stock of a variant.
