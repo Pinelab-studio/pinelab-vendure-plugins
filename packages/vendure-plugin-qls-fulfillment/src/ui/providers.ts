@@ -200,7 +200,7 @@ export default [
       try {
         const variant = await firstValueFrom(entity$.pipe(take(1)));
         const confirmed = window.confirm(
-          `Wil je dit EAN\n${ean}\ntoevoegen aan\n"${variant?.name}"`
+          `Wil je EAN "${ean}" toevoegen aan "${variant?.name}"?`
         );
         if (!confirmed) {
           return;
