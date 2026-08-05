@@ -4,7 +4,7 @@ import {
   ModalService,
 } from '@vendure/admin-ui/core';
 import { firstValueFrom, of } from 'rxjs';
-import { map, catchError } from 'rxjs/operators';
+import { map, catchError, take } from 'rxjs/operators';
 import gql from 'graphql-tag';
 
 export default [
@@ -188,12 +188,30 @@ export default [
     locationId: 'product-variant-detail',
     icon: 'resistor',
     requiresPermission: ['QLSFullSync'],
-    onClick: (_, { route, dataService, notificationService }) => {
+    onClick: async (
+      _,
+      { route, dataService, notificationService, entity$ }
+    ) => {
       const ean = window.prompt('Enter additional EAN to add to QLS:');
       if (!ean) {
         return;
       }
       const variantId = route.snapshot.params.id;
+      try {
+        const variant = await firstValueFrom(entity$.pipe(take(1)));
+        const confirmed = window.confirm(
+          `Wil je dit EAN\n${ean}\ntoevoegen aan\n"${variant?.name}"`
+        );
+        if (!confirmed) {
+          return;
+        }
+      } catch (err) {
+        notificationService.notify({
+          message: (err as any).message,
+          type: 'error',
+        });
+        return;
+      }
       dataService
         .mutate(
           gql`
