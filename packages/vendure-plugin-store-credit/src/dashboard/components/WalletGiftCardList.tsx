@@ -67,11 +67,11 @@ export const giftCardWalletList: DashboardRouteDefinition = {
     sectionId: 'marketing',
     id: 'gift-card-wallets',
     url: '/gift-card-wallets',
-    title: 'Gift Card Wallets',
+    title: 'Gift Cards',
   },
   path: '/gift-card-wallets',
   loader: () => ({
-    breadcrumb: 'Gift Card Wallets',
+    breadcrumb: 'Gift Cards',
   }),
   component: (route) => <WalletListInner route={route} />,
 };

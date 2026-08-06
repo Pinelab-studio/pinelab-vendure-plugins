@@ -19,8 +19,8 @@ const WalletAdjustmentCard: React.FC<Props> = ({
       <div>
         <div className="font-medium">{adjustment.description}</div>
         <div className="text-xs text-muted-foreground">
-          {new Date(adjustment.createdAt).toLocaleDateString()} • By:{' '}
-          {adjustment.mutatedBy.identifier}
+          {new Date(adjustment.createdAt).toLocaleDateString()}
+          {adjustment.mutatedBy && ` • By: ${adjustment.mutatedBy.identifier}`}
         </div>
       </div>
       <div

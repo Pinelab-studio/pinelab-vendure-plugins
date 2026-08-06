@@ -10,7 +10,6 @@ import {
   storeCreditPaymentHandler,
   StoreCreditPlugin,
 } from '../src';
-import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
 import {
   addItem,
   createSettledOrder,
