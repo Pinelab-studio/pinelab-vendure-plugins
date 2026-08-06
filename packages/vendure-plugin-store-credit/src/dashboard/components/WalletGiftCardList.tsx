@@ -1,4 +1,6 @@
 import {
+  ActionBarItem,
+  Button,
   DashboardRouteDefinition,
   ListPage,
   useLocalFormat,
@@ -7,6 +9,8 @@ import { graphql } from '@/vdb/graphql/graphql';
 import { Trans } from '@lingui/react/macro';
 import { GiftCardWalletDetailSheet } from './GiftCardWalletDetailSheet';
 import { Wallet } from '../../api/generated/graphql';
+import { Plus } from 'lucide-react';
+import { CreateGiftCardDialog } from './CreateGiftCardDialog';
 
 export const getWalletList = graphql(`
   query GetWallets($options: WalletListOptions) {
@@ -58,7 +62,16 @@ const WalletListInner = ({ route }: { route: any }) => {
           },
         },
       }}
-    ></ListPage>
+    >
+      <ActionBarItem itemId="create-gift-card">
+        <CreateGiftCardDialog>
+          <Button type="button">
+            <Plus className="size-4" />
+            Create Gift Card
+          </Button>
+        </CreateGiftCardDialog>
+      </ActionBarItem>
+    </ListPage>
   );
 };
 

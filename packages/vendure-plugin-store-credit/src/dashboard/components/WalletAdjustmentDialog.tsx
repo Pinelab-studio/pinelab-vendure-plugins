@@ -7,7 +7,10 @@ import {
   graphql,
   Button,
   Input,
-  MoneyInput,
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+  InputGroupText,
   FormFieldWrapper,
   Switch,
   AlertDialog,
@@ -19,6 +22,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
   handleNestedFormSubmit,
+  useLocalFormat,
 } from '@vendure/dashboard';
 import * as AlertDialogPrimitive from '@radix-ui/react-alert-dialog';
 
@@ -51,10 +55,11 @@ export const WalletAdjustmentDialog = ({
 }: MyCustomFormProps) => {
   const [open, setOpen] = React.useState(initialOpen);
   const queryClient = useQueryClient();
+  const { toMinorUnits } = useLocalFormat();
   const form = useForm({
     defaultValues: {
       direction: 'add' as AdjustDirection,
-      amount: 0,
+      amount: '',
       description: '',
     },
   });
@@ -88,7 +93,7 @@ export const WalletAdjustmentDialog = ({
             mutate({
               walletId,
               description: data.description,
-              amount: data.amount * sign,
+              amount: toMinorUnits(Number(data.amount)) * sign,
             });
           })}
         >
@@ -106,6 +111,11 @@ export const WalletAdjustmentDialog = ({
               control={control}
               label="Amount"
               name="amount"
+              rules={{
+                required: 'Amount is required',
+                validate: (value) =>
+                  Number(value) > 0 || 'Amount must be greater than zero',
+              }}
               render={({ field }) => (
                 <div className="flex items-center gap-2">
                   <div className="flex items-center gap-2 shrink-0">
@@ -126,16 +136,23 @@ export const WalletAdjustmentDialog = ({
                       {watch('direction') === 'subtract' ? '−' : '+'}
                     </span>
                   </div>
-                  <MoneyInput
-                    {...field}
-                    value={Number(field.value) || 0}
-                    onChange={(value) => field.onChange(value)}
-                    currency={currencyCode}
-                  />
+                  <InputGroup>
+                    <InputGroupInput
+                      {...field}
+                      type="number"
+                      min="0.01"
+                      step="0.01"
+                      placeholder="0.00"
+                    />
+                    <InputGroupAddon align="inline-end">
+                      <InputGroupText>{currencyCode}</InputGroupText>
+                    </InputGroupAddon>
+                  </InputGroup>
                 </div>
               )}
             />
             <FormFieldWrapper
+              control={control}
               label="Reason"
               name="description"
               render={() => (

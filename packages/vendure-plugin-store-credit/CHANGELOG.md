@@ -1,3 +1,7 @@
+# 2.1.0 (2026-08-06)
+
+- Allow creating gift cards via the Dashboard.
+
 # 2.0.2 (2026-08-04)
 
 - Auto-created gift cards are no longer linked to the purchasing customer, so they can be used by any customer with the gift card code.
