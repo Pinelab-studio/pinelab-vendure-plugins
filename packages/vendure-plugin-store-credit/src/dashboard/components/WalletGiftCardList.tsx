@@ -58,7 +58,11 @@ const WalletListInner = ({ route }: { route: any }) => {
         balance: {
           cell: ({ row }) => {
             const { balance, currencyCode } = row.original;
-            return formatCurrency(balance, currencyCode);
+            return (
+              <span className={balance <= 0 ? 'text-destructive' : undefined}>
+                {formatCurrency(balance, currencyCode)}
+              </span>
+            );
           },
         },
       }}

@@ -70,10 +70,7 @@ export const WalletAdjustmentDialog = ({
     mutationFn: (input: any) => api.mutate(ADJUST_WALLET, { input }),
     onSuccess: async () => {
       toast.success('Balance updated successfully');
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['wallet', walletId] }),
-        queryClient.invalidateQueries({ queryKey: ['customer'] }),
-      ]);
+      await queryClient.invalidateQueries();
       setOpen(false);
       reset();
     },
