@@ -18,6 +18,7 @@ import { QlsOrderEntity } from './entities/qls-order-entity.entity';
 
 @VendurePlugin({
   imports: [PluginCommonModule],
+  dashboard: './dashboard/index.tsx',
   providers: [
     {
       provide: PLUGIN_INIT_OPTIONS,

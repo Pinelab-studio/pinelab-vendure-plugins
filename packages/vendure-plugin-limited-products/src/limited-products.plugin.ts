@@ -1,7 +1,5 @@
 import { LanguageCode, PluginCommonModule, VendurePlugin } from '@vendure/core';
 import { AddItemOverrideResolver } from './api/add-item-override.resolver';
-import { AdminUiExtension } from '@vendure/ui-devkit/compiler';
-import path from 'path';
 import { shopSchemaExtensions } from './api/api-extensions';
 import { LimitFieldsResolver } from './api/limit-fields.resolver';
 
@@ -56,11 +54,7 @@ import { LimitFieldsResolver } from './api/limit-fields.resolver';
     });
     return config;
   },
+  dashboard: './dashboard/index.tsx',
   compatibility: '>=2.2.0',
 })
-export class LimitedProductsPlugin {
-  public static uiExtensions: AdminUiExtension = {
-    extensionPath: path.join(__dirname, 'ui'),
-    providers: ['providers.ts'],
-  };
-}
+export class LimitedProductsPlugin {}

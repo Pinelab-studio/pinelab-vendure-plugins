@@ -15,7 +15,7 @@ import {
   MutationCreateWalletArgs,
   MutationRefundPaymentToStoreCreditArgs,
   WalletAdjustment,
-  WalletListOptions,
+  QueryGiftCardWalletsArgs,
 } from './generated/graphql';
 import { Wallet } from '../entities/wallet.entity';
 
@@ -82,9 +82,13 @@ export class AdminResolver {
   @Allow(Permission.ReadCustomer)
   giftCardWallets(
     @Ctx() ctx: RequestContext,
-    @Args() args: WalletListOptions,
+    @Args() args: QueryGiftCardWalletsArgs,
     @Relations({ entity: Wallet }) relations: RelationPaths<Wallet>
   ) {
-    return this.walletService.getGiftCardWallets(ctx, args, relations);
+    return this.walletService.getGiftCardWallets(
+      ctx,
+      args.options ?? undefined,
+      relations
+    );
   }
 }

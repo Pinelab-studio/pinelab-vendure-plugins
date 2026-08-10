@@ -4,9 +4,11 @@ import { SortOrder } from '@vendure/common/lib/generated-shop-types';
 import {
   ID,
   Injector,
+  ListQueryBuilder,
   Logger,
   Order,
   OrderService,
+  PaginatedList,
   RequestContext,
   TransactionalConnection,
   UserInputError,
@@ -15,7 +17,11 @@ import { createReadStream, ReadStream } from 'fs';
 import Handlebars from 'handlebars';
 import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
 import { PDFTemplatePluginOptions } from '../order-pdfs-plugin';
-import { PdfTemplateInput } from '../ui/generated/graphql';
+import {
+  MutationCreatePdfTemplateArgs,
+  MutationUpdatePdfTemplateArgs,
+  PdfTemplateListOptions,
+} from '../generated/graphql';
 import {
   createTempFile,
   safeRemoveFile,
@@ -30,6 +36,7 @@ export class OrderPDFsService {
   constructor(
     private readonly connection: TransactionalConnection,
     private readonly orderService: OrderService,
+    private readonly listQueryBuilder: ListQueryBuilder,
     private moduleRef: ModuleRef,
     @Inject(PLUGIN_INIT_OPTIONS)
     private options: PDFTemplatePluginOptions
@@ -44,12 +51,11 @@ export class OrderPDFsService {
 
   async updateTemplate(
     ctx: RequestContext,
-    id: ID,
-    input: PdfTemplateInput
+    input: MutationUpdatePdfTemplateArgs['input']
   ): Promise<PDFTemplateEntity> {
     const repository = this.connection.getRepository(ctx, PDFTemplateEntity);
     const existing = await repository.findOneOrFail({
-      where: { channelId: ctx.channelId as string, id },
+      where: { channelId: ctx.channelId as string, id: input.id },
     });
     if (existing) {
       await repository.update(existing.id, {
@@ -60,13 +66,25 @@ export class OrderPDFsService {
       });
     }
     return await repository.findOneOrFail({
-      where: { channelId: ctx.channelId as string, id },
+      where: { channelId: ctx.channelId as string, id: input.id },
     });
+  }
+
+  async getTemplatesList(
+    ctx: RequestContext,
+    options?: PdfTemplateListOptions
+  ): Promise<PaginatedList<PDFTemplateEntity>> {
+    const qb = this.listQueryBuilder.build(PDFTemplateEntity, options, {
+      ctx,
+      where: { channelId: ctx.channelId.toString() },
+    });
+    const [items, totalItems] = await qb.getManyAndCount();
+    return { items, totalItems };
   }
 
   async createPDFTemplate(
     ctx: RequestContext,
-    input: PdfTemplateInput
+    input: MutationCreatePdfTemplateArgs['input']
   ): Promise<PDFTemplateEntity> {
     const repository = this.connection.getRepository(ctx, PDFTemplateEntity);
     const existing = await repository.findOne({

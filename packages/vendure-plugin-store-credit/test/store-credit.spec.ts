@@ -9,6 +9,7 @@ import {
   idsAreEqual,
   LogLevel,
   mergeConfig,
+  OrderLine,
   PaymentMethod,
   Product,
   ProductVariant,
@@ -16,6 +17,7 @@ import {
   RequestContext,
   ShippingMethod,
   StockLocation,
+  TransactionalConnection,
 } from '@vendure/core';
 import {
   createTestEnvironment,
@@ -71,7 +73,7 @@ import {
 } from './helpers';
 import gql from 'graphql-tag';
 import { createWalletsForCustomers } from '../src/services/exported-helpers';
-import { GiftCardWalletCreatedEvent } from '../src/events/gift-card-wallet-created.event';
+import { GiftCardsCreatedEvent } from '../src/events/gift-cards-created.event';
 import { firstValueFrom } from 'rxjs';
 import { filter, take, toArray } from 'rxjs/operators';
 
@@ -375,7 +377,7 @@ describe('Order with store credit payment', () => {
         metadata: { walletId: 1, amount: 100_000 },
       },
     });
-    expect((addPaymentToOrder as any)?.errorCode).toBeUndefined();
+    expect(addPaymentToOrder?.errorCode).toBeUndefined();
     const order = addPaymentToOrder;
     expect(order.id).toBeDefined();
     expect(order.state).toBe('ArrangingPayment');
@@ -404,7 +406,7 @@ describe('Order with store credit payment', () => {
         },
       }
     );
-    expect((order as any)?.errorCode).toBeUndefined();
+    expect(order?.errorCode).toBeUndefined();
     expect(order.id).toBeDefined();
     expect(order.state).toBe('PaymentSettled');
     const { wallet: walletAfter } = await adminClient.query(
@@ -457,9 +459,7 @@ describe('Order with store credit payment', () => {
         metadata: { walletId: 3 },
       },
     });
-    expect((addPaymentToOrder as any)?.errorCode).toBe(
-      'PAYMENT_DECLINED_ERROR'
-    );
+    expect(addPaymentToOrder?.errorCode).toBe('PAYMENT_DECLINED_ERROR');
     await adminClient.query(CANCEL_ORDER, { id: 2 });
   });
 });
@@ -525,8 +525,8 @@ describe('Channel awareness', () => {
         },
       }
     );
-    expect((err as any)?.errorCode).toBe('PAYMENT_DECLINED_ERROR');
-    expect((err as any)?.paymentErrorMessage).toBe(
+    expect(err?.errorCode).toBe('PAYMENT_DECLINED_ERROR');
+    expect(err?.paymentErrorMessage).toBe(
       'Wallet with id 4 is not assigned to the current channel'
     );
   });
@@ -541,7 +541,7 @@ describe('Channel awareness', () => {
         }, // wallet from channel 2, while we are in channel 2
       },
     });
-    expect((addPaymentToOrder as any)?.errorCode).toBeUndefined();
+    expect(addPaymentToOrder?.errorCode).toBeUndefined();
     adminClient.setChannelToken(channel2Input.token);
     const { wallet: walletAfter } = await adminClient.query(
       GET_WALLET_WITH_ADJUSTMENTS,
@@ -561,7 +561,7 @@ describe('Channel awareness', () => {
         },
       }
     );
-    expect((err as any)?.errorCode).toBe('PAYMENT_DECLINED_ERROR');
+    expect(err?.errorCode).toBe('PAYMENT_DECLINED_ERROR');
   });
 });
 
@@ -888,7 +888,7 @@ describe('Gift Card Payment', () => {
         metadata: { giftCardCode: '7K9P2W1Z8N', amount: 100_000 },
       },
     });
-    expect((addPaymentToOrder as any)?.errorCode).toBeUndefined();
+    expect(addPaymentToOrder.errorCode).toBeUndefined();
     const order = addPaymentToOrder;
     expect(order.id).toBeDefined();
     expect(order.state).toBe('ArrangingPayment');
@@ -1051,7 +1051,7 @@ describe('Auto-creation on OrderPlacedEvent', () => {
     const eventBus = server.app.get(EventBus);
 
     const eventsPromise = firstValueFrom(
-      eventBus.ofType(GiftCardWalletCreatedEvent).pipe(take(1), toArray())
+      eventBus.ofType(GiftCardsCreatedEvent).pipe(take(1), toArray())
     );
     await shopClient.asUserWithCredentials(
       'hayden.zieme12@hotmail.com',
@@ -1098,10 +1098,10 @@ describe('Auto-creation on OrderPlacedEvent', () => {
 
   it('Should not create a Wallet for a non Gift Card Product', async () => {
     const eventBus = server.app.get(EventBus);
-    const capturedEvents: GiftCardWalletCreatedEvent[] = [];
+    const capturedEvents: GiftCardsCreatedEvent[] = [];
 
     const sub = eventBus
-      .ofType(GiftCardWalletCreatedEvent)
+      .ofType(GiftCardsCreatedEvent)
       .subscribe((event) => capturedEvents.push(event));
 
     await shopClient.asUserWithCredentials(
@@ -1120,6 +1120,137 @@ describe('Auto-creation on OrderPlacedEvent', () => {
 
     sub.unsubscribe();
     expect(capturedEvents.length).toBe(0);
+  });
+
+  it('Should save giftCardCodes to the order line custom fields', async () => {
+    const eventBus = server.app.get(EventBus);
+    const eventsPromise = firstValueFrom(
+      eventBus.ofType(GiftCardsCreatedEvent).pipe(take(1), toArray())
+    );
+
+    await shopClient.asUserWithCredentials(
+      'hayden.zieme12@hotmail.com',
+      'test'
+    );
+
+    const order = await createSettledOrder(shopClient, 1, true, [
+      {
+        id: 'T_5',
+        quantity: 2,
+      },
+    ]);
+
+    const events = await eventsPromise;
+    expect(events).toHaveLength(1);
+    expect(events[0].wallets).toHaveLength(2);
+
+    const orderLineRepo = server.app
+      .get(TransactionalConnection)
+      .getRepository(ctx, OrderLine);
+    const lines = await orderLineRepo.find();
+
+    const giftCardLine = lines.find(
+      (l) => l.customFields?.giftCardCodes?.length === 2
+    );
+    expect(giftCardLine).toBeDefined();
+    expect(giftCardLine!.customFields.giftCardCodes).toHaveLength(2);
+    expect(giftCardLine!.customFields.giftCardCodes![0]).toMatch(
+      /^8pZ2nL9qX5mB/
+    );
+  });
+
+  it('Should allow a different customer to pay with an auto-created gift card', async () => {
+    shopClient.setChannelToken(E2E_DEFAULT_CHANNEL_TOKEN);
+    adminClient.setChannelToken(E2E_DEFAULT_CHANNEL_TOKEN);
+    const eventBus = server.app.get(EventBus);
+    const eventsPromise = firstValueFrom(
+      eventBus.ofType(GiftCardsCreatedEvent).pipe(
+        filter((event) => event.wallets.length > 0),
+        take(1),
+        toArray()
+      )
+    );
+
+    // Customer 1 purchases a gift card product
+    await shopClient.asUserWithCredentials(
+      'hayden.zieme12@hotmail.com',
+      'test'
+    );
+    await createSettledOrder(shopClient, 1, true, [
+      {
+        id: 'T_5',
+        quantity: 1,
+      },
+    ]);
+
+    const events = await eventsPromise;
+    expect(events).toHaveLength(1);
+    const giftCardWallet = events[0].wallets[0];
+    expect(giftCardWallet.code).toMatch(/^8pZ2nL9qX5mB/);
+    expect(giftCardWallet.balance).toBe(100);
+
+    // A different (anonymous) customer uses the gift card to pay for a different order
+    await shopClient.asAnonymousUser();
+    const order = await addItem(shopClient, 'T_1', 1);
+    const { setCustomerForOrder } = await shopClient.query(
+      gql`
+        mutation SetCustomerForOrder($input: CreateCustomerInput!) {
+          setCustomerForOrder(input: $input) {
+            ... on Order {
+              id
+              state
+            }
+            ... on ErrorResult {
+              errorCode
+              message
+            }
+          }
+        }
+      `,
+      {
+        input: {
+          emailAddress: 'giftcard-receiver@example.com',
+          firstName: 'Gift',
+          lastName: 'Receiver',
+        },
+      }
+    );
+    expect(setCustomerForOrder?.errorCode).toBeUndefined();
+
+    const transitionRes = await proceedToArrangingPayment(shopClient, 1, {
+      input: {
+        fullName: 'Gift Receiver',
+        streetLine1: 'Verzetsstraat',
+        streetLine2: '12a',
+        city: 'Liwwa',
+        postalCode: '8923CP',
+        countryCode: 'NL',
+      },
+    });
+    expect((transitionRes as any)?.errorCode).toBeUndefined();
+    expect(order.totalWithTax).toBe(155880);
+
+    const { wallet: walletBefore } = await adminClient.query(
+      GET_WALLET_WITH_ADJUSTMENTS,
+      { id: giftCardWallet.id }
+    );
+
+    const { addPaymentToOrder } = await shopClient.query(AddPaymentToOrder, {
+      input: {
+        method: 'store-credit',
+        metadata: { giftCardCode: giftCardWallet.code, amount: 50 },
+      },
+    });
+    expect(addPaymentToOrder?.errorCode).toBeUndefined();
+    const paidOrder = addPaymentToOrder;
+    expect(paidOrder.id).toBeDefined();
+    expect(paidOrder.state).toBe('ArrangingPayment');
+
+    const { wallet: walletAfter } = await adminClient.query(
+      GET_WALLET_WITH_ADJUSTMENTS,
+      { id: giftCardWallet.id }
+    );
+    expect(walletAfter.balance).toBe(walletBefore.balance - 50);
   });
 
   it("Should fail to pay with another Customer's wallet", async () => {
@@ -1170,9 +1301,7 @@ describe('Auto-creation on OrderPlacedEvent', () => {
       },
     });
 
-    expect((addPaymentToOrder as any)?.errorCode).toBe(
-      'PAYMENT_DECLINED_ERROR'
-    );
+    expect(addPaymentToOrder?.errorCode).toBe('PAYMENT_DECLINED_ERROR');
     await adminClient.query(CANCEL_ORDER, {
       id: order?.id,
     });
@@ -1188,7 +1317,7 @@ describe('Refunding Order using gift card wallet', () => {
     const eventBus = server.app.get(EventBus);
 
     const eventsPromise = firstValueFrom(
-      eventBus.ofType(GiftCardWalletCreatedEvent).pipe(
+      eventBus.ofType(GiftCardsCreatedEvent).pipe(
         filter((event) => event.wallets.length > 0),
         take(1),
         toArray()
@@ -1515,9 +1644,12 @@ describe('Gift Card Wallet Channel awareness', () => {
         },
       }
     );
-    expect((err as any)?.errorCode).toBe('PAYMENT_DECLINED_ERROR');
-    expect((err as any)?.paymentErrorMessage).toBe(
-      'Wallet with id 20 is not assigned to the current channel'
+    expect(err?.errorCode).toBe('PAYMENT_DECLINED_ERROR');
+    expect(err?.paymentErrorMessage).toBe(
+      `Wallet with id ${String(walletForChannel6.id).replace(
+        'T_',
+        ''
+      )} is not assigned to the current channel`
     );
   });
 
@@ -1531,7 +1663,7 @@ describe('Gift Card Wallet Channel awareness', () => {
         }, // wallet from channel 5, while we are in channel 5
       },
     });
-    expect((addPaymentToOrder as any)?.errorCode).toBeUndefined();
+    expect(addPaymentToOrder?.errorCode).toBeUndefined();
     adminClient.setChannelToken('channel-5-for-gift-code');
     const { wallet: walletAfter } = await adminClient.query(
       GET_WALLET_WITH_ADJUSTMENTS,
@@ -1551,7 +1683,7 @@ describe('Gift Card Wallet Channel awareness', () => {
         },
       }
     );
-    expect((err as any)?.errorCode).toBe('PAYMENT_DECLINED_ERROR');
+    expect(err?.errorCode).toBe('PAYMENT_DECLINED_ERROR');
   });
 });
 
@@ -1589,7 +1721,7 @@ async function createGiftCardWalletForChannel(
 ): Promise<Wallet> {
   const eventBus = server.app.get(EventBus);
   const eventsPromise = firstValueFrom(
-    eventBus.ofType(GiftCardWalletCreatedEvent).pipe(
+    eventBus.ofType(GiftCardsCreatedEvent).pipe(
       filter((event) => event.wallets.length > 0),
       take(1),
       toArray()

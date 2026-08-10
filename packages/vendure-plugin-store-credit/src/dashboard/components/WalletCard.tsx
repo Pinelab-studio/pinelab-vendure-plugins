@@ -51,6 +51,27 @@ const WalletCard: React.FC<WalletCardProps> = ({
         <div className="mt-2 text-lg font-semibold">
           {formatCurrency(wallet.balance, wallet.currencyCode)}
         </div>
+        {isCollapsed && (
+          <WalletAdjustmentDialog
+            open={isEditing}
+            onOpenChange={setIsEditing}
+            walletId={wallet.id}
+            currencyCode={wallet.currencyCode}
+          >
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="mt-3"
+              onClick={(e) => {
+                setIsEditing(true);
+                e.preventDefault();
+              }}
+            >
+              Adjust Balance
+            </Button>
+          </WalletAdjustmentDialog>
+        )}
       </div>
 
       {error && (

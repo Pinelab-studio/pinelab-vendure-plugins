@@ -20,31 +20,17 @@ plugins: [
 ]
 ```
 
-2. Add `MyparcelPlugin.ui` to your AdminUiPlugin extensions:
+2. Start Vendure and go to `Settings` > `Channels`, open the channel you want to
+   configure and select the **MyParcel** tab. Tick `Enabled` and fill in your
+   MyParcel `API key`. Configuration is stored per channel as Channel custom
+   fields, so no Admin UI extension needs to be compiled.
+3. Create a shipmentMethod with `MyParcel fulfillment`.
+4. Place an order and select the shippingMethod.
+5. Go to the Admin UI and click on `fulfill`
+6. Your shipment should be in your MyParcel account.
 
-```ts
-import { MyparcelPlugin } from '@pinelab/vendure-plugin-myparcel';
-
-plugins: [
-  AdminUiPlugin.init({
-    port: 3002,
-    route: 'admin',
-    app: compileUiExtensions({
-      outputPath: path.join(__dirname, '__admin-ui'),
-      extensions: [MyparcelPlugin.ui],
-    }),
-  }),
-];
-```
-
-Read more about Admin UI compilation in the Vendure
-[docs](https://www.vendure.io/docs/plugins/extending-the-admin-ui/#compiling-as-a-deployment-step)
-
-3. Start Vendure and go to `Settings` > `MyParcel` and fill in your MyParcel API key.
-4. Create a shipmentMethod with `MyParcel fulfillment`.
-5. Place an order and select the shippingMethod.
-6. Go to the Admin UI and click on `fulfill`
-7. Your shipment should be in your MyParcel account.
+> The `myparcelEnabled` toggle controls whether MyParcel is active for a channel.
+> When it is off (or no API key is set), the plugin is disabled for that channel.
 
 ## Customs information for shipments outside the EU
 

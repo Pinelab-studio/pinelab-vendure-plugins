@@ -2,22 +2,15 @@ import {
   Order,
   PluginCommonModule,
   RequestContext,
+  RuntimeVendureConfig,
   VendurePlugin,
 } from '@vendure/core';
 import { ShipmateService } from './api/shipmate.service';
 import { HttpModule } from '@nestjs/axios';
-import { ShipmateConfigEntity } from './api/shipmate-config.entity';
 import { ShipmateConfigService } from './api/shipmate-config.service';
-import {
-  ShipmateAdminResolver,
-  adminSchema,
-  shipmatePermission,
-} from './api/shipmate.admin.graphql';
-import { AdminUiExtension } from '@vendure/ui-devkit/compiler';
-import path from 'path';
 import { PLUGIN_INIT_OPTIONS } from './constants';
 import { ShipmateController } from './api/shipmate.controller';
-import { ShipmateWebhookTokenEntity } from './api/shipmate-webhook-token.entitiy';
+import { channelCustomFields, shipmatePermission } from './custom-fields';
 
 export interface ShipmatePluginConfig {
   apiUrl:
@@ -40,14 +33,10 @@ export interface ShipmatePluginConfig {
     },
     ShipmateConfigService,
   ],
-  entities: [ShipmateConfigEntity, ShipmateWebhookTokenEntity],
-  configuration: (config) => {
+  configuration: (config: RuntimeVendureConfig) => {
     config.authOptions.customPermissions.push(shipmatePermission);
+    config.customFields.Channel.push(...channelCustomFields);
     return config;
-  },
-  adminApiExtensions: {
-    schema: adminSchema,
-    resolvers: [ShipmateAdminResolver],
   },
   compatibility: '>=2.2.0',
 })
@@ -57,9 +46,4 @@ export class ShipmatePlugin {
     this.config = config;
     return ShipmatePlugin;
   }
-  static ui: AdminUiExtension = {
-    extensionPath: path.join(__dirname, 'ui'),
-    routes: [{ filePath: 'routes.ts', route: 'shipmate-config' }],
-    providers: ['providers.ts'],
-  };
 }

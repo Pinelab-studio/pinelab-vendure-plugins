@@ -1,6 +1,4 @@
 import { PluginCommonModule, Type, VendurePlugin } from '@vendure/core';
-import { AdminUiExtension } from '@vendure/ui-devkit/compiler';
-import path from 'path';
 import { GOOGLE_SHEET_PLUGIN_OPTIONS } from './constants';
 import { GoogleSheetLoaderPluginOptions } from './types';
 import { adminApiExtention } from './api/api-extensions';
@@ -20,6 +18,7 @@ import { GoogleSheetService } from './services/google-sheet.service';
     schema: adminApiExtention,
     resolvers: [GoogleSheetDataLoaderResolver],
   },
+  dashboard: './dashboard/index.tsx',
   compatibility: '^3.0.0',
 })
 export class GoogleSheetLoaderPlugin {
@@ -31,10 +30,4 @@ export class GoogleSheetLoaderPlugin {
     this.options = options;
     return GoogleSheetLoaderPlugin;
   }
-
-  static ui: AdminUiExtension = {
-    id: 'google-sheet-loader-ui',
-    extensionPath: path.join(__dirname, 'ui'),
-    providers: ['providers.ts'],
-  };
 }

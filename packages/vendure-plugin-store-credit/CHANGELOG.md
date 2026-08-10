@@ -1,3 +1,28 @@
+# 2.1.0 (2026-08-06)
+
+- Allow creating gift cards via the Dashboard.
+
+# 2.0.2 (2026-08-04)
+
+- Auto-created gift cards are no longer linked to the purchasing customer, so they can be used by any customer with the gift card code.
+- Made `WalletAdjustment.mutatedBy` optional, allowing gift-card payments to be recorded without an active user (e.g. anonymous/guest customers).
+- **BREAKING**: A database migration is required. Drop the `NOT NULL` constraint on `wallet_adjustment.mutatedById` so that adjustments can be created without an associated user.
+
+# 2.0.1 (2026-08-04)
+
+- Added documentation for paying with a gift card code, with and without a specified amount.
+
+# 2.0.0 (2026-07-21)
+
+- **BREAKING**: The `createGiftCardWallet` hook is now called once per order line quantity instead of once per order line. This allows returning different gift card configurations for each individual item when the quantity of an order line is > 1.
+- Added `giftCardCodes` custom field to `OrderLine` to store generated gift card codes.
+- Renamed `GiftCardWalletCreatedEvent` to `GiftCardsCreatedEvent`. The old class name is kept as a deprecated alias.
+- A database migration is required due to the new custom field.
+
+# 1.7.0 (2026-07-21)
+
+- Migrated to React Dashboard
+
 # 1.6.0 (2026-08-05)
 
 - Upgraded to Vendure 3.6.3

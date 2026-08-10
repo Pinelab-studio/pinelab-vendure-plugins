@@ -2,17 +2,16 @@ import {
   LanguageCode,
   PluginCommonModule,
   Product,
+  RuntimeVendureConfig,
   Type,
   VendurePlugin,
 } from '@vendure/core';
-import { AdminUiExtension } from '@vendure/ui-devkit/compiler';
-
-import path from 'path';
 import { adminApiExtensions, shopApiExtensions } from './api/api-extensions';
 import { FrequentlyBoughtTogetherAdminResolver } from './api/frequently-bought-together-admin.resolver';
 import { FrequentlyBoughtTogetherShopResolver } from './api/frequently-bought-together-shop.resolver';
 import { FREQUENTLY_BOUGHT_TOGETHER_PLUGIN_OPTIONS } from './constants';
 import { FrequentlyBoughtTogetherService } from './services/frequently-bought-together.service';
+import { buildFrequentlyBoughtTogetherTask } from './config/frequently-bought-together-task';
 import { PluginInitOptions } from './types';
 
 export type FrequentlyBoughtTogetherPluginOptions = Partial<PluginInitOptions>;
@@ -31,7 +30,7 @@ export type FrequentlyBoughtTogetherPluginOptions = Partial<PluginInitOptions>;
     },
     FrequentlyBoughtTogetherService,
   ],
-  configuration: (config) => {
+  configuration: (config: RuntimeVendureConfig) => {
     // Set custom product to product relation
     config.customFields.Product.push({
       name: 'frequentlyBoughtWith',
@@ -62,6 +61,13 @@ export type FrequentlyBoughtTogetherPluginOptions = Partial<PluginInitOptions>;
       public: false,
       nullable: true,
     });
+    // Always register the recalculation scheduled task; the `scheduledTask`
+    // option only changes when it runs. Requires the `DefaultSchedulerPlugin`.
+    config.schedulerOptions.tasks.push(
+      buildFrequentlyBoughtTogetherTask(
+        FrequentlyBoughtTogetherPlugin.options.scheduledTask
+      )
+    );
     return config;
   },
   compatibility: '>=2.2.0',
@@ -83,7 +89,7 @@ export class FrequentlyBoughtTogetherPlugin {
   };
 
   static init(
-    options: FrequentlyBoughtTogetherPluginOptions
+    options?: FrequentlyBoughtTogetherPluginOptions
   ): Type<FrequentlyBoughtTogetherPlugin> {
     this.options = {
       ...this.options,
@@ -91,9 +97,4 @@ export class FrequentlyBoughtTogetherPlugin {
     };
     return FrequentlyBoughtTogetherPlugin;
   }
-
-  static ui: AdminUiExtension = {
-    extensionPath: path.join(__dirname, 'ui'),
-    providers: ['providers.ts'],
-  };
 }

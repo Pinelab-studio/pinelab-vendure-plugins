@@ -1,67 +1,38 @@
-require('dotenv').config();
 import {
   createTestEnvironment,
-  E2E_DEFAULT_CHANNEL_TOKEN,
   registerInitializer,
   SqljsInitializer,
-  testConfig,
 } from '@vendure/testing';
 import {
   ChannelService,
-  DefaultLogger,
-  DefaultSearchPlugin,
   InitialData,
-  LogLevel,
-  mergeConfig,
+  LanguageCode,
   PaymentMethodService,
   RequestContext,
-  LanguageCode,
   TaxRateService,
+  VendureConfig,
 } from '@vendure/core';
 import { initialData } from '../../test/src/initial-data';
-import { EBoekhoudenPlugin } from '../src';
-import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
 import {
   addItem,
   addPaymentToOrder,
   proceedToArrangingPayment,
 } from '../../test/src/shop-utils';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
-import { EBoekhoudenService } from '../src/api/e-boekhouden.service';
-import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
-import path from 'path';
+import { config } from './vendure-config';
 
 (async () => {
   registerInitializer('sqljs', new SqljsInitializer('__data__'));
-  const config = mergeConfig(testConfig, {
-    logger: new DefaultLogger({ level: LogLevel.Debug }),
-    apiOptions: {
-      adminApiPlayground: {},
-      shopApiPlayground: {},
-    },
-    plugins: [
-      EBoekhoudenPlugin.init({
-        getTaxCode: (ctx, order, taxRate) => {
-          // Just testing
-          return 'HOOG_VERK_21';
-        },
-      }),
-      DefaultSearchPlugin,
-      AdminUiPlugin.init({
-        port: 3002,
-        route: 'admin',
-        app: compileUiExtensions({
-          outputPath: path.join(__dirname, '__admin-ui'),
-          extensions: [EBoekhoudenPlugin.ui],
-          devMode: true,
-        }),
-      }),
-    ],
-    paymentOptions: {
-      paymentMethodHandlers: [testPaymentMethod],
-    },
-  });
-  const { server, shopClient } = createTestEnvironment(config);
+  // Override cors after merge, because testConfig sets cors: true (boolean)
+  // which mergeConfig can't properly replace with an object
+  config.apiOptions.cors = {
+    origin: 'http://localhost:5173',
+    credentials: true,
+  };
+
+  const { server, shopClient } = createTestEnvironment(
+    config as Required<VendureConfig>
+  );
   await server.init({
     initialData: initialData as InitialData,
     productsCsvPath: '../test/src/products-import.csv',
@@ -90,16 +61,17 @@ import path from 'path';
     ],
   });
   await server.app.get(TaxRateService).update(ctx, { id: 2, value: 21 }); // Set europe to 21
-  await server.app
-    .get(EBoekhoudenService)
-    .upsertConfig(E2E_DEFAULT_CHANNEL_TOKEN, {
-      enabled: true,
-      account: '1010',
-      contraAccount: '8010',
-      username: process.env.EBOEKHOUDEN_USERNAME!,
-      secret1: process.env.EBOEKHOUDEN_SECRET1!,
-      secret2: process.env.EBOEKHOUDEN_SECRET2!,
-    });
+  await server.app.get(ChannelService).update(ctx, {
+    id: ctx.channelId,
+    customFields: {
+      eBoekhoudenEnabled: true,
+      eBoekhoudenAccount: '1010',
+      eBoekhoudenContraAccount: '8010',
+      eBoekhoudenUsername: process.env.EBOEKHOUDEN_USERNAME!,
+      eBoekhoudenSecret1: process.env.EBOEKHOUDEN_SECRET1!,
+      eBoekhoudenSecret2: process.env.EBOEKHOUDEN_SECRET2!,
+    },
+  });
   await shopClient.asUserWithCredentials('hayden.zieme12@hotmail.com', 'test');
   await addItem(shopClient, 'T_1', 1);
   await addItem(shopClient, 'T_2', 1);

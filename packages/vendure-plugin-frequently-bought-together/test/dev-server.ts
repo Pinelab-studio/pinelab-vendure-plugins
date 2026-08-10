@@ -1,8 +1,7 @@
-import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
 import {
   DefaultLogger,
+  DefaultSchedulerPlugin,
   DefaultSearchPlugin,
-  InitialData,
   LogLevel,
   mergeConfig,
 } from '@vendure/core';
@@ -13,9 +12,10 @@ import {
   testConfig,
 } from '@vendure/testing';
 import { initialData } from '../../test/src/initial-data';
-import { FrequentlyBoughtTogetherPlugin } from '../src';
-import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
-import path from 'path';
+import {
+  FrequentlyBoughtTogetherPlugin,
+  frequentlyBoughtTogetherTask,
+} from '../src';
 import { createSettledOrder } from '../../test/src/shop-utils';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
 
@@ -32,24 +32,20 @@ require('dotenv').config();
     paymentOptions: {
       paymentMethodHandlers: [testPaymentMethod],
     },
+    schedulerOptions: {
+      runTasksInWorkerOnly: false,
+      tasks: [frequentlyBoughtTogetherTask],
+    },
     plugins: [
       FrequentlyBoughtTogetherPlugin.init({
         experimentMode: true,
         supportLevel: 0.001,
       }),
       DefaultSearchPlugin,
-      AdminUiPlugin.init({
-        port: 3002,
-        route: 'admin',
-        app: compileUiExtensions({
-          outputPath: path.join(__dirname, '__admin-ui'),
-          extensions: [FrequentlyBoughtTogetherPlugin.ui],
-          devMode: true,
-        }),
-      }),
+      DefaultSchedulerPlugin.init(),
     ],
   });
-  const { server, shopClient, adminClient } = createTestEnvironment(config);
+  const { server, shopClient } = createTestEnvironment(config);
   await server.init({
     initialData: {
       ...initialData,

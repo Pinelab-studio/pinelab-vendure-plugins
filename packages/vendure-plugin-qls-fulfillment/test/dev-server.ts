@@ -1,4 +1,4 @@
-import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
+import { DashboardPlugin } from '@vendure/dashboard/plugin';
 import {
   configureDefaultOrderProcess,
   DefaultLogger,
@@ -113,8 +113,6 @@ import { convertProcessSignalToExitCode } from 'util';
           getAdditionalVariantFields: (ctx, variant) => ({
             ean: variant.sku,
             image_url: `https://pinelab.studio/remote-img/6fa890c7-cd4c-4715-ad73-daa99cd6fe7f_pinelab_e-commerce_hero_image_medium.webp`,
-            // Just testing additionalEANs: [Math.floor(Math.random() * 1000).toString()],
-            additionalEANs: ['somethingelse'],
           }),
           excludeVariantFromSync: async (ctx, injector, variant) => {
             await injector.get(EntityHydrator).hydrate(ctx, variant, {
@@ -131,14 +129,9 @@ import { convertProcessSignalToExitCode } from 'util';
       }),
       DefaultSchedulerPlugin,
       DefaultSearchPlugin,
-      AdminUiPlugin.init({
-        port: 3002,
-        route: 'admin',
-        app: compileUiExtensions({
-          outputPath: path.join(__dirname, '__admin-ui'),
-          extensions: [QlsPlugin.ui],
-          devMode: true,
-        }),
+      DashboardPlugin.init({
+        route: 'dashboard',
+        appDir: path.join(__dirname, '../dist/dashboard'),
       }),
     ],
     schedulerOptions: {

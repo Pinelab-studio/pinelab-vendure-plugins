@@ -23,8 +23,8 @@ export class WalletAdjustment extends VendureEntity {
 
   @ManyToOne(() => User, {
     onDelete: 'CASCADE',
-    nullable: false,
+    nullable: true,
   })
   @Index()
-  mutatedBy!: User;
+  mutatedBy?: User;
 }

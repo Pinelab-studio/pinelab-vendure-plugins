@@ -14,8 +14,6 @@ import {
   OnApplicationBootstrap,
   OnModuleInit,
 } from '@nestjs/common';
-import { EBoekhoudenConfigEntity } from './e-boekhouden-config.entity';
-import { EBoekhoudenConfigInput } from '../ui/generated/graphql';
 import { createClientAsync, EBoekhoudenWsdlClient, ErrorMsg } from '../client';
 import { loggerCtx } from '../constants';
 import { EBoekhoudenAdapter } from './e-boekhouden.adapter';
@@ -68,39 +66,41 @@ export class EBoekhoudenService
     );
   }
 
-  async upsertConfig(
-    channelToken: string,
-    input: EBoekhoudenConfigInput
-  ): Promise<EBoekhoudenConfigEntity> {
-    const existing = await this.connection
-      .getRepository(EBoekhoudenConfigEntity)
-      .findOne({ where: { channelToken } });
-    if (existing) {
-      await this.connection
-        .getRepository(EBoekhoudenConfigEntity)
-        .update(existing.id, input);
-    } else {
-      await this.connection
-        .getRepository(EBoekhoudenConfigEntity)
-        .insert({ ...input, channelToken });
-    }
-    return this.connection
-      .getRepository(EBoekhoudenConfigEntity)
-      .findOneOrFail({ where: { channelToken } });
-  }
-
+  /**
+   * Get the e-Boekhouden config for the given channel from its custom fields.
+   * Returns null when e-Boekhouden is disabled or the config is incomplete for the channel.
+   */
   async getConfig(
     channelToken: string
-  ): Promise<EBoekhoudenConfigEntity | null> {
-    return this.connection
-      .getRepository(EBoekhoudenConfigEntity)
-      .findOne({ where: { channelToken }, cache: 60000 });
-  }
-
-  async getConfigs(): Promise<EBoekhoudenConfigEntity[]> {
-    return this.connection
-      .getRepository(EBoekhoudenConfigEntity)
-      .find({ cache: 60000 });
+  ): Promise<EBoekhoudenChannelConfig | null> {
+    const channel = await this.channelService.getChannelFromToken(channelToken);
+    const {
+      eBoekhoudenEnabled,
+      eBoekhoudenUsername,
+      eBoekhoudenSecret1,
+      eBoekhoudenSecret2,
+      eBoekhoudenAccount,
+      eBoekhoudenContraAccount,
+    } = channel.customFields;
+    if (
+      !eBoekhoudenEnabled ||
+      !eBoekhoudenUsername ||
+      !eBoekhoudenSecret1 ||
+      !eBoekhoudenSecret2 ||
+      !eBoekhoudenAccount ||
+      !eBoekhoudenContraAccount
+    ) {
+      return null;
+    }
+    return {
+      channelToken,
+      enabled: eBoekhoudenEnabled,
+      username: eBoekhoudenUsername,
+      secret1: eBoekhoudenSecret1,
+      secret2: eBoekhoudenSecret2,
+      account: eBoekhoudenAccount,
+      contraAccount: eBoekhoudenContraAccount,
+    };
   }
 
   async pushOrder({ orderCode, channelToken }: JobData): Promise<void> {
@@ -151,7 +151,7 @@ export class EBoekhoudenService
     }
   }
 
-  private async openSession(config: EBoekhoudenConfigEntity): Promise<string> {
+  private async openSession(config: EBoekhoudenChannelConfig): Promise<string> {
     const openSession = await this.client.OpenSessionAsync({
       SecurityCode1: config.secret1,
       SecurityCode2: config.secret2,
@@ -178,4 +178,14 @@ export class EBoekhoudenService
       );
     }
   }
+}
+
+export interface EBoekhoudenChannelConfig {
+  channelToken: string;
+  enabled: boolean;
+  username: string;
+  secret1: string;
+  secret2: string;
+  account: string;
+  contraAccount: string;
 }

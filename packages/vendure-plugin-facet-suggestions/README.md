@@ -15,18 +15,13 @@ This feature is based on one of [Michael Bromley's (Co-founder of Vendure) tutor
     ...
      plugins: [
       FacetSuggestionsPlugin,
-      AdminUiPlugin.init({
-        port: 3002,
-        route: 'admin',
-        app: compileUiExtensions({
-          outputPath: path.join(__dirname, '__admin-ui'),
-          extensions: [FacetSuggestionsPlugin.ui],
-        }),
-      }),
     ...
      ]
      ...
 ```
+
+The suggested facets selector on the product detail page is provided via a React Dashboard extension — no Admin UI
+compilation step is needed.
 
 2. Run a DB migration to add the new custom fields: https://docs.vendure.io/guides/developer-guide/migrations/#migration-workflow
 3. Start the server and login to the admin UI and go to `facets`

@@ -1,5 +1,6 @@
 import {
   createTestEnvironment,
+  E2E_DEFAULT_CHANNEL_TOKEN,
   registerInitializer,
   SimpleGraphQLClient,
   SqljsInitializer,
@@ -7,6 +8,7 @@ import {
 } from '@vendure/testing';
 import { initialData } from '../../test/src/initial-data';
 import {
+  ChannelService,
   DefaultLogger,
   LogLevel,
   mergeConfig,
@@ -15,37 +17,25 @@ import {
   TaxRateService,
 } from '@vendure/core';
 import { TestServer } from '@vendure/testing/lib/test-server';
-import {
-  EBoekhoudenConfig,
-  EBoekhoudenConfigQuery,
-  EBoekhoudenPlugin,
-  UpdateEBoekhoudenConfigMutation,
-  UpdateEBoekhoudenConfigMutationVariables,
-} from '../src';
-import {
-  eBoekhoudenConfigQuery,
-  updateEBoekhoudenConfigMutation,
-} from '../src/ui/queries.graphql';
+import { EBoekhoudenPlugin } from '../src';
+import { EBoekhoudenService } from '../src/api/e-boekhouden.service';
 import nock from 'nock';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
 import { createSettledOrder } from '../../test/src/shop-utils';
 import { expect, describe, beforeAll, afterAll, it, vi, test } from 'vitest';
-import path from 'path';
-import * as fs from 'fs';
-import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
-import getFilesInAdminUiFolder from '../../test/src/compile-admin-ui.util';
+
 describe('E-boekhouden plugin', function () {
   let server: TestServer;
   let adminClient: SimpleGraphQLClient;
   let shopClient: SimpleGraphQLClient;
   let serverStarted = false;
-  const eBoekhoudenConfig: EBoekhoudenConfig = {
-    contraAccount: '8010',
-    account: '1010',
-    enabled: true,
-    secret1: 'secret1234',
-    secret2: 'secret456',
-    username: 'testUsername',
+  const eBoekhoudenConfig = {
+    eBoekhoudenContraAccount: '8010',
+    eBoekhoudenAccount: '1010',
+    eBoekhoudenEnabled: true,
+    eBoekhoudenSecret1: 'secret1234',
+    eBoekhoudenSecret2: 'secret456',
+    eBoekhoudenUsername: 'testUsername',
   };
 
   const vatCodeStrategyCalled = vi.fn();
@@ -100,32 +90,55 @@ describe('E-boekhouden plugin', function () {
     expect(value).toBe(21);
   });
 
-  it('Should get null', async () => {
-    const { eBoekhoudenConfig: result } =
-      await adminClient.query<EBoekhoudenConfigQuery>(eBoekhoudenConfigQuery);
+  it('Should get null config before it is set', async () => {
+    const result = await server.app
+      .get(EBoekhoudenService)
+      .getConfig(E2E_DEFAULT_CHANNEL_TOKEN);
     expect(result).toBeNull();
   });
 
-  it('Should save config', async () => {
-    const { updateEBoekhoudenConfig: result } = await adminClient.query<
-      UpdateEBoekhoudenConfigMutation,
-      UpdateEBoekhoudenConfigMutationVariables
-    >(updateEBoekhoudenConfigMutation, { input: eBoekhoudenConfig });
-    expect(result?.enabled).toBe(eBoekhoudenConfig.enabled);
-    expect(result?.secret1).toBe(eBoekhoudenConfig.secret1);
-    expect(result?.secret2).toBe(eBoekhoudenConfig.secret2);
-    expect(result?.username).toBe(eBoekhoudenConfig.username);
-    expect(result?.contraAccount).toBe(eBoekhoudenConfig.contraAccount);
-    expect(result?.account).toBe(eBoekhoudenConfig.account);
+  it('Should save config via Channel custom fields', async () => {
+    const ctx = new RequestContext({
+      apiType: 'admin',
+      isAuthorized: true,
+      authorizedAsOwnerOnly: false,
+      channel: await server.app
+        .get(ChannelService)
+        .getChannelFromToken(E2E_DEFAULT_CHANNEL_TOKEN),
+    });
+    await server.app.get(ChannelService).update(ctx, {
+      id: ctx.channelId,
+      customFields: eBoekhoudenConfig,
+    });
+    const channel = await server.app
+      .get(ChannelService)
+      .getChannelFromToken(E2E_DEFAULT_CHANNEL_TOKEN);
+    expect(channel.customFields.eBoekhoudenEnabled).toBe(true);
+    expect(channel.customFields.eBoekhoudenSecret1).toBe(
+      eBoekhoudenConfig.eBoekhoudenSecret1
+    );
+    expect(channel.customFields.eBoekhoudenSecret2).toBe(
+      eBoekhoudenConfig.eBoekhoudenSecret2
+    );
+    expect(channel.customFields.eBoekhoudenUsername).toBe(
+      eBoekhoudenConfig.eBoekhoudenUsername
+    );
+    expect(channel.customFields.eBoekhoudenContraAccount).toBe(
+      eBoekhoudenConfig.eBoekhoudenContraAccount
+    );
+    expect(channel.customFields.eBoekhoudenAccount).toBe(
+      eBoekhoudenConfig.eBoekhoudenAccount
+    );
   });
 
   it('Should get config', async () => {
-    const { eBoekhoudenConfig: result } =
-      await adminClient.query<EBoekhoudenConfigQuery>(eBoekhoudenConfigQuery);
-    expect(result?.enabled).toBe(eBoekhoudenConfig.enabled);
-    expect(result?.secret1).toBe(eBoekhoudenConfig.secret1);
-    expect(result?.secret2).toBe(eBoekhoudenConfig.secret2);
-    expect(result?.username).toBe(eBoekhoudenConfig.username);
+    const result = await server.app
+      .get(EBoekhoudenService)
+      .getConfig(E2E_DEFAULT_CHANNEL_TOKEN);
+    expect(result?.enabled).toBe(true);
+    expect(result?.secret1).toBe(eBoekhoudenConfig.eBoekhoudenSecret1);
+    expect(result?.secret2).toBe(eBoekhoudenConfig.eBoekhoudenSecret2);
+    expect(result?.username).toBe(eBoekhoudenConfig.eBoekhoudenUsername);
   });
 
   it('Should send order to e-Boekhouden', async () => {
@@ -150,8 +163,8 @@ describe('E-boekhouden plugin', function () {
     expect(payloads[1]).toContain('4957.37'); // Total inc tax
     expect(payloads[1]).toContain('4097.00'); // Total ex tax
     expect(payloads[1]).toContain('HOOG_VERK_21');
-    expect(payloads[1]).toContain(eBoekhoudenConfig.account);
-    expect(payloads[1]).toContain(eBoekhoudenConfig.contraAccount);
+    expect(payloads[1]).toContain(eBoekhoudenConfig.eBoekhoudenAccount);
+    expect(payloads[1]).toContain(eBoekhoudenConfig.eBoekhoudenContraAccount);
   });
 
   it('Should have called vat code strategy', async () => {
@@ -161,16 +174,6 @@ describe('E-boekhouden plugin', function () {
     expect(order).toBeInstanceOf(Order);
     expect(taxRate).toBe(21);
   });
-
-  if (process.env.TEST_ADMIN_UI) {
-    it('Should compile admin', async () => {
-      const files = await getFilesInAdminUiFolder(
-        __dirname,
-        EBoekhoudenPlugin.ui
-      );
-      expect(files?.length).toBeGreaterThan(0);
-    }, 200000);
-  }
 
   afterAll(async () => {
     await server.destroy();

@@ -1,4 +1,6 @@
 import {
+  ActionBarItem,
+  Button,
   DashboardRouteDefinition,
   ListPage,
   useLocalFormat,
@@ -7,6 +9,8 @@ import { graphql } from '@/vdb/graphql/graphql';
 import { Trans } from '@lingui/react/macro';
 import { GiftCardWalletDetailSheet } from './GiftCardWalletDetailSheet';
 import { Wallet } from '../../api/generated/graphql';
+import { Plus } from 'lucide-react';
+import { CreateGiftCardDialog } from './CreateGiftCardDialog';
 
 export const getWalletList = graphql(`
   query GetWallets($options: WalletListOptions) {
@@ -54,11 +58,24 @@ const WalletListInner = ({ route }: { route: any }) => {
         balance: {
           cell: ({ row }) => {
             const { balance, currencyCode } = row.original;
-            return formatCurrency(balance, currencyCode);
+            return (
+              <span className={balance <= 0 ? 'text-destructive' : undefined}>
+                {formatCurrency(balance, currencyCode)}
+              </span>
+            );
           },
         },
       }}
-    ></ListPage>
+    >
+      <ActionBarItem itemId="create-gift-card">
+        <CreateGiftCardDialog>
+          <Button type="button">
+            <Plus className="size-4" />
+            Create Gift Card
+          </Button>
+        </CreateGiftCardDialog>
+      </ActionBarItem>
+    </ListPage>
   );
 };
 
@@ -67,11 +84,11 @@ export const giftCardWalletList: DashboardRouteDefinition = {
     sectionId: 'marketing',
     id: 'gift-card-wallets',
     url: '/gift-card-wallets',
-    title: 'Gift Card Wallets',
+    title: 'Gift Cards',
   },
   path: '/gift-card-wallets',
   loader: () => ({
-    breadcrumb: 'Gift Card Wallets',
+    breadcrumb: 'Gift Cards',
   }),
   component: (route) => <WalletListInner route={route} />,
 };

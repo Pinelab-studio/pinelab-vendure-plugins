@@ -1,5 +1,19 @@
-import { defineDashboardExtension } from '@vendure/dashboard';
+import { api, defineDashboardExtension } from '@vendure/dashboard';
+import { graphql } from '@/gql';
 import { useEffect, useRef, useState } from 'react';
+
+const authenticateWithGoogleDocument = graphql(`
+  mutation AuthenticateWithGoogle($token: String!) {
+    authenticate(input: { google: { credentialJWT: $token } }) {
+      ... on CurrentUser {
+        identifier
+      }
+      ... on ErrorResult {
+        message
+      }
+    }
+  }
+`);
 
 function GoogleLoginButton() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -60,30 +74,21 @@ function GoogleLoginButton() {
   }, []);
 
   async function handleCredentialResponse(response: { credential: string }) {
-    const res = await fetch('/admin-api', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        query: `mutation {
-          authenticate(input: { google: { credentialJWT: "${response.credential}" } }) {
-            ... on CurrentUser { identifier }
-            ... on ErrorResult { message }
-          }
-        }`,
-      }),
-    });
-    const json = (await res.json()) as {
-      data: { authenticate: { identifier?: string; message?: string } };
-    };
-    if (json.data.authenticate.message) {
-      setError(json.data.authenticate.message);
-      return;
+    try {
+      // api.mutate() automatically captures the Vendure-Auth-Token response
+      // header and stores it in localStorage, so no manual token handling
+      // is needed here.
+      const result = await api.mutate(authenticateWithGoogleDocument, {
+        token: response.credential,
+      });
+      if ('message' in result.authenticate) {
+        setError(result.authenticate.message);
+        return;
+      }
+      window.location.replace('/dashboard');
+    } catch (err: any) {
+      setError(err?.message ?? 'Failed to sign in with Google');
     }
-    const authToken = res.headers.get('Vendure-Auth-Token');
-    if (authToken) {
-      localStorage.setItem('vendure-session-token', `"${authToken}"`);
-    }
-    window.location.replace('/dashboard');
   }
 
   return (

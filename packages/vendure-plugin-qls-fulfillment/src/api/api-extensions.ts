@@ -6,6 +6,18 @@ export const adminApiExtensions = gql`
     QLS order id(s) for this Vendure order.
     """
     qlsOrderIds: [String!]!
+
+    """
+    Direct URL to the most recent QLS order for this Vendure order, or null if none exists.
+    """
+    qlsOrderUrl: String
+  }
+
+  extend type ProductVariant {
+    """
+    Direct URL to the QLS product for this Vendure variant, or null if none exists.
+    """
+    qlsProductUrl: String
   }
 
   extend type Mutation {
@@ -13,6 +25,15 @@ export const adminApiExtensions = gql`
     Trigger a sync to create or update all products in Vendure to QLS, and pull in stock levels from QLS.
     """
     triggerQlsProductSync: Boolean!
+
+    """
+    Add additional EANs/barcodes to an existing product in QLS.
+    Only EANs that do not already exist in QLS are added. Removal of EANs must be done in QLS itself.
+    """
+    addAdditionalEANSToQLS(
+      variantId: ID!
+      additionalEANS: [String!]!
+    ): [String!]!
 
     """
     Manually push an order to QLS (again)

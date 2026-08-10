@@ -4,16 +4,14 @@ import {
   PluginCommonModule,
   ProductVariant,
   RequestContext,
+  RuntimeVendureConfig,
   VendurePlugin,
 } from '@vendure/core';
 import { ProductData } from './api/types';
 import { PLUGIN_INIT_OPTIONS } from './constants';
 import { ProductInput } from './api/types';
 import { adminSchema } from './api/api-extensions';
-import { AdminUiExtension } from '@vendure/ui-devkit/compiler';
-import path from 'path';
-import { picqerPermission } from '.';
-import { PicqerConfigEntity } from './api/picqer-config.entity';
+import { picqerPermission, channelCustomFields } from './custom-fields';
 import { PicqerService } from './api/picqer.service';
 import { PicqerResolver } from './api/picqer.resolvers';
 import { PicqerController } from './api/picqer.controller';
@@ -99,8 +97,7 @@ export interface PicqerOptions {
     resolvers: [PicqerResolver],
     schema: adminSchema,
   },
-  entities: [PicqerConfigEntity],
-  configuration: (config) => {
+  configuration: (config: RuntimeVendureConfig) => {
     config.apiOptions.middleware.push({
       route: '/picqer*splat',
       handler: rawBodyMiddleware,
@@ -108,6 +105,7 @@ export interface PicqerOptions {
     });
     config.authOptions.customPermissions.push(picqerPermission);
     config.shippingOptions.fulfillmentHandlers.push(picqerHandler);
+    config.customFields.Channel.push(...channelCustomFields);
     return config;
   },
   compatibility: '>=3.2.0',
@@ -123,24 +121,4 @@ export class PicqerPlugin {
     };
     return PicqerPlugin;
   }
-
-  /**
-   * Admin UI configuration needed to register the Picqer UI modules
-   */
-  static ui: AdminUiExtension = {
-    extensionPath: path.join(__dirname, 'ui'),
-    ngModules: [
-      {
-        type: 'lazy',
-        route: 'picqer',
-        ngModuleFileName: 'picqer-modules.ts',
-        ngModuleName: 'PicqerLazyModule',
-      },
-      {
-        type: 'shared',
-        ngModuleFileName: 'picqer-modules.ts',
-        ngModuleName: 'PicqerSharedModule',
-      },
-    ],
-  };
 }

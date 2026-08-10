@@ -13,27 +13,13 @@ import path from 'path';
 
 require('dotenv').config();
 
-export const config: VendureConfig = mergeConfig(testConfig, {
-  logger: new DefaultLogger({ level: LogLevel.Debug }),
-  apiOptions: {
-    adminApiPlayground: true,
-    shopApiPlayground: true,
-  },
-  dbConnectionOptions: {
-    autoSave: false,
-  },
-  paymentOptions: {
-    paymentMethodHandlers: [testPaymentMethod],
-  },
-  plugins: [
-    InvoicePlugin.init({
-      vendureHost: 'http://localhost:3050',
-      storageStrategy: new LocalFileStrategy(),
-      startInvoiceNumber: Math.floor(100000 + Math.random() * 900000),
-      accountingExports: [
+// Only enable the Xero accounting export when real credentials are provided.
+const xeroAccountingExports =
+  process.env.XERO_CLIENT_ID && process.env.XERO_CLIENT_SECRET
+    ? [
         new XeroUKExportStrategy({
-          clientId: process.env.XERO_CLIENT_ID!,
-          clientSecret: process.env.XERO_CLIENT_SECRET!,
+          clientId: process.env.XERO_CLIENT_ID,
+          clientSecret: process.env.XERO_CLIENT_SECRET,
           shippingAccountCode: '0103',
           salesAccountCode: '0102',
           invoiceBrandingThemeId: '62f2bce1-32c4-4e8d-a9b1-87060fb7c791',
@@ -52,7 +38,27 @@ export const config: VendureConfig = mergeConfig(testConfig, {
             }
           },
         }),
-      ],
+      ]
+    : [];
+
+export const config: VendureConfig = mergeConfig(testConfig, {
+  logger: new DefaultLogger({ level: LogLevel.Debug }),
+  apiOptions: {
+    adminApiPlayground: true,
+    shopApiPlayground: true,
+  },
+  dbConnectionOptions: {
+    autoSave: false,
+  },
+  paymentOptions: {
+    paymentMethodHandlers: [testPaymentMethod],
+  },
+  plugins: [
+    InvoicePlugin.init({
+      vendureHost: 'http://localhost:3050',
+      storageStrategy: new LocalFileStrategy(),
+      startInvoiceNumber: Math.floor(100000 + Math.random() * 900000),
+      accountingExports: xeroAccountingExports,
     }),
     DefaultSearchPlugin,
     DashboardPlugin.init({

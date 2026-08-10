@@ -69,7 +69,7 @@ export const adminApiExtensions = gql`
   ${commonApiExtension}
 
   extend type WalletAdjustment {
-    mutatedBy: User!
+    mutatedBy: User
   }
 
   input CreateWalletInput {

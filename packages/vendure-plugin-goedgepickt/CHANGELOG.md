@@ -1,3 +1,35 @@
+# 3.1.0 (2026-07-29)
+
+- Split the single nightly full sync scheduled task into two separate tasks:
+  - `goedgepickt-sync-stock` runs every night at 2:00 AM to pull stock levels from GoedGepickt
+  - `goedgepickt-push-products` runs every Monday at 6:00 AM to push all Vendure products to GoedGepickt
+- Split `doFullSync()` into `pullAllStocklevels()` and `pushAllProductsToGoedgepickt()` in `GoedgepicktService`
+
+# 3.0.1 (2026-07-24)
+
+- Include dashboard extensions in dist.
+
+# 3.0.0 (2026-07-24)
+
+- Replaced manual full sync with an automated nightly scheduled task. The plugin now registers a `ScheduledTask` that runs every night at 2:00 UTC (4:00 CEST) and syncs all enabled channels.
+- Pull stock levels from GoedGepickt via a button on the product detail page.
+- **Breaking:** Removed `endpointSecret` from `GoedgepicktPluginConfig`. The `/goedgepickt/fullsync/:secret` endpoint has been removed.
+- **Breaking:** Removed the `runGoedgepicktFullSync` GraphQL mutation.
+- **Breaking:** Removed the `GoedGepickt full sync` action bar item from the product list page in the dashboard. Use the scheduled task UI to trigger a full sync.
+- **Breaking:** The `DefaultSchedulerPlugin` must now be present in your Vendure config for the full sync to run automatically.
+
+# 2.4.1 (2026-07-24)
+
+- Fix negative freeStock from Goedgepickt by clamping stockOnHand to 0, preventing `error.stockonhand-cannot-be-negative` errors
+
+# 2.4.0 (2026-07-21)
+
+- Migrated to React Dashboard
+
+# 2.3.2 (2026-07-02)
+
+- Fix image placeholder detection so Vendure images are sent when Goedgepickt's placeholder is `.jpg` and so new products get the Vendure image
+
 # 2.3.1 (2026-06-30)
 
 - Send house numbers as strings to Goedgepickt API to prevent "Billing house number moet een tekst zijn" errors

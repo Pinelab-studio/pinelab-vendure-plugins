@@ -1,3 +1,15 @@
+# 1.3.1 (2026-08-04)
+
+- Include dashboard extensions in dist.
+
+# 1.3.0 (2026-07-21)
+
+- Migrated to React Dashboard
+
+# 1.2.1 (2026-07-10)
+
+- Fixed URL encoding of sheet names in Google Sheets API requests
+
 # 1.2.0 (2026-08-05)
 
 - Upgraded to Vendure 3.6.3

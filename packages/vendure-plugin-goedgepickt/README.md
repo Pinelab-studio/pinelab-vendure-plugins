@@ -19,7 +19,6 @@ import { GoedgepicktPlugin } from '@pinelab/vendure-plugin-goedgepickt';
 plugins: [
   GoedgepicktPlugin.init({
     vendureHost: 'https://your-vendure-server.io/',
-    endpointSecret: 'some-secret', // Used to validate incoming requests to /fullsync
     setWebhook: true // Automatically set webhooks in Goedgepickt or not
     // You can optionally set orders 'on_hold' in Goedgepickt if you'd like
     determineOrderStatus: (ctx, order) => {
@@ -36,35 +35,19 @@ plugins: [
 
 2. Run a [database migration](https://www.vendure.io/docs/developer-guide/migrations/) to add the new fields and
    entities to your database.
-3. Add this plugin to your Admin UI and compile.
-
-```ts
-plugins: [
-  AdminUiPlugin.init({
-    port: 3002,
-    route: 'admin',
-    app: compileUiExtensions({
-      outputPath: path.join(__dirname, '__admin-ui'),
-      extensions: [GoedgepicktPlugin.ui],
-    }),
-  }),
-];
-```
-
-Read more about Admin UI compilation in the Vendure
-[docs](https://www.vendure.io/docs/plugins/extending-the-admin-ui/#compiling-as-a-deployment-step)
-
-4. Start the server and navigate to `Settings > Goedgepickt`. Make sure you have the `SetGoedGepicktConfig` permission.
-5. Here you can configure your `apiKey` and `webshopUuid` per channel.
-6. Click `test` to check your credentials.
+3. Start the server and go to `Settings` > `Channels`, open the channel you want to configure and select the
+   **GoedGepickt** tab. Make sure you have the `SetGoedGepicktConfig` permission.
+4. Here you can configure your `apiKey` and `webshopUuid` per channel.
 
 When you save the credentials, the plugin will make sure the configured vendureHost is set as webhook for order and
 stock updates. **The plugin will never delete webhooks**, so if you ever change your url, you should manually delete the
 old webhook via GoedGepickt.
 
-7. Full sync can be run manually via the Admin ui or via a GET request to
-   endpoint`/goedgepickt/fullsync/<webhook-secret>/`. A full sync is processed in the worker and can take a few hours to
-   finish
+1. The plugin registers two scheduled tasks. Make sure you have `DefaultSchedulerPlugin` configured in your Vendure config:
+   - **Stock sync** runs every night at 2:00 UTC and pulls stock levels from GoedGepickt into Vendure.
+   - **Product push** runs every Monday at 6:00 UTC and pushes all Vendure products to GoedGepickt.
+2. Orders can be manually (re-)pushed to GoedGepickt via the **Push to Goedgepickt** action in the order detail
+   page's action bar dropdown.
 
 ### Pickup points / drop off points
 
@@ -98,6 +81,10 @@ mutation {
   }
 }
 ```
+
+### Stock locations
+
+This plugin **only works with a single stock location** in Vendure. It will not work correctly when you have multiple stock locations configured. GoedGepickt should manage stock for all your locations, and Vendure should only have a single stock location that reflects the total stock managed by GoedGepickt.
 
 ## Monitoring and Alerting
 

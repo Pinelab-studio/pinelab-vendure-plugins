@@ -13,31 +13,20 @@ This plugin helps you monitor the stock levels in two ways:
 
 ```ts
 import { StockMonitoringPlugin } from '@pinelab/vendure-plugin-stock-monitoring';
-import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
 
 plugins: [
   StockMonitoringPlugin.init({
     globalThreshold: 10,
     uiTab: 'My Admin UI Tab',
   }),
-  // Add the widget to the admin ui
-  AdminUiPlugin.init({
-    port: 3002,
-    route: 'admin',
-    app: compileUiExtensions({
-      outputPath: path.join(__dirname, '__admin-ui'),
-      extensions: [StockMonitoringPlugin.ui],
-    }),
-  }),
 ];
 ```
 
-For more configuration options regarding the admin
-ui, [check the docs](https://www.vendure.io/docs/plugins/extending-the-admin-ui/).
+The "Low stock" widget is provided as a React Dashboard extension — no Admin UI compilation step is needed.
 
-When you start the server and login, you can find `stock-levels` under the `add widgets` button.
+When you start the server and login, you can find `Low stock` under the dashboard's `add widget` button.
 
 ### Caveats
 
 1. This plugin doesn't use the `StockLocationStrategy` because of performance reasons. Instead, it fetches the stock level for each variant from the database and calculates its absolute stock based on the `stockOnHand` and `stockAllocated` fields.
-2. Stock notifications are only emitted after an order is placed. Manual stock changes via the admin UI will not trigger a notification.
+2. Performance: Each allocation, sale or adjustment in `StockMovementEvent` will create a job that triggers a stock check: get saleable stock, compare with variant threshold, and emit event if variant dropped below threshold.

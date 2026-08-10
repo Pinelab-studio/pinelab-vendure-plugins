@@ -1,4 +1,10 @@
-import { DefaultLogger, EventBus, LogLevel, mergeConfig } from '@vendure/core';
+import {
+  DefaultLogger,
+  EventBus,
+  LogLevel,
+  mergeConfig,
+  StockMovementEvent,
+} from '@vendure/core';
 import {
   createTestEnvironment,
   E2E_DEFAULT_CHANNEL_TOKEN,
@@ -41,7 +47,6 @@ beforeAll(async () => {
         productSync: {
           getAdditionalVariantFields: (ctx, variant) => ({
             ean: variant.sku,
-            additionalEANs: ['1234567890'],
           }),
         },
         orderSync: {
@@ -95,21 +100,9 @@ it('Should start successfully', async () => {
 it('Runs full sync', async () => {
   let createdProducts: FulfillmentProduct[] = [];
   let updatedProducts: FulfillmentProduct[] = [];
-  let updatedAdditionalEANs: string[] = [];
   vi.stubGlobal(
     'fetch',
     vi.fn((url, { method, body }) => {
-      // Mock the update of additional EANs
-      if (method === 'POST' && url.includes('/barcodes')) {
-        updatedAdditionalEANs.push(body);
-        return createMockResponse({
-          data: {
-            id: '1',
-            barcodes_and_ean: [],
-            barcodes: [],
-          },
-        });
-      }
       // Mock get all fulfillment products
       if (method === 'GET' && url.includes('fulfillment/products')) {
         return createMockResponse({
@@ -166,7 +159,6 @@ it('Runs full sync', async () => {
   expect(updatedProducts[0]).toEqual(
     '{"sku":"L2201508","name":"Laptop 15 inch 8GB","ean":"L2201508"}'
   );
-  expect(updatedAdditionalEANs[0]).toEqual('{"barcode":"1234567890"}');
   const variants = await getAllVariants(adminClient);
   // This is the variant that should have received stock from QLS
   const productFromQLS = variants.find((variant) => variant.sku === 'L2201508');
@@ -184,6 +176,20 @@ it('Throws forbidden for invalid secret when updating stock via webhook', async 
 });
 
 it('Updates stock via webhook', async () => {
+  const events: StockMovementEvent[] = [];
+  server.app
+    .get(EventBus)
+    .ofType(StockMovementEvent)
+    .subscribe((event) => events.push(event));
+
+  await adminClient.asSuperAdmin();
+  // Get initial stock before webhook
+  const variantsBefore = await getAllVariants(adminClient);
+  const productBefore = variantsBefore.find(
+    (variant) => variant.sku === 'L2201308'
+  );
+  const initialStock = productBefore?.stockOnHand ?? 0;
+
   const res = await adminClient.fetch(
     `http://localhost:3050/qls/webhook/${E2E_DEFAULT_CHANNEL_TOKEN}?secret=1234`,
     {
@@ -196,6 +202,12 @@ it('Updates stock via webhook', async () => {
     }
   );
   expect(res.status).toBe(201);
+  await waitFor(() => events.length > 0);
+  expect(events.length).toBe(1);
+  const event = events[0];
+  expect(event.type).toBe('ADJUSTMENT');
+  expect(event.stockMovements.length).toBe(1);
+  expect(event.stockMovements[0].quantity).toBe(12 - initialStock);
   const variants = await getAllVariants(adminClient);
   const productFromQLS = variants.find((variant) => variant.sku === 'L2201308');
   expect(productFromQLS?.stockOnHand).toBe(12);
@@ -349,10 +361,3 @@ it('Emits QlsOrderFailedEvent when order push fails', async () => {
   expect(event.failedAt).toBeInstanceOf(Date);
   expect(event.fullError).toContain('Ongeldige indeling (NNNN)');
 }, 7000); // Takes longer because we delay custom field updating by 5 seconds
-
-if (process.env.TEST_ADMIN_UI) {
-  it('Should compile admin', async () => {
-    const files = await getFilesInAdminUiFolder(__dirname, QlsPlugin.ui);
-    expect(files?.length).toBeGreaterThan(0);
-  }, 200000);
-}

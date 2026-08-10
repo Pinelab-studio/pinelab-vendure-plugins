@@ -1,6 +1,4 @@
 import { PluginCommonModule, VendurePlugin } from '@vendure/core';
-import { AdminUiExtension } from '@vendure/ui-devkit/compiler';
-import path from 'path';
 import { apiExtensions } from './api/api-extensions';
 import { StockMonitoringResolver } from './api/stock-monitoring.resolver';
 import { PLUGIN_INIT_OPTIONS } from './constants';
@@ -25,6 +23,7 @@ import { StockMonitoringPluginOptions } from './types';
     config.customFields.ProductVariant.push(...customVariantFields);
     return config;
   },
+  dashboard: './dashboard/index.tsx',
   compatibility: '>=3.0.0',
 })
 export class StockMonitoringPlugin {
@@ -36,9 +35,4 @@ export class StockMonitoringPlugin {
     this.options = options;
     return StockMonitoringPlugin;
   }
-
-  static ui: AdminUiExtension = {
-    extensionPath: path.join(__dirname, 'ui'),
-    providers: ['providers.ts'],
-  };
 }

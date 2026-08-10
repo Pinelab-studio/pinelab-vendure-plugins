@@ -1,6 +1,6 @@
 {
   "name": "@pinelab/vendure-plugin-picqer",
-  "version": "3.10.0",
+  "version": "3.11.0",
   "description": "Vendure plugin syncing to orders and stock with Picqer",
   "author": "Martijn van de Brug <martijn@pinelab.studio>",
   "homepage": "https://plugins.pinelab.studio/",
@@ -18,8 +18,11 @@
     "CHANGELOG.md"
   ],
   "scripts": {
-    "build": "rimraf dist && yarn generate && tsc && copyfiles 'src/ui/**/*' dist/vendure-plugin-picqer",
+    "build": "rimraf dist && yarn generate && tsc",
+    "build:dashboard": "vite build --config ./vite.config.mts",
     "start": "yarn ts-node test/dev-server.ts",
+    "serve": "nodemon --exec ts-node --swc test/dev-server.ts",
+    "dev:dashboard": "vite --clearScreen false",
     "generate": "graphql-codegen",
     "test": "vitest run",
     "lint": "eslint ."

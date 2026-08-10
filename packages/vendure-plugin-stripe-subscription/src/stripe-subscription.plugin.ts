@@ -1,8 +1,6 @@
 import { PluginCommonModule, VendurePlugin } from '@vendure/core';
 import { PLUGIN_INIT_OPTIONS } from './constants';
 import { DefaultSubscriptionStrategy, SubscriptionStrategy } from './';
-import path from 'path';
-import { AdminUiExtension } from '@vendure/ui-devkit/compiler';
 import { orderLineCustomFields } from './api/vendure-config/custom-fields';
 import { stripeSubscriptionHandler } from './api/vendure-config/stripe-subscription.handler';
 import { hasStripeSubscriptionProductsPaymentChecker } from './api/vendure-config/has-stripe-subscription-products-payment-checker';
@@ -58,6 +56,7 @@ export interface StripeSubscriptionPluginOptions {
       new SubscriptionOrderItemCalculation();
     return config;
   },
+  dashboard: './dashboard/index.tsx',
   compatibility: '>=2.2.0',
 })
 export class StripeSubscriptionPlugin {
@@ -73,16 +72,4 @@ export class StripeSubscriptionPlugin {
     };
     return StripeSubscriptionPlugin;
   }
-
-  static ui: AdminUiExtension = {
-    id: 'stripe-subscription-extension',
-    extensionPath: path.join(__dirname, 'ui'),
-    ngModules: [
-      {
-        type: 'shared',
-        ngModuleFileName: 'stripe-subscription-shared.module.ts',
-        ngModuleName: 'StripeSubscriptionSharedModule',
-      },
-    ],
-  };
 }

@@ -6,10 +6,13 @@ This plugin finds products that are often bought together by looking at past ord
 
 ## Installation
 
-1. To install the plugin, add it to your Vendure config and include its Admin UI extension in the Admin UI plugin:
+1. Add the plugin to your Vendure config, together with the `DefaultSchedulerPlugin`.
+   The plugin registers a scheduled task that recalculates relations for all channels,
+   **enabled by default** (nightly at 3:00 AM):
 
 ```ts
 import { FrequentlyBoughtTogetherPlugin } from '@vendure-hub/pinelab-frequently-bought-together-plugin';
+import { DefaultSchedulerPlugin } from '@vendure/core';
 
 const vendureConfig = {
   plugins: [
@@ -19,19 +22,42 @@ const vendureConfig = {
       // Test this support level first. See below for more details.
       supportLevel: 0.001,
     }),
-    AdminUiPlugin.init({
-      port: 3002,
-      route: 'admin',
-      app: compileUiExtensions({
-        outputPath: path.join(__dirname, '__admin-ui'),
-        extensions: [FrequentlyBoughtTogetherPlugin.ui],
-      }),
-    }),
+    // Required for the scheduled task to run
+    DefaultSchedulerPlugin.init(),
   ],
 };
 ```
 
 2. Run a database migration to add the custom fields to your database.
+
+### Scheduled recalculation task
+
+The plugin recalculates "frequently bought together" relations for all channels on a
+schedule. This task is **always enabled** and runs **nightly at 3:00 AM** by default.
+The `DefaultSchedulerPlugin` must be present for it to run.
+
+You can change **when** it runs via the `scheduledTask` plugin option (the task cannot
+be disabled):
+
+```ts
+FrequentlyBoughtTogetherPlugin.init({
+  // Change the schedule (a cron-time-generator function):
+  scheduledTask: { schedule: (cron) => cron.everyDayAt(4, 0) },
+  // ...or a plain cron expression:
+  // scheduledTask: { schedule: '0 4 * * *' },
+});
+```
+
+## Triggering a calculation manually
+
+Besides the scheduled task, you can also trigger a calculation on demand via the admin API, for the channel of the
+current request:
+
+```graphql
+mutation {
+  triggerFrequentlyBoughtTogetherCalculation
+}
+```
 
 ## Storefront usage
 
@@ -99,8 +125,8 @@ When you have found your desired support level, you set it in the plugin:
 ```
 
 1. Run the server again
-2. Go to `/admin/catalog/products`
-3. Click the three buttons at the top right and click `Calculate frequently bought together relations`
+2. Trigger a calculation manually via the `triggerFrequentlyBoughtTogetherCalculation` admin API mutation (see
+   above), or wait for the scheduled task to run
 
 The frequently bought together relations are now set on your products.
 

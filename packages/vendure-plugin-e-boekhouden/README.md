@@ -33,26 +33,15 @@ plugins: [
 ]
 ```
 
-2. Run a database migration to add the config entity to your database.
-3. Add this plugin to the Vendure admin ui plugin to add the configuration screen to Vendure.
+2. Start the server and go to `Settings` > `Channels`, open the channel you want
+   to configure and select the **E-boekhouden** tab. Tick `Enabled` and fill in
+   your `Username`, `Security code 1`, `Security code 2`, `Account` and
+   `Contra account`. Configuration is stored per channel as Channel custom
+   fields, so no Admin UI extension needs to be compiled.
 
-```ts
-plugins: [
-  AdminUiPlugin.init({
-    port: 3002,
-    route: 'admin',
-    app: compileUiExtensions({
-      outputPath: path.join(__dirname, '__admin-ui'),
-      extensions: [EboekhoudenPlugin.ui],
-    }),
-  }),
-];
-```
-
-You can read more about Admin UI compilation in the Vendure
-[docs](https://www.vendure.io/docs/plugins/extending-the-admin-ui/#compiling-as-a-deployment-step)
-
-4. Start the server and set your credentials via `Settings > E-boekhouden`
+> The `eBoekhoudenEnabled` toggle controls whether e-Boekhouden is active for a
+> channel. When it is off (or the config is incomplete), the plugin is disabled
+> for that channel.
 
 ### Development - generate new client
 

@@ -1,6 +1,6 @@
 {
   "name": "@pinelab/vendure-plugin-e-boekhouden",
-  "version": "2.2.0",
+  "version": "2.3.0",
   "description": "Vendure plugin for integration with the e-boekhouden accounting platform",
   "author": "Martijn van de Brug <martijn@pinelab.studio>",
   "homepage": "https://plugins.pinelab.studio/",
@@ -18,9 +18,11 @@
     "CHANGELOG.md"
   ],
   "scripts": {
-    "serve": "nodemon --watch \"src/**\" --ext \"ts,json\" --exec \"ts-node test/dev-server.ts\"",
+    "serve": "nodemon --watch \"src/**\" --ext \"ts,json\" --exec \"ts-node --swc test/dev-server.ts\"",
     "start": "ts-node test/dev-server.ts",
-    "build": "rimraf dist && yarn graphql-codegen && tsc && copyfiles -u 1 'src/ui/**/*' dist/",
+    "build": "rimraf dist && tsc",
+    "build:dashboard": "vite build --config ./vite.config.mts",
+    "dev:dashboard": "vite --clearScreen false",
     "test": "vitest run",
     "generate-soap-client": "rimraf src/client/eboekhoudenwsdl &&  wsdl-tsclient ./src/client/e-boekhouden-wsdl.xml -o ./src/client/",
     "lint": "echo 'No linting configured'"

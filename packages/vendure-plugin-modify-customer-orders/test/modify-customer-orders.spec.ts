@@ -14,7 +14,6 @@ import {
 } from '@vendure/testing';
 import { TestServer } from '@vendure/testing/lib/test-server';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import getFilesInAdminUiFolder from '../../test/src/compile-admin-ui.util';
 import { initialData } from '../../test/src/initial-data';
 import {
   addItem,
@@ -181,16 +180,6 @@ async function waitForDraftTransition(
   // Returning the unchanged order here ensures your expect() assertions still
   // print a clear error message (e.g., "expected true to be false") rather than just hanging.
   return await getOrder(client, orderId);
-}
-
-if (process.env.TEST_ADMIN_UI) {
-  it('Should compile admin', async () => {
-    const files = await getFilesInAdminUiFolder(
-      __dirname,
-      ModifyCustomerOrdersPlugin.ui
-    );
-    expect(files?.length).toBeGreaterThan(0);
-  }, 200000);
 }
 
 afterAll(async () => {

@@ -1,6 +1,6 @@
 {
   "name": "@pinelab/vendure-plugin-utm-tracker",
-  "version": "1.5.0",
+  "version": "1.6.0",
   "description": "Connect UTM parameters directly to your orders, to prevent double-attribution caused by silo'ed marketing platforms",
   "keywords": [
     "vendure",
@@ -28,7 +28,9 @@
     "CHANGELOG.md"
   ],
   "scripts": {
-    "build": "rimraf dist && tsc && copyfiles -u 1 'src/ui/**/*' dist/",
+    "build": "rimraf dist && tsc",
+    "build:dashboard": "vite build --config ./vite.config.mts",
+    "dev:dashboard": "vite --clearScreen false",
     "start": "ts-node --swc --transpile-only test/dev-server.ts",
     "test": "vitest run --bail 1",
     "lint": "eslint ."

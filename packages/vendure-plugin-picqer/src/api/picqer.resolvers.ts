@@ -1,25 +1,10 @@
 import { Inject } from '@nestjs/common';
-import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
-import {
-  Allow,
-  Ctx,
-  Logger,
-  PermissionDefinition,
-  RequestContext,
-} from '@vendure/core';
+import { Mutation, Resolver } from '@nestjs/graphql';
+import { Allow, Ctx, Logger, RequestContext } from '@vendure/core';
 import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
 import { PicqerOptions } from '../picqer.plugin';
-import {
-  PicqerConfig,
-  PicqerConfigInput,
-  TestPicqerInput,
-} from '../ui/generated/graphql';
+import { picqerPermission } from '../custom-fields';
 import { PicqerService } from './picqer.service';
-
-export const picqerPermission = new PermissionDefinition({
-  name: 'Picqer',
-  description: 'Allows setting Picqer config and triggering Picqer full sync',
-});
 
 @Resolver()
 export class PicqerResolver {
@@ -53,29 +38,5 @@ export class PicqerResolver {
         allSucceeded = false;
       });
     return allSucceeded;
-  }
-
-  @Mutation()
-  @Allow(picqerPermission.Permission)
-  async upsertPicqerConfig(
-    @Ctx() ctx: RequestContext,
-    @Args('input') input: PicqerConfigInput
-  ): Promise<PicqerConfig> {
-    return this.service.upsertConfig(ctx, input);
-  }
-
-  @Query()
-  @Allow(picqerPermission.Permission)
-  async picqerConfig(@Ctx() ctx: RequestContext): Promise<PicqerConfig | null> {
-    return this.service.getConfig(ctx);
-  }
-
-  @Query()
-  @Allow(picqerPermission.Permission)
-  async isPicqerConfigValid(
-    @Ctx() ctx: RequestContext,
-    @Args('input') input: TestPicqerInput
-  ): Promise<boolean> {
-    return this.service.testRequest(input);
   }
 }

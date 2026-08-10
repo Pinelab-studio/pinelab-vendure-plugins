@@ -33,22 +33,13 @@ UTMTrackerPlugin.init({
     }
   }
 }),
-
-
-// Include the admin UI extensions of this plugin
-AdminUiPlugin.init({
-  port: 3002,
-  route: 'admin',
-  app: compileUiExtensions({
-    outputPath: path.join(__dirname, '__admin-ui'),
-    extensions: [UTMTrackerPlugin.ui],
-  }),
-}),
 ```
 
 2. Run a database migration to add the new entities to your database.
 
-This plugin shows UTM parameters on the order detail page, but doesn't include diagrams or charts. You should use your own data visualization or BI tool to visualize the data.
+This plugin shows UTM parameters on the order detail page via a React Dashboard extension — no Admin UI compilation
+step is needed — but doesn't include diagrams or charts. You should use your own data visualization or BI tool to
+visualize the data.
 
 ## Enable UTM parameters in your marketing tools
 

@@ -9,6 +9,7 @@ This plugin syncs orders to the SendCloud fulfillment platform.
 1. When an order is placed, it is automatically sent to SendCloud as a parcel (for label creation).
 2. The order stays in `PaymentSettled` state in Vendure — **no fulfillment is created at this point**.
 3. Once an order has been sent to SendCloud, SendCloud is responsible for tracking status. The Vendure order will simply be transitioned to `Delivered` by the included scheduled task. This is because orders are sometimes cancelled and duplicated in Sendcloud, resulting in misaligned stock.
+4. A private note is added to the order after each sync attempt, indicating success or failure.
 
 ## Getting started
 
@@ -21,29 +22,19 @@ plugins: [
 ]
 ```
 
-2. Add the SendCloud Ui to the Vendure admin:
+2. Go to your SendCloud account and go to `Settings > Integrations` and create an integration.
+3. Write down the `secret` and `publicKey` of the created integration.
+4. Start Vendure and login as admin.
+5. Make sure you have the permission `SetSendCloudConfig`.
+6. Go to `Settings` > `Channels`, open the channel you want to configure and
+   select the **SendCloud** tab. Fill in your SendCloud `Secret` and
+   `Public key`. Configuration is stored per channel as Channel custom fields,
+   so no Admin UI extension needs to be compiled.
+7. Additionally, you can set a `Default phone number`, for when a customer hasn't
+   filled out one. A phone number is required by Sendcloud in some cases.
 
-```ts
-AdminUiPlugin.init({
-  port: 3002,
-  route: 'admin',
-  app: compileUiExtensions({
-    outputPath: path.join(__dirname, '__admin-ui'),
-    extensions: [SendcloudPlugin.ui],
-  }),
-}),
-```
-
-3. Run a DB [migration](https://www.vendure.io/docs/developer-guide/migrations/) to add the new SendCloudConfigEntity to
-   the database.
-4. Go to your SendCloud account and go to `Settings > Integrations` and create an integration.
-5. Write down the `secret` and `publicKey` of the created integration.
-6. Start Vendure and login as admin.
-7. Make sure you have the permission `SetSendCloudConfig`.
-8. Go to `Settings > SendCloud`.
-9. Fill in your SendCloud `secret` and `public key` here and click save.
-10. Additionally, you can set a fallback phone number, for when a customer hasn't filled out one. A phone number is
-    required by Sendcloud in some cases.
+> SendCloud is considered enabled for a channel once both `Secret` and
+> `Public key` are set.
 
 ## Scheduled task: fulfill settled orders
 

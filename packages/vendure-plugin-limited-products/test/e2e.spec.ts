@@ -20,7 +20,6 @@ import { LimitedProductsPlugin } from '../src/limited-products.plugin';
 import { addItem } from '../../test/src/shop-utils';
 import { expect, describe, beforeAll, afterAll, it } from 'vitest';
 import { ChannelAwareIntValue } from '../src/types';
-import getFilesInAdminUiFolder from '../../test/src/compile-admin-ui.util';
 describe('Limit variants per order plugin', function () {
   let server: TestServer;
   let adminClient: SimpleGraphQLClient;
@@ -181,16 +180,6 @@ describe('Limit variants per order plugin', function () {
       "You are only allowed to order max 6 of item 'Laptop 13 inch 8GB'"
     );
   });
-
-  if (process.env.TEST_ADMIN_UI) {
-    it('Should compile admin', async () => {
-      const files = await getFilesInAdminUiFolder(
-        __dirname,
-        LimitedProductsPlugin.uiExtensions
-      );
-      expect(files?.length).toBeGreaterThan(0);
-    }, 200000);
-  }
 
   afterAll(() => {
     return server.destroy();

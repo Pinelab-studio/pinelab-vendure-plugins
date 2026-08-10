@@ -38,13 +38,8 @@ import {
 import { Fulfillment } from '@vendure/common/lib/generated-types';
 import axios from 'axios';
 import { MyparcelPlugin } from '../src';
-import { getMyparcelConfig, updateMyparcelConfig } from '../src/ui/queries';
-import fs from 'fs';
-import path from 'path';
-import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
 import gql from 'graphql-tag';
 import { expect, describe, beforeAll, afterAll, it, vi, test } from 'vitest';
-import getFilesInAdminUiFolder from '../../test/src/compile-admin-ui.util';
 
 type OutgoingMyparcelShipment = { data: { shipments: MyparcelShipment[] } };
 type OutgoingWebhookSubscription = {
@@ -136,18 +131,16 @@ describe('MyParcel', () => {
     });
   }, 60000);
 
-  it('Adds apiKey via Graphql mutation', async () => {
-    await adminClient.asSuperAdmin();
-    const config = await adminClient.query(updateMyparcelConfig, {
-      input: { apiKey },
+  it('Enables MyParcel for the default channel via custom fields', async () => {
+    const ctx = await getSuperadminContext(server.app);
+    const channelService = server.app.get(ChannelService);
+    await channelService.update(ctx, {
+      id: ctx.channelId,
+      customFields: { myparcelEnabled: true, myparcelApiKey: apiKey },
     });
-    expect(config.updateMyparcelConfig.apiKey).toEqual(apiKey);
-  });
-
-  it('Retrieves apiKey via Graphql query', async () => {
-    await adminClient.asSuperAdmin();
-    const config = await adminClient.query(getMyparcelConfig);
-    expect(config.myparcelConfig.apiKey).toEqual(apiKey);
+    const channel = await channelService.getChannelFromToken(ctx.channel.token);
+    expect(channel.customFields.myparcelApiKey).toEqual(apiKey);
+    expect(channel.customFields.myparcelEnabled).toBe(true);
   });
 
   it('Created webhook on startup', async () => {
@@ -268,20 +261,18 @@ describe('MyParcel', () => {
     expect(order?.fulfillments?.[0]?.state).toEqual('Delivered');
   });
 
-  it('Removes apiKey via Graphql mutation', async () => {
-    await adminClient.asSuperAdmin();
-    const config = await adminClient.query(updateMyparcelConfig, {
-      input: { apiKey: undefined },
+  it('Disables MyParcel when the channel is disabled via custom fields', async () => {
+    const ctx = await getSuperadminContext(server.app);
+    const channelService = server.app.get(ChannelService);
+    await channelService.update(ctx, {
+      id: ctx.channelId,
+      customFields: { myparcelEnabled: false },
     });
-    expect(config.updateMyparcelConfig).toEqual(null);
+    const disabledCtx = await getSuperadminContext(server.app);
+    expect(
+      server.app.get(MyparcelService).getConfig(disabledCtx)
+    ).toBeUndefined();
   });
-
-  if (process.env.TEST_ADMIN_UI) {
-    it('Should compile admin', async () => {
-      const files = await getFilesInAdminUiFolder(__dirname, MyparcelPlugin.ui);
-      expect(files?.length).toBeGreaterThan(0);
-    }, 200000);
-  }
 
   afterAll(async () => {
     await server.destroy();

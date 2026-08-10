@@ -1,28 +1,43 @@
 import { SimpleGraphQLClient } from '@vendure/testing';
-import {
-  GET_SENDCLOUD_CONFIG,
-  UPDATE_SENDCLOUD_CONFIG,
-} from '../src/ui/queries';
-import { SendcloudConfigEntity } from '../src/api/sendcloud-config.entity';
+import gql from 'graphql-tag';
+
+export const UPDATE_CHANNEL = gql`
+  mutation UpdateChannel($input: UpdateChannelInput!) {
+    updateChannel(input: $input) {
+      ... on Channel {
+        id
+        token
+        customFields {
+          sendcloudSecret
+          sendcloudPublicKey
+          sendcloudDefaultPhoneNr
+        }
+      }
+      __typename
+    }
+  }
+`;
 
 export async function updateSendCloudConfig(
   adminClient: SimpleGraphQLClient,
+  channelId: string,
   secret: string,
   publicKey: string,
   defaultPhoneNr: string
-): Promise<SendcloudConfigEntity> {
-  const { updateSendCloudConfig } = await adminClient.query(
-    UPDATE_SENDCLOUD_CONFIG,
-    {
-      input: { secret, publicKey, defaultPhoneNr },
-    }
-  );
-  return updateSendCloudConfig;
-}
-
-export async function getSendCloudConfig(
-  adminClient: SimpleGraphQLClient
-): Promise<SendcloudConfigEntity> {
-  const { sendCloudConfig } = await adminClient.query(GET_SENDCLOUD_CONFIG);
-  return sendCloudConfig;
+): Promise<{
+  sendcloudSecret: string;
+  sendcloudPublicKey: string;
+  sendcloudDefaultPhoneNr: string;
+}> {
+  const { updateChannel } = await adminClient.query(UPDATE_CHANNEL, {
+    input: {
+      id: channelId,
+      customFields: {
+        sendcloudSecret: secret,
+        sendcloudPublicKey: publicKey,
+        sendcloudDefaultPhoneNr: defaultPhoneNr,
+      },
+    },
+  });
+  return updateChannel.customFields;
 }
