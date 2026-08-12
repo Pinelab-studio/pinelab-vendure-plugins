@@ -1,3 +1,9 @@
+# 3.1.0 (2026-08-12)
+
+- Trigger `saveAdditionalVariantData` from incoming stock webhooks using the webhook payload directly.
+- Avoid fetching the QLS product entity during this flow.
+- Add webhook coverage for additional variant data.
+
 # 3.0.0 (2026-07-29)
 
 - Migrated to React Dashboard.

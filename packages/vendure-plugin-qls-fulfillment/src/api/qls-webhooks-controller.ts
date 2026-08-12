@@ -60,11 +60,7 @@ export class QlsWebhooksController {
         );
       }
       if (isStockWebhook(body)) {
-        await this.qlsProductService.updateStockBySku(
-          ctx,
-          body.sku,
-          body.amount_available
-        );
+        await this.qlsProductService.handleStockWebhook(ctx, body);
       } else if (isOrderWebhook(body)) {
         await this.qlsOrderService.handleOrderStatusUpdate(ctx, body);
       } else {
