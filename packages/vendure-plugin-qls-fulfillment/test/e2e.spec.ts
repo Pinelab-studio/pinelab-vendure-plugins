@@ -28,6 +28,7 @@ let server: TestServer;
 let adminClient: SimpleGraphQLClient;
 let shopClient: SimpleGraphQLClient;
 let serverStarted = false;
+let additionalVariantData: { sku: string; variantId: string }[] = [];
 
 beforeAll(async () => {
   registerInitializer('sqljs', new SqljsInitializer('__data__'));
@@ -48,6 +49,17 @@ beforeAll(async () => {
           getAdditionalVariantFields: (ctx, variant) => ({
             ean: variant.sku,
           }),
+          saveAdditionalVariantData: async (
+            ctx,
+            injector,
+            qlsProduct,
+            variant
+          ) => {
+            additionalVariantData.push({
+              sku: qlsProduct.sku,
+              variantId: variant.id.toString(),
+            });
+          },
         },
         orderSync: {
           addAdditionalOrderItems: async (ctx, injector, order) => {
@@ -175,8 +187,9 @@ it('Throws forbidden for invalid secret when updating stock via webhook', async 
   expect(res.status).toBe(403);
 });
 
-it('Updates stock via webhook', async () => {
+it('Updates stock and saves additional data via webhook', async () => {
   const events: StockMovementEvent[] = [];
+  additionalVariantData = [];
   server.app
     .get(EventBus)
     .ofType(StockMovementEvent)
@@ -196,8 +209,12 @@ it('Updates stock via webhook', async () => {
       method: 'POST',
       body: JSON.stringify({
         event: 'fulfillment_product.stock',
+        id: 'qls-product-1',
         sku: 'L2201308',
+        name: 'Laptop 13 inch 8GB',
         amount_available: 12,
+        amount_reserved: 0,
+        amount_total: 12,
       }),
     }
   );
@@ -211,6 +228,9 @@ it('Updates stock via webhook', async () => {
   const variants = await getAllVariants(adminClient);
   const productFromQLS = variants.find((variant) => variant.sku === 'L2201308');
   expect(productFromQLS?.stockOnHand).toBe(12);
+  expect(additionalVariantData).toHaveLength(1);
+  expect(additionalVariantData[0].sku).toBe('L2201308');
+  expect(additionalVariantData[0].variantId).toBe('1');
 });
 
 it('Does not update stock when stock sync is disabled', async () => {
