@@ -2,15 +2,16 @@ import { DeepPartial, VendureEntity } from '@vendure/core';
 import { Column, ColumnType, Entity, PrimaryColumn } from 'typeorm';
 
 /**
- * Entity representing the serialized search documents used to instantiate an index instance.
+ * Entity representing a serialized search index keyed by channel and language.
+ * The id field is overridden to act as the custom index key.
  */
 @Entity()
-export class BetterSearchDocuments extends VendureEntity {
-  constructor(input?: DeepPartial<BetterSearchDocuments>) {
+export class BetterSearchIndex extends VendureEntity {
+  constructor(input?: DeepPartial<BetterSearchIndex>) {
     super(input);
   }
 
-  // Override id to be text
+  // Override id to be the custom index key
   @PrimaryColumn()
   id!: string;
 

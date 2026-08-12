@@ -178,10 +178,7 @@ export interface FulfillmentOrder {
   }>;
 }
 
-export type IncomingStockWebhook = Pick<
-  FulfillmentProduct,
-  'sku' | 'amount_available'
->;
+export type IncomingStockWebhook = FulfillmentProductDetail;
 
 export type IncomingOrderWebhook = Pick<
   FulfillmentOrder,
