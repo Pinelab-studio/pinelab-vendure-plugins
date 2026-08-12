@@ -30,7 +30,7 @@ import { asError } from 'catch-unknown';
 import { IsNull } from 'typeorm';
 import util from 'util';
 import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
-import { FulfillmentProduct } from '../lib/client-types';
+import { FulfillmentProduct, IncomingStockWebhook } from '../lib/client-types';
 import { getQlsClient, QlsClient } from '../lib/qls-client';
 import {
   AdditionalVariantFields,
@@ -322,31 +322,6 @@ export class QlsProductService implements OnModuleInit, OnApplicationBootstrap {
         } else if (result.status === 'updated') {
           updatedInQls.push(variant);
         }
-        if (
-          result.qlsProductId &&
-          this.options.productSync.saveAdditionalVariantData
-        ) {
-          try {
-            const qlsProduct = await client.getFulfillmentProductById(
-              result.qlsProductId
-            );
-            if (qlsProduct) {
-              await this.options.productSync.saveAdditionalVariantData(
-                ctx,
-                new Injector(this.moduleRef),
-                qlsProduct,
-                variant
-              );
-            }
-          } catch (e) {
-            Logger.error(
-              `Error in saveAdditionalData for variant '${variant.sku}': ${
-                asError(e).message
-              }`,
-              loggerCtx
-            );
-          }
-        }
       } catch (e) {
         const error = asError(e);
         // Log as warning, because this is probably a functional mistake, i.e. duplicate barcodes or EANs
@@ -464,8 +439,7 @@ export class QlsProductService implements OnModuleInit, OnApplicationBootstrap {
   }
 
   /**
-   * Update the stock level for a variant based on the given available stock.
-   * Returns true if the stock changed
+   * Update the stock level for a variant based on its SKU.
    */
   async updateStockBySku(
     ctx: RequestContext,
@@ -490,6 +464,57 @@ export class QlsProductService implements OnModuleInit, OnApplicationBootstrap {
       );
     }
     return await this.updateStock(ctx, variant.id, availableStock);
+  }
+
+  /**
+   * Handles an incoming stock webhook and saves any additional variant data.
+   */
+  async handleStockWebhook(
+    ctx: RequestContext,
+    qlsProduct: IncomingStockWebhook
+  ): Promise<boolean> {
+    const result = await this.variantService.findAll(ctx, {
+      filter: { sku: { eq: qlsProduct.sku } },
+    });
+    if (!result.items.length) {
+      Logger.info(
+        `Variant with sku '${qlsProduct.sku}' not found, not handling stock webhook`,
+        loggerCtx
+      );
+      return false;
+    }
+    const variant = result.items[0];
+    if (result.items.length > 1) {
+      Logger.error(
+        `Multiple variants found for sku '${qlsProduct.sku}', using '${variant.id}'`,
+        loggerCtx
+      );
+    }
+
+    await this.updateStockBySku(
+      ctx,
+      qlsProduct.sku,
+      qlsProduct.amount_available
+    );
+    if (!this.options.productSync.saveAdditionalVariantData) {
+      return true;
+    }
+    try {
+      await this.options.productSync.saveAdditionalVariantData(
+        ctx,
+        new Injector(this.moduleRef),
+        qlsProduct,
+        variant
+      );
+    } catch (e) {
+      Logger.error(
+        `Error in saveAdditionalData for variant '${variant.sku}': ${
+          asError(e).message
+        }`,
+        loggerCtx
+      );
+    }
+    return true;
   }
 
   /**
