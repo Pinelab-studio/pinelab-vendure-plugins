@@ -1,23 +1,30 @@
 # Vendure content / SEO monitor plugin
 
-Validates Vendure catalog data and the actual rendered storefront output for products and collections, and surfaces the results in the dashboard detail pages of products and collections.
+[Official documentation here](https://plugins.pinelab.studio/plugin/vendure-plugin-content-health)
 
-## What it checks
+Monitor Vendure products and collections for storefront SEO and content issues.
 
-- The plugin runs five built-in checks against the storefront page's rendered HTML (fetched with a plain HTTP GET, following redirects): See table below
-- On top of that, you can register your own **Vendure content checks** — checks against Vendure catalog data itself (as opposed to the rendered page) — via the `checks` option. No built-in Vendure-data checks ship with the plugin.
+## Checks
 
-| Check             | What a finding means                                                                                                                                                                                                      | How to fix it                                                                                                                                                                                                                                               | Typical owner                                                                                                         |
-| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
-| Meta title        | The rendered page has no `<title>`, or its title is outside the valid 30-60 character range (50-60 is recommended).                                                                                                       | Edit the product/collection SEO title to be descriptive and within the recommended range. If Vendure has no SEO-title field, or the storefront does not render it as `<title>`, add that field/mapping to the storefront first.                             | Usually a content editor once the storefront supports an SEO-title field; otherwise a storefront developer.           |
-| Meta description  | The rendered page has no `<meta name="description">`, or its content is outside the valid 100-160 character range (140-160 is recommended).                                                                               | Write a useful page summary within the recommended range. If the field is not available or is not rendered into the meta tag, the storefront integration must be updated.                                                                                   | Usually a content editor once the field is wired up; otherwise a storefront developer.                                |
-| Hreflang          | The page does not link to every language enabled for the Vendure channel, lacks an `x-default` link, or a linked translated page does not link back.                                                                      | Render a complete set of absolute `<link rel="alternate" hreflang="…">` tags on every translated version, including reciprocal links and `x-default`. Content editors should ensure translations/pages exist, but tag generation belongs in the storefront. | Primarily a storefront developer; content editors may need to publish the missing translations.                       |
-| JSON-LD           | Required schema.org types are missing from the rendered JSON-LD. Products require `Product`, `ProductGroup`, `BreadcrumbList`, and at least one of `Organization` or `OnlineStore`; collections require `BreadcrumbList`. | Add or correct `<script type="application/ld+json">` generation in the storefront and populate it from Vendure data. Editors can correct missing source data after this is implemented, but cannot fix absent JSON-LD rendering themselves.                 | Storefront developer, with content-editor follow-up for incomplete product data.                                      |
-| Sitemap inclusion | The resolved storefront URL is absent from the sitemap returned by the configured `getSitemapUrl`.                                                                                                                        | Ensure the page is publishable/indexable, its canonical URL matches the URL emitted by the sitemap, and regenerate or fix the storefront sitemap.                                                                                                           | Usually a storefront developer or technical SEO/operations owner; an editor may need to publish or enable the entity. |
+### Built-in storefront checks
 
-For content that isn't a product or collection at all (e.g. CMS entries managed by another plugin), see [`additionalChecks`](#additionalchecks-custom-entities) below.
+The plugin fetches each rendered storefront page and runs these checks automatically:
 
-Only the latest result per (entity, channel, language) is kept; a new check fully replaces the previous one. No history/trend data is stored.
+| Check             | What it validates                                                                                                                        |
+| ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| Meta title        | A `<title>` exists and is 30-60 characters long.                                                                                         |
+| Meta description  | A `<meta name="description">` exists and is 100-160 characters long.                                                                     |
+| Hreflang          | Every channel language and `x-default` are linked, including reciprocal links between translated pages.                                  |
+| JSON-LD           | Products include `Product`, `ProductGroup`, `BreadcrumbList`, and `Organization` or `OnlineStore`; collections include `BreadcrumbList`. |
+| Sitemap inclusion | The resolved storefront URL exists in the sitemap returned by `getSitemapUrl`.                                                           |
+
+### Configurable Vendure checks
+
+Use `checks.product` and `checks.collection` to validate Vendure data that is specific to your project. No Vendure-data checks are enabled by default. The configuration example below demonstrates how to report missing or incomplete translations without being misled by Vendure's default-language fallback.
+
+For other content types, such as CMS entries, use [`additionalChecks`](#additionalchecks-custom-entities).
+
+Only the latest result per entity, channel, and language is kept. A new check replaces the previous result; no history is stored.
 
 ## Getting started
 
@@ -55,18 +62,20 @@ plugins: [
     checks: {
       product: [
         (ctx, { product }) => {
-          if (!product.description || product.description.length < 20) {
-            return [
-              {
-                source: 'my-description-check',
-                severity: 'warning',
-                code: 'PRODUCT_DESCRIPTION_TOO_SHORT',
-                message:
-                  'Product description should be at least 20 characters long.',
-              },
-            ];
+          const translation = product.translations.find(
+            ({ languageCode }) => languageCode === ctx.languageCode
+          );
+          if (translation?.name.trim() && translation.description.trim()) {
+            return [];
           }
-          return [];
+          return [
+            {
+              source: 'translation',
+              severity: 'error',
+              code: 'TRANSLATION_MISSING',
+              message: `Product has no complete translation for language '${ctx.languageCode}'.`,
+            },
+          ];
         },
       ],
       collection: [],
@@ -79,6 +88,10 @@ plugins: [
 ```
 
 Every strategy function (`getProductUrl`, `getCollectionUrl`, `checks`, `additionalChecks`) receives the `RequestContext`, so behaviour — including the resolved URL — can differ per channel.
+
+### Checking for missing translations
+
+The custom product check above shows how to detect missing or incomplete translations. Vendure falls back to the channel's default translation when the requested translation does not exist, so checking only `product.name` or `product.description` can incorrectly look valid. Instead, find the entry in `product.translations` matching `ctx.languageCode` and report a finding when that translation is absent or a required translated field is blank. This example considers both `name` and `description` required; adapt the fields and severity to your storefront's requirements. Translation validation is not a built-in check and must be configured through `checks` as shown.
 
 The dashboard extensions are provided as a React Dashboard extension — no Admin UI compilation step is needed:
 
@@ -157,3 +170,13 @@ eventBus
 - `runContentCheckForProduct(productId: ID!): [ContentCheckResult!]!` — manually re-checks a single product now and returns its fresh results.
 - `runContentCheckForCollection(collectionId: ID!): [ContentCheckResult!]!` — manually re-checks a single collection now and returns its fresh results.
 - `runContentHealthFullScan: ContentHealthScanResult!` — manually runs a full scan now, the same as the scheduled task.
+
+## Fixing built-in findings
+
+| Finding           | How to fix                                                                                                                                                                                        | Typical owner                                                                                                         |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| Meta title        | Write a descriptive SEO title of 30-60 characters (50-60 recommended). If Vendure has no SEO-title field or the storefront does not render it as `<title>`, add that field or mapping first.      | Usually a content editor once the field is available; otherwise a storefront developer.                               |
+| Meta description  | Write a useful page summary of 100-160 characters (140-160 recommended). If the field is unavailable or is not rendered as `<meta name="description">`, update the storefront integration.        | Usually a content editor once the field is available; otherwise a storefront developer.                               |
+| Hreflang          | Render absolute `<link rel="alternate" hreflang="…">` tags for every enabled language, reciprocal links on each translated page, and an `x-default` link. Also ensure the translated pages exist. | Primarily a storefront developer; content editors may need to publish missing translations.                           |
+| JSON-LD           | Add or correct `<script type="application/ld+json">` generation and populate it from Vendure data. Content editors can then complete any missing source data.                                     | Storefront developer, with content-editor follow-up for incomplete data.                                              |
+| Sitemap inclusion | Ensure the page is published and indexable, its canonical URL matches the sitemap URL, and the storefront sitemap is regenerated correctly.                                                       | Usually a storefront developer or technical SEO/operations owner; an editor may need to publish or enable the entity. |

@@ -130,12 +130,22 @@ const ASSIGN_PRODUCTS_TO_CHANNEL = gql`
   }
 `;
 
-function goodProductHtml(url: string): string {
+function goodProductHtml(
+  url: string,
+  languageUrls?: { en: string; nl: string }
+): string {
   return `<html><head>
     <title>${'a'.repeat(55)}</title>
     <meta name="description" content="${'b'.repeat(150)}" />
-    <link rel="alternate" hreflang="en" href="${url}" />
-    <link rel="alternate" hreflang="x-default" href="${url}" />
+    <link rel="alternate" hreflang="en" href="${languageUrls?.en ?? url}" />
+    ${
+      languageUrls
+        ? `<link rel="alternate" hreflang="nl" href="${languageUrls.nl}" />`
+        : ''
+    }
+    <link rel="alternate" hreflang="x-default" href="${
+      languageUrls?.en ?? url
+    }" />
     <script type="application/ld+json">${JSON.stringify([
       { '@type': 'Product' },
       { '@type': 'ProductGroup' },
@@ -215,7 +225,23 @@ describe('ContentHealthPlugin (e2e)', () => {
             product: [
               (ctx, { product }) => {
                 configurableCheckCalls.push(product.slug);
-                return [];
+                const translation = product.translations.find(
+                  (item) => item.languageCode === ctx.languageCode
+                );
+                const hasCompleteTranslation = Boolean(
+                  translation?.name.trim() && translation.description.trim()
+                );
+                if (hasCompleteTranslation) {
+                  return [];
+                }
+                return [
+                  {
+                    source: 'translation',
+                    severity: 'error',
+                    code: 'TRANSLATION_MISSING',
+                    message: `Product has no translation for language '${ctx.languageCode}'.`,
+                  },
+                ];
               },
             ],
           },
@@ -310,6 +336,7 @@ describe('ContentHealthPlugin (e2e)', () => {
     // events (Vendure may publish more than one `ProductEvent` per admin
     // mutation) cannot flip back and forth.
     const goodProductUrl = `${STOREFRONT_ORIGIN}/en/products/good-product`;
+    const goodProductNlUrl = `${STOREFRONT_ORIGIN}/nl/products/good-product`;
     const goodCollectionUrl = `${STOREFRONT_ORIGIN}/en/collections/good-collection`;
     const brokenProductUrl = `${STOREFRONT_ORIGIN}/en/products/broken-product`;
     mockAgent = new MockAgent();
@@ -321,7 +348,23 @@ describe('ContentHealthPlugin (e2e)', () => {
     const storefrontClient = mockAgent.get(STOREFRONT_ORIGIN);
     storefrontClient
       .intercept({ path: '/en/products/good-product', method: 'GET' })
-      .reply(200, goodProductHtml(goodProductUrl))
+      .reply(
+        200,
+        goodProductHtml(goodProductUrl, {
+          en: goodProductUrl,
+          nl: goodProductNlUrl,
+        })
+      )
+      .persist();
+    storefrontClient
+      .intercept({ path: '/nl/products/good-product', method: 'GET' })
+      .reply(
+        200,
+        goodProductHtml(goodProductNlUrl, {
+          en: goodProductUrl,
+          nl: goodProductNlUrl,
+        })
+      )
       .persist();
     storefrontClient
       .intercept({ path: '/en/collections/good-collection', method: 'GET' })
@@ -331,7 +374,12 @@ describe('ContentHealthPlugin (e2e)', () => {
       .intercept({ path: '/sitemap.xml', method: 'GET' })
       .reply(
         200,
-        sitemapXml([goodProductUrl, goodCollectionUrl, brokenProductUrl])
+        sitemapXml([
+          goodProductUrl,
+          goodProductNlUrl,
+          goodCollectionUrl,
+          brokenProductUrl,
+        ])
       )
       .persist();
   }, 60000);
@@ -738,4 +786,62 @@ describe('ContentHealthPlugin (e2e)', () => {
       defaultChannelResultsBefore.contentCheckResults[0].id
     );
   });
+
+  it('stores an error when a product has no translation for an enabled channel language', async () => {
+    await adminClient.query(UPDATE_GLOBAL_LANGUAGES, {
+      input: { availableLanguages: ['en', 'nl'] },
+    });
+
+    const activeChannelResult = await adminClient.query(GET_ACTIVE_CHANNEL_ID);
+    await adminClient.query(UPDATE_CHANNEL_LANGUAGES, {
+      input: {
+        id: activeChannelResult.activeChannel.id,
+        availableLanguageCodes: ['en', 'nl'],
+      },
+    });
+
+    const result = await adminClient.query(RUN_CONTENT_CHECK_FOR_PRODUCT, {
+      productId: goodProductId,
+    });
+    const nlResult = result.runContentCheckForProduct.find(
+      (item: { languageCode: string }) => item.languageCode === 'nl'
+    );
+
+    expect(nlResult).toMatchObject({
+      languageCode: 'nl',
+      hasError: true,
+      messages: [
+        {
+          source: 'translation',
+          severity: 'ERROR',
+          code: 'TRANSLATION_MISSING',
+          message: "Product has no translation for language 'nl'.",
+        },
+      ],
+    });
+  });
 });
+
+const UPDATE_GLOBAL_LANGUAGES = gql`
+  mutation UpdateGlobalLanguages($input: UpdateGlobalSettingsInput!) {
+    updateGlobalSettings(input: $input) {
+      __typename
+    }
+  }
+`;
+
+const GET_ACTIVE_CHANNEL_ID = gql`
+  query GetActiveChannelId {
+    activeChannel {
+      id
+    }
+  }
+`;
+
+const UPDATE_CHANNEL_LANGUAGES = gql`
+  mutation UpdateChannelLanguages($input: UpdateChannelInput!) {
+    updateChannel(input: $input) {
+      __typename
+    }
+  }
+`;
