@@ -1,3 +1,7 @@
+# 3.1.2 (2026-08-21)
+
+- Fixed `getVariantsBelowThreshold` query failing on PostgreSQL (`column "FALSE" does not exist`): use a bound string parameter instead of the double-quoted `"FALSE"` (an identifier in Postgres), and reference the full expressions in `HAVING` instead of SELECT aliases (which Postgres does not allow in `HAVING`). Works across PostgreSQL, MySQL and SQLite.
+
 # 3.1.1 (2026-08-04)
 
 - Include dashboard extensions in dist.

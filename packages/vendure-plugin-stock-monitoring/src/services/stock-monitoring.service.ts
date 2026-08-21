@@ -131,9 +131,17 @@ export class StockMonitoringService
         ])
         .where('pv.deletedAt IS NULL')
         .andWhere('pv.enabled = :enabled', { enabled: true })
-        .andWhere('pv.trackInventory != "FALSE"')
+        // Use a bound parameter with a string literal. A double-quoted "FALSE"
+        // is parsed as an identifier (column) on PostgreSQL, which throws
+        // `column "FALSE" does not exist`.
+        .andWhere('pv.trackInventory != :noTrack', { noTrack: 'FALSE' })
         .groupBy('pv.id')
-        .having('availableStock < threshold')
+        // Inline the aggregate/threshold expressions rather than referencing the
+        // SELECT aliases: PostgreSQL does not allow output-column aliases in
+        // HAVING (MySQL/SQLite do), which throws `column "availableStock" does not exist`.
+        .having(
+          `COALESCE(SUM(sl.stockOnHand - sl.stockAllocated), 0) < COALESCE(pv.customFieldsStockmonitoringthreshold, ${this.options.globalThreshold})`
+        )
         .limit(limit)
         .orderBy('availableStock', 'ASC')
         .getMany();
