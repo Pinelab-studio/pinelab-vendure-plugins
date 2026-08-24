@@ -1,11 +1,18 @@
-import { Args, Query, Resolver } from '@nestjs/graphql';
-import { Allow, Ctx, Permission, RequestContext } from '@vendure/core';
+import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
+import { Allow, Ctx, Job, Permission, RequestContext } from '@vendure/core';
 import { engine } from '../constants';
 import { IndexService } from '../services/index.service';
 
 @Resolver()
 export class SearchAdminResolver {
   constructor(private indexService: IndexService) {}
+
+  /** Queues a full rebuild for the active channel. */
+  @Mutation()
+  @Allow(Permission.UpdateCatalog)
+  reindex(@Ctx() ctx: RequestContext): Promise<Job> {
+    return this.indexService.triggerReindex(ctx);
+  }
 
   @Query()
   // @Allow(Permission.SuperAdmin)

@@ -29,6 +29,7 @@ import {
   GET_PRODUCTS,
   INSPECT_INDEX,
   INSPECT_SEARCH_INDEX,
+  REINDEX,
   SEARCH_QUERY,
   SEARCH_SUGGESTIONS_QUERY,
   UPDATE_PRODUCT,
@@ -251,6 +252,36 @@ describe('Relevance', () => {
       slugs.indexOf('wireless-mouse'),
       'concise match should rank first'
     ).toBe(0);
+  });
+});
+
+describe('Manual reindexing', () => {
+  it('queues a full reindex through the standard Admin API mutation', async () => {
+    await adminClient.asSuperAdmin();
+    let completed = false;
+    const subscription = server.app
+      .get(EventBus)
+      .ofType(BetterSearchIndexEvent)
+      .subscribe((event) => {
+        if (
+          event.type === 'full' &&
+          event.ctx.channel.token === 'e2e-default-channel'
+        ) {
+          completed = true;
+        }
+      });
+
+    try {
+      const result = (await adminClient.query(REINDEX)) as {
+        reindex: { id: string; state: string; queueName: string };
+      };
+      expect(result.reindex.id).toBeTruthy();
+      expect(result.reindex.queueName).toBe('better-search-index');
+
+      await waitFor(() => completed || undefined, 100, 10000);
+    } finally {
+      subscription.unsubscribe();
+    }
   });
 });
 

@@ -90,6 +90,16 @@ export const UPDATE_PRODUCT = gql`
   }
 `;
 
+export const REINDEX = gql`
+  mutation Reindex {
+    reindex {
+      id
+      state
+      queueName
+    }
+  }
+`;
+
 export const INSPECT_INDEX = gql`
   query InspectIndex($skip: Int, $take: Int) {
     inspectSearchIndex(skip: $skip, take: $take)
