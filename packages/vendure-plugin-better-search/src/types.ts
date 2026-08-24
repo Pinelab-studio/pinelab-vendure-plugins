@@ -1,4 +1,9 @@
-import { ID, ProductVariant, RequestContext } from '@vendure/core';
+import {
+  ID,
+  ProductVariant,
+  RequestContext,
+  ScheduledTaskConfig,
+} from '@vendure/core';
 
 /**
  * Internal document type returned by search engines.
@@ -49,6 +54,12 @@ export interface BetterSearchOptions {
    * Default is enabled for all channels
    */
   isEnabled?: (ctx: RequestContext) => boolean | Promise<boolean>;
+
+  /**
+   * Cron schedule for the nightly full reindex task.
+   * Defaults to every day at 4:00 AM.
+   */
+  reindexSchedule?: ScheduledTaskConfig['schedule'];
 }
 
 /**

@@ -7,6 +7,7 @@ import { SearchService } from './services/search.service';
 import { BetterSearchOptions } from './types';
 import { IndexService } from './services/index.service';
 import { BetterSearchIndex } from './entities/better-search-index.entity';
+import { betterSearchReindexTask } from './config/reindex-task';
 
 @VendurePlugin({
   imports: [PluginCommonModule],
@@ -19,6 +20,13 @@ import { BetterSearchIndex } from './entities/better-search-index.entity';
     IndexService,
   ],
   configuration: (config) => {
+    config.schedulerOptions.tasks.push(
+      betterSearchReindexTask.configure({
+        schedule:
+          BetterSearchPlugin.options.reindexSchedule ??
+          ((cron) => cron.everyDayAt(4, 0)),
+      })
+    );
     return config;
   },
   compatibility: '^3.0.0',

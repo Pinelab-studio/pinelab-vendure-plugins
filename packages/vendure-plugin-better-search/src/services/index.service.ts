@@ -228,6 +228,45 @@ export class IndexService implements OnModuleInit, OnApplicationBootstrap {
   }
 
   /**
+   * Queues a full reindex for every enabled channel and available language.
+   */
+  async triggerReindexForAllChannels(): Promise<void> {
+    const channels = await this.connection.rawConnection
+      .getRepository(Channel)
+      .find();
+
+    for (const channel of channels) {
+      const channelCtx = new RequestContext({
+        isAuthorized: true,
+        authorizedAsOwnerOnly: false,
+        apiType: 'admin',
+        channel,
+      });
+      if (
+        this.options.isEnabled &&
+        !(await this.options.isEnabled(channelCtx))
+      ) {
+        Logger.info(
+          `Skipping scheduled reindex for channel '${channel.token}' — search is disabled`,
+          loggerCtx
+        );
+        continue;
+      }
+
+      for (const languageCode of channel.availableLanguageCodes) {
+        const ctx = new RequestContext({
+          isAuthorized: true,
+          authorizedAsOwnerOnly: false,
+          apiType: 'admin',
+          channel,
+          languageCode,
+        });
+        await this.triggerReindex(ctx);
+      }
+    }
+  }
+
+  /**
    * Fetches all products, lets the search engine create the index, and saves the index to the database.
    */
   async buildIndex(_ctx: RequestContext): Promise<number> {
