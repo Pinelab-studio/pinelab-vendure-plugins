@@ -1,4 +1,4 @@
-import { ProductVariant, RequestContext } from '@vendure/core';
+import { ID, ProductVariant, RequestContext } from '@vendure/core';
 
 /**
  * Internal document type returned by search engines.
@@ -62,19 +62,37 @@ export interface SearchSuggestion {
 /**
  * A strategy to create a search index and search for results.
  */
-export interface SearchEngine {
+export interface SearchEngine<TIndex = unknown> {
   /**
    * Function that creates the index based on given documents.
-   * Should return a serialized version of the index.
    */
   createIndex(
     ctx: RequestContext,
     documents: ProductVariant[]
-  ): Promise<unknown>;
+  ): Promise<TIndex>;
+
+  /**
+   * Adds or replaces the supplied variant documents and returns the updated index.
+   */
+  updateDocuments(
+    ctx: RequestContext,
+    searchIndex: TIndex,
+    variants: ProductVariant[]
+  ): Promise<TIndex>;
+
+  /**
+   * Removes documents matching variant IDs or their stored product IDs.
+   */
+  removeDocuments(
+    ctx: RequestContext,
+    searchIndex: TIndex,
+    variantIds: ID[],
+    productIds: ID[]
+  ): Promise<TIndex>;
 
   search(
     ctx: RequestContext,
-    searchIndex: unknown,
+    searchIndex: TIndex,
     term: string
   ): Promise<BetterSearchDocument[]>;
 
@@ -85,7 +103,7 @@ export interface SearchEngine {
    */
   searchSuggestions(
     ctx: RequestContext,
-    searchIndex: unknown,
+    searchIndex: TIndex,
     term: string
   ): Promise<SearchSuggestion[]> | SearchSuggestion[];
 
@@ -94,7 +112,7 @@ export interface SearchEngine {
    * Returns each document as a plain JSON-serializable object.
    */
   getDocuments(
-    searchIndex: unknown,
+    searchIndex: TIndex,
     skip: number,
     take: number
   ): Promise<Record<string, unknown>[]>;
@@ -102,10 +120,10 @@ export interface SearchEngine {
   /**
    * Serializes the in-memory index to a string for database storage.
    */
-  serializeIndex(searchIndex: unknown): string;
+  serializeIndex(searchIndex: TIndex): string;
 
   /**
    * Deserializes a string from the database back into an in-memory index.
    */
-  deserializeIndex(serialized: string): unknown;
+  deserializeIndex(serialized: string): TIndex;
 }

@@ -10,10 +10,13 @@ import {
   JobQueue,
   JobQueueService,
   Logger,
+  ID,
   Product,
   ProductEvent,
   ProductService,
+  ProductVariant,
   ProductVariantEvent,
+  ProductVariantService,
   RequestContext,
   SerializedRequestContext,
   TransactionalConnection,
@@ -30,13 +33,39 @@ import { createIndexKey } from './util';
  */
 const INDEX_CACHE_TTL = 10_000;
 
+interface PartialIndexChanges {
+  productIds?: ID[];
+  variantIds?: ID[];
+  remove?: boolean;
+}
+
+type IndexJobData =
+  | {
+      type: 'full';
+      ctx: SerializedRequestContext;
+    }
+  | {
+      type: 'partial';
+      ctx: SerializedRequestContext;
+      updateProductIds: string[];
+      updateVariantIds: string[];
+      removeProductIds: string[];
+      removeVariantIds: string[];
+    };
+
+interface PendingPartialUpdate {
+  ctx: RequestContext;
+  updateProductIds: Set<string>;
+  updateVariantIds: Set<string>;
+  removeProductIds: Set<string>;
+  removeVariantIds: Set<string>;
+}
+
 @Injectable()
 export class IndexService implements OnModuleInit, OnApplicationBootstrap {
-  private jobQueue!: JobQueue<{
-    ctx: SerializedRequestContext;
-  }>;
+  private jobQueue!: JobQueue<IndexJobData>;
 
-  private rebuildIndicesQueue = new Map<string, RequestContext>();
+  private pendingPartialUpdates = new Map<string, PendingPartialUpdate>();
 
   /** In-memory cache of deserialized indices plus metadata to check TTL. */
   private cachedIndices = new Map<
@@ -62,16 +91,20 @@ export class IndexService implements OnModuleInit, OnApplicationBootstrap {
     private options: BetterSearchOptions,
     private jobQueueService: JobQueueService,
     private productService: ProductService,
+    private productVariantService: ProductVariantService,
     private eventBus: EventBus
   ) {}
 
   onApplicationBootstrap() {
     // Listen for product events
     this.eventBus.ofType(ProductEvent).subscribe((event) => {
-      this.debouncedRebuildIndex(event.ctx).catch((e) => {
+      this.debouncedRebuildIndex(event.ctx, {
+        productIds: [event.entity.id],
+        remove: event.type === 'deleted',
+      }).catch((e) => {
         const error = asError(e);
         Logger.error(
-          `Failed to rebuild index for ProductEvent (${event.type}): ${error.message}`,
+          `Failed to queue partial index update for ProductEvent (${event.type}, product ${event.entity.id}): ${error.message}`,
           loggerCtx,
           error.stack
         );
@@ -79,10 +112,13 @@ export class IndexService implements OnModuleInit, OnApplicationBootstrap {
     });
     // Listen for variant events
     this.eventBus.ofType(ProductVariantEvent).subscribe((event) => {
-      this.debouncedRebuildIndex(event.ctx).catch((e) => {
+      this.debouncedRebuildIndex(event.ctx, {
+        variantIds: event.entity.map((variant) => variant.id),
+        remove: event.type === 'deleted',
+      }).catch((e) => {
         const error = asError(e);
         Logger.error(
-          `Failed to rebuild index for ProductVariantEvent (${event.type}): ${error.message}`,
+          `Failed to queue partial index update for ProductVariantEvent (${event.type}): ${error.message}`,
           loggerCtx,
           error.stack
         );
@@ -106,14 +142,21 @@ export class IndexService implements OnModuleInit, OnApplicationBootstrap {
       process: async (job) => {
         const ctx = RequestContext.deserialize(job.data.ctx);
         try {
-          const count = await this.buildIndex(ctx);
+          const count =
+            job.data.type === 'full'
+              ? await this.buildIndex(ctx)
+              : await this.updateIndex(ctx, job.data);
           return {
-            message: `Indexing of ${count} products completed for channel '${ctx.channel.token}' (${ctx.languageCode})`,
+            message: `${
+              job.data.type === 'full' ? 'Indexing' : 'Partial indexing'
+            } of ${count} variants/products completed for channel '${
+              ctx.channel.token
+            }' (${ctx.languageCode})`,
           };
         } catch (e) {
           const error = asError(e);
           Logger.error(
-            `Failed to build index for channel '${ctx.channel.token} (${ctx.languageCode})': ${error.message}`,
+            `Failed to process ${job.data.type} index job for channel '${ctx.channel.token}' (${ctx.languageCode}): ${error.message}`,
             loggerCtx,
             error.stack
           );
@@ -276,6 +319,124 @@ export class IndexService implements OnModuleInit, OnApplicationBootstrap {
     return productCount;
   }
 
+  /** Updates and persists only the documents affected by a partial index job. */
+  async updateIndex(
+    ctx: RequestContext,
+    changes: Extract<IndexJobData, { type: 'partial' }>
+  ): Promise<number> {
+    if (this.options.isEnabled && !(await this.options.isEnabled(ctx))) {
+      throw new Error(
+        `Cannot update index: search is disabled for channel '${ctx.channel.token}' (${ctx.languageCode})`
+      );
+    }
+
+    const searchIndex = await this.getIndex(ctx);
+    const productIdsToReplace = [
+      ...new Set([...changes.updateProductIds, ...changes.removeProductIds]),
+    ];
+    const variantIdsToReplace = [
+      ...new Set([...changes.updateVariantIds, ...changes.removeVariantIds]),
+    ];
+    const affectedVariantIds = new Set<string>();
+    const existingDocuments = await engine.getDocuments(
+      searchIndex,
+      0,
+      Number.MAX_SAFE_INTEGER
+    );
+    for (const document of existingDocuments) {
+      if (
+        productIdsToReplace.includes(String(document.productId)) ||
+        variantIdsToReplace.includes(String(document.id))
+      ) {
+        affectedVariantIds.add(String(document.id));
+      }
+    }
+
+    const variants = await this.getVariantsForPartialUpdate(ctx, changes);
+    variants.forEach((variant) => affectedVariantIds.add(String(variant.id)));
+
+    const indexWithoutOldDocuments = await engine.removeDocuments(
+      ctx,
+      searchIndex,
+      variantIdsToReplace,
+      productIdsToReplace
+    );
+    const updatedIndex = await engine.updateDocuments(
+      ctx,
+      indexWithoutOldDocuments,
+      variants
+    );
+    const indexKey = createIndexKey(ctx);
+    const saved = await this.connection
+      .getRepository(ctx, BetterSearchIndex)
+      .save({ id: indexKey, data: engine.serializeIndex(updatedIndex) });
+    this.cachedIndices.set(indexKey, {
+      index: updatedIndex,
+      updatedAt: saved.updatedAt,
+      lastCheckedAt: Date.now(),
+    });
+
+    await this.eventBus.publish(
+      new BetterSearchIndexEvent(ctx, affectedVariantIds.size, 'partial')
+    );
+    Logger.info(
+      `Partially updated ${affectedVariantIds.size} variants in index ${indexKey}`,
+      loggerCtx
+    );
+    return affectedVariantIds.size;
+  }
+
+  /** Loads enabled variants and all relations needed by the search engine. */
+  private async getVariantsForPartialUpdate(
+    ctx: RequestContext,
+    changes: Extract<IndexJobData, { type: 'partial' }>
+  ): Promise<ProductVariant[]> {
+    const variants = new Map<string, ProductVariant>();
+    const removedProductIds = new Set(changes.removeProductIds);
+    const removedVariantIds = new Set(changes.removeVariantIds);
+
+    for (const productId of changes.updateProductIds) {
+      if (removedProductIds.has(productId)) continue;
+      const product = await this.productService.findOne(ctx, productId, [
+        'translations',
+        'facetValues',
+        'facetValues.translations',
+        'variants',
+        'variants.collections',
+        'variants.collections.translations',
+      ]);
+      if (!product?.enabled) continue;
+      for (const variant of product.variants) {
+        if (!variant.enabled || removedVariantIds.has(String(variant.id))) {
+          continue;
+        }
+        variant.product = product;
+        variants.set(String(variant.id), variant);
+      }
+    }
+
+    for (const variantId of changes.updateVariantIds) {
+      if (removedVariantIds.has(variantId)) continue;
+      const variant = await this.productVariantService.findOne(ctx, variantId, [
+        'product',
+        'product.translations',
+        'product.facetValues',
+        'product.facetValues.translations',
+        'collections',
+        'collections.translations',
+      ]);
+      if (
+        !variant?.enabled ||
+        !variant.product?.enabled ||
+        removedProductIds.has(String(variant.productId))
+      ) {
+        continue;
+      }
+      variants.set(String(variant.id), variant);
+    }
+    return [...variants.values()];
+  }
+
   /**
    * Gets the index from cache (respecting a 10-second TTL), falling back to
    * the database if the updateAt of de index in DB is newer. If it is not, it keeps the cached in memory index
@@ -350,37 +511,119 @@ export class IndexService implements OnModuleInit, OnApplicationBootstrap {
    * Creates a job to reindex all products for the given channel for the given language.
    */
   triggerReindex(ctx: RequestContext) {
-    return this.jobQueue.add({
-      ctx: ctx.serialize(),
-    });
+    return this.jobQueue.add(
+      {
+        type: 'full',
+        ctx: ctx.serialize(),
+      },
+      { retries: 2 }
+    );
+  }
+
+  /** Adds a partial index job containing the IDs collected during debounce. */
+  private triggerPartialReindex(batch: PendingPartialUpdate) {
+    return this.jobQueue.add(
+      {
+        type: 'partial',
+        ctx: batch.ctx.serialize(),
+        updateProductIds: [...batch.updateProductIds],
+        updateVariantIds: [...batch.updateVariantIds],
+        removeProductIds: [...batch.removeProductIds],
+        removeVariantIds: [...batch.removeVariantIds],
+      },
+      { retries: 2 }
+    );
   }
 
   /**
-   * Adds index rebuild to the queue, and waits for more events to come in before triggering an index rebuild, for improved performance.
+   * Remembers affected IDs and debounces one partial job per channel and language.
    */
-  async debouncedRebuildIndex(ctx: RequestContext) {
-    // Skip if search is disabled for this channel
-    if (this.options.isEnabled && !(await this.options.isEnabled(ctx))) {
-      return;
-    }
-    const key = createIndexKey(ctx);
-    this.rebuildIndicesQueue.set(key, ctx);
-    // Wait for debounce time, so that more rebuilds can be added to the rebuild queue and are deduplicated
-    await new Promise((resolve) =>
-      setTimeout(resolve, this.options.debounceIndexRebuildMs)
-    );
-    // Trigger rebuild for all channels in the queue
-    this.rebuildIndicesQueue.forEach((ctx) => {
-      this.triggerReindex(ctx).catch((e) => {
-        const error = asError(e);
-        Logger.error(
-          `Failed to add reindex job to the job queue for '${key}': ${error.message}`,
-          loggerCtx,
-          error.stack
-        );
+  async debouncedRebuildIndex(
+    ctx: RequestContext,
+    changes: PartialIndexChanges
+  ): Promise<void> {
+    for (const languageCode of ctx.channel.availableLanguageCodes) {
+      const languageCtx = new RequestContext({
+        isAuthorized: true,
+        authorizedAsOwnerOnly: false,
+        apiType: ctx.apiType,
+        channel: ctx.channel,
+        languageCode,
       });
-    });
-    // Clear queue, because we have triggered rebuilds for all channels in the queue
-    this.rebuildIndicesQueue.clear();
+      if (
+        this.options.isEnabled &&
+        !(await this.options.isEnabled(languageCtx))
+      ) {
+        continue;
+      }
+      this.rememberPartialUpdate(languageCtx, changes);
+    }
+  }
+
+  /** Merges IDs into an existing debounce batch, with removals taking precedence. */
+  private rememberPartialUpdate(
+    ctx: RequestContext,
+    changes: PartialIndexChanges
+  ): void {
+    const key = createIndexKey(ctx);
+    let batch = this.pendingPartialUpdates.get(key);
+    if (!batch) {
+      batch = {
+        ctx,
+        updateProductIds: new Set(),
+        updateVariantIds: new Set(),
+        removeProductIds: new Set(),
+        removeVariantIds: new Set(),
+      };
+      setTimeout(() => {
+        this.flushPartialUpdate(key).catch((e) => {
+          const error = asError(e);
+          Logger.error(
+            `Failed to add partial reindex job for '${key}': ${error.message}`,
+            loggerCtx,
+            error.stack
+          );
+        });
+      }, this.options.debounceIndexRebuildMs);
+      this.pendingPartialUpdates.set(key, batch);
+    }
+
+    this.mergeIds(
+      batch.updateProductIds,
+      batch.removeProductIds,
+      changes.productIds ?? [],
+      changes.remove === true
+    );
+    this.mergeIds(
+      batch.updateVariantIds,
+      batch.removeVariantIds,
+      changes.variantIds ?? [],
+      changes.remove === true
+    );
+  }
+
+  /** Adds IDs to either updates or removals without allowing updates to revive removals. */
+  private mergeIds(
+    updates: Set<string>,
+    removals: Set<string>,
+    ids: ID[],
+    remove: boolean
+  ): void {
+    for (const id of ids.map(String)) {
+      if (remove) {
+        updates.delete(id);
+        removals.add(id);
+        continue;
+      }
+      if (!removals.has(id)) updates.add(id);
+    }
+  }
+
+  /** Removes a completed debounce batch before submitting it so later IDs use a new batch. */
+  private async flushPartialUpdate(key: string): Promise<void> {
+    const batch = this.pendingPartialUpdates.get(key);
+    if (!batch) return;
+    this.pendingPartialUpdates.delete(key);
+    await this.triggerPartialReindex(batch);
   }
 }

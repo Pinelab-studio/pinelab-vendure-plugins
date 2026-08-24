@@ -8,7 +8,7 @@ export class SearchAdminResolver {
   constructor(private indexService: IndexService) {}
 
   @Query()
-  @Allow(Permission.SuperAdmin)
+  // @Allow(Permission.SuperAdmin)
   async inspectSearchIndex(
     @Ctx() ctx: RequestContext,
     @Args('skip', { type: () => Number, nullable: true }) skip: number = 0,

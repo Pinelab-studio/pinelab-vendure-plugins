@@ -10,19 +10,29 @@ import { IndexService } from './index.service';
 
 const mockSerialize = vi.fn().mockReturnValue('serialized-data');
 const mockDeserialize = vi.fn().mockReturnValue({ deserialized: true });
+const mockGetDocuments = vi.fn().mockResolvedValue([]);
+const mockRemoveDocuments = vi.fn().mockResolvedValue({ removed: true });
+const mockUpdateDocuments = vi.fn().mockResolvedValue({ updated: true });
 
 vi.mock('../constants', async () => {
   return {
     ...((await vi.importActual('../constants')) as Record<string, unknown>),
     engine: {
-      serializeIndex: () => mockSerialize(),
+      serializeIndex: (index: unknown) => mockSerialize(index),
       deserializeIndex: (data: unknown) => mockDeserialize(data),
+      getDocuments: (...args: unknown[]) => mockGetDocuments(...args),
+      removeDocuments: (...args: unknown[]) => mockRemoveDocuments(...args),
+      updateDocuments: (...args: unknown[]) => mockUpdateDocuments(...args),
     },
   };
 });
 
 const mockRequestContext = {
-  channel: { token: 'test-channel' },
+  apiType: 'admin',
+  channel: {
+    token: 'test-channel',
+    availableLanguageCodes: ['en'],
+  },
   languageCode: 'en',
   serialize: () => ({}),
 } as unknown as RequestContext;
@@ -62,6 +72,9 @@ describe('IndexService', () => {
     connection?: TransactionalConnection;
     debounceMs?: number;
     isEnabled?: (ctx: RequestContext) => boolean | Promise<boolean>;
+    productService?: ProductService;
+    productVariantService?: any;
+    eventBus?: EventBus;
   }): IndexService {
     const connection = overrides?.connection ?? createMockRepository();
     const options = {
@@ -72,10 +85,12 @@ describe('IndexService', () => {
       connection,
       options as any,
       { createQueue: vi.fn() } as unknown as JobQueueService,
-      {} as ProductService,
-      {
-        ofType: vi.fn().mockReturnValue({ subscribe: vi.fn() }),
-      } as unknown as EventBus
+      overrides?.productService ?? ({} as ProductService),
+      overrides?.productVariantService ?? ({} as any),
+      overrides?.eventBus ??
+        ({
+          ofType: vi.fn().mockReturnValue({ subscribe: vi.fn() }),
+        } as unknown as EventBus)
     );
   }
 
@@ -217,112 +232,151 @@ describe('IndexService', () => {
     });
   });
 
+  describe('updateIndex', () => {
+    it('removes affected documents and persists the returned updated index', async () => {
+      const connection = createMockRepository();
+      const publish = vi.fn().mockResolvedValue(undefined);
+      const service = createService({
+        connection,
+        productService: { findOne: vi.fn() } as unknown as ProductService,
+        productVariantService: { findOne: vi.fn() },
+        eventBus: { publish } as unknown as EventBus,
+      });
+      const currentIndex = { current: true };
+      (service as any).cachedIndices.set('test-channel-en', {
+        index: currentIndex,
+        updatedAt: new Date(),
+        lastCheckedAt: Date.now(),
+      });
+      mockGetDocuments.mockResolvedValueOnce([
+        { id: 'variant-1', productId: 'product-1' },
+      ]);
+
+      const count = await service.updateIndex(mockRequestContext, {
+        type: 'partial',
+        ctx: {} as any,
+        updateProductIds: [],
+        updateVariantIds: [],
+        removeProductIds: ['product-1'],
+        removeVariantIds: [],
+      });
+
+      expect(count).toBe(1);
+      expect(mockRemoveDocuments).toHaveBeenCalledWith(
+        mockRequestContext,
+        currentIndex,
+        [],
+        ['product-1']
+      );
+      expect(mockUpdateDocuments).toHaveBeenCalledWith(
+        mockRequestContext,
+        { removed: true },
+        []
+      );
+      expect(mockSerialize).toHaveBeenCalledWith({ updated: true });
+      expect(publish).toHaveBeenCalledWith(
+        expect.objectContaining({
+          numberOfProductsIndexed: 1,
+          type: 'partial',
+        })
+      );
+    });
+  });
+
   describe('debouncedRebuildIndex', () => {
-    it('triggers exactly one reindex for multiple calls within debounce window', async () => {
+    it('deduplicates IDs and lets removals take precedence', async () => {
       vi.useFakeTimers();
       const service = createService({ debounceMs: 100 });
-      const triggerReindexSpy = vi
-        .spyOn(service, 'triggerReindex')
-        .mockResolvedValue(undefined as any);
+      const triggerSpy = vi
+        .spyOn(service as any, 'triggerPartialReindex')
+        .mockResolvedValue(undefined);
 
-      // Call 3 times rapidly
-      const p1 = service.debouncedRebuildIndex(mockRequestContext);
-      const p2 = service.debouncedRebuildIndex(mockRequestContext);
-      const p3 = service.debouncedRebuildIndex(mockRequestContext);
+      await service.debouncedRebuildIndex(mockRequestContext, {
+        productIds: ['1', '1'],
+        variantIds: ['2', '2'],
+      });
+      await service.debouncedRebuildIndex(mockRequestContext, {
+        productIds: ['1'],
+        variantIds: ['2'],
+        remove: true,
+      });
+      await service.debouncedRebuildIndex(mockRequestContext, {
+        productIds: ['1'],
+        variantIds: ['2'],
+      });
 
-      vi.advanceTimersByTime(100);
-      await Promise.all([p1, p2, p3]);
+      await vi.advanceTimersByTimeAsync(100);
 
-      expect(triggerReindexSpy).toHaveBeenCalledTimes(1);
-      expect(triggerReindexSpy).toHaveBeenCalledWith(mockRequestContext);
-      triggerReindexSpy.mockRestore();
+      expect(triggerSpy).toHaveBeenCalledTimes(1);
+      const batch = triggerSpy.mock.calls[0][0] as any;
+      expect([...batch.updateProductIds]).toEqual([]);
+      expect([...batch.updateVariantIds]).toEqual([]);
+      expect([...batch.removeProductIds]).toEqual(['1']);
+      expect([...batch.removeVariantIds]).toEqual(['2']);
     });
 
-    it('triggers one reindex per different key', async () => {
+    it('creates one partial batch per available language', async () => {
       vi.useFakeTimers();
       const service = createService({ debounceMs: 100 });
-      const triggerReindexSpy = vi
-        .spyOn(service, 'triggerReindex')
-        .mockResolvedValue(undefined as any);
-
-      const ctx1 = {
-        channel: { token: 'channel-a' },
-        languageCode: 'en',
-      } as unknown as RequestContext;
-      const ctx2 = {
-        channel: { token: 'channel-b' },
-        languageCode: 'en',
+      const triggerSpy = vi
+        .spyOn(service as any, 'triggerPartialReindex')
+        .mockResolvedValue(undefined);
+      const ctx = {
+        ...mockRequestContext,
+        channel: {
+          token: 'test-channel',
+          availableLanguageCodes: ['en', 'de'],
+        },
       } as unknown as RequestContext;
 
-      const p1 = service.debouncedRebuildIndex(ctx1);
-      const p2 = service.debouncedRebuildIndex(ctx2);
+      await service.debouncedRebuildIndex(ctx, { productIds: ['1'] });
+      await vi.advanceTimersByTimeAsync(100);
 
-      vi.advanceTimersByTime(100);
-      await Promise.all([p1, p2]);
-
-      expect(triggerReindexSpy).toHaveBeenCalledTimes(2);
-      expect(triggerReindexSpy).toHaveBeenCalledWith(ctx1);
-      expect(triggerReindexSpy).toHaveBeenCalledWith(ctx2);
-      triggerReindexSpy.mockRestore();
+      expect(triggerSpy).toHaveBeenCalledTimes(2);
+      expect(
+        triggerSpy.mock.calls
+          .map(([batch]) => (batch as any).ctx.languageCode)
+          .sort()
+      ).toEqual(['de', 'en']);
     });
 
-    it('triggers additional reindex after debounce window passes', async () => {
-      vi.useFakeTimers();
-      const service = createService({ debounceMs: 50 });
-      const triggerReindexSpy = vi
-        .spyOn(service, 'triggerReindex')
-        .mockResolvedValue(undefined as any);
-
-      const p1 = service.debouncedRebuildIndex(mockRequestContext);
-      vi.advanceTimersByTime(50);
-      await p1;
-
-      expect(triggerReindexSpy).toHaveBeenCalledTimes(1);
-
-      const p2 = service.debouncedRebuildIndex(mockRequestContext);
-      vi.advanceTimersByTime(50);
-      await p2;
-
-      expect(triggerReindexSpy).toHaveBeenCalledTimes(2);
-      triggerReindexSpy.mockRestore();
-    });
-
-    it('returns immediately when isEnabled returns false', async () => {
+    it('does not queue updates when search is disabled', async () => {
       vi.useFakeTimers();
       const service = createService({
         debounceMs: 100,
         isEnabled: () => false,
       });
-      const triggerReindexSpy = vi
-        .spyOn(service, 'triggerReindex')
-        .mockResolvedValue(undefined as any);
+      const triggerSpy = vi
+        .spyOn(service as any, 'triggerPartialReindex')
+        .mockResolvedValue(undefined);
 
-      const p1 = service.debouncedRebuildIndex(mockRequestContext);
-      vi.advanceTimersByTime(100);
-      await p1;
+      await service.debouncedRebuildIndex(mockRequestContext, {
+        productIds: ['1'],
+      });
+      await vi.advanceTimersByTimeAsync(100);
 
-      expect(triggerReindexSpy).not.toHaveBeenCalled();
-      triggerReindexSpy.mockRestore();
+      expect(triggerSpy).not.toHaveBeenCalled();
     });
 
-    it('proceeds when isEnabled returns true', async () => {
+    it('adds full and partial jobs with two retries', async () => {
       vi.useFakeTimers();
-      const service = createService({
-        debounceMs: 100,
-        isEnabled: () => true,
+      const service = createService({ debounceMs: 100 });
+      const add = vi.fn().mockResolvedValue(undefined);
+      (service as any).jobQueue = { add };
+
+      await service.triggerReindex(mockRequestContext);
+      await service.debouncedRebuildIndex(mockRequestContext, {
+        variantIds: ['2'],
       });
-      const triggerReindexSpy = vi
-        .spyOn(service, 'triggerReindex')
-        .mockResolvedValue(undefined as any);
+      await vi.advanceTimersByTimeAsync(100);
 
-      const p1 = service.debouncedRebuildIndex(mockRequestContext);
-      // Flush microtasks so the await of isEnabled resolves and setTimeout is registered
-      await Promise.resolve();
-      vi.advanceTimersByTime(100);
-      await p1;
-
-      expect(triggerReindexSpy).toHaveBeenCalledTimes(1);
-      triggerReindexSpy.mockRestore();
+      expect(add).toHaveBeenCalledTimes(2);
+      expect(add.mock.calls[0][1]).toEqual({ retries: 2 });
+      expect(add.mock.calls[1][1]).toEqual({ retries: 2 });
+      expect(add.mock.calls[1][0]).toMatchObject({
+        type: 'partial',
+        updateVariantIds: ['2'],
+      });
     });
   });
 

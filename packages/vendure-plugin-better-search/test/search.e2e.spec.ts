@@ -2,7 +2,13 @@ import {
   CurrencyCode,
   LanguageCode,
 } from '@vendure/common/lib/generated-types';
-import { DefaultLogger, EventBus, LogLevel, mergeConfig } from '@vendure/core';
+import {
+  DefaultLogger,
+  EventBus,
+  LogLevel,
+  mergeConfig,
+  RequestContextService,
+} from '@vendure/core';
 import {
   createTestEnvironment,
   registerInitializer,
@@ -16,6 +22,7 @@ import { initialData } from '../../test/src/initial-data';
 import { waitFor } from '../../test/src/test-helpers';
 import { BetterSearchPlugin } from '../src';
 import { BetterSearchIndexEvent } from '../src/events/better-search-index.event';
+import { IndexService } from '../src/services/index.service';
 import {
   ASSIGN_PRODUCTS_TO_CHANNEL,
   CREATE_CHANNEL,
@@ -62,27 +69,23 @@ beforeAll(async () => {
     .subscribe((e) => {
       if (
         e.ctx.channel.token === 'e2e-default-channel' &&
-        e.numberOfProductsIndexed > 0
+        e.numberOfProductsIndexed > 0 &&
+        e.type === 'full'
       ) {
         defaultChannelIndexBuilt = true;
       }
     });
 
-  // Trigger a rebuild for the default channel by updating a product.
-  // buildMissingIndexes runs before products are imported, so the initial
-  // index has 0 products. We need to rebuild after product import.
+  // buildMissingIndexes runs before products are imported, so explicitly run
+  // one full rebuild after import before testing partial updates.
   await adminClient.asSuperAdmin();
-  const { products } = (await adminClient.query(GET_PRODUCTS)) as {
-    products: { items: Array<{ id: string }> };
-  };
-  if (products.items.length > 0) {
-    await adminClient.query(UPDATE_PRODUCT, {
-      input: {
-        id: products.items[0].id,
-        enabled: true,
-      },
-    });
-  }
+  const requestContextService = server.app.get(RequestContextService);
+  const indexService = server.app.get(IndexService);
+  const defaultCtx = await requestContextService.create({
+    apiType: 'admin',
+    channelOrToken: 'e2e-default-channel',
+  });
+  await indexService.triggerReindex(defaultCtx);
 
   // Wait for the index to be rebuilt with the imported products
   await waitFor(() => defaultChannelIndexBuilt, 300);
@@ -251,6 +254,66 @@ describe('Relevance', () => {
   });
 });
 
+describe('Partial reindexing', () => {
+  it('indexes two products updated by concurrent mutations', async () => {
+    await adminClient.asSuperAdmin();
+    const productsResult = (await adminClient.query(GET_PRODUCTS)) as {
+      products: { items: Array<{ id: string; slug: string; name: string }> };
+    };
+    const products = ['apple-repeated', 'apple-banana-orange'].map((slug) => {
+      const product = productsResult.products.items.find(
+        (item) => item.slug === slug
+      );
+      expect(product).toBeDefined();
+      return product!;
+    });
+
+    await Promise.all(
+      products.map((product, index) =>
+        adminClient.query(UPDATE_PRODUCT, {
+          input: {
+            id: product.id,
+            translations: [
+              {
+                languageCode: LanguageCode.en,
+                name: `Concurrent Reindex Product ${index + 1}`,
+                slug: product.slug,
+                description: `Concurrent partial reindex test product ${
+                  index + 1
+                }.`,
+              },
+            ],
+          },
+        })
+      )
+    );
+
+    const result = await waitFor(
+      async () => {
+        const response = (await shopClient.query(SEARCH_QUERY, {
+          term: 'Concurrent Reindex Product',
+        })) as { search: { items: SearchResultItem[] } };
+        const resultIds = new Set(
+          response.search.items.map((item) => item.productId)
+        );
+        return products.every((product) => resultIds.has(product.id))
+          ? response.search.items.filter((item) =>
+              products.some((product) => product.id === item.productId)
+            )
+          : undefined;
+      },
+      100,
+      10000
+    );
+
+    expect(result).toHaveLength(2);
+    expect(result.map((item) => item.productName).sort()).toEqual([
+      'Concurrent Reindex Product 1',
+      'Concurrent Reindex Product 2',
+    ]);
+  });
+});
+
 describe('inspectSearchIndex', () => {
   beforeAll(async () => {
     await adminClient.asSuperAdmin();
@@ -335,23 +398,13 @@ describe('Multi-channel and multi-language', () => {
       },
     });
 
-    // Switch to second channel context and trigger a rebuild by updating the product.
-    // assignProductsToChannel fires events with the admin's current (default) channel
-    // context, so we need to explicitly rebuild the second channel's index.
+    // New channels do not exist during bootstrap, so create their initial full index explicitly.
     adminClient.setChannelToken(secondChannelToken);
-    await adminClient.query(UPDATE_PRODUCT, {
-      input: {
-        id: appleProductId,
-        translations: [
-          {
-            languageCode: LanguageCode.en,
-            name: 'Apple',
-            slug: 'apple',
-            description: 'Apple.',
-          },
-        ],
-      },
+    const ctx = await server.app.get(RequestContextService).create({
+      apiType: 'admin',
+      channelOrToken: secondChannelToken,
     });
+    await server.app.get(IndexService).triggerReindex(ctx);
 
     await waitFor(() => secondChannelIndexBuilt, 10000);
     subscription.unsubscribe();
@@ -387,11 +440,11 @@ describe('Multi-channel and multi-language', () => {
   it('finds translated products in the correct language', async () => {
     // Listen for events so we know when reindex
     let indexEvent: BetterSearchIndexEvent;
-    server.app
+    const subscription = server.app
       .get(EventBus)
       .ofType(BetterSearchIndexEvent)
       .subscribe((e) => {
-        if (e.ctx.languageCode === 'de') {
+        if (e.ctx.languageCode === 'de' && e.type === 'partial') {
           indexEvent = e;
         }
       });
@@ -417,8 +470,9 @@ describe('Multi-channel and multi-language', () => {
     });
 
     const event = await waitFor(() => (!!indexEvent ? indexEvent : undefined));
-    expect(event.numberOfProductsIndexed).toBeGreaterThan(0);
-    expect(event.type).toBe('full');
+    subscription.unsubscribe();
+    expect(event.numberOfProductsIndexed).toBe(1);
+    expect(event.type).toBe('partial');
     shopClient.setChannelToken(secondChannelToken);
     const germanResult = await shopClient.query(
       SEARCH_QUERY,

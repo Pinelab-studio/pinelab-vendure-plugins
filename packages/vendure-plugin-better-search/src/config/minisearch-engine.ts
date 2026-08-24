@@ -65,7 +65,7 @@ function variantToDocument(
   const facetIds = [
     ...new Set(
       (product?.facetValues ?? variant.facetValues ?? [])
-        .map((fv) => String((fv as any).facetId ?? ''))
+        .map((fv) => String(fv.facetId ?? ''))
         .filter(Boolean)
     ),
   ];
@@ -104,8 +104,19 @@ function variantToDocument(
   };
 }
 
-export class MinisearchEngine implements SearchEngine {
-  async createIndex(ctx: RequestContext, documents: ProductVariant[]) {
+/** Converts an unknown stored field to a string array. */
+function toStringArray(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return value.map(String);
+}
+
+export class MinisearchEngine
+  implements SearchEngine<MiniSearch<MinisearchDocument>>
+{
+  async createIndex(
+    ctx: RequestContext,
+    documents: ProductVariant[]
+  ): Promise<MiniSearch<MinisearchDocument>> {
     const miniSearch = new MiniSearch<MinisearchDocument>({
       fields: ['productName', 'slug', 'description'],
       storeFields: [
@@ -132,33 +143,65 @@ export class MinisearchEngine implements SearchEngine {
     return Promise.resolve(miniSearch);
   }
 
+  /** Adds new documents and replaces documents already present in the index. */
+  updateDocuments(
+    ctx: RequestContext,
+    searchIndex: MiniSearch<MinisearchDocument>,
+    variants: ProductVariant[]
+  ): Promise<MiniSearch<MinisearchDocument>> {
+    const existingIds = new Set(
+      this.getStoredDocuments(searchIndex).map((document) =>
+        String(document.id)
+      )
+    );
+    const documents = variants.map((variant) =>
+      variantToDocument(ctx, variant)
+    );
+    searchIndex.discardAll(
+      documents
+        .map((document) => document.id)
+        .filter((id) => existingIds.has(id))
+    );
+    searchIndex.addAll(documents);
+    return Promise.resolve(searchIndex);
+  }
+
+  /** Removes documents by variant ID or by their stored parent product ID. */
+  removeDocuments(
+    _ctx: RequestContext,
+    searchIndex: MiniSearch<MinisearchDocument>,
+    variantIds: ID[],
+    productIds: ID[]
+  ): Promise<MiniSearch<MinisearchDocument>> {
+    const variantIdSet = new Set(variantIds.map(String));
+    const productIdSet = new Set(productIds.map(String));
+    const idsToRemove = this.getStoredDocuments(searchIndex)
+      .filter(
+        (document) =>
+          variantIdSet.has(String(document.id)) ||
+          productIdSet.has(String(document.productId))
+      )
+      .map((document) => document.id);
+    searchIndex.discardAll(idsToRemove);
+    return Promise.resolve(searchIndex);
+  }
+
   getDocuments(
-    searchIndex: unknown,
+    searchIndex: MiniSearch<MinisearchDocument>,
     skip: number,
     take: number
   ): Promise<Record<string, unknown>[]> {
-    const ms = searchIndex as MiniSearch<MinisearchDocument>;
-    const json = ms.toJSON();
-    const storedFields = json.storedFields as Record<
-      string,
-      Record<string, unknown>
-    >;
-    const documentIds = json.documentIds as Record<string, string>;
-    const entries = Object.entries(storedFields);
     return Promise.resolve(
-      entries.slice(skip, skip + take).map(([shortId, doc]) => ({
-        id: documentIds[shortId] ?? shortId,
-        ...doc,
-      }))
+      this.getStoredDocuments(searchIndex).slice(skip, skip + take)
     );
   }
 
   search(
     ctx: RequestContext,
-    searchIndex: unknown,
+    searchIndex: MiniSearch<MinisearchDocument>,
     term: string
   ): Promise<BetterSearchDocument[]> {
-    const miniSearch = searchIndex as MiniSearch<MinisearchDocument>;
+    const miniSearch = searchIndex;
     if (!miniSearch?.search) {
       throw new Error('Invalid search index');
     }
@@ -187,16 +230,10 @@ export class MinisearchEngine implements SearchEngine {
             lowestPriceWithTax: Number(h.priceWithTax ?? 0),
             highestPrice: Number(h.price ?? 0),
             highestPriceWithTax: Number(h.priceWithTax ?? 0),
-            facetIds: Array.isArray(h.facetIds) ? h.facetIds : [],
-            facetValueIds: Array.isArray(h.facetValueIds)
-              ? h.facetValueIds
-              : [],
-            collectionIds: Array.isArray(h.collectionIds)
-              ? h.collectionIds
-              : [],
-            collectionNames: Array.isArray(h.collectionNames)
-              ? h.collectionNames
-              : [],
+            facetIds: toStringArray(h.facetIds),
+            facetValueIds: toStringArray(h.facetValueIds),
+            collectionIds: toStringArray(h.collectionIds),
+            collectionNames: toStringArray(h.collectionNames),
             score: Math.round((h.score ?? 0) * 100) / 100,
           } satisfies BetterSearchDocument)
       )
@@ -209,10 +246,10 @@ export class MinisearchEngine implements SearchEngine {
    */
   searchSuggestions(
     ctx: RequestContext,
-    searchIndex: unknown,
+    searchIndex: MiniSearch<MinisearchDocument>,
     term: string
   ): SearchSuggestion[] {
-    const miniSearch = searchIndex as MiniSearch<MinisearchDocument>;
+    const miniSearch = searchIndex;
     if (!miniSearch?.autoSuggest) {
       throw new Error('Invalid search index');
     }
@@ -234,12 +271,12 @@ export class MinisearchEngine implements SearchEngine {
     return suggestions;
   }
 
-  serializeIndex(searchIndex: unknown): string {
-    return JSON.stringify(searchIndex as MiniSearch<MinisearchDocument>);
+  serializeIndex(searchIndex: MiniSearch<MinisearchDocument>): string {
+    return JSON.stringify(searchIndex);
   }
 
-  deserializeIndex(serialized: string): unknown {
-    return MiniSearch.loadJSON(serialized, {
+  deserializeIndex(serialized: string): MiniSearch<MinisearchDocument> {
+    return MiniSearch.loadJSON<MinisearchDocument>(serialized, {
       fields: ['productName', 'slug', 'description'],
       storeFields: [
         'productId',
@@ -255,5 +292,21 @@ export class MinisearchEngine implements SearchEngine {
         'collectionNames',
       ],
     });
+  }
+
+  /** Returns all stored documents with their external variant IDs. */
+  private getStoredDocuments(
+    searchIndex: MiniSearch<MinisearchDocument>
+  ): Record<string, unknown>[] {
+    const json = searchIndex.toJSON();
+    const storedFields = json.storedFields as Record<
+      string,
+      Record<string, unknown>
+    >;
+    const documentIds = json.documentIds as Record<string, string>;
+    return Object.entries(storedFields).map(([shortId, document]) => ({
+      id: documentIds[shortId] ?? shortId,
+      ...document,
+    }));
   }
 }

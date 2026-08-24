@@ -142,8 +142,13 @@ Searching in worker has been consistently slower. Assumption is that serializing
 Conclusion: We will stick with the current path: Index in a Vendure worker instance, search in the main process and not offload search to a Node worker thread
 
 - Cache index in worker thread, but allow cache busting. (Get last updated date from column in DB?)
+
+> > WE are here>>
+
 - Partial reindexing >> debounce should remember what variants/products should be reindexed
 - Basic analytics to evaluate live usage
+- Index custom fields: Internal, and exposed fields
+- Loading additional data, like extra relations or external sources
 - Implement filtering as defined by Vendure's search interface
 - Log index size every X % of the time for monitoring.
 
@@ -159,6 +164,4 @@ We deploy the implemented engine of the previous phase in a live shop and have c
 These are requirements that we can add after testing live usage, but are a must for proper e-commerce search. Without these, the provided solution can not be seen as a drop-in replacement for search.
 
 - Boost specific documents, for example boosting popular products
-- Index custom fields: Internal, and exposed fields
-- Loading additional data, like extra relations or external sources
 - Allow index inspection in admin
