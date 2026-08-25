@@ -127,13 +127,18 @@ export class StockMonitoringService
           'pv.trackInventory',
           'pv.customFieldsStockmonitoringthreshold',
           'COALESCE(SUM(sl.stockOnHand - sl.stockAllocated), 0) as availableStock',
-          `COALESCE(pv.customFieldsStockmonitoringthreshold, ${this.options.globalThreshold}) as threshold`,
+          'COALESCE(pv.customFieldsStockmonitoringthreshold, :globalThreshold) as threshold',
         ])
+        .setParameters({ globalThreshold: this.options.globalThreshold })
         .where('pv.deletedAt IS NULL')
         .andWhere('pv.enabled = :enabled', { enabled: true })
-        .andWhere('pv.trackInventory != "FALSE"')
+        // A double-quoted "FALSE" is a column identifier on Postgres, so bind it as a string param
+        .andWhere('pv.trackInventory != :noTrack', { noTrack: 'FALSE' })
         .groupBy('pv.id')
-        .having('availableStock < threshold')
+        // Repeat the expressions instead of the SELECT aliases: Postgres rejects aliases in HAVING
+        .having(
+          'COALESCE(SUM(sl.stockOnHand - sl.stockAllocated), 0) < COALESCE(pv.customFieldsStockmonitoringthreshold, :globalThreshold)'
+        )
         .limit(limit)
         .orderBy('availableStock', 'ASC')
         .getMany();
