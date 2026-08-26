@@ -1,3 +1,7 @@
+# 0.2.2 (2026-08-26)
+
+- Fixed the content-check result composite index exceeding MySQL's maximum key length with utf8mb4.
+
 # 0.2.1 (2026-08-21)
 
 - Added a link to the official plugin documentation to the README.

@@ -1,6 +1,6 @@
 {
   "name": "@pinelab/vendure-plugin-content-health",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Vendure plugin that validates product and collection storefront pages for SEO/content issues (meta tags, hreflang, JSON-LD, sitemap inclusion) and surfaces the results in the dashboard.",
   "keywords": [
     "vendure",
