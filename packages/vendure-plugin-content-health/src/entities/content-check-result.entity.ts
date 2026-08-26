@@ -11,20 +11,22 @@ export class ContentCheckResult extends VendureEntity {
     super(input);
   }
 
+  // These columns are part of a composite unique index. 191 chars keeps the
+  // index within MySQL's 3072-byte limit when using utf8mb4.
   // 'product' | 'collection' for the built-in scan pipeline, or a free-form
   // string chosen by an `additionalChecks` function for custom entities.
-  @Column('varchar')
+  @Column('varchar', { length: 191 })
   entityType!: string;
 
   @Index()
-  @Column({ type: 'varchar' })
+  @Column({ type: 'varchar', length: 191 })
   entityId!: ID;
 
   @Index()
-  @Column({ type: 'varchar' })
+  @Column({ type: 'varchar', length: 191 })
   channelId!: ID;
 
-  @Column('varchar')
+  @Column('varchar', { length: 191 })
   languageCode!: LanguageCode;
 
   @Column({ nullable: true })
