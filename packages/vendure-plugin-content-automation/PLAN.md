@@ -212,3 +212,10 @@ await automationStateRepository.upsert({
 - Generation state is language- and channel-specific to prevent one context from suppressing another.
 - Consumers should include a prompt, model, or implementation version in the hash when such changes must regenerate otherwise unchanged entities.
 - The interface does not depend on a particular AI SDK or external service.
+
+# Not for now, but important not to forget when refining the task:
+
+// Custom entity "UpdatedEntities" that has a log of whenever the plugin updates an entity: id, updatedAt, entityAdminLink.
+// Dedicated dashboard page using Vendure's datatable. This table shows the UpdatedEntities
+// Thorough Testing is needed, but does not have to include AI: the plugin is just a framework for calling 'something' and updating entities, we just need to test and validate that generateContent is called in the right circumstances and when it should be skipped
+// An initial population script should be included to prevent too many concurrent job iwth an empty state. The script will do the same as general flow, but not create jobs, instead process sequentially
