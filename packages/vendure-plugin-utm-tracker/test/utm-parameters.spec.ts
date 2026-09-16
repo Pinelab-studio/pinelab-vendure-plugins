@@ -8,15 +8,17 @@ import {
 } from '@vendure/testing';
 import { TestServer } from '@vendure/testing/lib/test-server';
 import gql from 'graphql-tag';
-import { beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { initialData } from '../../test/src/initial-data';
 import { addItem, createSettledOrder } from '../../test/src/shop-utils';
 import { waitFor } from '../../test/src/test-helpers';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
 import {
   FirstClickAttribution,
+  NoopAttribution,
   UtmOrderParameter,
   UTMTrackerPlugin,
+  UTMTrackerService,
 } from '../src';
 
 describe('UTM parameters plugin', function () {
@@ -60,6 +62,10 @@ describe('UTM parameters plugin', function () {
     serverStarted = true;
   }, 60000);
 
+  afterAll(async () => {
+    await server.destroy();
+  });
+
   it('Should start successfully', async () => {
     await expect(serverStarted).toBe(true);
   });
@@ -78,7 +84,7 @@ describe('UTM parameters plugin', function () {
       }
     );
     await expect(addUTMParametersToOrderPromise).rejects.toThrow(
-      'No active order found'
+      /No active order found|error\.no-active-session/
     );
   });
 
@@ -94,8 +100,15 @@ describe('UTM parameters plugin', function () {
       ADD_UTM_PARAMETERS,
       {
         inputs: [
-          { connectedAt: new Date('2025-01-01'), source: 'test-source1' },
-          { connectedAt: new Date('2025-01-02'), source: 'test-source2' },
+          {
+            connectedAt: new Date('2025-01-01'),
+            source: 'test-source1',
+            clid: 'combined-client-id',
+          },
+          {
+            connectedAt: new Date('2025-01-02'),
+            clid: 'standalone-client-id',
+          },
         ],
       }
     );
@@ -105,11 +118,12 @@ describe('UTM parameters plugin', function () {
       orderId: activeOrder.id,
     });
     expect(order.utmParameters.length).toBe(2);
-    expect(order.utmParameters[0].utmSource).toBe('test-source2');
+    expect(order.utmParameters[0].utmSource).toBe(null);
     expect(order.utmParameters[0].utmMedium).toBe(null);
     expect(order.utmParameters[0].utmCampaign).toBe(null);
     expect(order.utmParameters[0].utmTerm).toBe(null);
     expect(order.utmParameters[0].utmContent).toBe(null);
+    expect(order.utmParameters[0].clid).toBe('standalone-client-id');
     expect(order.utmParameters[0].attributedPercentage).toBeNull();
     expect(order.utmParameters[0].createdAt).toBeDefined();
     expect(order.utmParameters[0].updatedAt).toBeDefined();
@@ -119,6 +133,7 @@ describe('UTM parameters plugin', function () {
     expect(order.utmParameters[1].utmCampaign).toBe(null);
     expect(order.utmParameters[1].utmTerm).toBe(null);
     expect(order.utmParameters[1].utmContent).toBe(null);
+    expect(order.utmParameters[1].clid).toBe('combined-client-id');
     expect(order.utmParameters[1].attributedPercentage).toBeNull();
     expect(order.utmParameters[1].createdAt).toBeDefined();
     expect(order.utmParameters[1].updatedAt).toBeDefined();
@@ -134,7 +149,11 @@ describe('UTM parameters plugin', function () {
       ADD_UTM_PARAMETERS,
       {
         inputs: [
-          { source: 'test-source1', connectedAt: new Date('2025-01-07') },
+          {
+            source: 'test-source1',
+            clid: 'combined-client-id',
+            connectedAt: new Date('2025-01-07'),
+          },
         ],
       }
     );
@@ -149,6 +168,7 @@ describe('UTM parameters plugin', function () {
       'test-source1_customSuffix'
     );
     expect(order.utmParameters[0].connectedAt).toBe('2025-01-07T00:00:00.000Z');
+    expect(order.utmParameters[0].clid).toBe('combined-client-id');
   });
 
   it('Adds another UTM parameter (#3) to order', async () => {
@@ -163,6 +183,7 @@ describe('UTM parameters plugin', function () {
             campaign: 'test-campaign3',
             term: 'test-term3',
             content: 'test-content3',
+            clid: 'combined-client-id-3',
           },
         ],
       }
@@ -178,6 +199,7 @@ describe('UTM parameters plugin', function () {
     expect(order.utmParameters[0].utmCampaign).toBe('test-campaign3');
     expect(order.utmParameters[0].utmTerm).toBe('test-term3');
     expect(order.utmParameters[0].utmContent).toBe('test-content3');
+    expect(order.utmParameters[0].clid).toBe('combined-client-id-3');
     expect(order.utmParameters[0].attributedPercentage).toBeNull();
     expect(order.utmParameters[0].connectedAt).toBe('2025-01-08T00:00:00.000Z');
   });
@@ -278,6 +300,49 @@ describe('UTM parameters plugin', function () {
     expect(recent5.attributedPercentage).toBe(0); // 0, because it's not the first click
     expect(recent5.attributedValue).toBe(null); // 0, because it's not the first click
   });
+
+  it('Excludes parameters older than the attribution window', async () => {
+    const ageTestOrder = await addItem(shopClient, 'T_1', 1);
+    await shopClient.query(ADD_UTM_PARAMETERS, {
+      inputs: [
+        {
+          connectedAt: new Date(Date.now() - 31 * 24 * 60 * 60 * 1000),
+          source: 'too-old-for-attribution',
+        },
+        {
+          connectedAt: new Date(),
+          source: 'eligible-for-attribution',
+        },
+      ],
+    });
+
+    await createSettledOrder(shopClient, 1, false);
+    const utmParameters = await waitFor(async () => {
+      const { order } = await adminClient.query(GET_ORDER_WITH_UTM_PARAMETERS, {
+        orderId: ageTestOrder.id,
+      });
+      if (
+        order.utmParameters.find(
+          (p: UtmOrderParameter) =>
+            p.utmSource === 'eligible-for-attribution' &&
+            p.attributedPercentage === 1
+        )
+      ) {
+        return order.utmParameters;
+      }
+    });
+
+    expect(
+      utmParameters.find(
+        (p: UtmOrderParameter) => p.utmSource === 'too-old-for-attribution'
+      )?.attributedPercentage
+    ).toBeNull();
+    expect(
+      utmParameters.find(
+        (p: UtmOrderParameter) => p.utmSource === 'eligible-for-attribution'
+      )?.attributedPercentage
+    ).toBe(1);
+  });
 });
 
 const ADD_UTM_PARAMETERS = gql`
@@ -297,6 +362,7 @@ const GET_ORDER_WITH_UTM_PARAMETERS = gql`
         utmCampaign
         utmTerm
         utmContent
+        clid
         attributedPercentage
         attributedValue
         createdAt
@@ -306,3 +372,122 @@ const GET_ORDER_WITH_UTM_PARAMETERS = gql`
     }
   }
 `;
+
+describe('UTM parameters plugin with no-op attribution', function () {
+  let server: TestServer;
+  let adminClient: SimpleGraphQLClient;
+  let shopClient: SimpleGraphQLClient;
+
+  beforeAll(async () => {
+    registerInitializer('sqljs', new SqljsInitializer('__data_noop__'));
+    const config = mergeConfig(testConfig, {
+      logger: new DefaultLogger({ level: LogLevel.Debug }),
+      plugins: [
+        UTMTrackerPlugin.init({
+          attributionModel: new NoopAttribution(),
+          maxParametersPerOrder: 5,
+          maxAttributionAgeInDays: 30,
+        }),
+      ],
+      paymentOptions: {
+        paymentMethodHandlers: [testPaymentMethod],
+      },
+    });
+
+    ({ server, adminClient, shopClient } = createTestEnvironment(config));
+    await server.init({
+      initialData: {
+        ...initialData,
+        paymentMethods: [
+          {
+            name: testPaymentMethod.code,
+            handler: { code: testPaymentMethod.code, arguments: [] },
+          },
+        ],
+      },
+      productsCsvPath: '../test/src/products-import.csv',
+    });
+  }, 60000);
+
+  afterAll(async () => {
+    await server.destroy();
+  });
+
+  it('Keeps standalone and combined client IDs unattributed after placement', async () => {
+    await shopClient.asUserWithCredentials(
+      'hayden.zieme12@hotmail.com',
+      'test'
+    );
+    const activeOrder = await addItem(shopClient, 'T_1', 1);
+    await shopClient.query(ADD_UTM_PARAMETERS, {
+      inputs: [
+        {
+          connectedAt: new Date(),
+          clid: 'standalone-noop-client',
+        },
+        {
+          connectedAt: new Date(),
+          source: 'noop-source',
+          clid: '  combined-noop-client  ',
+        },
+        {
+          connectedAt: new Date(),
+          source: 'noop-source',
+          clid: 'distinct-noop-client',
+        },
+        {
+          connectedAt: new Date(),
+          clid: '   ',
+        },
+      ],
+    });
+    await shopClient.query(ADD_UTM_PARAMETERS, {
+      inputs: [
+        {
+          connectedAt: new Date(),
+          source: 'noop-source',
+          clid: 'combined-noop-client',
+        },
+      ],
+    });
+
+    const service = server.app.get(UTMTrackerService);
+    const calculateAttribution = vi.spyOn(service, 'calculateAttribution');
+    await createSettledOrder(shopClient, 1, false);
+    await waitFor(async () => {
+      const invocation = calculateAttribution.mock.results[0];
+      if (invocation?.type === 'return') {
+        await invocation.value;
+        return true;
+      }
+    });
+
+    await adminClient.asSuperAdmin();
+    const { order } = await adminClient.query(GET_ORDER_WITH_UTM_PARAMETERS, {
+      orderId: activeOrder.id,
+    });
+    expect(order.utmParameters).toHaveLength(3);
+    expect(order.utmParameters).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          clid: 'standalone-noop-client',
+          utmSource: null,
+          attributedPercentage: null,
+          attributedValue: null,
+        }),
+        expect.objectContaining({
+          clid: 'combined-noop-client',
+          utmSource: 'noop-source',
+          attributedPercentage: null,
+          attributedValue: null,
+        }),
+        expect.objectContaining({
+          clid: 'distinct-noop-client',
+          utmSource: 'noop-source',
+          attributedPercentage: null,
+          attributedValue: null,
+        }),
+      ])
+    );
+  });
+});
