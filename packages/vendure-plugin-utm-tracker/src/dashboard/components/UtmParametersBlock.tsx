@@ -134,6 +134,9 @@ export function UtmParametersBlock({ orderId }: { orderId?: string }) {
     );
   }
 
+  /**
+   * Displays a hyphen for null, undefined, or empty tracking values.
+   */
   const displayValue = (value?: string | null) =>
     value == null || value === '' ? '-' : value;
 
