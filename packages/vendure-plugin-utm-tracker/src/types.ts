@@ -30,6 +30,11 @@ export interface UTMTrackerPluginInitOptions {
 export interface AttributionModel {
   name: string;
   /**
+   * Skip attribution persistence entirely. This is intended for strategies
+   * that collect tracking parameters without attributing order value.
+   */
+  skipAttribution?: boolean;
+  /**
    * Determine the attribution percentage for each UTM parameter of the given order.
    * The parameters are already sorted by connectedAt timestamp, descending (newest first)
    */
@@ -46,6 +51,7 @@ export interface AttributionResult {
 
 export interface UTMParameterInput {
   connectedAt: Date;
+  clid?: string;
   source?: string;
   medium?: string;
   campaign?: string;

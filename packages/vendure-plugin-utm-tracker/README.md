@@ -15,10 +15,18 @@ This plugin connects UTM parameters directly to orders, so that attribution can 
 1. Add the plugin to your `vendure-config.ts`
 
 ```ts
-import { UTMTrackerPlugin, FirstClickAttribution, LastClickAttribution, LinearAttribution, UShapedAttribution } from '@pinelab/vendure-plugin-utm-tracker';
+import {
+  UTMTrackerPlugin,
+  FirstClickAttribution,
+  LastClickAttribution,
+  LinearAttribution,
+  UShapedAttribution,
+  NoopAttribution,
+} from '@pinelab/vendure-plugin-utm-tracker';
 
 UTMTrackerPlugin.init({
-  attributionModel: new FirstClickAttribution(), // or LastClickAttribution, or LinearAttribution, or UShapedAttribution
+  // Replace with new NoopAttribution() to collect tracking data without attribution.
+  attributionModel: new FirstClickAttribution(),
   maxParametersPerOrder: 5, // The maximum number of UTM parameters that can be added to an order. If a customer adds more than this number, the oldest UTM parameters will be removed.
   maxAttributionAgeInDays: 10, // The maximum age of a UTM parameter to be attributed. If a UTM parameter is older than this number of days, it will not be attributed.
   getCampaignDisplayName: (ctx, utmParameters) => {
@@ -35,11 +43,11 @@ UTMTrackerPlugin.init({
 }),
 ```
 
-2. Run a database migration to add the new entities to your database.
+Set `attributionModel: new NoopAttribution()` to retain tracking parameters without attributing order value. The attributed percentage and value remain null after order placement, and the **UTM attribution** table displays `-` for the attributed value.
 
-This plugin shows UTM parameters on the order detail page via a React Dashboard extension — no Admin UI compilation
-step is needed — but doesn't include diagrams or charts. You should use your own data visualization or BI tool to
-visualize the data.
+2. Generate and run a database migration for the plugin entities. Upgrading from a version before 1.7.0 requires an additive nullable `clid` column on `utm_order_parameter`; existing rows remain valid with a null client ID. Review the generated migration before running it.
+
+The React order detail extension displays two tables. **UTM attribution** keeps the campaign display name and attributed value view. **UTM Parameters** shows the raw Connected, Source, Medium, Campaign, Term, Content, and Client ID values for every retained parameter set. Missing values display `-`. No Admin UI compilation step is needed, but this plugin doesn't include diagrams or charts. Use your own data visualization or BI tool for further analysis.
 
 ## Enable UTM parameters in your marketing tools
 
@@ -51,30 +59,33 @@ To add parameters to an order, you can use the `addUTMParametersToOrder` mutatio
 
 ```graphql
 mutation addUTMParametersToOrder($inputs: [UTMParameterInput!]!) {
-  addUTMParametersToOrder(input: $input)
+  addUTMParametersToOrder(inputs: $inputs)
 }
-"""
-Example input:
- "input": [
+```
+
+Example variables:
+
+```json
+{
+  "inputs": [
     {
       "connectedAt": "2025-01-01T00:00:00.000Z",
-      "source": "test-source1"
+      "source": "test-source1",
       "medium": "test-medium1",
       "campaign": "test-campaign1",
       "term": "test-term1",
-      "content": "test-content1"
+      "content": "test-content1",
+      "clid": "client-id-1"
     },
     {
       "connectedAt": "2025-01-02T00:00:00.000Z",
-      "source": "test-source2"
-      "medium": "test-medium2",
-      "campaign": "test-campaign2",
-      "term": "test-term2",
-      "content": "test-content2"
+      "clid": "client-id-only"
     }
   ]
-"""
+}
 ```
+
+`clid` is optional and can be supplied with UTM values or by itself. `connectedAt` remains required for every parameter set.
 
 Keep in mind that UTM parameters can only be added to an active order! On most page visits, an active order is not present yet, so you should save the parameters in a cookie or local storage, along with the connectedAt date, and add them to the order when the order is created. You should not create a new order for each page visit, because this drastically increase the amount of orders in your database (Most visitors will never create an order, so this is a waste of resources).
 
@@ -112,7 +123,10 @@ export function storeUtmParameters(queryParams) {
   const urlParams = new URLSearchParams(queryParams);
   const storedParameters = localStorage.getItem(key);
   const utmParameters = storedParameters ? JSON.parse(storedParameters) : [];
-  if (!queryParams.includes('utm_')) {
+  const hasTrackingParameters =
+    Array.from(urlParams.keys()).some((key) => key.startsWith('utm_')) ||
+    urlParams.has('clid');
+  if (!hasTrackingParameters) {
     // Return existing parameters if no new ones are found. Or undefined if no parameters are stored.
     return utmParameters.length > 0 ? utmParameters : undefined;
   }
@@ -123,6 +137,7 @@ export function storeUtmParameters(queryParams) {
     campaign: urlParams.get('utm_campaign') || undefined,
     term: urlParams.get('utm_term') || undefined,
     content: urlParams.get('utm_content') || undefined,
+    clid: urlParams.get('clid') || undefined,
   });
   localStorage.setItem(key, JSON.stringify(utmParameters));
   return utmParameters;

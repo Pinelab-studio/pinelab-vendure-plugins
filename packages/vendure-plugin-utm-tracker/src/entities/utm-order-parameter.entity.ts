@@ -44,6 +44,9 @@ export class UtmOrderParameter
   @Column({ nullable: true })
   utmContent?: string;
 
+  @Column({ nullable: true })
+  clid?: string;
+
   @ManyToOne(() => Order)
   @JoinColumn()
   order!: Order;
