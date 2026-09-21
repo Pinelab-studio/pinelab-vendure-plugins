@@ -4,6 +4,7 @@ import {
   Channel,
   ConfigService,
   DefaultLogger,
+  EventBus,
   ID,
   Injector,
   isGraphQlErrorResult,
@@ -12,6 +13,7 @@ import {
   mergeConfig,
   Order,
   OrderInterceptor,
+  OrderLineEvent,
   OrderService,
   ProductVariant,
   RequestContext,
@@ -47,6 +49,8 @@ let ctx: RequestContext;
 let connection: TransactionalConnection;
 let orderService: OrderService;
 let cleanupService: OrderCleanupService;
+let requestContextService: RequestContextService;
+let eventBus: EventBus;
 let testVariantIds: ID[];
 let rejectedOrderId: ID | undefined;
 let rejectionAttempts = 0;
@@ -90,12 +94,14 @@ beforeAll(async () => {
     productsCsvPath: '../test/src/products-import.csv',
     customerCount: 2,
   });
-  ctx = await server.app.get(RequestContextService).create({
+  requestContextService = server.app.get(RequestContextService);
+  ctx = await requestContextService.create({
     apiType: 'admin',
   });
   connection = server.app.get(TransactionalConnection);
   orderService = server.app.get(OrderService);
   cleanupService = server.app.get(OrderCleanupService);
+  eventBus = server.app.get(EventBus);
   testVariantIds = (
     await connection.getRepository(ctx, ProductVariant).find({ take: 2 })
   ).map((variant) => variant.id);
@@ -360,6 +366,30 @@ describe('order channel resolution', () => {
 });
 
 describe('stale order cleanup', () => {
+  it('uses the selected channel default language for cleanup', async () => {
+    const orderId = await createOrder('AddingItems');
+    await makeStale(orderId);
+    const createContextSpy = vi.spyOn(requestContextService, 'create');
+
+    await cleanupService.emptyStaleOrders(ctx);
+
+    expect(createContextSpy).toHaveBeenCalledTimes(1);
+    const contextOptions = createContextSpy.mock.calls[0][0];
+    expect(contextOptions).toMatchObject({
+      apiType: 'admin',
+      channelOrToken: expect.anything(),
+    });
+    expect(contextOptions).not.toHaveProperty('languageCode');
+    const orderContext = await createContextSpy.mock.results[0].value;
+    expect(orderContext.channelId).toBe(
+      (contextOptions.channelOrToken as Channel).id
+    );
+    expect(orderContext.languageCode).toBe(
+      orderContext.channel.defaultLanguageCode
+    );
+    createContextSpy.mockRestore();
+  });
+
   it('empties eligible stale orders and preserves their states', async () => {
     const addingItemsId = await createOrder('AddingItems', testVariantIds);
     const createdId = await createOrder('Created');
@@ -402,6 +432,27 @@ describe('stale order cleanup', () => {
 
     const secondRun = await cleanupService.emptyStaleOrders(ctx);
     expect(secondRun.processed).toBe(0);
+  });
+
+  it('publishes a deleted event for every removed order line', async () => {
+    const orderId = await createOrder('AddingItems', testVariantIds);
+    await makeStale(orderId);
+    const lineIds = (await getOrder(orderId)).lines.map(({ id }) => String(id));
+    const publishSpy = vi.spyOn(eventBus, 'publish');
+
+    await cleanupService.emptyStaleOrders(ctx);
+
+    const deletionEvents = publishSpy.mock.calls
+      .map(([event]) => event)
+      .filter(
+        (event): event is OrderLineEvent => event instanceof OrderLineEvent
+      );
+    expect(deletionEvents).toHaveLength(lineIds.length);
+    expect(deletionEvents.map(({ orderLine }) => String(orderLine.id))).toEqual(
+      expect.arrayContaining(lineIds)
+    );
+    expect(deletionEvents.every(({ type }) => type === 'deleted')).toBe(true);
+    publishSpy.mockRestore();
   });
 
   it('does not empty stale orders in any other default Vendure state', async () => {

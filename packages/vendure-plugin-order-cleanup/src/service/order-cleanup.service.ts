@@ -3,10 +3,12 @@ import {
   Channel,
   ChannelService,
   ConfigService,
+  EventBus,
   ID,
   Logger,
   Order,
   OrderLine,
+  OrderLineEvent,
   OrderService,
   RequestContext,
   RequestContextService,
@@ -49,6 +51,7 @@ export class OrderCleanupService {
     private requestContextService: RequestContextService,
     private channelService: ChannelService,
     private configService: ConfigService,
+    private eventBus: EventBus,
     @Inject(ORDER_CLEANUP_OPTIONS)
     private options: NormalizedOrderCleanupPluginOptions
   ) {}
@@ -96,9 +99,7 @@ export class OrderCleanupService {
 
       for (const batch of toBatches(orders, batchSize)) {
         const outcomes = await Promise.all(
-          batch.map((order) =>
-            this.emptyOrder(ctx, defaultChannel, order, cutoff)
-          )
+          batch.map((order) => this.emptyOrder(defaultChannel, order, cutoff))
         );
         for (const outcome of outcomes) {
           result.processed++;
@@ -168,7 +169,6 @@ export class OrderCleanupService {
    * Empty one order atomically and convert all failures into a logged outcome.
    */
   private async emptyOrder(
-    scheduledContext: RequestContext,
     defaultChannel: Channel,
     candidate: Order,
     cutoff: Date
@@ -181,7 +181,6 @@ export class OrderCleanupService {
       const orderContext = await this.requestContextService.create({
         apiType: 'admin',
         channelOrToken: channel,
-        languageCode: scheduledContext.languageCode,
       });
 
       return await this.connection.withTransaction(
@@ -210,6 +209,9 @@ export class OrderCleanupService {
             }
           }
 
+          const deletedOrderLines = order.lines.map(
+            (line) => new OrderLine(line)
+          );
           await this.connection
             .getRepository(transactionContext, OrderLine)
             .remove(order.lines);
@@ -221,6 +223,16 @@ export class OrderCleanupService {
           if (updatedOrder.state !== originalState) {
             throw new Error(
               `Order state changed from '${originalState}' to '${updatedOrder.state}' while emptying`
+            );
+          }
+          for (const deletedOrderLine of deletedOrderLines) {
+            await this.eventBus.publish(
+              new OrderLineEvent(
+                transactionContext,
+                updatedOrder,
+                deletedOrderLine,
+                'deleted'
+              )
             );
           }
           Logger.debug(
