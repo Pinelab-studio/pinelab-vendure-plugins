@@ -1,163 +1,254 @@
-import { Inject, Injectable, OnModuleInit } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import {
-  JobQueue,
-  JobQueueService,
+  Channel,
+  ChannelService,
+  ConfigService,
+  ID,
+  Logger,
   Order,
+  OrderLine,
   OrderService,
   RequestContext,
-  ID,
+  RequestContextService,
   TransactionalConnection,
-  SerializedRequestContext,
-  Logger,
-  isGraphQlErrorResult,
 } from '@vendure/core';
-import { ORDER_CLEANUP_OPTIONS, loggerCtx } from '../constants';
-import { OrderCleanupPluginOptions } from '../order-cleanup.plugin';
-import { In, LessThan } from 'typeorm';
 import { asError } from 'catch-unknown';
-import { toReadableDate } from './util';
-@Injectable()
-export class OrderCleanupService implements OnModuleInit {
-  private jobQueue!: JobQueue<{
-    ctx: SerializedRequestContext;
-    olderThanDays: number;
-  }>;
+import { Brackets } from 'typeorm';
+import { ORDER_CLEANUP_OPTIONS, loggerCtx } from '../constants';
+import { NormalizedOrderCleanupPluginOptions } from '../order-cleanup.plugin';
+import {
+  getNextPageSize,
+  ORDER_CLEANUP_PROCESSING_LIMIT,
+  resolveOrderCleanupChannel,
+  toBatches,
+  toReadableDate,
+} from './util';
 
+const ELIGIBLE_STATES = ['AddingItems', 'Created', 'ArrangingPayment'] as const;
+
+interface CleanupCursor {
+  updatedAt: Date;
+  id: ID;
+}
+
+type EmptyOrderOutcome = 'emptied' | 'failed' | 'skipped';
+
+export interface OrderCleanupResult {
+  processed: number;
+  emptied: number;
+  failed: number;
+  skipped: number;
+  reachedProcessingLimit: boolean;
+}
+
+@Injectable()
+export class OrderCleanupService {
   constructor(
     private connection: TransactionalConnection,
-    private jobQueueService: JobQueueService,
     private orderService: OrderService,
-    @Inject(ORDER_CLEANUP_OPTIONS) private options: OrderCleanupPluginOptions
+    private requestContextService: RequestContextService,
+    private channelService: ChannelService,
+    private configService: ConfigService,
+    @Inject(ORDER_CLEANUP_OPTIONS)
+    private options: NormalizedOrderCleanupPluginOptions
   ) {}
 
-  async onModuleInit() {
-    this.jobQueue = await this.jobQueueService.createQueue({
-      name: 'order-cleanup',
-      process: async (job) => {
-        const ctx = RequestContext.deserialize(job.data.ctx);
-        await this.cancelStaleOrders(
-          ctx,
-          job.data.olderThanDays,
-          this.options.batchSize
-        );
-      },
-    });
-  }
-
-  async triggerCancelOrders(ctx: RequestContext) {
-    await this.jobQueue.add({
-      ctx: ctx.serialize(),
-      olderThanDays: this.options.olderThanDays,
-    });
-  }
-
   /**
-   * Cancel all stale orders that have not been updated in the given number of days.
-   * Only cancels orders that are in `AddingItems` or `Created` state.
-   *
-   * Batch size is the amount of orders that will be cancelled in parallel.
+   * Empty stale active orders in bounded pages and concurrent batches.
    */
-  async cancelStaleOrders(
+  async emptyStaleOrders(
     ctx: RequestContext,
-    olderThanDays: number,
-    batchSize: number = 10
-  ) {
-    // Find orders older than the given number of days
-    const olderThanDate = new Date(
-      Date.now() - olderThanDays * 24 * 60 * 60 * 1000
-    );
-    let hasMore = true;
+    olderThanDays: number = this.options.olderThanDays,
+    batchSize: number = this.options.batchSize
+  ): Promise<OrderCleanupResult> {
+    const cutoff = new Date(Date.now() - olderThanDays * 24 * 60 * 60 * 1000);
+    const defaultChannel = await this.channelService.getDefaultChannel(ctx);
+    const result: OrderCleanupResult = {
+      processed: 0,
+      emptied: 0,
+      failed: 0,
+      skipped: 0,
+      reachedProcessingLimit: false,
+    };
+    let cursor: CleanupCursor | undefined;
+
     Logger.info(
-      `Cancelling active orders older than ${olderThanDays} days`,
+      `Emptying active orders older than ${olderThanDays} days`,
       loggerCtx
     );
-    let processedOrders = 0;
-    let cancelledOrders = 0;
-    while (hasMore) {
-      const [orders, total] = await this.connection
-        .getRepository(ctx, Order)
-        .findAndCount({
-          select: ['id', 'state', 'code', 'updatedAt'],
-          where: {
-            state: In(['AddingItems', 'Created', 'ArrangingPayment']),
-            updatedAt: LessThan(olderThanDate),
-          },
-          order: {
-            updatedAt: 'ASC',
-          },
-          take: 1000,
-        });
+
+    while (result.processed < ORDER_CLEANUP_PROCESSING_LIMIT) {
+      const pageSize = getNextPageSize(result.processed);
+      const orders = await this.findCandidates(ctx, cutoff, cursor, pageSize);
       if (orders.length === 0) {
         break;
       }
-      if (orders.length < 100) {
-        // Set hasMore to false, so the job will stop after this round
-        hasMore = false;
-      }
+
       const fromDate = toReadableDate(orders[0].updatedAt);
       const toDate = toReadableDate(orders[orders.length - 1].updatedAt);
       Logger.info(
-        `Cancelling ${orders.length} orders of total ${total} between '${fromDate}' and '${toDate}'. `,
+        `Processing ${orders.length} stale orders between '${fromDate}' and '${toDate}'`,
         loggerCtx
       );
-      const batches = this.getBatches(orders, batchSize);
-      for (const batch of batches) {
-        // Process batch concurrently
-        await Promise.all(
-          batch.map(async (order) => {
-            const result = await this.cancelOrder(ctx, order.id);
-            if (result) {
-              cancelledOrders++;
-            }
-            processedOrders++;
-          })
+
+      const lastOrder = orders[orders.length - 1];
+      cursor = { updatedAt: lastOrder.updatedAt, id: lastOrder.id };
+
+      for (const batch of toBatches(orders, batchSize)) {
+        const outcomes = await Promise.all(
+          batch.map((order) =>
+            this.emptyOrder(ctx, defaultChannel, order, cutoff)
+          )
         );
+        for (const outcome of outcomes) {
+          result.processed++;
+          result[outcome]++;
+        }
       }
-      if (processedOrders > 10000) {
-        // Prevent infite loops, where orders are not cancellable, and thus stay in the resultset
-        Logger.warn(
-          `Processed ${processedOrders} orders. More orders will be processed in the next run.`,
-          loggerCtx
-        );
+
+      if (orders.length < pageSize) {
         break;
       }
     }
-    Logger.info(`Cancelled ${cancelledOrders} active orders`, loggerCtx);
+
+    if (result.processed === ORDER_CLEANUP_PROCESSING_LIMIT) {
+      result.reachedProcessingLimit = true;
+      Logger.warn(
+        `Processed ${result.processed} orders. More eligible orders will be processed in the next run.`,
+        loggerCtx
+      );
+    }
+    Logger.info(
+      `Emptied ${result.emptied} stale orders; ${result.failed} failed and ${result.skipped} were skipped`,
+      loggerCtx
+    );
+    return result;
   }
 
   /**
-   * Cancel a single order.
-   * Logs any errors instead of throwing them so that the job can continue.
+   * Find the next page of eligible non-empty orders using a stable cursor.
    */
-  private async cancelOrder(
+  private findCandidates(
     ctx: RequestContext,
-    orderId: ID
-  ): Promise<boolean> {
+    cutoff: Date,
+    cursor: CleanupCursor | undefined,
+    take: number
+  ): Promise<Order[]> {
+    const query = this.connection
+      .getRepository(ctx, Order)
+      .createQueryBuilder('order')
+      .innerJoin('order.lines', 'line')
+      .leftJoinAndSelect('order.channels', 'channel')
+      .where('order.state IN (:...states)', { states: ELIGIBLE_STATES })
+      .andWhere('order.updatedAt < :cutoff', { cutoff })
+      .distinct(true)
+      .orderBy('order.updatedAt', 'ASC')
+      .addOrderBy('order.id', 'ASC')
+      .take(take);
+
+    if (cursor) {
+      query.andWhere(
+        new Brackets((qb) => {
+          qb.where('order.updatedAt > :cursorUpdatedAt', {
+            cursorUpdatedAt: cursor.updatedAt,
+          }).orWhere(
+            'order.updatedAt = :cursorUpdatedAt AND order.id > :cursorId',
+            {
+              cursorUpdatedAt: cursor.updatedAt,
+              cursorId: cursor.id,
+            }
+          );
+        })
+      );
+    }
+    return query.getMany();
+  }
+
+  /**
+   * Empty one order atomically and convert all failures into a logged outcome.
+   */
+  private async emptyOrder(
+    scheduledContext: RequestContext,
+    defaultChannel: Channel,
+    candidate: Order,
+    cutoff: Date
+  ): Promise<EmptyOrderOutcome> {
     try {
-      const result = await this.orderService.cancelOrder(ctx, {
-        orderId,
-        reason: `Automated cancellation after ${this.options.olderThanDays} days of inactivity by '${loggerCtx}'`,
+      const channel = resolveOrderCleanupChannel(
+        candidate.channels,
+        defaultChannel
+      );
+      const orderContext = await this.requestContextService.create({
+        apiType: 'admin',
+        channelOrToken: channel,
+        languageCode: scheduledContext.languageCode,
       });
-      if (isGraphQlErrorResult(result)) {
-        // eslint-disable-next-line @typescript-eslint/only-throw-error
-        throw result;
-      }
-      Logger.debug(`Cancelled order ${result.code} (${result.id})`, loggerCtx);
-      return true;
-    } catch (e) {
+
+      return await this.connection.withTransaction(
+        orderContext,
+        async (transactionContext) => {
+          const order = await this.orderService.findOne(
+            transactionContext,
+            candidate.id
+          );
+          if (!order || !this.isEligible(order, cutoff)) {
+            return 'skipped';
+          }
+
+          const originalState = order.state;
+          for (const line of order.lines) {
+            for (const interceptor of this.configService.orderOptions
+              .orderInterceptors) {
+              const error = await interceptor.willRemoveItemFromOrder?.(
+                transactionContext,
+                order,
+                line
+              );
+              if (error) {
+                throw new Error(error);
+              }
+            }
+          }
+
+          await this.connection
+            .getRepository(transactionContext, OrderLine)
+            .remove(order.lines);
+          order.lines = [];
+          const updatedOrder = await this.orderService.applyPriceAdjustments(
+            transactionContext,
+            order
+          );
+          if (updatedOrder.state !== originalState) {
+            throw new Error(
+              `Order state changed from '${originalState}' to '${updatedOrder.state}' while emptying`
+            );
+          }
+          Logger.debug(
+            `Emptied order ${updatedOrder.code} (${updatedOrder.id}) in state ${updatedOrder.state}`,
+            loggerCtx
+          );
+          return 'emptied';
+        }
+      );
+    } catch (error) {
       Logger.error(
-        `Error cancelling order ${orderId}: ${asError(e).message}`,
+        `Error emptying order ${candidate.id}: ${asError(error).message}`,
         loggerCtx
       );
-      return false;
+      return 'failed';
     }
   }
 
-  private getBatches<T>(array: T[], batchSize: number): T[][] {
-    const batches = [];
-    for (let i = 0; i < array.length; i += batchSize) {
-      batches.push(array.slice(i, i + batchSize));
-    }
-    return batches;
+  /**
+   * Re-check candidate eligibility immediately before mutation.
+   */
+  private isEligible(order: Order, cutoff: Date): boolean {
+    return (
+      ELIGIBLE_STATES.includes(
+        order.state as (typeof ELIGIBLE_STATES)[number]
+      ) &&
+      order.updatedAt < cutoff &&
+      order.lines.length > 0
+    );
   }
 }
