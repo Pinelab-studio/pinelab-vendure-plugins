@@ -1,3 +1,7 @@
+# 1.7.1 (2026-09-23)
+
+- Fixed the package build to include compiled Dashboard assets.
+
 # 1.7.0 (2026-09-16)
 
 - Added optional client-ID (`clid`) tracking through the Shop and Admin APIs.
