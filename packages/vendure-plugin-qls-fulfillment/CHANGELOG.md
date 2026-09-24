@@ -1,3 +1,7 @@
+# 3.3.0 (2026-09-24)
+
+- Handle the `shipment.barcode` webhook and store the QLS tracking code and tracking URL on the order's custom fields.
+
 # 3.2.0 (2026-08-12)
 
 - Restore the legacy Angular Admin UI extension alongside the React Dashboard.
