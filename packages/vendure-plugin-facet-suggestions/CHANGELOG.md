@@ -1,3 +1,7 @@
+# 1.6.2 (2026-09-30)
+
+- Improved React dashboard layout.
+
 # 1.6.1 (2026-08-04)
 
 - Include dashboard extensions in dist.
