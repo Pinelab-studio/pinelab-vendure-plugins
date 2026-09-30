@@ -5,12 +5,11 @@ defineDashboardExtension({
   pageBlocks: [
     {
       id: 'suggested-facets',
-      title: 'Suggested facets',
       location: {
         pageId: 'product-detail',
-        column: 'side',
+        column: 'main',
         position: {
-          blockId: 'facet-values',
+          blockId: 'main-form',
           order: 'after',
         },
       },
