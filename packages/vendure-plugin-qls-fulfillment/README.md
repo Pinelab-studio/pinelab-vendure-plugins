@@ -34,6 +34,7 @@ The mutation returns the list of all existing EANs for the product in QLS after 
 - Pushes orders to QLS automatically on order placement
 - Supports manual order push to QLS via Admin UI
 - Updates order status in Vendure based on QLS webhooks
+- Stores tracking codes and tracking URLs from incoming `shipment.barcode` webhooks on the order's (private) `qlsTrackingCodes` and `qlsTrackingUrls` custom fields. An order can have multiple shipments/parcels, so codes and URLs are accumulated in these lists.
 
 ## Getting started
 
@@ -93,6 +94,7 @@ You should set up webhooks for the following events:
 - `fulfillment_product.stock`
 - `fulfillment_order.status`
 - `fulfillment_order.completed`
+- `shipment.barcode`
 
 The URL for all these events should be `https://<YOUR_VENDURE_HOST>/qls/webhook/<CHANNEL_TOKEN>?secret=<PLUGIN_SECRET>`. E.g. `https://example.com/qls/webhook/your-channel-token?secret=121231`.
 

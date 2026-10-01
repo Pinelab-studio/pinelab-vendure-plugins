@@ -21,6 +21,7 @@ import { QlsPluginOptions } from '../types';
 import { QlsOrderService } from '../services/qls-order.service';
 import {
   IncomingOrderWebhook,
+  IncomingShipmentWebhook,
   IncomingStockWebhook,
 } from '../lib/client-types';
 
@@ -41,7 +42,8 @@ export class QlsWebhooksController {
     @Param('channelToken') channelToken: string,
     @Query('secret') webhookSecret: string,
     @Req() request: Request,
-    @Body() body: IncomingStockWebhook | IncomingOrderWebhook
+    @Body()
+    body: IncomingStockWebhook | IncomingOrderWebhook | IncomingShipmentWebhook
   ) {
     if (webhookSecret !== this.options.webhookSecret) {
       Logger.warn(
@@ -61,6 +63,8 @@ export class QlsWebhooksController {
       }
       if (isStockWebhook(body)) {
         await this.qlsProductService.handleStockWebhook(ctx, body);
+      } else if (isShipmentWebhook(body)) {
+        await this.qlsOrderService.handleShipmentBarcodeWebhook(ctx, body);
       } else if (isOrderWebhook(body)) {
         await this.qlsOrderService.handleOrderStatusUpdate(ctx, body);
       } else {
@@ -90,13 +94,19 @@ export class QlsWebhooksController {
 }
 
 function isStockWebhook(
-  body: IncomingStockWebhook | IncomingOrderWebhook
+  body: IncomingStockWebhook | IncomingOrderWebhook | IncomingShipmentWebhook
 ): body is IncomingStockWebhook {
   return 'amount_available' in body;
 }
 
 function isOrderWebhook(
-  body: IncomingStockWebhook | IncomingOrderWebhook
+  body: IncomingStockWebhook | IncomingOrderWebhook | IncomingShipmentWebhook
 ): body is IncomingOrderWebhook {
   return 'customer_reference' in body && 'status' in body;
+}
+
+function isShipmentWebhook(
+  body: IncomingStockWebhook | IncomingOrderWebhook | IncomingShipmentWebhook
+): body is IncomingShipmentWebhook {
+  return 'carrier_id' in body && 'reference' in body;
 }
