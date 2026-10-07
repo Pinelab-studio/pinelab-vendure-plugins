@@ -1,5 +1,5 @@
 import {
-  AdministratorService,
+  Administrator,
   AuthenticationStrategy,
   ExternalAuthenticationMethod,
   Injector,
@@ -10,6 +10,7 @@ import {
 } from '@vendure/core';
 import { DocumentNode } from 'graphql';
 import gql from 'graphql-tag';
+import { IsNull } from 'typeorm';
 
 export interface GoogleAuthData {
   credentialJWT: string;
@@ -27,13 +28,11 @@ export class GoogleAuthStrategy
 {
   readonly name = 'google';
   private client!: import('google-auth-library').OAuth2Client;
-  private adminService: AdministratorService | undefined;
   private connection: TransactionalConnection | undefined;
 
   constructor(private readonly clientId: string) {}
 
   async init(injector: Injector) {
-    this.adminService = injector.get(AdministratorService);
     this.connection = injector.get(TransactionalConnection);
     // Inline import, because the google-auth-library package is only available if consumers specify Google as auth method
     const { OAuth2Client } = await import('google-auth-library');
@@ -67,20 +66,23 @@ export class GoogleAuthStrategy
         return false;
       }
       const email = payload.email;
-      // First we check to see if this user is an admin in our Vendure server
-      const admins = await this.adminService!.findAll(
+      // Login is unauthenticated, so do not use AdministratorService.findAll(),
+      // which filters administrators by the active user's role visibility.
+      const admins = await this.connection!.getRepository(
         ctx,
-        { filter: { emailAddress: { eq: email } } },
-        ['user', 'user.authenticationMethods']
-      );
-      if (admins.totalItems > 1) {
+        Administrator
+      ).find({
+        where: { emailAddress: email, deletedAt: IsNull() },
+        relations: ['user', 'user.authenticationMethods'],
+      });
+      if (admins.length > 1) {
         Logger.error(
           `Multiple admins for '${email}' found. Only one should exist. Unable to login`,
           loggerCtx
         );
         return false;
       }
-      if (admins.totalItems === 0) {
+      if (admins.length === 0) {
         // No admins exist for this email address, not logging in
         Logger.warn(
           `Attempted login from user that is not an administrator`,
@@ -89,7 +91,7 @@ export class GoogleAuthStrategy
         return false;
       }
       // An admin exists in Vendure
-      const admin = admins.items[0];
+      const admin = admins[0];
       let user = admin.user;
       // Check if GoogleAuth already enabled, otherwise enable it for this admin
       const hasGoogleAuth = user.authenticationMethods.find(

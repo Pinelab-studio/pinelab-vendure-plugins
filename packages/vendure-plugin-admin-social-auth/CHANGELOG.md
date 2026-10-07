@@ -1,3 +1,7 @@
+# 2.4.2 (2026-10-07)
+
+- Fix Google administrator login on Vendure 3.7.3+.
+
 # 2.4.1 (2026-08-04)
 
 - Include dashboard extensions in dist.
