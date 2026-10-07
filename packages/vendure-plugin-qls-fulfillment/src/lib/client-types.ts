@@ -190,6 +190,27 @@ export type IncomingOrderWebhook = Pick<
 >;
 
 /**
+ * Incoming `shipment.barcode` webhook payload from QLS.
+ * `reference` matches the Vendure order code.
+ * Note: `barcode`/`tracking_url` on the root object are sometimes not yet populated,
+ * so we also fall back to the nested shipment with the same `id` under `deliveries[].shipments[]`.
+ */
+export interface IncomingShipmentWebhook {
+  id: string;
+  reference: string;
+  carrier_id: string;
+  barcode: string | null;
+  tracking_url: string | null;
+  deliveries?: Array<{
+    shipments?: Array<{
+      id: string;
+      barcode: string | null;
+      tracking_url: string | null;
+    }>;
+  }>;
+}
+
+/**
  * This is the full data returend by the QLS API when fetching a fulfillment product by ID
  * Getting via list, sku or filtering does NOT return this full object
  */
