@@ -8,6 +8,7 @@ export const shopApiExtensions = gql`
     campaign: String
     term: String
     content: String
+    clid: String
   }
   extend type Mutation {
     """
@@ -29,6 +30,7 @@ export const adminApiExtensions = gql`
     utmCampaign: String
     utmTerm: String
     utmContent: String
+    clid: String
     attributedPercentage: Float
     attributedValue: Money
   }

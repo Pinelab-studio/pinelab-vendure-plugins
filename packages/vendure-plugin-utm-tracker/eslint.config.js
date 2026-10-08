@@ -5,7 +5,7 @@ module.exports = (async () => {
     {
       languageOptions: {
         parserOptions: {
-          project: './tsconfig.json',
+          project: './tsconfig.eslint.json',
         },
       },
     },

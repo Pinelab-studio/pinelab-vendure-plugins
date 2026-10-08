@@ -1,14 +1,16 @@
 {
   "name": "@pinelab/vendure-plugin-order-cleanup",
-  "version": "1.3.0",
+  "version": "2.0.0",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "repository": "https://github.com/Pinelab-studio/pinelab-vendure-plugins",
+  "author": "Martijn van de Brug <martijn@pinelab.studio>",
+  "license": "MIT",
   "files": [
     "dist",
     "README.md",
     "CHANGELOG.md"
   ],
-  "license": "MIT",
   "private": false,
   "publishConfig": {
     "access": "public"
@@ -23,6 +25,7 @@
     "dev": "ts-node test/dev-server.ts"
   },
   "dependencies": {
-    "catch-unknown": "^2.0.0"
+    "catch-unknown": "^2.0.0",
+    "croner": "^10.0.1"
   }
 }

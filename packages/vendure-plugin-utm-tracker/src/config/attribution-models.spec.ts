@@ -4,6 +4,7 @@ import { FirstClickAttribution } from './first-click-attribution';
 import { LastClickAttribution } from './last-click-attribution';
 import { LinearAttribution } from './linear-attribution';
 import { UShapedAttribution } from './u-shaped-attribution';
+import { NoopAttribution } from './noop-attribution';
 
 describe('Attribution Models', () => {
   const createMockUtmParameter = (
@@ -31,6 +32,15 @@ describe('Attribution Models', () => {
       const result = firstClickAttribution.calculateAttribution(utmParams);
       expect(result[0].utmParameterId).toEqual(1);
       expect(result[0].attributionPercentage).toEqual(1);
+    });
+  });
+
+  describe('NoopAttribution', () => {
+    it('Opts out of attribution and returns no results', () => {
+      const model = new NoopAttribution();
+
+      expect(model.skipAttribution).toBe(true);
+      expect(model.calculateAttribution()).toEqual([]);
     });
   });
 

@@ -1,3 +1,9 @@
+# 1.7.0 (2026-09-16)
+
+- Added optional client-ID (`clid`) tracking through the Shop and Admin APIs.
+- Added `NoopAttribution` for collecting tracking parameters without attributing order value.
+- Added a raw UTM Parameters table and titled the existing dashboard table UTM attribution.
+
 # 1.6.0 (2026-07-21)
 
 - Migrated to React Dashboard

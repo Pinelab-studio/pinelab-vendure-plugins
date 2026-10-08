@@ -96,9 +96,10 @@ export class UTMTrackerService implements OnApplicationBootstrap {
       !input.medium &&
       !input.campaign &&
       !input.term &&
-      !input.content
+      !input.content &&
+      !input.clid
     ) {
-      throw new UserInputError('At least one UTM parameter is required');
+      throw new UserInputError('At least one tracking parameter is required');
     }
     let campaignDisplayName = input.campaign;
     if (this.options.getCampaignDisplayName) {
@@ -114,6 +115,7 @@ export class UTMTrackerService implements OnApplicationBootstrap {
         utmCampaign: input.campaign ?? IsNull(),
         utmTerm: input.term ?? IsNull(),
         utmContent: input.content ?? IsNull(),
+        clid: input.clid ?? IsNull(),
       },
     });
     if (existingParameter) {
@@ -135,6 +137,7 @@ export class UTMTrackerService implements OnApplicationBootstrap {
         utmCampaign: input.campaign,
         utmTerm: input.term,
         utmContent: input.content,
+        clid: input.clid,
         connectedAt: input.connectedAt,
       });
       Logger.info(
@@ -142,7 +145,7 @@ export class UTMTrackerService implements OnApplicationBootstrap {
           input.source ?? ''
         } medium=${input.medium ?? ''} campaign=${input.campaign ?? ''} term=${
           input.term ?? ''
-        } content=${input.content ?? ''}`,
+        } content=${input.content ?? ''} clid=${input.clid ?? ''}`,
         loggerCtx
       );
     }
@@ -168,6 +171,13 @@ export class UTMTrackerService implements OnApplicationBootstrap {
     order: Order
   ): Promise<UtmOrderParameter[]> {
     let utmParameters = await this.getUTMParameters(ctx, order.id);
+    if (this.options.attributionModel.skipAttribution) {
+      Logger.info(
+        `Skipped attribution for order ${order.id} (${order.code}). Attribution model: ${this.options.attributionModel.name}`,
+        loggerCtx
+      );
+      return utmParameters;
+    }
     // filter out old parameters
     const maxAttributionAge = new Date(
       Date.now() - this.options.maxAttributionAgeInDays * 24 * 60 * 60 * 1000
@@ -216,6 +226,7 @@ export class UTMTrackerService implements OnApplicationBootstrap {
       campaign: input.campaign?.trim(),
       term: input.term?.trim(),
       content: input.content?.trim(),
+      clid: input.clid?.trim(),
     };
   }
 }

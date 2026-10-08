@@ -1,3 +1,7 @@
+# 1.8.1 (2026-08-28)
+
+- Updated axios to 1.20.0
+
 # 1.8.0 (2026-07-21)
 
 - Moved configurations from DB into code

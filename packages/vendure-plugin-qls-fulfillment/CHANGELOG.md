@@ -1,3 +1,7 @@
+# 3.2.0 (2026-08-12)
+
+- Restore the legacy Angular Admin UI extension alongside the React Dashboard.
+
 # 3.1.0 (2026-08-12)
 
 - Trigger `saveAdditionalVariantData` from incoming stock webhooks using the webhook payload directly.
