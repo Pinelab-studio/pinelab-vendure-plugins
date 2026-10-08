@@ -18,14 +18,13 @@ import {
   ProductVariantEvent,
   ProductVariantService,
   RequestContext,
-  SerializedRequestContext,
   TransactionalConnection,
 } from '@vendure/core';
 import { asError } from 'catch-unknown';
 import { BETTER_SEARCH_PLUGIN_OPTIONS, engine, loggerCtx } from '../constants';
 import { BetterSearchIndex } from '../entities/better-search-index.entity';
 import { BetterSearchIndexEvent } from '../events/better-search-index.event';
-import { BetterSearchOptions } from '../types';
+import { BetterSearchOptions, IndexJobData } from '../types';
 import { createIndexKey } from './util';
 
 /**
@@ -38,20 +37,6 @@ interface PartialIndexChanges {
   variantIds?: ID[];
   remove?: boolean;
 }
-
-type IndexJobData =
-  | {
-      type: 'full';
-      ctx: SerializedRequestContext;
-    }
-  | {
-      type: 'partial';
-      ctx: SerializedRequestContext;
-      updateProductIds: string[];
-      updateVariantIds: string[];
-      removeProductIds: string[];
-      removeVariantIds: string[];
-    };
 
 interface PendingPartialUpdate {
   ctx: RequestContext;
@@ -66,6 +51,59 @@ export class IndexService implements OnModuleInit, OnApplicationBootstrap {
   private jobQueue!: JobQueue<IndexJobData>;
 
   private pendingPartialUpdates = new Map<string, PendingPartialUpdate>();
+
+  private indexWrites: Promise<unknown> = Promise.resolve();
+
+  private storedIndexSizes?: Map<string, number>;
+
+  /** Logs serialized sizes in MB, loading existing index sizes only once per process. */
+  private async logIndexSizes(
+    ctx: RequestContext,
+    indexKey: string,
+    serialized: string
+  ): Promise<void> {
+    try {
+      if (!this.storedIndexSizes) {
+        const stored = await this.connection
+          .getRepository(ctx, BetterSearchIndex)
+          .find({ select: ['id', 'data'] });
+        this.storedIndexSizes = new Map(
+          stored.map((index) => [
+            index.id,
+            Buffer.byteLength(index.data, 'utf8'),
+          ])
+        );
+      }
+      const bytes = Buffer.byteLength(serialized, 'utf8');
+      this.storedIndexSizes.set(indexKey, bytes);
+      const total = [...this.storedIndexSizes.values()].reduce(
+        (sum, size) => sum + size,
+        0
+      );
+      Logger.info(
+        `Index '${indexKey}' size: ${(bytes / 1_000_000).toFixed(
+          2
+        )} MB; total across ${this.storedIndexSizes.size} stored indexes: ${(
+          total / 1_000_000
+        ).toFixed(2)} MB (serialized)`,
+        loggerCtx
+      );
+    } catch (e) {
+      const error = asError(e);
+      Logger.error(
+        `Failed to log index sizes for '${indexKey}': ${error.message}`,
+        loggerCtx,
+        error.stack
+      );
+    }
+  }
+
+  /** Serializes writes in this worker process; rejected writes do not block later jobs. */
+  private serializeWrite<T>(write: () => Promise<T>): Promise<T> {
+    const result = this.indexWrites.then(write);
+    this.indexWrites = result.catch(() => undefined);
+    return result;
+  }
 
   /** In-memory cache of deserialized indices plus metadata to check TTL. */
   private cachedIndices = new Map<
@@ -98,7 +136,7 @@ export class IndexService implements OnModuleInit, OnApplicationBootstrap {
   onApplicationBootstrap() {
     // Listen for product events
     this.eventBus.ofType(ProductEvent).subscribe((event) => {
-      this.debouncedRebuildIndex(event.ctx, {
+      this.reindexAffectedChannels(event.ctx, {
         productIds: [event.entity.id],
         remove: event.type === 'deleted',
       }).catch((e) => {
@@ -112,7 +150,7 @@ export class IndexService implements OnModuleInit, OnApplicationBootstrap {
     });
     // Listen for variant events
     this.eventBus.ofType(ProductVariantEvent).subscribe((event) => {
-      this.debouncedRebuildIndex(event.ctx, {
+      this.reindexAffectedChannels(event.ctx, {
         variantIds: event.entity.map((variant) => variant.id),
         remove: event.type === 'deleted',
       }).catch((e) => {
@@ -269,7 +307,12 @@ export class IndexService implements OnModuleInit, OnApplicationBootstrap {
   /**
    * Fetches all products, lets the search engine create the index, and saves the index to the database.
    */
-  async buildIndex(_ctx: RequestContext): Promise<number> {
+  buildIndex(ctx: RequestContext): Promise<number> {
+    return this.serializeWrite(() => this.buildIndexInternal(ctx));
+  }
+
+  /** Rebuilds all language indexes while holding the worker write lock. */
+  private async buildIndexInternal(_ctx: RequestContext): Promise<number> {
     // Skip if search is disabled for this channel
     if (this.options.isEnabled && !(await this.options.isEnabled(_ctx))) {
       throw new Error(
@@ -338,6 +381,7 @@ export class IndexService implements OnModuleInit, OnApplicationBootstrap {
         updatedAt: saved.updatedAt,
         lastCheckedAt: Date.now(),
       });
+      await this.logIndexSizes(ctx, indexKey, serialized);
       const time = Math.round(performance.now() - start);
       Logger.info(
         `Created index for ${indexKey} with ${allProducts.length} products in ${time}ms`,
@@ -359,7 +403,15 @@ export class IndexService implements OnModuleInit, OnApplicationBootstrap {
   }
 
   /** Updates and persists only the documents affected by a partial index job. */
-  async updateIndex(
+  updateIndex(
+    ctx: RequestContext,
+    changes: Extract<IndexJobData, { type: 'partial' }>
+  ): Promise<number> {
+    return this.serializeWrite(() => this.updateIndexInternal(ctx, changes));
+  }
+
+  /** Uses a fresh, isolated index so failed writes cannot corrupt the cache. */
+  private async updateIndexInternal(
     ctx: RequestContext,
     changes: Extract<IndexJobData, { type: 'partial' }>
   ): Promise<number> {
@@ -369,7 +421,15 @@ export class IndexService implements OnModuleInit, OnApplicationBootstrap {
       );
     }
 
-    const searchIndex = await this.getIndex(ctx);
+    const stored = await this.connection
+      .getRepository(ctx, BetterSearchIndex)
+      .findOne({ where: { id: createIndexKey(ctx) } });
+    if (!stored) {
+      throw new Error(
+        `No index found for channel '${ctx.channel.token}' (${ctx.languageCode})`
+      );
+    }
+    const searchIndex = engine.deserializeIndex(stored.data);
     const productIdsToReplace = [
       ...new Set([...changes.updateProductIds, ...changes.removeProductIds]),
     ];
@@ -406,15 +466,17 @@ export class IndexService implements OnModuleInit, OnApplicationBootstrap {
       variants
     );
     const indexKey = createIndexKey(ctx);
+    const serialized = engine.serializeIndex(updatedIndex);
     const saved = await this.connection
       .getRepository(ctx, BetterSearchIndex)
-      .save({ id: indexKey, data: engine.serializeIndex(updatedIndex) });
+      .save({ id: indexKey, data: serialized });
     this.cachedIndices.set(indexKey, {
       index: updatedIndex,
       updatedAt: saved.updatedAt,
       lastCheckedAt: Date.now(),
     });
 
+    await this.logIndexSizes(ctx, indexKey, serialized);
     await this.eventBus.publish(
       new BetterSearchIndexEvent(ctx, affectedVariantIds.size, 'partial')
     );
@@ -438,18 +500,37 @@ export class IndexService implements OnModuleInit, OnApplicationBootstrap {
       if (removedProductIds.has(productId)) continue;
       const product = await this.productService.findOne(ctx, productId, [
         'translations',
+        'channels',
         'facetValues',
         'facetValues.translations',
         'variants',
+        'variants.channels',
+        'variants.productVariantPrices',
+        'variants.taxCategory',
         'variants.collections',
         'variants.collections.translations',
       ]);
-      if (!product?.enabled) continue;
+      if (
+        !product?.enabled ||
+        product.deletedAt ||
+        !product.channels.some(
+          (channel) => String(channel.id) === String(ctx.channelId)
+        )
+      )
+        continue;
       for (const variant of product.variants) {
-        if (!variant.enabled || removedVariantIds.has(String(variant.id))) {
+        if (
+          !variant.enabled ||
+          variant.deletedAt ||
+          !variant.channels.some(
+            (channel) => String(channel.id) === String(ctx.channelId)
+          ) ||
+          removedVariantIds.has(String(variant.id))
+        ) {
           continue;
         }
         variant.product = product;
+        await this.productVariantService.applyChannelPriceAndTax(variant, ctx);
         variants.set(String(variant.id), variant);
       }
     }
@@ -458,6 +539,8 @@ export class IndexService implements OnModuleInit, OnApplicationBootstrap {
       if (removedVariantIds.has(variantId)) continue;
       const variant = await this.productVariantService.findOne(ctx, variantId, [
         'product',
+        'channels',
+        'product.channels',
         'product.translations',
         'product.facetValues',
         'product.facetValues.translations',
@@ -466,7 +549,15 @@ export class IndexService implements OnModuleInit, OnApplicationBootstrap {
       ]);
       if (
         !variant?.enabled ||
+        variant.deletedAt ||
         !variant.product?.enabled ||
+        variant.product.deletedAt ||
+        !variant.channels.some(
+          (channel) => String(channel.id) === String(ctx.channelId)
+        ) ||
+        !variant.product.channels.some(
+          (channel) => String(channel.id) === String(ctx.channelId)
+        ) ||
         removedProductIds.has(String(variant.productId))
       ) {
         continue;
@@ -559,19 +650,63 @@ export class IndexService implements OnModuleInit, OnApplicationBootstrap {
     );
   }
 
-  /** Adds a partial index job containing the IDs collected during debounce. */
-  private triggerPartialReindex(batch: PendingPartialUpdate) {
-    return this.jobQueue.add(
-      {
-        type: 'partial',
-        ctx: batch.ctx.serialize(),
-        updateProductIds: [...batch.updateProductIds],
-        updateVariantIds: [...batch.updateVariantIds],
-        removeProductIds: [...batch.removeProductIds],
-        removeVariantIds: [...batch.removeVariantIds],
-      },
-      { retries: 2 }
-    );
+  /** Queues a partial update for exactly the serialized context's channel and language. */
+  triggerPartialReindex(data: Extract<IndexJobData, { type: 'partial' }>) {
+    return this.jobQueue.add(data, { retries: 2 });
+  }
+
+  /** Resolves channel assignments, using existing indexes as the deletion fallback. */
+  async reindexAffectedChannels(
+    ctx: RequestContext,
+    changes: PartialIndexChanges
+  ): Promise<void> {
+    const channels = await this.connection.getRepository(ctx, Channel).find({
+      relations: ['defaultTaxZone', 'defaultShippingZone'],
+    });
+    const assignments = new Map<string, PartialIndexChanges>();
+    for (const field of ['productIds', 'variantIds'] as const) {
+      for (const id of changes[field] ?? []) {
+        const item =
+          field === 'productIds'
+            ? await this.connection.getRepository(ctx, Product).findOne({
+                where: { id },
+                relations: ['channels'],
+                withDeleted: true,
+              })
+            : await this.connection.getRepository(ctx, ProductVariant).findOne({
+                where: { id },
+                relations: ['channels'],
+                withDeleted: true,
+              });
+        const assigned = item?.channels ?? [];
+        const targets = assigned.length
+          ? assigned
+          : changes.remove
+          ? channels
+          : [];
+        for (const channel of targets) {
+          const key = String(channel.id);
+          const batch = assignments.get(key) ?? { remove: changes.remove };
+          (batch[field] ??= []).push(id);
+          assignments.set(key, batch);
+        }
+      }
+    }
+    for (const channel of channels) {
+      const batch = assignments.get(String(channel.id));
+      if (!batch) continue;
+      const channelCtx = new RequestContext({
+        apiType: ctx.apiType,
+        channel,
+        isAuthorized: true,
+        authorizedAsOwnerOnly: false,
+      });
+      await this.debouncedRebuildIndex(
+        channelCtx,
+        batch,
+        changes.remove === true
+      );
+    }
   }
 
   /**
@@ -579,7 +714,8 @@ export class IndexService implements OnModuleInit, OnApplicationBootstrap {
    */
   async debouncedRebuildIndex(
     ctx: RequestContext,
-    changes: PartialIndexChanges
+    changes: PartialIndexChanges,
+    existingIndexesOnly = false
   ): Promise<void> {
     for (const languageCode of ctx.channel.availableLanguageCodes) {
       const languageCtx = new RequestContext({
@@ -595,6 +731,13 @@ export class IndexService implements OnModuleInit, OnApplicationBootstrap {
       ) {
         continue;
       }
+      if (
+        existingIndexesOnly &&
+        !(await this.connection
+          .getRepository(languageCtx, BetterSearchIndex)
+          .findOne({ where: { id: createIndexKey(languageCtx) } }))
+      )
+        continue;
       this.rememberPartialUpdate(languageCtx, changes);
     }
   }
@@ -663,6 +806,13 @@ export class IndexService implements OnModuleInit, OnApplicationBootstrap {
     const batch = this.pendingPartialUpdates.get(key);
     if (!batch) return;
     this.pendingPartialUpdates.delete(key);
-    await this.triggerPartialReindex(batch);
+    await this.triggerPartialReindex({
+      type: 'partial',
+      ctx: batch.ctx.serialize(),
+      updateProductIds: [...batch.updateProductIds],
+      updateVariantIds: [...batch.updateVariantIds],
+      removeProductIds: [...batch.removeProductIds],
+      removeVariantIds: [...batch.removeVariantIds],
+    });
   }
 }

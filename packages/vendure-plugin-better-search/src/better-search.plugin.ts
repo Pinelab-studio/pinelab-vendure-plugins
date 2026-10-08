@@ -11,6 +11,7 @@ import { betterSearchReindexTask } from './config/reindex-task';
 
 @VendurePlugin({
   imports: [PluginCommonModule],
+  exports: [IndexService],
   providers: [
     {
       provide: BETTER_SEARCH_PLUGIN_OPTIONS,

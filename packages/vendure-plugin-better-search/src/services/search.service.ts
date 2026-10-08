@@ -24,7 +24,7 @@ export class SearchService {
   /**
    * Executes a full-text search using the configured engine and maps results
    * to Vendure's standard SearchResponse shape.
-   * Only the 'term' field of SearchInput is used; all other fields are accepted but ignored.
+   * Supports term, product grouping and pagination; other filters are not implemented.
    */
   async search(
     ctx: RequestContext,
@@ -35,18 +35,63 @@ export class SearchService {
       return { items: [], totalItems: 0, facetValues: [], collections: [] };
     }
     const index = await this.indexService.getIndex(ctx);
-    const docs = await engine.search(ctx, index, term);
-    const currencyCode = ctx.channel.defaultCurrencyCode as CurrencyCode;
+    const matches = await engine.search(ctx, index, term);
+    const docs = input.groupByProduct ? this.groupByProduct(matches) : matches;
+    const currencyCode = ctx.channel.defaultCurrencyCode;
     const channelId = String(ctx.channel.id);
     const items = docs.map((doc) =>
       this.mapToSearchResult(doc, currencyCode, channelId)
     );
     return {
-      items,
+      items: items.slice(
+        input.skip ?? 0,
+        input.take == null ? undefined : (input.skip ?? 0) + input.take
+      ),
       totalItems: items.length,
       facetValues: [],
       collections: [],
     };
+  }
+
+  /** Groups matching variants, retaining the highest-scoring variant as representative. */
+  private groupByProduct(
+    documents: BetterSearchDocument[]
+  ): BetterSearchDocument[] {
+    const products = new Map<string, BetterSearchDocument>();
+    for (const document of documents) {
+      const previous = products.get(document.productId);
+      if (!previous) {
+        products.set(document.productId, { ...document });
+        continue;
+      }
+      products.set(document.productId, {
+        ...(document.score > previous.score ? document : previous),
+        lowestPrice: Math.min(previous.lowestPrice, document.lowestPrice),
+        highestPrice: Math.max(previous.highestPrice, document.highestPrice),
+        lowestPriceWithTax: Math.min(
+          previous.lowestPriceWithTax,
+          document.lowestPriceWithTax
+        ),
+        highestPriceWithTax: Math.max(
+          previous.highestPriceWithTax,
+          document.highestPriceWithTax
+        ),
+        facetIds: [...new Set([...previous.facetIds, ...document.facetIds])],
+        facetValueIds: [
+          ...new Set([...previous.facetValueIds, ...document.facetValueIds]),
+        ],
+        collectionIds: [
+          ...new Set([...previous.collectionIds, ...document.collectionIds]),
+        ],
+        collectionNames: [
+          ...new Set([
+            ...previous.collectionNames,
+            ...document.collectionNames,
+          ]),
+        ],
+      });
+    }
+    return [...products.values()].sort((a, b) => b.score - a.score);
   }
 
   /**

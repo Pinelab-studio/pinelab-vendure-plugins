@@ -77,6 +77,58 @@ BETTER_SEARCH_INDEX_COLUMN_TYPE=bytea
 
 Checkout this page on more information on the different column types: https://orkhan.gitbook.io/typeorm/docs/entities#column-types-for-mysql-mariadb
 
+## Partial reindexing
+
+Product and variant changes automatically enqueue debounced partial updates for all assigned channels and their available languages, skipping channels where search is disabled. Removals take precedence over updates for the same ID. When a deleted entity's assignments are unavailable, removals target existing indexes in all enabled channels.
+
+Consumers can enqueue their own partial jobs through `IndexService.triggerPartialReindex()`. The worker payload is:
+
+```ts
+type PartialIndexJob = {
+  type: 'partial';
+  ctx: SerializedRequestContext;
+  updateProductIds: string[];
+  updateVariantIds: string[];
+  removeProductIds: string[];
+  removeVariantIds: string[];
+};
+```
+
+For example, register this service as a provider in your consumer plugin (which imports `BetterSearchPlugin`):
+
+```ts
+import { Injectable, OnApplicationBootstrap } from '@nestjs/common';
+import { CollectionModificationEvent, EventBus, Logger } from '@vendure/core';
+import { IndexService } from '@pinelab/vendure-plugin-better-search';
+
+@Injectable()
+export class CollectionSearchIndexer implements OnApplicationBootstrap {
+  constructor(private eventBus: EventBus, private indexService: IndexService) {}
+
+  /** Reindexes variants entering or leaving a collection. */
+  onApplicationBootstrap(): void {
+    this.eventBus.ofType(CollectionModificationEvent).subscribe((event) => {
+      this.indexService
+        .triggerPartialReindex({
+          type: 'partial',
+          ctx: event.ctx.serialize(),
+          updateProductIds: [],
+          updateVariantIds: event.productVariantIds.map(String),
+          removeProductIds: [],
+          removeVariantIds: [],
+        })
+        .catch((error: Error) => {
+          Logger.error(error.message, 'CollectionSearchIndexer', error.stack);
+        });
+    });
+  }
+}
+```
+
+Variants leaving a collection are **updated**, not removed from search. `CollectionModificationEvent` supplies membership changes; collection name changes may require separately resolving all affected variants.
+
+Each public call targets **only the serialized context's channel and language**, without debounce or automatic channel fan-out. Supply a separate context/job for every channel/language you want to update. The index must already exist; otherwise the job fails. Jobs retry twice. Use one worker process: writes are serialized within that process, not coordinated between multiple workers. Partial updates still serialize and persist the complete index blob.
+
 ## Custom fields
 
 // TODO index custom fields? How?

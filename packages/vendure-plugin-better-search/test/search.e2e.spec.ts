@@ -18,6 +18,7 @@ import {
   TestServer,
 } from '@vendure/testing';
 import { beforeAll, describe, expect, it } from 'vitest';
+import gql from 'graphql-tag';
 import { initialData } from '../../test/src/initial-data';
 import { waitFor } from '../../test/src/test-helpers';
 import { BetterSearchPlugin } from '../src';
@@ -255,6 +256,30 @@ describe('Relevance', () => {
   });
 });
 
+describe('Admin search compatibility', () => {
+  it('supports search and index-status operations without DefaultSearchPlugin', async () => {
+    await adminClient.asSuperAdmin();
+    const result = await adminClient.query<{
+      pendingSearchIndexUpdates: number;
+      search: {
+        totalItems: number;
+        items: SearchResultItem[];
+        facetValues: unknown[];
+        collections: unknown[];
+      };
+    }>(ADMIN_SEARCH_COMPATIBILITY);
+    expect(result.pendingSearchIndexUpdates).toBe(0);
+    expect(result.search.totalItems).toBeGreaterThan(0);
+    expect(result.search.items.length).toBeGreaterThan(0);
+    expect(result.search.facetValues).toEqual([]);
+    expect(result.search.collections).toEqual([]);
+    const flush = await adminClient.query<{
+      runPendingSearchIndexUpdates: { success: boolean };
+    }>(RUN_PENDING_SEARCH_UPDATES);
+    expect(flush.runPendingSearchIndexUpdates.success).toBe(true);
+  });
+});
+
 describe('Manual reindexing', () => {
   it('queues a full reindex through the standard Admin API mutation', async () => {
     await adminClient.asSuperAdmin();
@@ -468,6 +493,88 @@ describe('Multi-channel and multi-language', () => {
     expect(wirelessResult.search.totalItems).toBe(0);
   }, 30000);
 
+  it('partially updates a shared product across all assigned channels and languages', async () => {
+    await adminClient.asSuperAdmin();
+    adminClient.setChannelToken(secondChannelToken);
+    const completed = new Set<string>();
+    const fullEvents: BetterSearchIndexEvent[] = [];
+    const subscription = server.app
+      .get(EventBus)
+      .ofType(BetterSearchIndexEvent)
+      .subscribe((event) => {
+        if (event.type === 'full') fullEvents.push(event);
+        else
+          completed.add(`${event.ctx.channel.token}:${event.ctx.languageCode}`);
+      });
+    try {
+      await adminClient.query(UPDATE_PRODUCT, {
+        input: {
+          id: appleProductId,
+          translations: [
+            {
+              languageCode: LanguageCode.en,
+              name: 'Shared Orchard',
+              slug: 'apple',
+              description: 'Shared Orchard',
+            },
+            {
+              languageCode: LanguageCode.de,
+              name: 'Gemeinsamer Obstgarten',
+              slug: 'apfel',
+              description: 'Gemeinsamer Obstgarten',
+            },
+          ],
+        },
+      });
+      const expected = [
+        'e2e-default-channel:en',
+        `${secondChannelToken}:en`,
+        `${secondChannelToken}:de`,
+      ];
+      await waitFor(
+        () => expected.every((key) => completed.has(key)) || undefined,
+        100,
+        10000
+      );
+      for (const token of ['e2e-default-channel', secondChannelToken]) {
+        shopClient.setChannelToken(token);
+        for (const [languageCode, term] of [
+          [LanguageCode.en, 'Shared Orchard'],
+          [LanguageCode.de, 'Gemeinsamer Obstgarten'],
+        ] as const) {
+          if (
+            token === 'e2e-default-channel' &&
+            languageCode === LanguageCode.de
+          )
+            continue;
+          await waitFor(
+            async () => {
+              const result = await shopClient.query(
+                SEARCH_QUERY,
+                { term },
+                { languageCode }
+              );
+              return (
+                result.search.items.some(
+                  (item: SearchResultItem) =>
+                    item.productId === appleProductId &&
+                    item.productName === term
+                ) || undefined
+              );
+            },
+            100,
+            15000
+          );
+        }
+      }
+      expect(fullEvents).toHaveLength(0);
+    } finally {
+      subscription.unsubscribe();
+      adminClient.setChannelToken(secondChannelToken);
+      shopClient.setChannelToken(secondChannelToken);
+    }
+  }, 30000);
+
   it('finds translated products in the correct language', async () => {
     // Listen for events so we know when reindex
     let indexEvent: BetterSearchIndexEvent;
@@ -523,3 +630,38 @@ async function search(query: string): Promise<{ items: SearchResultItem[] }> {
     .items;
   return { items };
 }
+
+const ADMIN_SEARCH_COMPATIBILITY = gql`
+  query AdminSearchCompatibility {
+    pendingSearchIndexUpdates
+    search(input: { term: "apple" }) {
+      totalItems
+      items {
+        productId
+        productName
+        slug
+        score
+      }
+      facetValues {
+        count
+        facetValue {
+          id
+        }
+      }
+      collections {
+        count
+        collection {
+          id
+        }
+      }
+    }
+  }
+`;
+
+const RUN_PENDING_SEARCH_UPDATES = gql`
+  mutation RunPendingSearchUpdates {
+    runPendingSearchIndexUpdates {
+      success
+    }
+  }
+`;

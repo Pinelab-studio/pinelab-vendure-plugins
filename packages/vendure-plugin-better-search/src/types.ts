@@ -3,7 +3,20 @@ import {
   ProductVariant,
   RequestContext,
   ScheduledTaskConfig,
+  SerializedRequestContext,
 } from '@vendure/core';
+
+/** Serializable payload processed by the better-search-index worker queue. */
+export type IndexJobData =
+  | { type: 'full'; ctx: SerializedRequestContext }
+  | {
+      type: 'partial';
+      ctx: SerializedRequestContext;
+      updateProductIds: string[];
+      updateVariantIds: string[];
+      removeProductIds: string[];
+      removeVariantIds: string[];
+    };
 
 /**
  * Internal document type returned by search engines.
