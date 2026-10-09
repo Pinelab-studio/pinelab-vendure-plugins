@@ -160,13 +160,27 @@ import { BetterSearchPlugin } from '@pinelab/vendure-plugin-better-search';
 
 ## Search event storage
 
+### Search analytics dashboard
+
+Open **Settings > Search analytics** in the React Dashboard (requires `ReadCatalog`). The read-only Vendure table shows terms, search counts, last searched time, latest result count, and language, with built-in search, sorting, filters, and pagination. Most searched terms appear first.
+
+For example, filter for terms with low result counts and high search counts to discover what customers are looking for but cannot find.
+
+Results cover retained logs in the active channel, combining languages. Latest result counts and languages come from the newest matching search; date filters select logs before aggregation. Results may be cached for 60 seconds by default (`searchLogAggregationCacheTtlSeconds`, or `0` to disable). Rebuild your Dashboard after adding or updating this plugin to include the page.
+
+### Aggregated search statistics (Admin API)
+
+`searchLogAggregates(options: SearchLogAggregateListOptions)` returns `items` and `totalItems` using standard Vendure list options and requires `ReadCatalog`. Each item contains `id`, `term`, `searchCount`, `lastSearchedAt`, `resultCount`, and `languageCode`.
+
+### Stored search events
+
 Successful Shop API `search` requests are stored as `BetterSearchLog` events. Logged terms are trimmed, lowercased, and have consecutive whitespace collapsed; only normalized terms of 3–255 characters are stored. Search behavior is unchanged. Admin searches, suggestions, and failed searches are excluded. Pagination requests are logged separately, always using `totalItems` before pagination, including zero results.
 
 Configure `BetterSearchPlugin.init({ maxLogsPerChannel: 10_000 })` to set the retained count per channel across languages (default 10_000). Any finite positive integer is accepted; `false` or `0` disables new storage and clears existing history during the next cleanup.
 
 Cleanup runs nightly at 4:30 AM using Vendure's scheduler, deleting rows older than the retention cutoff with one SQL DELETE per channel. The consuming application must enable `DefaultSchedulerPlugin` (or another scheduler strategy) and run its worker for scheduled cleanup to execute. The cap can be exceeded between runs. Inserts do not delay search responses: failures are logged without retries, and abrupt shutdown can lose pending writes. Events contain channel, language, normalized term, total results, and standard entity timestamps—not shopper identifiers. Search terms can still contain personal information.
 
-Generate and apply a database migration in the consuming application for the new entity. No aggregation or viewing API is provided yet.
+Generate and apply a database migration in the consuming application for the new entity. The aggregate API and Dashboard page query these retained events without storing separate aggregates.
 
 ## Tips for improving search relevance
 

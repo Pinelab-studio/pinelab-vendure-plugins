@@ -26,6 +26,7 @@ import { initialData } from '../../test/src/initial-data';
 import { waitFor } from '../../test/src/test-helpers';
 import { BetterSearchPlugin, BetterSearchLog } from '../src';
 import { SearchLogService } from '../src/services/search-log.service';
+import { SearchLogAggregationService } from '../src/services/search-log-aggregation.service';
 import { BetterSearchIndexEvent } from '../src/events/better-search-index.event';
 import { IndexService } from '../src/services/index.service';
 import {
@@ -113,6 +114,156 @@ beforeAll(async () => {
   // test doesn't pay schema-build / first-request latency.
   await shopClient.query(WARMUP_QUERY, { term: 'warmup' }).catch(() => {});
 }, 60000);
+
+describe('Search log aggregates', () => {
+  it('aggregates languages, selects latest counts, and supports standard list options', async () => {
+    const repository = server.app
+      .get(TransactionalConnection)
+      .getRepository(BetterSearchLog);
+    const ctx = await server.app
+      .get(RequestContextService)
+      .create({ apiType: 'admin', channelOrToken: 'e2e-default-channel' });
+    const old = new Date('2021-01-01T00:00:00Z');
+    const recent = new Date('2021-01-02T00:00:00Z');
+    await repository.insert([
+      {
+        channelId: ctx.channelId,
+        term: 'aggregate-apple',
+        languageCode: LanguageCode.en,
+        resultCount: 20,
+        createdAt: old,
+        updatedAt: old,
+      },
+      {
+        channelId: ctx.channelId,
+        term: 'aggregate-apple',
+        languageCode: LanguageCode.de,
+        resultCount: 3,
+        createdAt: recent,
+        updatedAt: recent,
+      },
+      {
+        channelId: ctx.channelId,
+        term: 'aggregate-banana',
+        languageCode: LanguageCode.en,
+        resultCount: 9,
+        createdAt: recent,
+        updatedAt: recent,
+      },
+      {
+        channelId: 876543,
+        term: 'aggregate-apple',
+        languageCode: LanguageCode.en,
+        resultCount: 100,
+        createdAt: recent,
+        updatedAt: recent,
+      },
+    ]);
+    const variables = {
+      options: { filter: { term: { contains: 'aggregate-' } } },
+    };
+    const response = await adminClient.query(SEARCH_LOG_AGGREGATES, variables);
+    expect(response.searchLogAggregates.totalItems).toBe(2);
+    expect(response.searchLogAggregates.items[0]).toMatchObject({
+      term: 'aggregate-apple',
+      searchCount: 2,
+      resultCount: 3,
+      languageCode: 'de',
+      lastSearchedAt: recent.toISOString(),
+    });
+    const cached = await adminClient.query(SEARCH_LOG_AGGREGATES, variables);
+    expect(cached).toEqual(response);
+    const sorted = await adminClient.query(SEARCH_LOG_AGGREGATES, {
+      options: { ...variables.options, sort: { resultCount: 'DESC' } },
+    });
+    expect(sorted.searchLogAggregates.items[0].term).toBe('aggregate-banana');
+    const boolean = await adminClient.query(SEARCH_LOG_AGGREGATES, {
+      options: {
+        filter: {
+          _and: [
+            variables.options.filter,
+            { _or: [{ resultCount: { lt: 5 } }, { searchCount: { gt: 10 } }] },
+          ],
+        },
+      },
+    });
+    expect(boolean.searchLogAggregates.totalItems).toBe(1);
+    const literal = await adminClient.query(SEARCH_LOG_AGGREGATES, {
+      options: { filter: { term: { contains: '%_' } } },
+    });
+    expect(literal.searchLogAggregates.totalItems).toBe(0);
+    const filtered = await adminClient.query(SEARCH_LOG_AGGREGATES, {
+      options: {
+        filter: { term: { contains: 'aggregate-' }, resultCount: { lt: 5 } },
+      },
+    });
+    expect(filtered.searchLogAggregates.totalItems).toBe(1);
+    expect(filtered.searchLogAggregates.items[0].searchCount).toBe(2);
+    const dated = await adminClient.query(SEARCH_LOG_AGGREGATES, {
+      options: {
+        filter: {
+          term: { eq: 'aggregate-apple' },
+          lastSearchedAt: { before: recent.toISOString() },
+        },
+      },
+    });
+    expect(dated.searchLogAggregates.items[0]).toMatchObject({
+      searchCount: 1,
+      resultCount: 20,
+      languageCode: 'en',
+    });
+    const page = await adminClient.query(SEARCH_LOG_AGGREGATES, {
+      options: { ...variables.options, skip: 1, take: 1 },
+    });
+    expect(page.searchLogAggregates.totalItems).toBe(2);
+    expect(page.searchLogAggregates.items[0].term).toBe('aggregate-banana');
+    const empty = await adminClient.query(SEARCH_LOG_AGGREGATES, {
+      options: { ...variables.options, skip: 99 },
+    });
+    expect(empty.searchLogAggregates).toEqual({ totalItems: 2, items: [] });
+    await expect(
+      shopClient.query(SEARCH_LOG_AGGREGATES, variables)
+    ).rejects.toThrow();
+    await adminClient.asAnonymousUser();
+    try {
+      await expect(
+        adminClient.query(SEARCH_LOG_AGGREGATES, variables)
+      ).rejects.toThrow();
+    } finally {
+      await adminClient.asSuperAdmin();
+    }
+    await repository.insert({
+      channelId: ctx.channelId,
+      term: 'aggregate-apple',
+      languageCode: LanguageCode.en,
+      resultCount: 1,
+      createdAt: recent,
+      updatedAt: recent,
+    });
+    const tied = await adminClient.query(SEARCH_LOG_AGGREGATES, {
+      options: { filter: { term: { eq: 'aggregate-apple' } } },
+    });
+    expect(tied.searchLogAggregates.items[0]).toMatchObject({
+      searchCount: 3,
+      resultCount: 1,
+      languageCode: 'en',
+      id: response.searchLogAggregates.items[0].id,
+    });
+    expect(await adminClient.query(SEARCH_LOG_AGGREGATES, variables)).toEqual(
+      response
+    );
+    const service = server.app.get(SearchLogAggregationService);
+    const otherCtx = await server.app
+      .get(RequestContextService)
+      .create({ apiType: 'admin', channelOrToken: 'e2e-default-channel' });
+    Object.defineProperty(otherCtx, 'channelId', { value: 876543 });
+    const other = await service.findAll(otherCtx, variables.options);
+    expect(other.items[0].searchCount).toBe(1);
+    expect(other.items[0].resultCount).toBe(100);
+    await repository.delete({ term: 'aggregate-apple' });
+    await repository.delete({ term: 'aggregate-banana' });
+  });
+});
 
 describe('Stores search events', () => {
   it('stores normalized shop terms and totals even for empty pagination pages', async () => {
@@ -783,6 +934,22 @@ const ADMIN_SEARCH_COMPATIBILITY = gql`
         collection {
           id
         }
+      }
+    }
+  }
+`;
+
+const SEARCH_LOG_AGGREGATES = gql`
+  query SearchLogAggregates($options: SearchLogAggregateListOptions) {
+    searchLogAggregates(options: $options) {
+      totalItems
+      items {
+        id
+        term
+        searchCount
+        resultCount
+        languageCode
+        lastSearchedAt
       }
     }
   }

@@ -12,6 +12,8 @@ import { betterSearchReindexTask } from './config/reindex-task';
 import { betterSearchLogCleanupTask } from './config/search-log-cleanup-task';
 import { BetterSearchLog } from './entities/better-search-log.entity';
 import { SearchLogService } from './services/search-log.service';
+import { SearchLogAggregationService } from './services/search-log-aggregation.service';
+import { SearchLogResolver } from './api/search-log.resolver';
 
 @VendurePlugin({
   imports: [PluginCommonModule],
@@ -23,6 +25,7 @@ import { SearchLogService } from './services/search-log.service';
     },
     SearchService,
     SearchLogService,
+    SearchLogAggregationService,
     IndexService,
   ],
   configuration: (config) => {
@@ -37,13 +40,14 @@ import { SearchLogService } from './services/search-log.service';
     return config;
   },
   compatibility: '^3.0.0',
+  dashboard: './dashboard/index.tsx',
   shopApiExtensions: {
     schema: shopApiExtensions,
     resolvers: [SearchShopResolver],
   },
   adminApiExtensions: {
     schema: adminApiExtensions,
-    resolvers: [SearchAdminResolver],
+    resolvers: [SearchAdminResolver, SearchLogResolver],
   },
   entities: [BetterSearchIndex, BetterSearchLog],
 })
@@ -52,6 +56,17 @@ export class BetterSearchPlugin {
 
   /** Configures search and validates the per-channel search log limit. */
   static init(options: BetterSearchOptions): Type<BetterSearchPlugin> {
+    const searchLogAggregationCacheTtlSeconds =
+      options.searchLogAggregationCacheTtlSeconds ?? 60;
+    if (
+      !Number.isFinite(searchLogAggregationCacheTtlSeconds) ||
+      !Number.isInteger(searchLogAggregationCacheTtlSeconds) ||
+      searchLogAggregationCacheTtlSeconds < 0
+    ) {
+      throw new Error(
+        'searchLogAggregationCacheTtlSeconds must be a finite non-negative integer'
+      );
+    }
     const maxLogsPerChannel = options.maxLogsPerChannel ?? 10_000;
     if (
       maxLogsPerChannel !== false &&
@@ -66,6 +81,7 @@ export class BetterSearchPlugin {
     this.options = {
       ...options,
       maxLogsPerChannel,
+      searchLogAggregationCacheTtlSeconds,
       searchEngine: options.searchEngine ?? new MinisearchEngine(),
     };
     return BetterSearchPlugin;

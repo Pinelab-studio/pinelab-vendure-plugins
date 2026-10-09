@@ -63,6 +63,13 @@ export interface BetterSearchOptions {
   maxLogsPerChannel?: number | false;
 
   /**
+   * Seconds to cache each channel-scoped search aggregate list response, default 60.
+   * Accepts finite non-negative integers; 0 disables cache reads and writes.
+   * Searches and cleanup do not invalidate cached results before expiry.
+   */
+  searchLogAggregationCacheTtlSeconds?: number;
+
+  /**
    * The debounce time for index rebuilds.
    *
    * E.g. 5000 means that if a product is updated,
