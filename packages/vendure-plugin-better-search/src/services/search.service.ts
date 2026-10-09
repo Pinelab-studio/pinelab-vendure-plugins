@@ -37,17 +37,18 @@ export class SearchService {
     const index = await this.indexService.getIndex(ctx);
     const matches = await this.options.searchEngine!.search(ctx, index, term);
     const docs = input.groupByProduct ? this.groupByProduct(matches) : matches;
+    const skip = input.skip ?? 0;
+    const paginatedDocs = docs.slice(
+      skip,
+      input.take == null ? undefined : skip + input.take
+    );
     const currencyCode = ctx.channel.defaultCurrencyCode;
     const channelId = String(ctx.channel.id);
-    const items = docs.map((doc) =>
-      this.mapToSearchResult(doc, currencyCode, channelId)
-    );
     return {
-      items: items.slice(
-        input.skip ?? 0,
-        input.take == null ? undefined : (input.skip ?? 0) + input.take
+      items: paginatedDocs.map((doc) =>
+        this.mapToSearchResult(doc, currencyCode, channelId)
       ),
-      totalItems: items.length,
+      totalItems: docs.length,
       facetValues: [],
       collections: [],
     };
