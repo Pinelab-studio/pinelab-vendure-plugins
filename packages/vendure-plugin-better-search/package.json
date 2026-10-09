@@ -19,7 +19,9 @@
   ],
   "scripts": {
     "build": "rimraf dist && tsc",
+    "build:dashboard": "vite build --config ./vite.config.mts",
     "start": "ts-node --swc test/dev-server.ts",
+    "dev:dashboard": "vite --clearScreen false",
     "benchmark": "ts-node test/benchmark/benchmark.ts",
     "benchmark:build": "tsc -p tsconfig.benchmark.json",
     "benchmark:bm25": "node --expose-gc --predictable --max-old-space-size=512 dist-benchmark/test/benchmark-engines.js --engine=bm25",

@@ -2,14 +2,23 @@
   "extends": "../../tsconfig.json",
   "compilerOptions": {
     "outDir": "dist",
+    "jsx": "react-jsx",
     "types": ["node"]
   },
   "include": ["src/"],
   "exclude": [
+    "src/gql",
+    "src/dashboard",
+    "src/**/*.spec.ts",
     "src/ui",
     "src/config/flexsearch-engine.ts",
     "src/config/orama-bm25-engine.ts",
     "src/config/orama-hybrid-semantic-engine.ts",
     "src/config/orama-qps-engine.ts"
+  ],
+  "references": [
+    {
+      "path": "./tsconfig.dashboard.json"
+    }
   ]
 }

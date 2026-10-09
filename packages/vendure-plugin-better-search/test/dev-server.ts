@@ -1,9 +1,4 @@
-import {
-  DefaultLogger,
-  DefaultSearchPlugin,
-  LogLevel,
-  mergeConfig,
-} from '@vendure/core';
+import { VendureConfig } from '@vendure/core';
 import {
   SqljsInitializer,
   createTestEnvironment,
@@ -11,37 +6,13 @@ import {
 } from '@vendure/testing';
 import { initialData } from '../../test/src/initial-data';
 import dotenv from 'dotenv';
-import { BetterSearchPlugin } from '../src';
-import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
+import { config } from './vendure-config';
 
 // eslint-disable-next-line @typescript-eslint/no-floating-promises
 (async () => {
   dotenv.config();
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const { testConfig } = require('@vendure/testing');
   registerInitializer('sqljs', new SqljsInitializer('__data__'));
-  const config = mergeConfig(testConfig, {
-    logger: new DefaultLogger({ level: LogLevel.Debug }),
-    dbConnectionOptions: {
-      autosave: true,
-    } as any,
-    authOptions: {
-      tokenMethod: ['bearer', 'cookie'],
-    },
-    apiOptions: {
-      adminApiPlayground: {},
-      shopApiPlayground: {},
-    },
-    plugins: [
-      BetterSearchPlugin.init({}),
-      // DefaultSearchPlugin,
-      AdminUiPlugin.init({
-        port: 3002,
-        route: 'admin',
-      }),
-    ],
-  });
-  const { server } = createTestEnvironment(config);
+  const { server } = createTestEnvironment(config as Required<VendureConfig>);
   await server.init({
     initialData,
     productsCsvPath: './test/wkw-products.csv',
