@@ -77,6 +77,27 @@ BETTER_SEARCH_INDEX_COLUMN_TYPE=bytea
 
 Checkout this page on more information on the different column types: https://orkhan.gitbook.io/typeorm/docs/entities#column-types-for-mysql-mariadb
 
+## Custom MiniSearch options
+
+Pass MiniSearch `SearchOptions` to `MinisearchEngine` and configure it as the plugin's `searchEngine`. Unspecified options use the plugin defaults.
+
+```ts
+import {
+  BetterSearchPlugin,
+  MinisearchEngine,
+} from '@pinelab/vendure-plugin-better-search';
+
+plugins: [
+  BetterSearchPlugin.init({
+    searchEngine: new MinisearchEngine({
+      boost: { productName: 3, slug: 1.5, description: 1 },
+      prefix: true,
+      fuzzy: 0.2,
+    }),
+  }),
+],
+```
+
 ## Partial reindexing
 
 Product and variant changes automatically enqueue debounced partial updates for all assigned channels and their available languages, skipping channels where search is disabled. Removals take precedence over updates for the same ID. When a deleted entity's assignments are unavailable, removals target existing indexes in all enabled channels.
