@@ -2,6 +2,7 @@ import {
   CurrencyCode,
   LanguageCode,
 } from '@vendure/common/lib/generated-types';
+import { AssetServerPlugin } from '@vendure/asset-server-plugin';
 import {
   DefaultLogger,
   EventBus,
@@ -17,6 +18,7 @@ import {
   testConfig,
   TestServer,
 } from '@vendure/testing';
+import path from 'path';
 import { beforeAll, describe, expect, it } from 'vitest';
 import gql from 'graphql-tag';
 import { initialData } from '../../test/src/initial-data';
@@ -42,6 +44,7 @@ interface SearchResultItem {
   productId: string;
   slug: string;
   productName: string;
+  productAsset: { id: string; preview: string } | null;
   score: number;
 }
 
@@ -53,7 +56,18 @@ beforeAll(async () => {
   registerInitializer('sqljs', new SqljsInitializer('__data__'));
   const config = mergeConfig(testConfig, {
     logger: new DefaultLogger({ level: LogLevel.Debug }),
-    plugins: [BetterSearchPlugin.init({})],
+    apiOptions: { port: 3051 },
+    importExportOptions: {
+      importAssetsDir: path.join(__dirname),
+    },
+    plugins: [
+      BetterSearchPlugin.init({}),
+      AssetServerPlugin.init({
+        route: 'assets',
+        assetUploadDir: path.join(__dirname, '__data__/assets'),
+        assetUrlPrefix: 'http://localhost:3051/assets/',
+      }),
+    ],
   });
 
   // Listen for index build completion on the default channel before starting
@@ -258,6 +272,16 @@ describe('Relevance', () => {
 
 describe('Pagination', () => {
   type SearchQueryResult = { search: { items: SearchResultItem[] } };
+
+  it('resolves featured product assets to absolute URLs', async () => {
+    const result = await shopClient.query<SearchQueryResult>(SEARCH_QUERY, {
+      input: { term: 'apple', groupByProduct: true, take: 1 },
+    });
+    const asset = result.search.items[0]?.productAsset;
+
+    expect(asset).toMatchObject({ id: expect.any(String) });
+    expect(asset?.preview).toMatch(/^http:\/\/localhost:3051\/assets\//);
+  });
 
   it('returns distinct products across consecutive pages when grouped by product', async () => {
     const firstPage = await shopClient.query<SearchQueryResult>(SEARCH_QUERY, {

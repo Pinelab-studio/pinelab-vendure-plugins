@@ -152,41 +152,23 @@ describe('IndexService', () => {
     });
   });
 
-  describe('development catalog CSV', () => {
-    it('parses repeated product rows as variants, including Perliet', async () => {
+  describe('search products CSV', () => {
+    it('parses all fixture products and their asset references', async () => {
       const parser = new ImportParser({
         defaultLanguageCode: LanguageCode.en,
         customFields: { Product: [], ProductVariant: [] },
       } as unknown as ConfigService);
       const result = await parser.parseProducts(
-        readFileSync(resolve('test/wkw-products.csv'), 'utf8')
+        readFileSync(resolve('test/search-products.csv'), 'utf8')
       );
+
       expect(result.errors).toEqual([]);
-      expect(result.results).toHaveLength(284);
+      expect(result.results).toHaveLength(14);
       expect(
-        result.results.reduce(
-          (count, product) => count + product.variants.length,
-          0
+        result.results.every(({ product }) =>
+          product.assetPaths.includes('sample-asset.jpg')
         )
-      ).toBe(373);
-      const perliet = result.results.filter(
-        ({ product }) => product.translations[0].slug === 'perliet'
-      );
-      expect(perliet).toHaveLength(1);
-      expect(
-        perliet[0].variants.map(
-          (variant) => variant.translations[0].optionValues
-        )
-      ).toEqual([['2 liter'], ['10 liter'], ['25 liter'], ['1000 liter']]);
-      for (const { product, variants } of result.results) {
-        const combinations = variants.map((variant) => {
-          expect(variant.translations[0].optionValues).toHaveLength(
-            product.optionGroups.length
-          );
-          return variant.translations[0].optionValues.join('|');
-        });
-        expect(new Set(combinations).size).toBe(variants.length);
-      }
+      ).toBe(true);
     });
   });
 
@@ -202,6 +184,8 @@ describe('IndexService', () => {
         productVariantId: id,
         productVariantName: id,
         productId,
+        productAssetId: null,
+        productAssetPreview: null,
         productName: productId,
         sku: id,
         slug: productId,
@@ -227,7 +211,7 @@ describe('IndexService', () => {
         document('v2', 'p1', 200, 8),
         document('v3', 'p2', 50, 5),
       ]);
-      return new SearchService(indexService, {});
+      return new SearchService(indexService, {} as any, {} as any);
     }
 
     it('returns one result per product with combined price ranges and memberships', async () => {

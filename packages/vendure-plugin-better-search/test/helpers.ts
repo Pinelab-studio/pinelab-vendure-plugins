@@ -16,6 +16,10 @@ export const SEARCH_QUERY = gql`
         productId
         slug
         productName
+        productAsset {
+          id
+          preview
+        }
         score
       }
     }

@@ -112,7 +112,7 @@ export class SearchService {
 
   /**
    * Maps an internal BetterSearchDocument to Vendure's SearchResult type.
-   * Price is always PriceRange (min/max). Assets are null (not indexed yet).
+   * Price is always PriceRange (min/max); asset details come from the search index.
    */
   private mapToSearchResult(
     doc: BetterSearchDocument,
@@ -124,7 +124,13 @@ export class SearchService {
       slug: doc.slug,
       productId: doc.productId,
       productName: doc.productName,
-      productAsset: null,
+      productAsset:
+        doc.productAssetId && doc.productAssetPreview
+          ? {
+              id: doc.productAssetId,
+              preview: doc.productAssetPreview,
+            }
+          : null,
       productVariantId: doc.productVariantId,
       productVariantName: doc.productVariantName,
       productVariantAsset: null,

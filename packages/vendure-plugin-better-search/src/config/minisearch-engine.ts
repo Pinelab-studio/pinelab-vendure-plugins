@@ -3,6 +3,8 @@
  * per variant (in the request language) and returns one BetterSearchDocument per variant.
  */
 import {
+  ConfigService,
+  Injector,
   ProductVariant,
   RequestContext,
   LanguageCode,
@@ -16,6 +18,8 @@ export interface MinisearchDocument {
   id: string;
   productId: string;
   productName: string;
+  productAssetId: string;
+  productAssetPreview: string;
   slug: string;
   description: string;
   price: number;
@@ -50,7 +54,8 @@ function getProductText(
 /** Maps a ProductVariant (with product + collections) to a flat document for MiniSearch. */
 function variantToDocument(
   ctx: RequestContext,
-  variant: ProductVariant
+  variant: ProductVariant,
+  toAbsoluteUrl: (identifier: string) => string
 ): MinisearchDocument {
   const { productName, slug, description } = getProductText(
     variant,
@@ -92,6 +97,10 @@ function variantToDocument(
     id: String(variant.id),
     productId: String(variant.productId ?? product?.id ?? ''),
     productName,
+    productAssetId: String(product?.featuredAsset?.id ?? ''),
+    productAssetPreview: product?.featuredAsset?.preview
+      ? toAbsoluteUrl(product.featuredAsset.preview)
+      : '',
     slug,
     description,
     price,
@@ -113,6 +122,23 @@ function toStringArray(value: unknown): string[] {
 export class MinisearchEngine
   implements SearchEngine<MiniSearch<MinisearchDocument>>
 {
+  private toAbsoluteUrl?: (identifier: string) => string;
+
+  /** Configure URL prefixing from the active Vendure asset storage strategy. */
+  init(injector: Injector): void {
+    const configService = injector.get(ConfigService);
+    const strategy = configService.assetOptions.assetStorageStrategy;
+    const toAbsoluteUrl = strategy.toAbsoluteUrl;
+    if (toAbsoluteUrl) {
+      this.toAbsoluteUrl = (identifier) =>
+        toAbsoluteUrl.call(
+          strategy,
+          { headers: {}, url: '' } as any,
+          identifier
+        );
+    }
+  }
+
   async createIndex(
     ctx: RequestContext,
     documents: ProductVariant[]
@@ -122,6 +148,8 @@ export class MinisearchEngine
       storeFields: [
         'productId',
         'productName',
+        'productAssetId',
+        'productAssetPreview',
         'slug',
         'description',
         'price',
@@ -138,7 +166,13 @@ export class MinisearchEngine
         fuzzy: 0.2,
       },
     });
-    const docs = documents.map((v) => variantToDocument(ctx, v));
+    const docs = documents.map((v) =>
+      variantToDocument(
+        ctx,
+        v,
+        this.toAbsoluteUrl ?? ((identifier) => identifier)
+      )
+    );
     miniSearch.addAll(docs);
     return Promise.resolve(miniSearch);
   }
@@ -155,7 +189,11 @@ export class MinisearchEngine
       )
     );
     const documents = variants.map((variant) =>
-      variantToDocument(ctx, variant)
+      variantToDocument(
+        ctx,
+        variant,
+        this.toAbsoluteUrl ?? ((identifier) => identifier)
+      )
     );
     searchIndex.discardAll(
       documents
@@ -222,6 +260,8 @@ export class MinisearchEngine
             productVariantId: String(h.id),
             productId: String(h.productId ?? ''),
             productName: String(h.productName ?? ''),
+            productAssetId: String(h.productAssetId ?? '') || null,
+            productAssetPreview: String(h.productAssetPreview ?? '') || null,
             productVariantName: String(h.productName ?? ''), // fallback: use product name
             slug: String(h.slug ?? ''),
             description: String(h.description ?? ''),
@@ -281,6 +321,8 @@ export class MinisearchEngine
       storeFields: [
         'productId',
         'productName',
+        'productAssetId',
+        'productAssetPreview',
         'slug',
         'description',
         'price',

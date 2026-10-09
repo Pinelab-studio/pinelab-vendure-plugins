@@ -26,6 +26,10 @@ export interface BetterSearchDocument {
   /** Variant ID (equals the document id in the search index) */
   productVariantId: string;
   productId: string;
+  /** Featured product asset id, when available. */
+  productAssetId?: string | null;
+  /** Featured product asset preview URL, when available. */
+  productAssetPreview?: string | null;
   productName: string;
   /** Fallback to productName when variant name is not separately loaded */
   productVariantName: string;

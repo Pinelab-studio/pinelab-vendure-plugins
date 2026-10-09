@@ -15,6 +15,6 @@ import { config } from './vendure-config';
   const { server } = createTestEnvironment(config as Required<VendureConfig>);
   await server.init({
     initialData,
-    productsCsvPath: './test/wkw-products.csv',
+    productsCsvPath: './test/search-products.csv',
   });
 })();

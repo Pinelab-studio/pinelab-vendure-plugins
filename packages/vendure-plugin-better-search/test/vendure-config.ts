@@ -4,6 +4,7 @@ import {
   mergeConfig,
   VendureConfig,
 } from '@vendure/core';
+import { AssetServerPlugin } from '@vendure/asset-server-plugin';
 import { testConfig } from '@vendure/testing';
 import path from 'path';
 import { BetterSearchPlugin } from '../src';
@@ -21,8 +22,16 @@ export const config: VendureConfig = mergeConfig(testConfig, {
     adminApiPlayground: {},
     shopApiPlayground: {},
   },
+  importExportOptions: {
+    importAssetsDir: path.join(__dirname),
+  },
   plugins: [
     BetterSearchPlugin.init({}),
+    AssetServerPlugin.init({
+      route: 'assets',
+      assetUploadDir: path.join(__dirname, '__data__/assets'),
+      assetUrlPrefix: 'http://localhost:3050/assets/',
+    }),
     DashboardPlugin.init({
       route: 'dashboard',
       appDir: path.join(__dirname, '../dist/dashboard'),
