@@ -1,35 +1,73 @@
-import { Collection, Product } from '@vendure/core';
-import { BetterSearchResult } from './api/generated/graphql';
+import {
+  ID,
+  ProductVariant,
+  RequestContext,
+  ScheduledTaskConfig,
+  SerializedRequestContext,
+} from '@vendure/core';
 
-export type BetterSearchConfigInput<
-  T extends BetterSearchResult = BetterSearchResult
-> = Partial<BetterSearchConfig<T>>;
+/** Serializable payload processed by the better-search-index worker queue. */
+export type IndexJobData =
+  | { type: 'full'; ctx: SerializedRequestContext }
+  | {
+      type: 'partial';
+      ctx: SerializedRequestContext;
+      updateProductIds: string[];
+      updateVariantIds: string[];
+      removeProductIds: string[];
+      removeVariantIds: string[];
+    };
+
+/**
+ * Internal document type returned by search engines.
+ * Contains all fields needed to construct a Vendure SearchResult.
+ */
+export interface BetterSearchDocument {
+  /** Variant ID (equals the document id in the search index) */
+  productVariantId: string;
+  productId: string;
+  /** Featured product asset id, when available. */
+  productAssetId?: string | null;
+  /** Featured product asset preview URL, when available. */
+  productAssetPreview?: string | null;
+  productName: string;
+  /** Fallback to productName when variant name is not separately loaded */
+  productVariantName: string;
+  slug: string;
+  description: string;
+  sku: string;
+  /** Lowest price across variants (in channel's minor currency unit) */
+  lowestPrice: number;
+  lowestPriceWithTax: number;
+  /** Highest price across variants (in channel's minor currency unit) */
+  highestPrice: number;
+  highestPriceWithTax: number;
+  /** Parent facet IDs (deduped) */
+  facetIds: string[];
+  facetValueIds: string[];
+  collectionIds: string[];
+  collectionNames: string[];
+  score: number;
+}
 
 /**
  * @description
  * The plugin can be configured using the following options:
  */
-export interface BetterSearchConfig<
-  T extends BetterSearchResult = BetterSearchResult
-> {
+export interface BetterSearchOptions {
   /**
-   * Map a product to a Search Document.
-   * This is called when creating the index
+   * Maximum search logs retained per channel across languages, default 10_000.
+   * Accepts finite positive integers; false or 0 disables storing and clears
+   * existing logs during nightly cleanup. The cap can be exceeded between runs.
    */
-  mapToSearchDocument: (
-    product: Product,
-    collectionForThisProduct: Collection[]
-  ) => T;
+  maxLogsPerChannel?: number | false;
+
   /**
-   * The fields and corresponding weights that should be indexed.
-   * These should should correspond to what you return in the mapToSearchDocument function.
+   * Seconds to cache each channel-scoped search aggregate list response, default 60.
+   * Accepts finite non-negative integers; 0 disables cache reads and writes.
+   * Searches and cleanup do not invalidate cached results before expiry.
    */
-  indexableFields: Partial<{ [K in keyof T]: FieldDefinition }>;
-  /**
-   * The fuzziness of the search.
-   * 0.0 is no fuzzyness, 1.0 is full fuzzyness.
-   */
-  fuzziness: number;
+  searchLogAggregationCacheTtlSeconds?: number;
 
   /**
    * The debounce time for index rebuilds.
@@ -37,16 +75,100 @@ export interface BetterSearchConfig<
    * E.g. 5000 means that if a product is updated,
    * the plugin will wait for 5 seconds for more events to come in, and then rebuild the index.
    */
-  debounceIndexRebuildMs: number;
+  debounceIndexRebuildMs?: number;
+
+  /**
+   * Allows enabling/disabling the search plugin per channel.
+   * When this function returns `false` for a given channel, search queries
+   * will return empty results, and index building will be skipped for that channel.
+   *
+   * Default is enabled for all channels
+   */
+  isEnabled?: (ctx: RequestContext) => boolean | Promise<boolean>;
+
+  /**
+   * Cron schedule for the nightly full reindex task.
+   * Defaults to every day at 4:00 AM.
+   */
+  reindexSchedule?: ScheduledTaskConfig['schedule'];
+
+  /** Search engine implementation used to build indexes and execute searches. */
+  searchEngine?: SearchEngine;
 }
 
-export interface FieldDefinition {
-  weight: number;
+/**
+ * A lightweight search suggestion returned by the search-as-you-type endpoint.
+ */
+export interface SearchSuggestion {
+  /** The suggested search term. */
+  suggestion: string;
+}
+
+/**
+ * A strategy to create a search index and search for results.
+ */
+export interface SearchEngine<TIndex = unknown> {
   /**
-   * The type of the field in the graphql schema. This will be appended to the `BetterSearchResult` type.
-   * If not provided, the field will be indexed as a string.
-   *
-   * E.g. `String!` or `[String!]!`
+   * Function that creates the index based on given documents.
    */
-  graphqlFieldType?: string;
+  createIndex(
+    ctx: RequestContext,
+    documents: ProductVariant[]
+  ): Promise<TIndex>;
+
+  /**
+   * Adds or replaces the supplied variant documents and returns the updated index.
+   */
+  updateDocuments(
+    ctx: RequestContext,
+    searchIndex: TIndex,
+    variants: ProductVariant[]
+  ): Promise<TIndex>;
+
+  /**
+   * Removes documents matching variant IDs or their stored product IDs.
+   */
+  removeDocuments(
+    ctx: RequestContext,
+    searchIndex: TIndex,
+    variantIds: ID[],
+    productIds: ID[]
+  ): Promise<TIndex>;
+
+  search(
+    ctx: RequestContext,
+    searchIndex: TIndex,
+    term: string
+  ): Promise<BetterSearchDocument[]>;
+
+  /**
+   * Returns a list of lightweight search suggestions for the given term.
+   * The implementation is engine-specific and should not include the term
+   * itself in the result.
+   */
+  searchSuggestions(
+    ctx: RequestContext,
+    searchIndex: TIndex,
+    term: string
+  ): Promise<SearchSuggestion[]> | SearchSuggestion[];
+
+  /**
+   * Extracts stored documents from the index for inspection purposes.
+   * Returns each document as a plain JSON-serializable object.
+   */
+  getDocuments(
+    searchIndex: TIndex,
+    skip: number,
+    take: number
+  ): Promise<Record<string, unknown>[]>;
+
+  /**
+   * Serializes the in-memory index to a string for database storage.
+   */
+  serializeIndex(searchIndex: TIndex): string;
+
+  /**
+   * Deserializes a string from the database back into an in-memory index.
+   */
+  deserializeIndex(serialized: string): TIndex;
 }

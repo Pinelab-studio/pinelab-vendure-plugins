@@ -1,0 +1,23 @@
+{
+  "compilerOptions": {
+    "composite": true,
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "jsx": "react-jsx",
+    "types": ["node", "vite/client"],
+    "paths": {
+      "@/gql": ["./src/gql/graphql.ts"],
+      "@/vdb/*": ["../../node_modules/@vendure/dashboard/src/lib/*"],
+      "virtual-*": [
+        "../../node_modules/@vendure/dashboard/src/lib/virtual.d.ts"
+      ]
+    }
+  },
+  "include": [
+    "src/gql/**/*.ts",
+    "src/dashboard/**/*.ts",
+    "src/dashboard/**/*.tsx",
+    "vite.*.*ts",
+    "test/vite.config.mts"
+  ]
+}
