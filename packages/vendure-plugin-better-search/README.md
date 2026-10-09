@@ -1,85 +1,82 @@
 # Vendure Better Search Plugin
 
-[Official documentation here](https://plugins.pinelab.studio/plugin/vendure-plugin-better-search)
+In-memory storefront search with fuzzy matching, powered by MiniSearch by default. Intended for small to medium-sized shops with around 10,000 variants; capacity depends on your data and resources. A lightweight alternative to external search services such as Typesense or Elasticsearch.
 
-This plugin offers more intuitive search than Vendure's `DefaultSearchPlugin` before the need of an external platform like TypeSense or ElasticSearch.
-
-This plug is meant for small to medium sized shops with up to ~10000 variants.
-
-# Goals
-
-1. Performant in memory search, without affecting customer facing API calls.
-2. Provide relevant, type-tolerant (fuzzy matching) search results, while still meeting goal 1
-3. Extensible with custom fields, custom field weighting.
-
-This plugin is not meant to be a replacement for ElasticSearch or TypeSense, but rather a lightweight alternative for small to medium sized shops. If you want to test if it works for you, give it a try and run the load tests we have included.
-
-// TODO fix everything below this line
-
-Features:
-
-- Search by term or multiple terms, no and/or logic or query syntax.
-- Fuzzy matching / type tolerance
-- Extendable with custom fields
-- Index field weighting
-- Filtering by facets (faceted search): Planned feature, not implemented yet.
+[Official documentation](https://plugins.pinelab.studio/plugin/vendure-plugin-better-search)
 
 ## Getting started
 
-1. Add the plugin to your `vendure-config.ts`:
+1. Install the plugin:
 
-```ts
-import { BetterSearchPlugin } from '@pinelab/vendure-plugin-better-search';
+   ```bash
+   yarn add @pinelab/vendure-plugin-better-search
+   ```
 
-...
-plugins: [
-  BetterSearchPlugin,
-],
-```
+2. Replace `DefaultSearchPlugin` in your Vendure configuration:
 
-2. Run a database migration
-3. Start the server
-4. Do a search via the new `betterSearch` query. The very first time, this will throw an error, and it will start building the index in the background.
+   ```ts
+   import { BetterSearchPlugin } from '@pinelab/vendure-plugin-better-search';
+
+   // In your VendureConfig:
+   plugins: [BetterSearchPlugin.init({})],
+   ```
+
+3. Set the index column type for your database **before generating a migration**:
+
+   ```bash
+   # MySQL
+   BETTER_SEARCH_INDEX_COLUMN_TYPE=longblob
+
+   # PostgreSQL
+   BETTER_SEARCH_INDEX_COLUMN_TYPE=bytea
+   ```
+
+   The default is `blob`, suitable for SQLite. MySQL's default `blob` has limited capacity.
+
+4. Generate and apply a database migration, then start Vendure. Missing indexes are built automatically per channel and language. Product and variant changes trigger partial updates; a full reindex is scheduled nightly at 4:00 AM by default.
+
+## Storefront search
+
+Use Vendure's standard Shop API `search` query:
 
 ```graphql
-query Search {
-  betterSearch(input: { term: "dumbbells" }) {
+query {
+  search(input: { term: "dumbbells", groupByProduct: true, take: 20 }) {
     totalItems
     items {
       productId
-      slug
       productName
+      slug
       productAsset {
-        id
         preview
       }
-      lowestPrice
-      lowestPriceWithTax
-      highestPrice
-      highestPriceWithTax
-      facetValueIds
-      collectionIds
-      collectionNames
+      priceWithTax {
+        ... on SinglePrice {
+          value
+        }
+        ... on PriceRange {
+          min
+          max
+        }
+      }
     }
   }
 }
 ```
 
-⚠️ Set the env variable `BETTER_SEARCH_INDEX_COLUMN_TYPE` for your specific database! Without this, `blob` is used as default, but this will be too small for most projects. **Run a database migration after setting this env variable!**
+For autocomplete, use the lightweight `searchSuggestions` query:
 
-```bash
-# For MySQL
-BETTER_SEARCH_INDEX_COLUMN_TYPE=longblob
-
-# For PostgreSQL
-BETTER_SEARCH_INDEX_COLUMN_TYPE=bytea
+```graphql
+query {
+  searchSuggestions(term: "dumb") {
+    suggestion
+  }
+}
 ```
 
-Checkout this page on more information on the different column types: https://orkhan.gitbook.io/typeorm/docs/entities#column-types-for-mysql-mariadb
+## Search configuration
 
-## Custom MiniSearch options
-
-Pass MiniSearch `SearchOptions` to `MinisearchEngine` and configure it as the plugin's `searchEngine`. Unspecified options use the plugin defaults.
+Pass MiniSearch search options to adjust field boosts, prefix matching, and typo tolerance:
 
 ```ts
 import {
@@ -98,115 +95,23 @@ plugins: [
 ],
 ```
 
-## Partial reindexing
+The default engine searches product names, slugs, and descriptions. You can supply your own `SearchEngine` implementation.
 
-Product and variant changes automatically enqueue debounced partial updates for all assigned channels and their available languages, skipping channels where search is disabled. Removals take precedence over updates for the same ID. When a deleted entity's assignments are unavailable, removals target existing indexes in all enabled channels.
+Other plugin options include `isEnabled` for channel-specific availability, `debounceIndexRebuildMs` for batching updates, and `reindexSchedule` for the nightly full reindex.
 
-Consumers can enqueue their own partial jobs through `IndexService.triggerPartialReindex()`. The worker payload is:
+## Search analytics
 
-```ts
-type PartialIndexJob = {
-  type: 'partial';
-  ctx: SerializedRequestContext;
-  updateProductIds: string[];
-  updateVariantIds: string[];
-  removeProductIds: string[];
-  removeVariantIds: string[];
-};
-```
+Open **Settings > Search analytics** in the React Dashboard (requires `ReadCatalog`). Rebuild your Dashboard after adding or updating the plugin.
 
-For example, register this service as a provider in your consumer plugin (which imports `BetterSearchPlugin`):
-
-```ts
-import { Injectable, OnApplicationBootstrap } from '@nestjs/common';
-import { CollectionModificationEvent, EventBus, Logger } from '@vendure/core';
-import { IndexService } from '@pinelab/vendure-plugin-better-search';
-
-@Injectable()
-export class CollectionSearchIndexer implements OnApplicationBootstrap {
-  constructor(private eventBus: EventBus, private indexService: IndexService) {}
-
-  /** Reindexes variants entering or leaving a collection. */
-  onApplicationBootstrap(): void {
-    this.eventBus.ofType(CollectionModificationEvent).subscribe((event) => {
-      this.indexService
-        .triggerPartialReindex({
-          type: 'partial',
-          ctx: event.ctx.serialize(),
-          updateProductIds: [],
-          updateVariantIds: event.productVariantIds.map(String),
-          removeProductIds: [],
-          removeVariantIds: [],
-        })
-        .catch((error: Error) => {
-          Logger.error(error.message, 'CollectionSearchIndexer', error.stack);
-        });
-    });
-  }
-}
-```
-
-Variants leaving a collection are **updated**, not removed from search. `CollectionModificationEvent` supplies membership changes; collection name changes may require separately resolving all affected variants.
-
-Each public call targets **only the serialized context's channel and language**, without debounce or automatic channel fan-out. Supply a separate context/job for every channel/language you want to update. The index must already exist; otherwise the job fails. Jobs retry twice. Use one worker process: writes are serialized within that process, not coordinated between multiple workers. Partial updates still serialize and persist the complete index blob.
-
-## Custom fields
-
-// TODO index custom fields? How?
-
-```ts
-import { BetterSearchPlugin } from '@pinelab/vendure-plugin-better-search';
-```
-
-## Search event storage
-
-### Search analytics dashboard
-
-Open **Settings > Search analytics** in the React Dashboard (requires `ReadCatalog`). The read-only Vendure table shows terms, search counts, last searched time, latest result count, and language, with built-in search, sorting, filters, and pagination. Most searched terms appear first.
+The read-only table shows terms, search counts, last searched time, latest result count, and latest language. Use built-in search, sorting, filters, and pagination; most searched terms appear first.
 
 For example, filter for terms with low result counts and high search counts to discover what customers are looking for but cannot find.
 
-Results cover retained logs in the active channel, combining languages. Latest result counts and languages come from the newest matching search; date filters select logs before aggregation. Results may be cached for 60 seconds by default (`searchLogAggregationCacheTtlSeconds`, or `0` to disable). Rebuild your Dashboard after adding or updating this plugin to include the page.
+Analytics cover retained logs in the active channel, combining languages. Result counts and language come from the latest matching search. Date filters select logs before aggregation, so counts reflect the selected period.
 
-### Aggregated search statistics (Admin API)
+- `maxLogsPerChannel`: defaults to **10,000** retained events per channel. `false` or `0` disables recording and clears history at the next nightly cleanup. Cleanup is scheduled at 4:30 AM; the limit can be exceeded between runs.
+- `searchLogAggregationCacheTtlSeconds`: defaults to **60 seconds**; `0` disables caching. New searches and cleanup do not invalidate cached results before expiry.
 
-`searchLogAggregates(options: SearchLogAggregateListOptions)` returns `items` and `totalItems` using standard Vendure list options and requires `ReadCatalog`. Each item contains `id`, `term`, `searchCount`, `lastSearchedAt`, `resultCount`, and `languageCode`.
+Successful Shop API searches record normalized terms of 3–255 characters, including zero-result searches. Each pagination request counts separately. Admin searches, suggestions, and failed searches are excluded. Logging is best-effort and does not delay search responses. Search terms may contain personal information.
 
-### Stored search events
-
-Successful Shop API `search` requests are stored as `BetterSearchLog` events. Logged terms are trimmed, lowercased, and have consecutive whitespace collapsed; only normalized terms of 3–255 characters are stored. Search behavior is unchanged. Admin searches, suggestions, and failed searches are excluded. Pagination requests are logged separately, always using `totalItems` before pagination, including zero results.
-
-Configure `BetterSearchPlugin.init({ maxLogsPerChannel: 10_000 })` to set the retained count per channel across languages (default 10_000). Any finite positive integer is accepted; `false` or `0` disables new storage and clears existing history during the next cleanup.
-
-Cleanup runs nightly at 4:30 AM using Vendure's scheduler, deleting rows older than the retention cutoff with one SQL DELETE per channel. The consuming application must enable `DefaultSchedulerPlugin` (or another scheduler strategy) and run its worker for scheduled cleanup to execute. The cap can be exceeded between runs. Inserts do not delay search responses: failures are logged without retries, and abrupt shutdown can lose pending writes. Events contain channel, language, normalized term, total results, and standard entity timestamps—not shopper identifiers. Search terms can still contain personal information.
-
-Generate and apply a database migration in the consuming application for the new entity. The aggregate API and Dashboard page query these retained events without storing separate aggregates.
-
-## Tips for improving search relevance
-
-- Add a custom field `keywords` to your products, and make the plugin index it. This is where you'd save keywords, synonyms, etc. This will drastically improve the search experience.
-- Use the `weight` option to boost specific fields. For example, boost the custom field `keywords` if you implement it, making it more important for the search engine.
-- Use the `boostResult` option to boost (or de-boost) specific results. For example,a common practice is to slightly decrease the category `accessories` to make main products rank higher.
-
-// TODO reference the correct configs. At the time of writing they are not implemented yet.
-
-# Performance tips:
-
-- If your memory usage is too high, try indexing important fields like name, slug and facets only, without indexing descriptions. This will usually still provide a good search experience, but with less memory usage. Descriptions are the main cause of high memory usage, simply because they are longer and contain more text.
-- Monitor your database CPU usage. If this is high, you can increase the `debounceIndexRebuildMs` to reduce the number of rebuilds.
-
-If these tips don't work, your dataset might be too large for the Better Search Plugin.
-
-## Search-as-you-type suggestions
-
-For live search-as-you-type interfaces (e.g. autocomplete), use the `searchSuggestions` query instead of the full `search` query. This endpoint only returns suggestion strings and skips the index cache TTL check, making it much cheaper than a full search.
-
-```graphql
-query SearchSuggestions($term: String!) {
-  searchSuggestions(term: $term) {
-    suggestion
-  }
-}
-```
-
-Only use the `search` query when the user submits the search or when you actually need the full result set.
+For custom integrations, the Admin API provides `searchLogAggregates(options: SearchLogAggregateListOptions)`, returning `items` and `totalItems` with standard Vendure list options and `ReadCatalog` access.
