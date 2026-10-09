@@ -9,8 +9,8 @@ export const WARMUP_QUERY = gql`
 `;
 
 export const SEARCH_QUERY = gql`
-  query Search($term: String!) {
-    search(input: { term: $term }) {
+  query Search($input: SearchInput!) {
+    search(input: $input) {
       totalItems
       items {
         productId

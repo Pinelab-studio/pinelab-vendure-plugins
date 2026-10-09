@@ -256,6 +256,34 @@ describe('Relevance', () => {
   });
 });
 
+describe('Pagination', () => {
+  type SearchQueryResult = { search: { items: SearchResultItem[] } };
+
+  it('returns distinct products across consecutive pages when grouped by product', async () => {
+    const firstPage = await shopClient.query<SearchQueryResult>(SEARCH_QUERY, {
+      input: { term: 'ap', groupByProduct: true, skip: 0, take: 3 },
+    });
+    const secondPage = await shopClient.query<SearchQueryResult>(SEARCH_QUERY, {
+      input: { term: 'ap', groupByProduct: true, skip: 3, take: 3 },
+    });
+    const firstProductIds = firstPage.search.items.map(
+      (item) => item.productId
+    );
+    const secondProductIds = secondPage.search.items.map(
+      (item) => item.productId
+    );
+
+    expect(firstProductIds).toHaveLength(3);
+    expect(secondProductIds).toHaveLength(3);
+    expect(new Set(firstProductIds).size).toBe(3);
+    expect(new Set(secondProductIds).size).toBe(3);
+    // Make sure there is no overlap between resultsets: no overlap means pagination works
+    expect(secondProductIds.every((id) => !firstProductIds.includes(id))).toBe(
+      true
+    );
+  });
+});
+
 describe('Admin search compatibility', () => {
   it('supports search and index-status operations without DefaultSearchPlugin', async () => {
     await adminClient.asSuperAdmin();
@@ -347,7 +375,7 @@ describe('Partial reindexing', () => {
     const result = await waitFor(
       async () => {
         const response = (await shopClient.query(SEARCH_QUERY, {
-          term: 'Concurrent Reindex Product',
+          input: { term: 'Concurrent Reindex Product' },
         })) as { search: { items: SearchResultItem[] } };
         const resultIds = new Set(
           response.search.items.map((item) => item.productId)
@@ -471,7 +499,7 @@ describe('Multi-channel and multi-language', () => {
     adminClient.setChannelToken(secondChannelToken);
 
     const searchResult = (await shopClient.query(SEARCH_QUERY, {
-      term: 'apple',
+      input: { term: 'apple' },
     })) as { search: { totalItems: number; items: SearchResultItem[] } };
     expect(searchResult.search.totalItems).toBeGreaterThan(0);
     expect(searchResult.search.items[0].slug).toBe('apple');
@@ -488,7 +516,7 @@ describe('Multi-channel and multi-language', () => {
     expect(indexData.length).toBe(1);
 
     const wirelessResult = (await shopClient.query(SEARCH_QUERY, {
-      term: 'wireless',
+      input: { term: 'wireless' },
     })) as { search: { totalItems: number } };
     expect(wirelessResult.search.totalItems).toBe(0);
   }, 30000);
@@ -551,7 +579,7 @@ describe('Multi-channel and multi-language', () => {
             async () => {
               const result = await shopClient.query(
                 SEARCH_QUERY,
-                { term },
+                { input: { term } },
                 { languageCode }
               );
               return (
@@ -615,7 +643,7 @@ describe('Multi-channel and multi-language', () => {
     const germanResult = await shopClient.query(
       SEARCH_QUERY,
       {
-        term: 'Apfel',
+        input: { term: 'Apfel' },
       },
       { languageCode: 'de' }
     );
@@ -625,7 +653,9 @@ describe('Multi-channel and multi-language', () => {
 });
 
 async function search(query: string): Promise<{ items: SearchResultItem[] }> {
-  const result = await shopClient.query(SEARCH_QUERY, { term: query });
+  const result = await shopClient.query(SEARCH_QUERY, {
+    input: { term: query },
+  });
   const items = (result as { search: { items: SearchResultItem[] } }).search
     .items;
   return { items };
