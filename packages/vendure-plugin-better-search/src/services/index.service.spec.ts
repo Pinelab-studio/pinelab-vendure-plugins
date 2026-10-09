@@ -209,9 +209,13 @@ describe('IndexService', () => {
         document('v2', 'p1', 200, 8),
         document('v3', 'p2', 50, 5),
       ]);
-      return new SearchService(indexService, {
-        searchEngine: mockSearchEngine,
-      } as any);
+      return new SearchService(
+        indexService,
+        {
+          searchEngine: mockSearchEngine,
+        } as any,
+        { record: vi.fn() } as any
+      );
     }
 
     it('returns one result per product with combined price ranges and memberships', async () => {

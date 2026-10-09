@@ -56,6 +56,13 @@ export interface BetterSearchDocument {
  */
 export interface BetterSearchOptions {
   /**
+   * Maximum search logs retained per channel across languages, default 10_000.
+   * Accepts finite positive integers; false or 0 disables storing and clears
+   * existing logs during nightly cleanup. The cap can be exceeded between runs.
+   */
+  maxLogsPerChannel?: number | false;
+
+  /**
    * The debounce time for index rebuilds.
    *
    * E.g. 5000 means that if a product is updated,

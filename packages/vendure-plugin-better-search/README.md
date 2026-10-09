@@ -158,6 +158,16 @@ Each public call targets **only the serialized context's channel and language**,
 import { BetterSearchPlugin } from '@pinelab/vendure-plugin-better-search';
 ```
 
+## Search event storage
+
+Successful Shop API `search` requests are stored as `BetterSearchLog` events. Logged terms are trimmed, lowercased, and have consecutive whitespace collapsed; only normalized terms of 3–255 characters are stored. Search behavior is unchanged. Admin searches, suggestions, and failed searches are excluded. Pagination requests are logged separately, always using `totalItems` before pagination, including zero results.
+
+Configure `BetterSearchPlugin.init({ maxLogsPerChannel: 10_000 })` to set the retained count per channel across languages (default 10_000). Any finite positive integer is accepted; `false` or `0` disables new storage and clears existing history during the next cleanup.
+
+Cleanup runs nightly at 4:30 AM using Vendure's scheduler, deleting rows older than the retention cutoff with one SQL DELETE per channel. The consuming application must enable `DefaultSchedulerPlugin` (or another scheduler strategy) and run its worker for scheduled cleanup to execute. The cap can be exceeded between runs. Inserts do not delay search responses: failures are logged without retries, and abrupt shutdown can lose pending writes. Events contain channel, language, normalized term, total results, and standard entity timestamps—not shopper identifiers. Search terms can still contain personal information.
+
+Generate and apply a database migration in the consuming application for the new entity. No aggregation or viewing API is provided yet.
+
 ## Tips for improving search relevance
 
 - Add a custom field `keywords` to your products, and make the plugin index it. This is where you'd save keywords, synonyms, etc. This will drastically improve the search experience.

@@ -9,6 +9,9 @@ import { BetterSearchOptions } from './types';
 import { IndexService } from './services/index.service';
 import { BetterSearchIndex } from './entities/better-search-index.entity';
 import { betterSearchReindexTask } from './config/reindex-task';
+import { betterSearchLogCleanupTask } from './config/search-log-cleanup-task';
+import { BetterSearchLog } from './entities/better-search-log.entity';
+import { SearchLogService } from './services/search-log.service';
 
 @VendurePlugin({
   imports: [PluginCommonModule],
@@ -19,10 +22,12 @@ import { betterSearchReindexTask } from './config/reindex-task';
       useFactory: () => BetterSearchPlugin.options,
     },
     SearchService,
+    SearchLogService,
     IndexService,
   ],
   configuration: (config) => {
     config.schedulerOptions.tasks.push(
+      betterSearchLogCleanupTask,
       betterSearchReindexTask.configure({
         schedule:
           BetterSearchPlugin.options.reindexSchedule ??
@@ -40,14 +45,27 @@ import { betterSearchReindexTask } from './config/reindex-task';
     schema: adminApiExtensions,
     resolvers: [SearchAdminResolver],
   },
-  entities: [BetterSearchIndex],
+  entities: [BetterSearchIndex, BetterSearchLog],
 })
 export class BetterSearchPlugin {
   static options: BetterSearchOptions;
 
+  /** Configures search and validates the per-channel search log limit. */
   static init(options: BetterSearchOptions): Type<BetterSearchPlugin> {
+    const maxLogsPerChannel = options.maxLogsPerChannel ?? 10_000;
+    if (
+      maxLogsPerChannel !== false &&
+      (!Number.isFinite(maxLogsPerChannel) ||
+        !Number.isInteger(maxLogsPerChannel) ||
+        maxLogsPerChannel < 0)
+    ) {
+      throw new Error(
+        'maxLogsPerChannel must be a finite non-negative integer or false'
+      );
+    }
     this.options = {
       ...options,
+      maxLogsPerChannel,
       searchEngine: options.searchEngine ?? new MinisearchEngine(),
     };
     return BetterSearchPlugin;

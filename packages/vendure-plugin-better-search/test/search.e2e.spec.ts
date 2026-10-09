@@ -9,6 +9,7 @@ import {
   LogLevel,
   mergeConfig,
   RequestContextService,
+  TransactionalConnection,
 } from '@vendure/core';
 import {
   createTestEnvironment,
@@ -19,11 +20,12 @@ import {
   TestServer,
 } from '@vendure/testing';
 import path from 'path';
-import { beforeAll, describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it, vi } from 'vitest';
 import gql from 'graphql-tag';
 import { initialData } from '../../test/src/initial-data';
 import { waitFor } from '../../test/src/test-helpers';
-import { BetterSearchPlugin } from '../src';
+import { BetterSearchPlugin, BetterSearchLog } from '../src';
+import { SearchLogService } from '../src/services/search-log.service';
 import { BetterSearchIndexEvent } from '../src/events/better-search-index.event';
 import { IndexService } from '../src/services/index.service';
 import {
@@ -111,6 +113,80 @@ beforeAll(async () => {
   // test doesn't pay schema-build / first-request latency.
   await shopClient.query(WARMUP_QUERY, { term: 'warmup' }).catch(() => {});
 }, 60000);
+
+describe('Stores search events', () => {
+  it('stores normalized shop terms and totals even for empty pagination pages', async () => {
+    const repository = server.app
+      .get(TransactionalConnection)
+      .getRepository(BetterSearchLog);
+    const term = '  APPLE  ';
+    const result = (await shopClient.query(SEARCH_QUERY, {
+      input: { term, skip: 10000, take: 1 },
+    })) as { search: { totalItems: number } };
+    await vi.waitFor(async () => {
+      const row = await repository.findOne({
+        where: { term: 'apple', resultCount: result.search.totalItems },
+      });
+      expect(row).not.toBeNull();
+    });
+  });
+
+  it('stores zero results and excludes admin, suggestions, and short terms', async () => {
+    const repository = server.app
+      .get(TransactionalConnection)
+      .getRepository(BetterSearchLog);
+    await shopClient.query(SEARCH_QUERY, {
+      input: { term: 'zzzzzzzzzzzzzzzzzzzzzzzz' },
+    });
+    await vi.waitFor(async () =>
+      expect(
+        await repository.findOne({
+          where: { term: 'zzzzzzzzzzzzzzzzzzzzzzzz', resultCount: 0 },
+        })
+      ).not.toBeNull()
+    );
+    await adminClient.query(SEARCH_QUERY, {
+      input: { term: 'log-admin-only' },
+    });
+    await shopClient.query(SEARCH_SUGGESTIONS_QUERY, {
+      term: 'log-suggestion-only',
+    });
+    await shopClient.query(SEARCH_QUERY, { input: { term: 'ab' } });
+    expect(
+      await repository.count({
+        where: [
+          { term: 'log-admin-only' },
+          { term: 'log-suggestion-only' },
+          { term: 'ab' },
+        ],
+      })
+    ).toBe(0);
+  });
+
+  it('retains newest logs per channel across languages and clears disabled history', async () => {
+    const connection = server.app.get(TransactionalConnection);
+    const repository = connection.getRepository(BetterSearchLog);
+    const channelId = 987654;
+    const time = new Date('2020-01-01T00:00:00Z');
+    await repository.insert(
+      [0, 1, 2, 3].map((i) => ({
+        channelId,
+        term: `cleanup-${i}`,
+        resultCount: i,
+        languageCode: i % 2 ? LanguageCode.de : LanguageCode.en,
+        createdAt: time,
+        updatedAt: time,
+      }))
+    );
+    const cleanup = new SearchLogService(connection, { maxLogsPerChannel: 2 });
+    await cleanup.cleanup();
+    expect(await repository.count({ where: { channelId } })).toBe(2);
+    await new SearchLogService(connection, {
+      maxLogsPerChannel: false,
+    }).cleanup();
+    expect(await repository.count()).toBe(0);
+  });
+});
 
 it('Started the server', () => {
   expect(server.app.getHttpServer()).toBeDefined();

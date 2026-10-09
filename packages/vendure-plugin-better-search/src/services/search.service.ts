@@ -12,13 +12,15 @@ import {
   SearchSuggestion,
 } from '../types';
 import { IndexService } from './index.service';
+import { SearchLogService } from './search-log.service';
 
 @Injectable()
 export class SearchService {
   constructor(
     private indexService: IndexService,
     @Inject(BETTER_SEARCH_PLUGIN_OPTIONS)
-    private options: BetterSearchOptions
+    private options: BetterSearchOptions,
+    private searchLogService: SearchLogService
   ) {}
 
   /**
@@ -44,7 +46,7 @@ export class SearchService {
     );
     const currencyCode = ctx.channel.defaultCurrencyCode;
     const channelId = String(ctx.channel.id);
-    return {
+    const response: SearchResponse = {
       items: paginatedDocs.map((doc) =>
         this.mapToSearchResult(doc, currencyCode, channelId)
       ),
@@ -52,6 +54,8 @@ export class SearchService {
       facetValues: [],
       collections: [],
     };
+    this.searchLogService.record(ctx, term, response.totalItems);
+    return response;
   }
 
   /** Groups matching variants, retaining the highest-scoring variant as representative. */
