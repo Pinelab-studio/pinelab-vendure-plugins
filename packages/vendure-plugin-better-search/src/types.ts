@@ -77,6 +77,9 @@ export interface BetterSearchOptions {
    * Defaults to every day at 4:00 AM.
    */
   reindexSchedule?: ScheduledTaskConfig['schedule'];
+
+  /** Search engine implementation used to build indexes and execute searches. */
+  searchEngine?: SearchEngine;
 }
 
 /**

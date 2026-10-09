@@ -7,7 +7,7 @@ import {
 import { AssetServerPlugin } from '@vendure/asset-server-plugin';
 import { testConfig } from '@vendure/testing';
 import path from 'path';
-import { BetterSearchPlugin } from '../src';
+import { BetterSearchPlugin, MinisearchEngine } from '../src';
 import { DashboardPlugin } from '@vendure/dashboard/plugin';
 
 export const config: VendureConfig = mergeConfig(testConfig, {
@@ -26,7 +26,13 @@ export const config: VendureConfig = mergeConfig(testConfig, {
     importAssetsDir: path.join(__dirname),
   },
   plugins: [
-    BetterSearchPlugin.init({}),
+    BetterSearchPlugin.init({
+      searchEngine: new MinisearchEngine({
+        boost: { productName: 2, slug: 1.5, description: 1 },
+        prefix: true,
+        fuzzy: 0.2,
+      }),
+    }),
     AssetServerPlugin.init({
       route: 'assets',
       assetUploadDir: path.join(__dirname, '__data__/assets'),

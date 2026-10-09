@@ -6,10 +6,12 @@ import {
   ResolveField,
   Resolver,
 } from '@nestjs/graphql';
+import { Inject } from '@nestjs/common';
 import { Allow, Ctx, Job, Permission, RequestContext } from '@vendure/core';
-import { engine } from '../constants';
+import { BETTER_SEARCH_PLUGIN_OPTIONS } from '../constants';
 import { IndexService } from '../services/index.service';
 import { SearchService } from '../services/search.service';
+import { BetterSearchOptions } from '../types';
 import type {
   SearchInput,
   SearchResponse,
@@ -20,7 +22,8 @@ import type {
 export class SearchAdminResolver {
   constructor(
     private indexService: IndexService,
-    private searchService: SearchService
+    private searchService: SearchService,
+    @Inject(BETTER_SEARCH_PLUGIN_OPTIONS) private options: BetterSearchOptions
   ) {}
 
   /** Uses the same search engine as the Shop API. */
@@ -78,6 +81,6 @@ export class SearchAdminResolver {
     @Args('take', { type: () => Number, nullable: true }) take: number = 10
   ): Promise<Record<string, unknown>[]> {
     const searchIndex = await this.indexService.getIndex(ctx);
-    return engine.getDocuments(searchIndex, skip, take);
+    return this.options.searchEngine!.getDocuments(searchIndex, skip, take);
   }
 }

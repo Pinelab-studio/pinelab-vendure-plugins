@@ -5,7 +5,7 @@ import type {
   SearchResponse,
   SearchResult,
 } from '@vendure/common/lib/generated-types';
-import { BETTER_SEARCH_PLUGIN_OPTIONS, engine } from '../constants';
+import { BETTER_SEARCH_PLUGIN_OPTIONS } from '../constants';
 import {
   BetterSearchDocument,
   BetterSearchOptions,
@@ -35,7 +35,7 @@ export class SearchService {
       return { items: [], totalItems: 0, facetValues: [], collections: [] };
     }
     const index = await this.indexService.getIndex(ctx);
-    const matches = await engine.search(ctx, index, term);
+    const matches = await this.options.searchEngine!.search(ctx, index, term);
     const docs = input.groupByProduct ? this.groupByProduct(matches) : matches;
     const currencyCode = ctx.channel.defaultCurrencyCode;
     const channelId = String(ctx.channel.id);
@@ -107,7 +107,7 @@ export class SearchService {
       return [];
     }
     const index = await this.indexService.getIndex(ctx, true);
-    return engine.searchSuggestions(ctx, index, term);
+    return this.options.searchEngine!.searchSuggestions(ctx, index, term);
   }
 
   /**

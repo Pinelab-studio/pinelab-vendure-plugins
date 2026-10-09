@@ -26,19 +26,16 @@ const mockGetDocuments = vi.fn().mockResolvedValue([]);
 const mockRemoveDocuments = vi.fn().mockResolvedValue({ removed: true });
 const mockUpdateDocuments = vi.fn().mockResolvedValue({ updated: true });
 
-vi.mock('../constants', async () => {
-  return {
-    ...((await vi.importActual('../constants')) as Record<string, unknown>),
-    engine: {
-      search: (...args: unknown[]) => mockSearch(...args),
-      serializeIndex: (index: unknown) => mockSerialize(index),
-      deserializeIndex: (data: unknown) => mockDeserialize(data),
-      getDocuments: (...args: unknown[]) => mockGetDocuments(...args),
-      removeDocuments: (...args: unknown[]) => mockRemoveDocuments(...args),
-      updateDocuments: (...args: unknown[]) => mockUpdateDocuments(...args),
-    },
-  };
-});
+const mockSearchEngine = {
+  search: (...args: unknown[]) => mockSearch(...args),
+  createIndex: vi.fn().mockResolvedValue({ created: true }),
+  serializeIndex: (index: unknown) => mockSerialize(index),
+  deserializeIndex: (data: unknown) => mockDeserialize(data),
+  getDocuments: (...args: unknown[]) => mockGetDocuments(...args),
+  removeDocuments: (...args: unknown[]) => mockRemoveDocuments(...args),
+  updateDocuments: (...args: unknown[]) => mockUpdateDocuments(...args),
+  searchSuggestions: vi.fn().mockResolvedValue([]),
+};
 
 const mockRequestContext = {
   apiType: 'admin',
@@ -95,6 +92,7 @@ describe('IndexService', () => {
     const options = {
       debounceIndexRebuildMs: overrides?.debounceMs ?? 50,
       isEnabled: overrides?.isEnabled,
+      searchEngine: mockSearchEngine,
     };
     return new IndexService(
       connection,
@@ -211,7 +209,9 @@ describe('IndexService', () => {
         document('v2', 'p1', 200, 8),
         document('v3', 'p2', 50, 5),
       ]);
-      return new SearchService(indexService, {} as any, {} as any);
+      return new SearchService(indexService, {
+        searchEngine: mockSearchEngine,
+      } as any);
     }
 
     it('returns one result per product with combined price ranges and memberships', async () => {

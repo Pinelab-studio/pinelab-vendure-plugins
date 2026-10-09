@@ -21,7 +21,7 @@ import {
   TransactionalConnection,
 } from '@vendure/core';
 import { asError } from 'catch-unknown';
-import { BETTER_SEARCH_PLUGIN_OPTIONS, engine, loggerCtx } from '../constants';
+import { BETTER_SEARCH_PLUGIN_OPTIONS, loggerCtx } from '../constants';
 import { BetterSearchIndex } from '../entities/better-search-index.entity';
 import { BetterSearchIndexEvent } from '../events/better-search-index.event';
 import { BetterSearchOptions, IndexJobData } from '../types';
@@ -132,6 +132,10 @@ export class IndexService implements OnModuleInit, OnApplicationBootstrap {
     private productVariantService: ProductVariantService,
     private eventBus: EventBus
   ) {}
+
+  private get engine() {
+    return this.options.searchEngine!;
+  }
 
   onApplicationBootstrap() {
     // Listen for product events
@@ -367,12 +371,12 @@ export class IndexService implements OnModuleInit, OnApplicationBootstrap {
         });
         allProducts.push(...products);
       }
-      const searchIndex = await engine.createIndex(
+      const searchIndex = await this.engine.createIndex(
         ctx,
         allProducts.flatMap((p) => p.variants)
       );
       const indexKey = createIndexKey(ctx);
-      const serialized = engine.serializeIndex(searchIndex);
+      const serialized = this.engine.serializeIndex(searchIndex);
       const saved = await this.connection
         .getRepository(ctx, BetterSearchIndex)
         .save({ id: indexKey, data: serialized });
@@ -429,7 +433,7 @@ export class IndexService implements OnModuleInit, OnApplicationBootstrap {
         `No index found for channel '${ctx.channel.token}' (${ctx.languageCode})`
       );
     }
-    const searchIndex = engine.deserializeIndex(stored.data);
+    const searchIndex = this.engine.deserializeIndex(stored.data);
     const productIdsToReplace = [
       ...new Set([...changes.updateProductIds, ...changes.removeProductIds]),
     ];
@@ -437,7 +441,7 @@ export class IndexService implements OnModuleInit, OnApplicationBootstrap {
       ...new Set([...changes.updateVariantIds, ...changes.removeVariantIds]),
     ];
     const affectedVariantIds = new Set<string>();
-    const existingDocuments = await engine.getDocuments(
+    const existingDocuments = await this.engine.getDocuments(
       searchIndex,
       0,
       Number.MAX_SAFE_INTEGER
@@ -454,19 +458,19 @@ export class IndexService implements OnModuleInit, OnApplicationBootstrap {
     const variants = await this.getVariantsForPartialUpdate(ctx, changes);
     variants.forEach((variant) => affectedVariantIds.add(String(variant.id)));
 
-    const indexWithoutOldDocuments = await engine.removeDocuments(
+    const indexWithoutOldDocuments = await this.engine.removeDocuments(
       ctx,
       searchIndex,
       variantIdsToReplace,
       productIdsToReplace
     );
-    const updatedIndex = await engine.updateDocuments(
+    const updatedIndex = await this.engine.updateDocuments(
       ctx,
       indexWithoutOldDocuments,
       variants
     );
     const indexKey = createIndexKey(ctx);
-    const serialized = engine.serializeIndex(updatedIndex);
+    const serialized = this.engine.serializeIndex(updatedIndex);
     const saved = await this.connection
       .getRepository(ctx, BetterSearchIndex)
       .save({ id: indexKey, data: serialized });
@@ -609,7 +613,7 @@ export class IndexService implements OnModuleInit, OnApplicationBootstrap {
         cached.lastCheckedAt = Date.now();
         return cached.index;
       }
-      const deserialized = engine.deserializeIndex(fresh.data);
+      const deserialized = this.engine.deserializeIndex(fresh.data);
       this.cachedIndices.set(indexKey, {
         index: deserialized,
         updatedAt: fresh.updatedAt,
@@ -623,7 +627,7 @@ export class IndexService implements OnModuleInit, OnApplicationBootstrap {
       .getRepository(ctx, BetterSearchIndex)
       .findOne({ where: { id: indexKey } });
     if (stored) {
-      const deserialized = engine.deserializeIndex(stored.data);
+      const deserialized = this.engine.deserializeIndex(stored.data);
       this.cachedIndices.set(indexKey, {
         index: deserialized,
         updatedAt: stored.updatedAt,

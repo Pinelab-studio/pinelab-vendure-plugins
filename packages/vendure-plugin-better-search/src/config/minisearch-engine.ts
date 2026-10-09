@@ -10,6 +10,7 @@ import {
   LanguageCode,
   ID,
 } from '@vendure/core';
+import type { SearchOptions } from 'minisearch';
 import MiniSearch from 'minisearch';
 import { BetterSearchDocument, SearchEngine, SearchSuggestion } from '../types';
 
@@ -124,6 +125,9 @@ export class MinisearchEngine
 {
   private toAbsoluteUrl?: (identifier: string) => string;
 
+  /** Creates a MiniSearch-backed engine with configurable matching weights. */
+  constructor(private readonly options: SearchOptions = {}) {}
+
   /** Configure URL prefixing from the active Vendure asset storage strategy. */
   init(injector: Injector): void {
     const configService = injector.get(ConfigService);
@@ -161,9 +165,14 @@ export class MinisearchEngine
         'collectionNames',
       ],
       searchOptions: {
-        boost: { productName: 2, slug: 1.5, description: 1 },
-        prefix: true,
-        fuzzy: 0.2,
+        ...this.options,
+        boost: this.options.boost ?? {
+          productName: 2,
+          slug: 1.5,
+          description: 1,
+        },
+        prefix: this.options.prefix ?? true,
+        fuzzy: this.options.fuzzy ?? 0.2,
       },
     });
     const docs = documents.map((v) =>

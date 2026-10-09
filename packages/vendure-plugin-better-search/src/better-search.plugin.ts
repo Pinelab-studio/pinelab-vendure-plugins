@@ -1,4 +1,5 @@
 import { PluginCommonModule, Type, VendurePlugin } from '@vendure/core';
+import { MinisearchEngine } from './config/minisearch-engine';
 import { adminApiExtensions, shopApiExtensions } from './api/api-extensions';
 import { SearchAdminResolver } from './api/search-admin.resolver';
 import { SearchShopResolver } from './api/search.resolver';
@@ -45,7 +46,10 @@ export class BetterSearchPlugin {
   static options: BetterSearchOptions;
 
   static init(options: BetterSearchOptions): Type<BetterSearchPlugin> {
-    this.options = options;
+    this.options = {
+      ...options,
+      searchEngine: options.searchEngine ?? new MinisearchEngine(),
+    };
     return BetterSearchPlugin;
   }
 }

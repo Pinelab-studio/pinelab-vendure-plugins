@@ -1,4 +1,5 @@
 export * from './types';
+export * from './config/minisearch-engine';
 export * from './services/index.service';
 export * from './services/search.service';
 export * from './api/search-admin.resolver';
