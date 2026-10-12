@@ -6,6 +6,8 @@ import {
 } from '@nestjs/common';
 import {
   Channel,
+  ConfigService,
+  Injector,
   EventBus,
   JobQueue,
   JobQueueService,
@@ -20,17 +22,81 @@ import {
   RequestContext,
   TransactionalConnection,
 } from '@vendure/core';
+import { ModuleRef } from '@nestjs/core';
 import { asError } from 'catch-unknown';
 import { BETTER_SEARCH_PLUGIN_OPTIONS, loggerCtx } from '../constants';
 import { BetterSearchIndex } from '../entities/better-search-index.entity';
 import { BetterSearchIndexEvent } from '../events/better-search-index.event';
-import { BetterSearchOptions, IndexJobData } from '../types';
+import {
+  BetterSearchOptions,
+  IndexJobData,
+  SearchDocumentMapping,
+} from '../types';
 import { createIndexKey } from './util';
 
 /**
  * Cache TTL for keeping the search index in memory, before fetching it again from the DB
  */
 const INDEX_CACHE_TTL = 10_000;
+
+/** Maps loaded variants into the default engine-independent search documents. */
+export function defaultMapSearchDocuments(
+  ctx: RequestContext,
+  variants: ProductVariant[],
+  injector: Injector
+): SearchDocumentMapping {
+  const strategy =
+    injector.get(ConfigService).assetOptions.assetStorageStrategy;
+  return {
+    indexedFields: ['productName', 'slug', 'description'],
+    documents: variants.map((variant) => {
+      const product = variant.product;
+      const text =
+        product?.translations?.find(
+          (t) => t.languageCode === ctx.languageCode
+        ) ?? product;
+      const facets = product?.facetValues ?? variant.facetValues ?? [];
+      const collections = variant.collections ?? [];
+      const preview = product?.featuredAsset?.preview;
+      return {
+        id: String(variant.id),
+        productId: String(variant.productId ?? product?.id ?? ''),
+        productName: text?.name ?? '',
+        slug: text?.slug ?? '',
+        description: (text?.description ?? '')
+          .replace(/<[^>]*>/g, ' ')
+          .replace(/\s+/g, ' ')
+          .trim(),
+        productAssetId: String(product?.featuredAsset?.id ?? ''),
+        productAssetPreview: preview
+          ? strategy.toAbsoluteUrl?.(
+              { headers: {}, url: '' } as Parameters<
+                NonNullable<typeof strategy.toAbsoluteUrl>
+              >[0],
+              preview
+            ) ?? preview
+          : '',
+        price: variant.price,
+        priceWithTax: variant.priceWithTax,
+        sku: variant.sku ?? '',
+        facetIds: [
+          ...new Set(
+            facets.map((fv) => String(fv.facetId ?? '')).filter(Boolean)
+          ),
+        ],
+        facetValueIds: facets.map((fv) => String(fv.id)),
+        collectionIds: collections.map((c) => String(c.id)),
+        collectionNames: collections.map(
+          (c) =>
+            c.translations?.find((t) => t.languageCode === ctx.languageCode)
+              ?.name ??
+            c.name ??
+            ''
+        ),
+      };
+    }),
+  };
+}
 
 interface PartialIndexChanges {
   productIds?: ID[];
@@ -130,8 +196,41 @@ export class IndexService implements OnModuleInit, OnApplicationBootstrap {
     private jobQueueService: JobQueueService,
     private productService: ProductService,
     private productVariantService: ProductVariantService,
-    private eventBus: EventBus
-  ) {}
+    private eventBus: EventBus,
+    moduleRef: ModuleRef
+  ) {
+    this.injector = new Injector(moduleRef);
+  }
+
+  private readonly injector: Injector;
+
+  /** Maps and validates identities before any index mutations. */
+  private async mapDocuments(
+    ctx: RequestContext,
+    variants: ProductVariant[]
+  ): Promise<SearchDocumentMapping> {
+    const result = await (
+      this.options.mapSearchDocuments ?? defaultMapSearchDocuments
+    )(ctx, variants, this.injector);
+    const expected = new Map(
+      variants.map((v) => [
+        String(v.id),
+        String(v.productId ?? v.product?.id ?? ''),
+      ])
+    );
+    for (const document of result.documents) {
+      if (
+        !expected.has(document.id) ||
+        expected.get(document.id) !== document.productId
+      ) {
+        throw new Error(
+          'mapSearchDocuments must preserve unique variant and product IDs'
+        );
+      }
+      expected.delete(document.id);
+    }
+    return result;
+  }
 
   private get engine() {
     return this.options.searchEngine!;
@@ -385,7 +484,12 @@ export class IndexService implements OnModuleInit, OnApplicationBootstrap {
         }
         allProducts.push(...products);
       }
-      const searchIndex = await this.engine.createIndex(ctx, allVariants);
+      const mapped = await this.mapDocuments(ctx, allVariants);
+      const searchIndex = await this.engine.createIndex(
+        ctx,
+        mapped.documents,
+        mapped.indexedFields
+      );
       const indexKey = createIndexKey(ctx);
       const serialized = this.engine.serializeIndex(searchIndex);
       const saved = await this.connection
@@ -469,6 +573,7 @@ export class IndexService implements OnModuleInit, OnApplicationBootstrap {
     const variants = await this.getVariantsForPartialUpdate(ctx, changes);
     variants.forEach((variant) => affectedVariantIds.add(String(variant.id)));
 
+    const mapped = await this.mapDocuments(ctx, variants);
     const indexWithoutOldDocuments = await this.engine.removeDocuments(
       ctx,
       searchIndex,
@@ -478,7 +583,7 @@ export class IndexService implements OnModuleInit, OnApplicationBootstrap {
     const updatedIndex = await this.engine.updateDocuments(
       ctx,
       indexWithoutOldDocuments,
-      variants
+      mapped.documents
     );
     const indexKey = createIndexKey(ctx);
     const serialized = this.engine.serializeIndex(updatedIndex);

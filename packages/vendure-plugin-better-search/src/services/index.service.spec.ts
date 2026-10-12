@@ -3,6 +3,7 @@ import {
   CurrencyCode,
   ConfigService,
   ImportParser,
+  Injector,
   LanguageCode,
   Logger,
   Product,
@@ -13,13 +14,32 @@ import {
   RequestContext,
   TransactionalConnection,
 } from '@vendure/core';
+import { ModuleRef } from '@nestjs/core';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { IndexService } from './index.service';
-import { BetterSearchDocument, IndexJobData } from '../types';
+import { IndexService, defaultMapSearchDocuments } from './index.service';
+import {
+  BetterSearchDocument,
+  IndexJobData,
+  SearchDocumentMapper,
+} from '../types';
 import { SearchService } from './search.service';
 import { MinisearchEngine } from '../config/minisearch-engine';
+
+const injector = {
+  get: () => ({ assetOptions: { assetStorageStrategy: {} } }),
+} as unknown as Injector;
+
+/** Maps test fixtures before handing them to the engine. */
+async function mappedIndex(
+  engine: MinisearchEngine,
+  ctx: RequestContext,
+  variants: ProductVariant[]
+) {
+  const mapped = defaultMapSearchDocuments(ctx, variants, injector);
+  return engine.createIndex(ctx, mapped.documents, mapped.indexedFields);
+}
 
 const mockSearch = vi.fn();
 const mockSerialize = vi.fn().mockReturnValue('serialized-data');
@@ -89,12 +109,14 @@ describe('IndexService', () => {
     productService?: ProductService;
     productVariantService?: any;
     eventBus?: EventBus;
+    mapSearchDocuments?: SearchDocumentMapper;
   }): IndexService {
     const connection = overrides?.connection ?? createMockRepository();
     const options = {
       debounceIndexRebuildMs: overrides?.debounceMs ?? 50,
       isEnabled: overrides?.isEnabled,
       searchEngine: mockSearchEngine,
+      mapSearchDocuments: overrides?.mapSearchDocuments,
     };
     return new IndexService(
       connection,
@@ -105,7 +127,8 @@ describe('IndexService', () => {
       overrides?.eventBus ??
         ({
           ofType: vi.fn().mockReturnValue({ subscribe: vi.fn() }),
-        } as unknown as EventBus)
+        } as unknown as EventBus),
+      injector as unknown as ModuleRef
     );
   }
 
@@ -150,7 +173,7 @@ describe('IndexService', () => {
         const ctx = { languageCode: LanguageCode.en } as RequestContext;
         const engine = new MinisearchEngine();
         const variant = textVariant(description);
-        const index = await engine.createIndex(ctx, [variant]);
+        const index = await mappedIndex(engine, ctx, [variant]);
         const documents = await engine.getDocuments(index, 0, 10);
         expect(documents[0]).toMatchObject({
           productName: '<b>Catalog</b>',
@@ -164,7 +187,7 @@ describe('IndexService', () => {
     it('indexes content words without indexing description tags or attributes', async () => {
       const ctx = { languageCode: LanguageCode.en } as RequestContext;
       const engine = new MinisearchEngine();
-      const index = await engine.createIndex(ctx, [
+      const index = await mappedIndex(engine, ctx, [
         textVariant(
           '<section data-markupattribute="markupvalue">Orchard</section><p>Harvest</p>'
         ),
@@ -174,9 +197,15 @@ describe('IndexService', () => {
       for (const term of ['section', 'markupattribute', 'markupvalue']) {
         expect(await engine.search(ctx, index, term)).toHaveLength(0);
       }
-      await engine.updateDocuments(ctx, index, [
-        textVariant('<p>Updated orchard</p>'),
-      ]);
+      await engine.updateDocuments(
+        ctx,
+        index,
+        defaultMapSearchDocuments(
+          ctx,
+          [textVariant('<p>Updated orchard</p>')],
+          injector
+        ).documents
+      );
       expect((await engine.search(ctx, index, 'updated'))[0].description).toBe(
         'Updated orchard'
       );
@@ -185,7 +214,7 @@ describe('IndexService', () => {
     it('normalizes fallback descriptions and preserves missing-product behavior', async () => {
       const ctx = { languageCode: LanguageCode.de } as RequestContext;
       const engine = new MinisearchEngine();
-      const index = await engine.createIndex(ctx, [
+      const index = await mappedIndex(engine, ctx, [
         textVariant('<p>English translation</p>'),
         { id: 'missing-product' } as ProductVariant,
       ]);
@@ -197,6 +226,127 @@ describe('IndexService', () => {
         description: '',
       });
     });
+  });
+
+  describe('enriched search documents', () => {
+    const ctx = { languageCode: LanguageCode.en } as RequestContext;
+    /** Supplies a loaded parent product and searchable default text. */
+    function customVariant(): ProductVariant {
+      return {
+        id: 'custom-variant',
+        productId: '987654321',
+        product: {
+          id: '987654321',
+          name: 'Catalog',
+          slug: 'catalog-slug',
+          description: 'orchardharvest',
+          customFields: { reference: 'customreferenceunique' },
+        },
+      } as unknown as ProductVariant;
+    }
+
+    it('stores arbitrary fields and restores field schema through partial updates and reloads', async () => {
+      const engine = new MinisearchEngine({ prefix: false, fuzzy: false });
+      const mapped = defaultMapSearchDocuments(
+        ctx,
+        [customVariant()],
+        injector
+      );
+      const document = {
+        ...mapped.documents[0],
+        hidden: { value: 'unindexedword' },
+      };
+      const index = await engine.createIndex(ctx, [document], ['productName']);
+      const reloaded = engine.deserializeIndex(engine.serializeIndex(index));
+      expect(await engine.getDocuments(reloaded, 0, 10)).toEqual([document]);
+      expect(await engine.search(ctx, reloaded, 'orchardharvest')).toHaveLength(
+        0
+      );
+      expect(await engine.search(ctx, reloaded, 'catal')).toHaveLength(0);
+      const updated = {
+        ...document,
+        productName: 'Replacement',
+        extra: 'storedonly',
+      };
+      await engine.updateDocuments(ctx, reloaded, [updated]);
+      const restored = engine.deserializeIndex(engine.serializeIndex(reloaded));
+      expect(await engine.getDocuments(restored, 0, 10)).toEqual([updated]);
+      expect(await engine.search(ctx, restored, 'catalog')).toHaveLength(0);
+      expect(await engine.search(ctx, restored, 'replacement')).toHaveLength(1);
+      expect(await engine.search(ctx, restored, 'storedonly')).toHaveLength(0);
+      expect(() => engine.deserializeIndex('{}')).toThrow('full reindex');
+    });
+
+    it('allows overriding description while indexing loaded custom fields', async () => {
+      const engine = new MinisearchEngine();
+      const variant = customVariant();
+      const mapper = vi.fn(async (ctx, variants, injector) => {
+        const mapped = defaultMapSearchDocuments(ctx, variants, injector);
+        return {
+          indexedFields: [...mapped.indexedFields, 'reference'],
+          documents: mapped.documents.map((d) => ({
+            ...d,
+            description: '',
+            reference: 'customreferenceunique',
+          })),
+        };
+      });
+      const service = createService({ mapSearchDocuments: mapper });
+      const mapped = await service['mapDocuments'](ctx, [variant]);
+      expect(mapper).toHaveBeenCalledWith(ctx, [variant], expect.any(Injector));
+      const index = await engine.createIndex(
+        ctx,
+        mapped.documents,
+        mapped.indexedFields
+      );
+      expect((await engine.getDocuments(index, 0, 10))[0].description).toBe('');
+      expect(await engine.search(ctx, index, 'orchardharvest')).toHaveLength(0);
+      for (const term of ['catalog', 'catalog-slug', 'customreferenceunique']) {
+        expect((await engine.search(ctx, index, term))[0]).toMatchObject({
+          productVariantId: 'custom-variant',
+          description: '',
+        });
+      }
+      expect(variant.product.description).toBe('orchardharvest');
+    });
+
+    it.each([0, 1])(
+      'allows returning %i documents from a larger batch',
+      async (count) => {
+        const service = createService({
+          mapSearchDocuments: (ctx, variants, injector) => {
+            const mapped = defaultMapSearchDocuments(ctx, variants, injector);
+            return { ...mapped, documents: mapped.documents.slice(0, count) };
+          },
+        });
+        const result = await service['mapDocuments'](ctx, [
+          customVariant(),
+          { ...customVariant(), id: 'other' } as ProductVariant,
+        ]);
+        expect(result.documents).toHaveLength(count);
+      }
+    );
+
+    it.each(['id', 'productId', 'duplicate'])(
+      'rejects invalid mapping identities: %s',
+      async (invalid) => {
+        const service = createService({
+          mapSearchDocuments: (ctx, variants, injector) => {
+            const mapped = defaultMapSearchDocuments(ctx, variants, injector);
+            if (invalid === 'duplicate')
+              mapped.documents[1] = mapped.documents[0];
+            else mapped.documents[0][invalid] = 'changed';
+            return mapped;
+          },
+        });
+        await expect(
+          service['mapDocuments'](ctx, [
+            customVariant(),
+            { ...customVariant(), id: 'other' } as ProductVariant,
+          ])
+        ).rejects.toThrow('mapSearchDocuments');
+      }
+    );
   });
 
   describe('indexed prices', () => {
@@ -257,9 +407,18 @@ describe('IndexService', () => {
       expect(mockSearchEngine.createIndex).toHaveBeenLastCalledWith(
         expect.any(RequestContext),
         [
-          expect.objectContaining({ price: 1000, priceWithTax: 1200, product }),
-          expect.objectContaining({ price: 0, priceWithTax: 0, product }),
-        ]
+          expect.objectContaining({
+            price: 1000,
+            priceWithTax: 1200,
+            productId: 'p',
+          }),
+          expect.objectContaining({
+            price: 0,
+            priceWithTax: 0,
+            productId: 'p',
+          }),
+        ],
+        ['productName', 'slug', 'description']
       );
       product.translations = [
         {
@@ -272,7 +431,10 @@ describe('IndexService', () => {
       const engine = new MinisearchEngine();
       const index = await engine.createIndex(
         ctx,
-        mockSearchEngine.createIndex.mock.calls.at(-1)![1]
+        mockSearchEngine.createIndex.mock.calls
+          .at(-1)![1]
+          .map((d: object) => ({ ...d, productName: 'Nike', slug: 'nike' })),
+        ['productName', 'slug', 'description']
       );
       const reloaded = engine.deserializeIndex(engine.serializeIndex(index));
       const results = await engine.search(ctx, reloaded, 'nike');
@@ -320,6 +482,10 @@ describe('IndexService', () => {
             findOne: vi.fn().mockResolvedValue(product),
           } as unknown as ProductService,
           productVariantService: { applyChannelPriceAndTax, findOne },
+          mapSearchDocuments: async (ctx, variants, injector) => ({
+            ...defaultMapSearchDocuments(ctx, variants, injector),
+            indexedFields: ['ignored-partial-field'],
+          }),
           eventBus: {
             publish: vi.fn().mockResolvedValue(undefined),
           } as unknown as EventBus,
@@ -335,7 +501,14 @@ describe('IndexService', () => {
         expect(mockUpdateDocuments).toHaveBeenLastCalledWith(
           ctx,
           expect.anything(),
-          [pricedVariant]
+          [
+            expect.objectContaining({
+              id: 'v',
+              productId: 'p',
+              price: 2000,
+              priceWithTax: 2400,
+            }),
+          ]
         );
         if (path === 'product') {
           expect(applyChannelPriceAndTax).toHaveBeenCalledWith(variant, ctx);

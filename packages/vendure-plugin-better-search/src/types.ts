@@ -1,10 +1,42 @@
 import {
   ID,
+  Injector,
   ProductVariant,
   RequestContext,
   ScheduledTaskConfig,
   SerializedRequestContext,
 } from '@vendure/core';
+
+/** A JSON-serializable document, one per variant, shared by all engines. */
+export interface SearchDocument extends Record<string, unknown> {
+  id: string;
+  productId: string;
+  productName: string;
+  productAssetId: string;
+  productAssetPreview: string;
+  slug: string;
+  description: string;
+  price: number;
+  priceWithTax: number;
+  sku: string;
+  facetIds: string[];
+  facetValueIds: string[];
+  collectionIds: string[];
+  collectionNames: string[];
+}
+
+/** Documents and the field schema used when building a full index. */
+export interface SearchDocumentMapping {
+  documents: SearchDocument[];
+  indexedFields: string[];
+}
+
+/** Maps a full or affected variant batch; omit variants to exclude them from the index. */
+export type SearchDocumentMapper = (
+  ctx: RequestContext,
+  variants: ProductVariant[],
+  injector: Injector
+) => SearchDocumentMapping | Promise<SearchDocumentMapping>;
 
 /** Serializable payload processed by the better-search-index worker queue. */
 export type IndexJobData =
@@ -94,6 +126,9 @@ export interface BetterSearchOptions {
 
   /** Search engine implementation used to build indexes and execute searches. */
   searchEngine?: SearchEngine;
+
+  /** Maps full/partial batches. Partial updates ignore returned indexedFields. */
+  mapSearchDocuments?: SearchDocumentMapper;
 }
 
 /**
@@ -113,7 +148,8 @@ export interface SearchEngine<TIndex = unknown> {
    */
   createIndex(
     ctx: RequestContext,
-    documents: ProductVariant[]
+    documents: SearchDocument[],
+    indexedFields: string[]
   ): Promise<TIndex>;
 
   /**
@@ -122,7 +158,7 @@ export interface SearchEngine<TIndex = unknown> {
   updateDocuments(
     ctx: RequestContext,
     searchIndex: TIndex,
-    variants: ProductVariant[]
+    documents: SearchDocument[]
   ): Promise<TIndex>;
 
   /**

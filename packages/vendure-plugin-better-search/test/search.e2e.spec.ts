@@ -28,7 +28,10 @@ import { BetterSearchPlugin, BetterSearchLog } from '../src';
 import { SearchLogService } from '../src/services/search-log.service';
 import { SearchLogAggregationService } from '../src/services/search-log-aggregation.service';
 import { BetterSearchIndexEvent } from '../src/events/better-search-index.event';
-import { IndexService } from '../src/services/index.service';
+import {
+  IndexService,
+  defaultMapSearchDocuments,
+} from '../src/services/index.service';
 import {
   ASSIGN_PRODUCTS_TO_CHANNEL,
   CREATE_CHANNEL,
@@ -66,7 +69,18 @@ beforeAll(async () => {
       importAssetsDir: path.join(__dirname),
     },
     plugins: [
-      BetterSearchPlugin.init({}),
+      BetterSearchPlugin.init({
+        mapSearchDocuments: (ctx, variants, injector) => {
+          const mapped = defaultMapSearchDocuments(ctx, variants, injector);
+          return {
+            indexedFields: [...mapped.indexedFields, 'myCustomIndexablefield'],
+            documents: mapped.documents.map((document) => ({
+              ...document,
+              myCustomIndexablefield: 'someStringThatIsUnique',
+            })),
+          };
+        },
+      }),
       AssetServerPlugin.init({
         route: 'assets',
         assetUploadDir: path.join(__dirname, '__data__/assets'),
@@ -118,6 +132,11 @@ beforeAll(async () => {
 }, 60000);
 
 describe('Relevance', () => {
+  it('searches a custom static field configured through the plugin mapper', async () => {
+    const { items } = await search('someStringThatIsUnique');
+    expect(items.length).toBeGreaterThan(0);
+  });
+
   /**
    * Exact matches should rank higher than keyword repetition.
    */
