@@ -32,7 +32,7 @@ export interface MinisearchDocument {
   collectionNames: string[];
 }
 
-/** Picks product name, slug and description for the given language (from product translations). */
+/** Picks localized product text and strips description HTML with a best-effort regex. */
 function getProductText(
   variant: ProductVariant,
   languageCode: LanguageCode
@@ -48,7 +48,10 @@ function getProductText(
   return {
     productName: t.name ?? '',
     slug: t.slug ?? '',
-    description: t.description ?? '',
+    description: (t.description ?? '')
+      .replace(/<[^>]*>/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim(),
   };
 }
 

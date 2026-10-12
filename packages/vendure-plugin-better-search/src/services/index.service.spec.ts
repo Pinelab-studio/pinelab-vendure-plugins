@@ -109,6 +109,96 @@ describe('IndexService', () => {
     );
   }
 
+  describe('indexed description text', () => {
+    /** Creates a variant with localized and fallback text for engine-level tests. */
+    function textVariant(description?: string): ProductVariant {
+      return {
+        id: 'text-variant',
+        productId: 'text-product',
+        product: {
+          name: '<b>Catalog</b>',
+          slug: 'catalog-slug',
+          description: '<p>Fallback description</p>',
+          translations: [
+            {
+              languageCode: LanguageCode.en,
+              name: '<b>Catalog</b>',
+              slug: 'catalog-slug',
+              description,
+            },
+          ],
+        },
+      } as unknown as ProductVariant;
+    }
+
+    it.each([
+      [
+        '<p class="markupattribute">Fresh <strong>orchard</strong></p><p>Fruit</p>',
+        'Fresh orchard Fruit',
+      ],
+      ['  Plain\n\t text   ', 'Plain text'],
+      ['', ''],
+      [undefined, ''],
+      ['<p>Fruit &amp; vegetables&nbsp;</p>', 'Fruit &amp; vegetables&nbsp;'],
+      [
+        '<script>retainedscript</script><style>retainedstyle</style>',
+        'retainedscript retainedstyle',
+      ],
+    ])(
+      'normalizes description %j without changing names or slugs',
+      async (description, expected) => {
+        const ctx = { languageCode: LanguageCode.en } as RequestContext;
+        const engine = new MinisearchEngine();
+        const variant = textVariant(description);
+        const index = await engine.createIndex(ctx, [variant]);
+        const documents = await engine.getDocuments(index, 0, 10);
+        expect(documents[0]).toMatchObject({
+          productName: '<b>Catalog</b>',
+          slug: 'catalog-slug',
+          description: expected,
+        });
+        expect(variant.product.translations[0].description).toBe(description);
+      }
+    );
+
+    it('indexes content words without indexing description tags or attributes', async () => {
+      const ctx = { languageCode: LanguageCode.en } as RequestContext;
+      const engine = new MinisearchEngine();
+      const index = await engine.createIndex(ctx, [
+        textVariant(
+          '<section data-markupattribute="markupvalue">Orchard</section><p>Harvest</p>'
+        ),
+      ]);
+      expect(await engine.search(ctx, index, 'orchard')).toHaveLength(1);
+      expect(await engine.search(ctx, index, 'harvest')).toHaveLength(1);
+      for (const term of ['section', 'markupattribute', 'markupvalue']) {
+        expect(await engine.search(ctx, index, term)).toHaveLength(0);
+      }
+      await engine.updateDocuments(ctx, index, [
+        textVariant('<p>Updated orchard</p>'),
+      ]);
+      expect((await engine.search(ctx, index, 'updated'))[0].description).toBe(
+        'Updated orchard'
+      );
+    });
+
+    it('normalizes fallback descriptions and preserves missing-product behavior', async () => {
+      const ctx = { languageCode: LanguageCode.de } as RequestContext;
+      const engine = new MinisearchEngine();
+      const index = await engine.createIndex(ctx, [
+        textVariant('<p>English translation</p>'),
+        { id: 'missing-product' } as ProductVariant,
+      ]);
+      const documents = await engine.getDocuments(index, 0, 10);
+      expect(documents[0].description).toBe('Fallback description');
+      expect(documents[1]).toMatchObject({
+        productName: '',
+        slug: '',
+        description: '',
+      });
+    });
+  });
+
   describe('indexed prices', () => {
     /** Creates a channel context with a known default currency. */
     function pricingContext(): RequestContext {
