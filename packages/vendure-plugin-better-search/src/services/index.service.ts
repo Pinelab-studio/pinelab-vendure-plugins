@@ -341,6 +341,7 @@ export class IndexService implements OnModuleInit, OnApplicationBootstrap {
       let skip = 0;
       const take = 100;
       const allProducts: Product[] = [];
+      const allVariants: ProductVariant[] = [];
       let hasMore = true;
       while (hasMore) {
         const { items: products } = await this.productService.findAll(
@@ -357,24 +358,34 @@ export class IndexService implements OnModuleInit, OnApplicationBootstrap {
               },
             },
           },
-          ['featuredAsset', 'facetValues.translations', 'variants.collections']
+          [
+            'featuredAsset',
+            'facetValues.translations',
+            'variants.collections',
+            'variants.productVariantPrices',
+            'variants.taxCategory',
+          ]
         );
         skip += take;
         if (products.length < take) {
           hasMore = false;
         }
         // Set all products on the variant object as well
-        products.forEach((p) => {
-          p.variants.forEach((v) => {
-            v.product = p;
-          });
-        });
+        for (const product of products) {
+          for (const variant of product.variants) {
+            variant.product = product;
+            const pricedVariant =
+              await this.productVariantService.applyChannelPriceAndTax(
+                variant,
+                ctx
+              );
+            pricedVariant.product = product;
+            allVariants.push(pricedVariant);
+          }
+        }
         allProducts.push(...products);
       }
-      const searchIndex = await this.engine.createIndex(
-        ctx,
-        allProducts.flatMap((p) => p.variants)
-      );
+      const searchIndex = await this.engine.createIndex(ctx, allVariants);
       const indexKey = createIndexKey(ctx);
       const serialized = this.engine.serializeIndex(searchIndex);
       const saved = await this.connection
@@ -534,8 +545,13 @@ export class IndexService implements OnModuleInit, OnApplicationBootstrap {
           continue;
         }
         variant.product = product;
-        await this.productVariantService.applyChannelPriceAndTax(variant, ctx);
-        variants.set(String(variant.id), variant);
+        const pricedVariant =
+          await this.productVariantService.applyChannelPriceAndTax(
+            variant,
+            ctx
+          );
+        pricedVariant.product = product;
+        variants.set(String(pricedVariant.id), pricedVariant);
       }
     }
 

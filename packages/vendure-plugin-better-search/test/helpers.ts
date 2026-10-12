@@ -16,6 +16,24 @@ export const SEARCH_QUERY = gql`
         productId
         slug
         productName
+        price {
+          ... on PriceRange {
+            min
+            max
+          }
+          ... on SinglePrice {
+            value
+          }
+        }
+        priceWithTax {
+          ... on PriceRange {
+            min
+            max
+          }
+          ... on SinglePrice {
+            value
+          }
+        }
         productAsset {
           id
           preview

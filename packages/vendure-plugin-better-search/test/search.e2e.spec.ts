@@ -20,7 +20,7 @@ import {
   TestServer,
 } from '@vendure/testing';
 import path from 'path';
-import { beforeAll, describe, expect, it, vi } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import gql from 'graphql-tag';
 import { initialData } from '../../test/src/initial-data';
 import { waitFor } from '../../test/src/test-helpers';
@@ -48,6 +48,8 @@ interface SearchResultItem {
   slug: string;
   productName: string;
   productAsset: { id: string; preview: string } | null;
+  price: { min: number; max: number };
+  priceWithTax: { min: number; max: number };
   score: number;
 }
 
@@ -114,234 +116,6 @@ beforeAll(async () => {
   // test doesn't pay schema-build / first-request latency.
   await shopClient.query(WARMUP_QUERY, { term: 'warmup' }).catch(() => {});
 }, 60000);
-
-describe('Search log aggregates', () => {
-  it('aggregates languages, selects latest counts, and supports standard list options', async () => {
-    const repository = server.app
-      .get(TransactionalConnection)
-      .getRepository(BetterSearchLog);
-    const ctx = await server.app
-      .get(RequestContextService)
-      .create({ apiType: 'admin', channelOrToken: 'e2e-default-channel' });
-    const old = new Date('2021-01-01T00:00:00Z');
-    const recent = new Date('2021-01-02T00:00:00Z');
-    await repository.insert([
-      {
-        channelId: ctx.channelId,
-        term: 'aggregate-apple',
-        languageCode: LanguageCode.en,
-        resultCount: 20,
-        createdAt: old,
-        updatedAt: old,
-      },
-      {
-        channelId: ctx.channelId,
-        term: 'aggregate-apple',
-        languageCode: LanguageCode.de,
-        resultCount: 3,
-        createdAt: recent,
-        updatedAt: recent,
-      },
-      {
-        channelId: ctx.channelId,
-        term: 'aggregate-banana',
-        languageCode: LanguageCode.en,
-        resultCount: 9,
-        createdAt: recent,
-        updatedAt: recent,
-      },
-      {
-        channelId: 876543,
-        term: 'aggregate-apple',
-        languageCode: LanguageCode.en,
-        resultCount: 100,
-        createdAt: recent,
-        updatedAt: recent,
-      },
-    ]);
-    const variables = {
-      options: { filter: { term: { contains: 'aggregate-' } } },
-    };
-    const response = await adminClient.query(SEARCH_LOG_AGGREGATES, variables);
-    expect(response.searchLogAggregates.totalItems).toBe(2);
-    expect(response.searchLogAggregates.items[0]).toMatchObject({
-      term: 'aggregate-apple',
-      searchCount: 2,
-      resultCount: 3,
-      languageCode: 'de',
-      lastSearchedAt: recent.toISOString(),
-    });
-    const cached = await adminClient.query(SEARCH_LOG_AGGREGATES, variables);
-    expect(cached).toEqual(response);
-    const sorted = await adminClient.query(SEARCH_LOG_AGGREGATES, {
-      options: { ...variables.options, sort: { resultCount: 'DESC' } },
-    });
-    expect(sorted.searchLogAggregates.items[0].term).toBe('aggregate-banana');
-    const boolean = await adminClient.query(SEARCH_LOG_AGGREGATES, {
-      options: {
-        filter: {
-          _and: [
-            variables.options.filter,
-            { _or: [{ resultCount: { lt: 5 } }, { searchCount: { gt: 10 } }] },
-          ],
-        },
-      },
-    });
-    expect(boolean.searchLogAggregates.totalItems).toBe(1);
-    const literal = await adminClient.query(SEARCH_LOG_AGGREGATES, {
-      options: { filter: { term: { contains: '%_' } } },
-    });
-    expect(literal.searchLogAggregates.totalItems).toBe(0);
-    const filtered = await adminClient.query(SEARCH_LOG_AGGREGATES, {
-      options: {
-        filter: { term: { contains: 'aggregate-' }, resultCount: { lt: 5 } },
-      },
-    });
-    expect(filtered.searchLogAggregates.totalItems).toBe(1);
-    expect(filtered.searchLogAggregates.items[0].searchCount).toBe(2);
-    const dated = await adminClient.query(SEARCH_LOG_AGGREGATES, {
-      options: {
-        filter: {
-          term: { eq: 'aggregate-apple' },
-          lastSearchedAt: { before: recent.toISOString() },
-        },
-      },
-    });
-    expect(dated.searchLogAggregates.items[0]).toMatchObject({
-      searchCount: 1,
-      resultCount: 20,
-      languageCode: 'en',
-    });
-    const page = await adminClient.query(SEARCH_LOG_AGGREGATES, {
-      options: { ...variables.options, skip: 1, take: 1 },
-    });
-    expect(page.searchLogAggregates.totalItems).toBe(2);
-    expect(page.searchLogAggregates.items[0].term).toBe('aggregate-banana');
-    const empty = await adminClient.query(SEARCH_LOG_AGGREGATES, {
-      options: { ...variables.options, skip: 99 },
-    });
-    expect(empty.searchLogAggregates).toEqual({ totalItems: 2, items: [] });
-    await expect(
-      shopClient.query(SEARCH_LOG_AGGREGATES, variables)
-    ).rejects.toThrow();
-    await adminClient.asAnonymousUser();
-    try {
-      await expect(
-        adminClient.query(SEARCH_LOG_AGGREGATES, variables)
-      ).rejects.toThrow();
-    } finally {
-      await adminClient.asSuperAdmin();
-    }
-    await repository.insert({
-      channelId: ctx.channelId,
-      term: 'aggregate-apple',
-      languageCode: LanguageCode.en,
-      resultCount: 1,
-      createdAt: recent,
-      updatedAt: recent,
-    });
-    const tied = await adminClient.query(SEARCH_LOG_AGGREGATES, {
-      options: { filter: { term: { eq: 'aggregate-apple' } } },
-    });
-    expect(tied.searchLogAggregates.items[0]).toMatchObject({
-      searchCount: 3,
-      resultCount: 1,
-      languageCode: 'en',
-      id: response.searchLogAggregates.items[0].id,
-    });
-    expect(await adminClient.query(SEARCH_LOG_AGGREGATES, variables)).toEqual(
-      response
-    );
-    const service = server.app.get(SearchLogAggregationService);
-    const otherCtx = await server.app
-      .get(RequestContextService)
-      .create({ apiType: 'admin', channelOrToken: 'e2e-default-channel' });
-    Object.defineProperty(otherCtx, 'channelId', { value: 876543 });
-    const other = await service.findAll(otherCtx, variables.options);
-    expect(other.items[0].searchCount).toBe(1);
-    expect(other.items[0].resultCount).toBe(100);
-    await repository.delete({ term: 'aggregate-apple' });
-    await repository.delete({ term: 'aggregate-banana' });
-  });
-});
-
-describe('Stores search events', () => {
-  it('stores normalized shop terms and totals even for empty pagination pages', async () => {
-    const repository = server.app
-      .get(TransactionalConnection)
-      .getRepository(BetterSearchLog);
-    const term = '  APPLE  ';
-    const result = (await shopClient.query(SEARCH_QUERY, {
-      input: { term, skip: 10000, take: 1 },
-    })) as { search: { totalItems: number } };
-    await vi.waitFor(async () => {
-      const row = await repository.findOne({
-        where: { term: 'apple', resultCount: result.search.totalItems },
-      });
-      expect(row).not.toBeNull();
-    });
-  });
-
-  it('stores zero results and excludes admin, suggestions, and short terms', async () => {
-    const repository = server.app
-      .get(TransactionalConnection)
-      .getRepository(BetterSearchLog);
-    await shopClient.query(SEARCH_QUERY, {
-      input: { term: 'zzzzzzzzzzzzzzzzzzzzzzzz' },
-    });
-    await vi.waitFor(async () =>
-      expect(
-        await repository.findOne({
-          where: { term: 'zzzzzzzzzzzzzzzzzzzzzzzz', resultCount: 0 },
-        })
-      ).not.toBeNull()
-    );
-    await adminClient.query(SEARCH_QUERY, {
-      input: { term: 'log-admin-only' },
-    });
-    await shopClient.query(SEARCH_SUGGESTIONS_QUERY, {
-      term: 'log-suggestion-only',
-    });
-    await shopClient.query(SEARCH_QUERY, { input: { term: 'ab' } });
-    expect(
-      await repository.count({
-        where: [
-          { term: 'log-admin-only' },
-          { term: 'log-suggestion-only' },
-          { term: 'ab' },
-        ],
-      })
-    ).toBe(0);
-  });
-
-  it('retains newest logs per channel across languages and clears disabled history', async () => {
-    const connection = server.app.get(TransactionalConnection);
-    const repository = connection.getRepository(BetterSearchLog);
-    const channelId = 987654;
-    const time = new Date('2020-01-01T00:00:00Z');
-    await repository.insert(
-      [0, 1, 2, 3].map((i) => ({
-        channelId,
-        term: `cleanup-${i}`,
-        resultCount: i,
-        languageCode: i % 2 ? LanguageCode.de : LanguageCode.en,
-        createdAt: time,
-        updatedAt: time,
-      }))
-    );
-    const cleanup = new SearchLogService(connection, { maxLogsPerChannel: 2 });
-    await cleanup.cleanup();
-    expect(await repository.count({ where: { channelId } })).toBe(2);
-    await new SearchLogService(connection, {
-      maxLogsPerChannel: false,
-    }).cleanup();
-    expect(await repository.count()).toBe(0);
-  });
-});
-
-it('Started the server', () => {
-  expect(server.app.getHttpServer()).toBeDefined();
-});
 
 describe('Relevance', () => {
   /**
@@ -504,6 +278,7 @@ describe('Pagination', () => {
     const result = await shopClient.query<SearchQueryResult>(SEARCH_QUERY, {
       input: { term: 'apple', groupByProduct: true, take: 1 },
     });
+    await expectSearchPrices(result.search.items);
     const asset = result.search.items[0]?.productAsset;
 
     expect(asset).toMatchObject({ id: expect.any(String) });
@@ -517,6 +292,8 @@ describe('Pagination', () => {
     const secondPage = await shopClient.query<SearchQueryResult>(SEARCH_QUERY, {
       input: { term: 'ap', groupByProduct: true, skip: 3, take: 3 },
     });
+    await expectSearchPrices(firstPage.search.items);
+    await expectSearchPrices(secondPage.search.items);
     const firstProductIds = firstPage.search.items.map(
       (item) => item.productId
     );
@@ -532,138 +309,6 @@ describe('Pagination', () => {
     expect(secondProductIds.every((id) => !firstProductIds.includes(id))).toBe(
       true
     );
-  });
-});
-
-describe('Admin search compatibility', () => {
-  it('supports search and index-status operations without DefaultSearchPlugin', async () => {
-    await adminClient.asSuperAdmin();
-    const result = await adminClient.query<{
-      pendingSearchIndexUpdates: number;
-      search: {
-        totalItems: number;
-        items: SearchResultItem[];
-        facetValues: unknown[];
-        collections: unknown[];
-      };
-    }>(ADMIN_SEARCH_COMPATIBILITY);
-    expect(result.pendingSearchIndexUpdates).toBe(0);
-    expect(result.search.totalItems).toBeGreaterThan(0);
-    expect(result.search.items.length).toBeGreaterThan(0);
-    expect(result.search.facetValues).toEqual([]);
-    expect(result.search.collections).toEqual([]);
-    const flush = await adminClient.query<{
-      runPendingSearchIndexUpdates: { success: boolean };
-    }>(RUN_PENDING_SEARCH_UPDATES);
-    expect(flush.runPendingSearchIndexUpdates.success).toBe(true);
-  });
-});
-
-describe('Manual reindexing', () => {
-  it('queues a full reindex through the standard Admin API mutation', async () => {
-    await adminClient.asSuperAdmin();
-    let completed = false;
-    const subscription = server.app
-      .get(EventBus)
-      .ofType(BetterSearchIndexEvent)
-      .subscribe((event) => {
-        if (
-          event.type === 'full' &&
-          event.ctx.channel.token === 'e2e-default-channel'
-        ) {
-          completed = true;
-        }
-      });
-
-    try {
-      const result = (await adminClient.query(REINDEX)) as {
-        reindex: { id: string; state: string; queueName: string };
-      };
-      expect(result.reindex.id).toBeTruthy();
-      expect(result.reindex.queueName).toBe('better-search-index');
-
-      await waitFor(() => completed || undefined, 100, 10000);
-    } finally {
-      subscription.unsubscribe();
-    }
-  });
-});
-
-describe('Partial reindexing', () => {
-  it('indexes two products updated by concurrent mutations', async () => {
-    await adminClient.asSuperAdmin();
-    const productsResult = (await adminClient.query(GET_PRODUCTS)) as {
-      products: { items: Array<{ id: string; slug: string; name: string }> };
-    };
-    const products = ['apple-repeated', 'apple-banana-orange'].map((slug) => {
-      const product = productsResult.products.items.find(
-        (item) => item.slug === slug
-      );
-      expect(product).toBeDefined();
-      return product!;
-    });
-
-    await Promise.all(
-      products.map((product, index) =>
-        adminClient.query(UPDATE_PRODUCT, {
-          input: {
-            id: product.id,
-            translations: [
-              {
-                languageCode: LanguageCode.en,
-                name: `Concurrent Reindex Product ${index + 1}`,
-                slug: product.slug,
-                description: `Concurrent partial reindex test product ${
-                  index + 1
-                }.`,
-              },
-            ],
-          },
-        })
-      )
-    );
-
-    const result = await waitFor(
-      async () => {
-        const response = (await shopClient.query(SEARCH_QUERY, {
-          input: { term: 'Concurrent Reindex Product' },
-        })) as { search: { items: SearchResultItem[] } };
-        const resultIds = new Set(
-          response.search.items.map((item) => item.productId)
-        );
-        return products.every((product) => resultIds.has(product.id))
-          ? response.search.items.filter((item) =>
-              products.some((product) => product.id === item.productId)
-            )
-          : undefined;
-      },
-      100,
-      10000
-    );
-
-    expect(result).toHaveLength(2);
-    expect(result.map((item) => item.productName).sort()).toEqual([
-      'Concurrent Reindex Product 1',
-      'Concurrent Reindex Product 2',
-    ]);
-  });
-});
-
-describe('inspectSearchIndex', () => {
-  beforeAll(async () => {
-    await adminClient.asSuperAdmin();
-  });
-
-  it('returns stored documents with expected fields', async () => {
-    const result = await adminClient.query(INSPECT_SEARCH_INDEX);
-    const data = (
-      result as unknown as { inspectSearchIndex: Record<string, unknown>[] }
-    ).inspectSearchIndex;
-    expect(Array.isArray(data)).toBe(true);
-    expect(data.length).toBeGreaterThan(0);
-    expect(data[0]).toHaveProperty('id');
-    expect(data[0]).toHaveProperty('sku');
-    expect(data[0]).toHaveProperty('productName');
   });
 });
 
@@ -688,6 +333,11 @@ describe('Multi-channel and multi-language', () => {
   let secondChannelId: string;
   let secondChannelToken: string;
   let appleProductId: string;
+
+  afterAll(() => {
+    adminClient.setChannelToken('e2e-default-channel');
+    shopClient.setChannelToken('e2e-default-channel');
+  });
 
   beforeAll(async () => {
     await adminClient.asSuperAdmin();
@@ -754,6 +404,7 @@ describe('Multi-channel and multi-language', () => {
     })) as { search: { totalItems: number; items: SearchResultItem[] } };
     expect(searchResult.search.totalItems).toBeGreaterThan(0);
     expect(searchResult.search.items[0].slug).toBe('apple');
+    await expectSearchPrices(searchResult.search.items);
 
     const indexResult = await adminClient.query(INSPECT_INDEX, {
       skip: 0,
@@ -903,12 +554,396 @@ describe('Multi-channel and multi-language', () => {
   });
 });
 
+describe('Partial reindexing', () => {
+  it('indexes two products updated by concurrent mutations', async () => {
+    await adminClient.asSuperAdmin();
+    const productsResult = (await adminClient.query(GET_PRODUCTS)) as {
+      products: { items: Array<{ id: string; slug: string; name: string }> };
+    };
+    const products = ['apple-repeated', 'apple-banana-orange'].map((slug) => {
+      const product = productsResult.products.items.find(
+        (item) => item.slug === slug
+      );
+      expect(product).toBeDefined();
+      return product!;
+    });
+
+    await Promise.all(
+      products.map((product, index) =>
+        adminClient.query(UPDATE_PRODUCT, {
+          input: {
+            id: product.id,
+            translations: [
+              {
+                languageCode: LanguageCode.en,
+                name: `Concurrent Reindex Product ${index + 1}`,
+                slug: product.slug,
+                description: `Concurrent partial reindex test product ${
+                  index + 1
+                }.`,
+              },
+            ],
+          },
+        })
+      )
+    );
+
+    const result = await waitFor(
+      async () => {
+        const response = (await shopClient.query(SEARCH_QUERY, {
+          input: { term: 'Concurrent Reindex Product' },
+        })) as { search: { items: SearchResultItem[] } };
+        const resultIds = new Set(
+          response.search.items.map((item) => item.productId)
+        );
+        return products.every((product) => resultIds.has(product.id))
+          ? response.search.items.filter((item) =>
+              products.some((product) => product.id === item.productId)
+            )
+          : undefined;
+      },
+      100,
+      10000
+    );
+
+    expect(result).toHaveLength(2);
+    await expectSearchPrices(result);
+    expect(result.map((item) => item.productName).sort()).toEqual([
+      'Concurrent Reindex Product 1',
+      'Concurrent Reindex Product 2',
+    ]);
+  });
+});
+
+describe('Manual reindexing', () => {
+  it('queues a full reindex through the standard Admin API mutation', async () => {
+    await adminClient.asSuperAdmin();
+    let completed = false;
+    const subscription = server.app
+      .get(EventBus)
+      .ofType(BetterSearchIndexEvent)
+      .subscribe((event) => {
+        if (
+          event.type === 'full' &&
+          event.ctx.channel.token === 'e2e-default-channel'
+        ) {
+          completed = true;
+        }
+      });
+
+    try {
+      const result = (await adminClient.query(REINDEX)) as {
+        reindex: { id: string; state: string; queueName: string };
+      };
+      expect(result.reindex.id).toBeTruthy();
+      expect(result.reindex.queueName).toBe('better-search-index');
+
+      await waitFor(() => completed || undefined, 100, 10000);
+      const { items } = await search('nike');
+      expect(items.length).toBeGreaterThan(0);
+    } finally {
+      subscription.unsubscribe();
+    }
+  });
+});
+
+describe('Admin search compatibility', () => {
+  it('supports search and index-status operations without DefaultSearchPlugin', async () => {
+    await adminClient.asSuperAdmin();
+    const result = await adminClient.query<{
+      pendingSearchIndexUpdates: number;
+      search: {
+        totalItems: number;
+        items: SearchResultItem[];
+        facetValues: unknown[];
+        collections: unknown[];
+      };
+    }>(ADMIN_SEARCH_COMPATIBILITY);
+    expect(result.pendingSearchIndexUpdates).toBe(0);
+    expect(result.search.totalItems).toBeGreaterThan(0);
+    expect(result.search.items.length).toBeGreaterThan(0);
+    expect(result.search.facetValues).toEqual([]);
+    expect(result.search.collections).toEqual([]);
+    const flush = await adminClient.query<{
+      runPendingSearchIndexUpdates: { success: boolean };
+    }>(RUN_PENDING_SEARCH_UPDATES);
+    expect(flush.runPendingSearchIndexUpdates.success).toBe(true);
+  });
+});
+
+describe('inspectSearchIndex', () => {
+  beforeAll(async () => {
+    await adminClient.asSuperAdmin();
+  });
+
+  it('returns stored documents with expected fields', async () => {
+    const result = await adminClient.query(INSPECT_SEARCH_INDEX);
+    const data = (
+      result as unknown as { inspectSearchIndex: Record<string, unknown>[] }
+    ).inspectSearchIndex;
+    expect(Array.isArray(data)).toBe(true);
+    expect(data.length).toBeGreaterThan(0);
+    expect(data[0]).toHaveProperty('id');
+    expect(data[0]).toHaveProperty('sku');
+    expect(data[0]).toHaveProperty('productName');
+  });
+});
+
+it('Started the server', () => {
+  expect(server.app.getHttpServer()).toBeDefined();
+});
+
+describe('Stores search events', () => {
+  it('stores normalized shop terms and totals even for empty pagination pages', async () => {
+    const repository = server.app
+      .get(TransactionalConnection)
+      .getRepository(BetterSearchLog);
+    const term = '  APPLE  ';
+    const result = (await shopClient.query(SEARCH_QUERY, {
+      input: { term, skip: 10000, take: 1 },
+    })) as { search: { totalItems: number } };
+    await vi.waitFor(async () => {
+      const row = await repository.findOne({
+        where: { term: 'apple', resultCount: result.search.totalItems },
+      });
+      expect(row).not.toBeNull();
+    });
+  });
+
+  it('stores zero results and excludes admin, suggestions, and short terms', async () => {
+    const repository = server.app
+      .get(TransactionalConnection)
+      .getRepository(BetterSearchLog);
+    await shopClient.query(SEARCH_QUERY, {
+      input: { term: 'zzzzzzzzzzzzzzzzzzzzzzzz' },
+    });
+    await vi.waitFor(async () =>
+      expect(
+        await repository.findOne({
+          where: { term: 'zzzzzzzzzzzzzzzzzzzzzzzz', resultCount: 0 },
+        })
+      ).not.toBeNull()
+    );
+    await adminClient.query(SEARCH_QUERY, {
+      input: { term: 'log-admin-only' },
+    });
+    await shopClient.query(SEARCH_SUGGESTIONS_QUERY, {
+      term: 'log-suggestion-only',
+    });
+    await shopClient.query(SEARCH_QUERY, { input: { term: 'ab' } });
+    expect(
+      await repository.count({
+        where: [
+          { term: 'log-admin-only' },
+          { term: 'log-suggestion-only' },
+          { term: 'ab' },
+        ],
+      })
+    ).toBe(0);
+  });
+
+  it('retains newest logs per channel across languages and clears disabled history', async () => {
+    const connection = server.app.get(TransactionalConnection);
+    const repository = connection.getRepository(BetterSearchLog);
+    const channelId = 987654;
+    const time = new Date('2020-01-01T00:00:00Z');
+    await repository.insert(
+      [0, 1, 2, 3].map((i) => ({
+        channelId,
+        term: `cleanup-${i}`,
+        resultCount: i,
+        languageCode: i % 2 ? LanguageCode.de : LanguageCode.en,
+        createdAt: time,
+        updatedAt: time,
+      }))
+    );
+    const cleanup = new SearchLogService(connection, { maxLogsPerChannel: 2 });
+    await cleanup.cleanup();
+    expect(await repository.count({ where: { channelId } })).toBe(2);
+    await new SearchLogService(connection, {
+      maxLogsPerChannel: false,
+    }).cleanup();
+    expect(await repository.count()).toBe(0);
+  });
+});
+
+describe('Search log aggregates', () => {
+  it('aggregates languages, selects latest counts, and supports standard list options', async () => {
+    const repository = server.app
+      .get(TransactionalConnection)
+      .getRepository(BetterSearchLog);
+    const ctx = await server.app
+      .get(RequestContextService)
+      .create({ apiType: 'admin', channelOrToken: 'e2e-default-channel' });
+    const old = new Date('2021-01-01T00:00:00Z');
+    const recent = new Date('2021-01-02T00:00:00Z');
+    await repository.insert([
+      {
+        channelId: ctx.channelId,
+        term: 'aggregate-apple',
+        languageCode: LanguageCode.en,
+        resultCount: 20,
+        createdAt: old,
+        updatedAt: old,
+      },
+      {
+        channelId: ctx.channelId,
+        term: 'aggregate-apple',
+        languageCode: LanguageCode.de,
+        resultCount: 3,
+        createdAt: recent,
+        updatedAt: recent,
+      },
+      {
+        channelId: ctx.channelId,
+        term: 'aggregate-banana',
+        languageCode: LanguageCode.en,
+        resultCount: 9,
+        createdAt: recent,
+        updatedAt: recent,
+      },
+      {
+        channelId: 876543,
+        term: 'aggregate-apple',
+        languageCode: LanguageCode.en,
+        resultCount: 100,
+        createdAt: recent,
+        updatedAt: recent,
+      },
+    ]);
+    const variables = {
+      options: { filter: { term: { contains: 'aggregate-' } } },
+    };
+    const response = await adminClient.query(SEARCH_LOG_AGGREGATES, variables);
+    expect(response.searchLogAggregates.totalItems).toBe(2);
+    expect(response.searchLogAggregates.items[0]).toMatchObject({
+      term: 'aggregate-apple',
+      searchCount: 2,
+      resultCount: 3,
+      languageCode: 'de',
+      lastSearchedAt: recent.toISOString(),
+    });
+    const cached = await adminClient.query(SEARCH_LOG_AGGREGATES, variables);
+    expect(cached).toEqual(response);
+    const sorted = await adminClient.query(SEARCH_LOG_AGGREGATES, {
+      options: { ...variables.options, sort: { resultCount: 'DESC' } },
+    });
+    expect(sorted.searchLogAggregates.items[0].term).toBe('aggregate-banana');
+    const boolean = await adminClient.query(SEARCH_LOG_AGGREGATES, {
+      options: {
+        filter: {
+          _and: [
+            variables.options.filter,
+            { _or: [{ resultCount: { lt: 5 } }, { searchCount: { gt: 10 } }] },
+          ],
+        },
+      },
+    });
+    expect(boolean.searchLogAggregates.totalItems).toBe(1);
+    const literal = await adminClient.query(SEARCH_LOG_AGGREGATES, {
+      options: { filter: { term: { contains: '%_' } } },
+    });
+    expect(literal.searchLogAggregates.totalItems).toBe(0);
+    const filtered = await adminClient.query(SEARCH_LOG_AGGREGATES, {
+      options: {
+        filter: { term: { contains: 'aggregate-' }, resultCount: { lt: 5 } },
+      },
+    });
+    expect(filtered.searchLogAggregates.totalItems).toBe(1);
+    expect(filtered.searchLogAggregates.items[0].searchCount).toBe(2);
+    const dated = await adminClient.query(SEARCH_LOG_AGGREGATES, {
+      options: {
+        filter: {
+          term: { eq: 'aggregate-apple' },
+          lastSearchedAt: { before: recent.toISOString() },
+        },
+      },
+    });
+    expect(dated.searchLogAggregates.items[0]).toMatchObject({
+      searchCount: 1,
+      resultCount: 20,
+      languageCode: 'en',
+    });
+    const page = await adminClient.query(SEARCH_LOG_AGGREGATES, {
+      options: { ...variables.options, skip: 1, take: 1 },
+    });
+    expect(page.searchLogAggregates.totalItems).toBe(2);
+    expect(page.searchLogAggregates.items[0].term).toBe('aggregate-banana');
+    const empty = await adminClient.query(SEARCH_LOG_AGGREGATES, {
+      options: { ...variables.options, skip: 99 },
+    });
+    expect(empty.searchLogAggregates).toEqual({ totalItems: 2, items: [] });
+    await expect(
+      shopClient.query(SEARCH_LOG_AGGREGATES, variables)
+    ).rejects.toThrow();
+    await adminClient.asAnonymousUser();
+    try {
+      await expect(
+        adminClient.query(SEARCH_LOG_AGGREGATES, variables)
+      ).rejects.toThrow();
+    } finally {
+      await adminClient.asSuperAdmin();
+    }
+    await repository.insert({
+      channelId: ctx.channelId,
+      term: 'aggregate-apple',
+      languageCode: LanguageCode.en,
+      resultCount: 1,
+      createdAt: recent,
+      updatedAt: recent,
+    });
+    const tied = await adminClient.query(SEARCH_LOG_AGGREGATES, {
+      options: { filter: { term: { eq: 'aggregate-apple' } } },
+    });
+    expect(tied.searchLogAggregates.items[0]).toMatchObject({
+      searchCount: 3,
+      resultCount: 1,
+      languageCode: 'en',
+      id: response.searchLogAggregates.items[0].id,
+    });
+    expect(await adminClient.query(SEARCH_LOG_AGGREGATES, variables)).toEqual(
+      response
+    );
+    const service = server.app.get(SearchLogAggregationService);
+    const otherCtx = await server.app
+      .get(RequestContextService)
+      .create({ apiType: 'admin', channelOrToken: 'e2e-default-channel' });
+    Object.defineProperty(otherCtx, 'channelId', { value: 876543 });
+    const other = await service.findAll(otherCtx, variables.options);
+    expect(other.items[0].searchCount).toBe(1);
+    expect(other.items[0].resultCount).toBe(100);
+    await repository.delete({ term: 'aggregate-apple' });
+    await repository.delete({ term: 'aggregate-banana' });
+  });
+});
+
+/** Validates indexed ranges against prices resolved by the storefront in the same channel. */
+async function expectSearchPrices(items: SearchResultItem[]): Promise<void> {
+  for (const item of items) {
+    const { product } = await shopClient.query<{
+      product: { variants: Array<{ price: number; priceWithTax: number }> };
+    }>(PRODUCT_PRICES, { slug: item.slug });
+    expect(product.variants.length).toBeGreaterThan(0);
+    expect(product.variants.every((variant) => variant.price > 0)).toBe(true);
+    expect(item.price).toEqual({
+      min: Math.min(...product.variants.map((variant) => variant.price)),
+      max: Math.max(...product.variants.map((variant) => variant.price)),
+    });
+    expect(item.priceWithTax).toEqual({
+      min: Math.min(...product.variants.map((variant) => variant.priceWithTax)),
+      max: Math.max(...product.variants.map((variant) => variant.priceWithTax)),
+    });
+  }
+}
+
+/** Searches the fixture catalog and validates prices alongside relevance. */
 async function search(query: string): Promise<{ items: SearchResultItem[] }> {
   const result = await shopClient.query(SEARCH_QUERY, {
     input: { term: query },
   });
   const items = (result as { search: { items: SearchResultItem[] } }).search
     .items;
+  await expectSearchPrices(items);
   return { items };
 }
 
@@ -950,6 +985,19 @@ const SEARCH_LOG_AGGREGATES = gql`
         resultCount
         languageCode
         lastSearchedAt
+      }
+    }
+  }
+`;
+
+const PRODUCT_PRICES = gql`
+  query ProductPrices($slug: String!) {
+    product(slug: $slug) {
+      id
+      variants {
+        id
+        price
+        priceWithTax
       }
     }
   }

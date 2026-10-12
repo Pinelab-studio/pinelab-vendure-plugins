@@ -1,5 +1,6 @@
 import {
   Channel,
+  CurrencyCode,
   ConfigService,
   ImportParser,
   LanguageCode,
@@ -18,6 +19,7 @@ import { resolve } from 'node:path';
 import { IndexService } from './index.service';
 import { BetterSearchDocument, IndexJobData } from '../types';
 import { SearchService } from './search.service';
+import { MinisearchEngine } from '../config/minisearch-engine';
 
 const mockSearch = vi.fn();
 const mockSerialize = vi.fn().mockReturnValue('serialized-data');
@@ -106,6 +108,154 @@ describe('IndexService', () => {
         } as unknown as EventBus)
     );
   }
+
+  describe('indexed prices', () => {
+    /** Creates a channel context with a known default currency. */
+    function pricingContext(): RequestContext {
+      return new RequestContext({
+        apiType: 'admin',
+        isAuthorized: true,
+        authorizedAsOwnerOnly: false,
+        languageCode: LanguageCode.en,
+        channel: new Channel({
+          id: 'channel-1',
+          token: 'pricing-channel',
+          defaultCurrencyCode: CurrencyCode.EUR,
+          availableLanguageCodes: [LanguageCode.en],
+        }),
+      });
+    }
+
+    it('hydrates full rebuild prices, retaining returned variants and free prices', async () => {
+      const ctx = pricingContext();
+      const product = new Product({
+        id: 'p',
+        variants: [
+          { id: 'paid', price: 0 } as ProductVariant,
+          { id: 'free', price: 0 } as ProductVariant,
+        ],
+      });
+      const findAll = vi.fn().mockResolvedValue({ items: [product] });
+      const applyChannelPriceAndTax = vi
+        .fn()
+        .mockImplementation(async (variant) => ({
+          ...variant,
+          price: variant.id === 'paid' ? 1000 : 0,
+          priceWithTax: variant.id === 'paid' ? 1200 : 0,
+        }));
+      const service = createService({
+        productService: { findAll } as unknown as ProductService,
+        productVariantService: { applyChannelPriceAndTax },
+        eventBus: {
+          publish: vi.fn().mockResolvedValue(undefined),
+        } as unknown as EventBus,
+      });
+      await service.buildIndex(ctx);
+      expect(applyChannelPriceAndTax).toHaveBeenCalledTimes(2);
+      expect(applyChannelPriceAndTax.mock.calls[0][1].channelId).toBe(
+        ctx.channelId
+      );
+      expect(applyChannelPriceAndTax.mock.calls[0][1].currencyCode).toBe(
+        ctx.currencyCode
+      );
+      expect(findAll.mock.calls[0][2]).toEqual(
+        expect.arrayContaining([
+          'variants.productVariantPrices',
+          'variants.taxCategory',
+        ])
+      );
+      expect(mockSearchEngine.createIndex).toHaveBeenLastCalledWith(
+        expect.any(RequestContext),
+        [
+          expect.objectContaining({ price: 1000, priceWithTax: 1200, product }),
+          expect.objectContaining({ price: 0, priceWithTax: 0, product }),
+        ]
+      );
+      product.translations = [
+        {
+          languageCode: LanguageCode.en,
+          name: 'Nike',
+          slug: 'nike',
+          description: '',
+        },
+      ] as any;
+      const engine = new MinisearchEngine();
+      const index = await engine.createIndex(
+        ctx,
+        mockSearchEngine.createIndex.mock.calls.at(-1)![1]
+      );
+      const reloaded = engine.deserializeIndex(engine.serializeIndex(index));
+      const results = await engine.search(ctx, reloaded, 'nike');
+      expect(
+        results.map((document) => document.lowestPrice).sort((a, b) => a - b)
+      ).toEqual([0, 1000]);
+      expect(
+        results
+          .map((document) => document.lowestPriceWithTax)
+          .sort((a, b) => a - b)
+      ).toEqual([0, 1200]);
+    });
+
+    it.each(['product', 'variant'])(
+      'retains hydrated prices on partial %s updates',
+      async (path) => {
+        const ctx = pricingContext();
+        const product = new Product({
+          id: 'p',
+          enabled: true,
+          channels: [ctx.channel],
+        });
+        const variant = new ProductVariant({
+          id: 'v',
+          productId: 'p',
+          enabled: true,
+          channels: [ctx.channel],
+          product,
+        });
+        const pricedVariant = {
+          ...variant,
+          price: 2000,
+          priceWithTax: 2400,
+        } as ProductVariant;
+        product.variants = [variant];
+        const applyChannelPriceAndTax = vi
+          .fn()
+          .mockResolvedValue(pricedVariant);
+        const findOne = vi.fn().mockResolvedValue(pricedVariant);
+        const service = createService({
+          connection: createMockRepository({
+            findOne: vi.fn().mockResolvedValue({ data: 'stored' }),
+          }),
+          productService: {
+            findOne: vi.fn().mockResolvedValue(product),
+          } as unknown as ProductService,
+          productVariantService: { applyChannelPriceAndTax, findOne },
+          eventBus: {
+            publish: vi.fn().mockResolvedValue(undefined),
+          } as unknown as EventBus,
+        });
+        await service.updateIndex(ctx, {
+          type: 'partial',
+          ctx: ctx.serialize(),
+          updateProductIds: path === 'product' ? ['p'] : [],
+          updateVariantIds: path === 'variant' ? ['v'] : [],
+          removeProductIds: [],
+          removeVariantIds: [],
+        });
+        expect(mockUpdateDocuments).toHaveBeenLastCalledWith(
+          ctx,
+          expect.anything(),
+          [pricedVariant]
+        );
+        if (path === 'product') {
+          expect(applyChannelPriceAndTax).toHaveBeenCalledWith(variant, ctx);
+          return;
+        }
+        expect(findOne).toHaveBeenCalledWith(ctx, 'v', expect.any(Array));
+        expect(applyChannelPriceAndTax).not.toHaveBeenCalled();
+      }
+    );
+  });
 
   describe('serialized index size logging', () => {
     it('logs MB per index and totals, replacing previous sizes without rereading all data', async () => {
