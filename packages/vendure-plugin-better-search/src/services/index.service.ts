@@ -305,7 +305,7 @@ export class IndexService implements OnModuleInit, OnApplicationBootstrap {
   private async buildMissingIndexes(): Promise<void> {
     const channels = await this.connection.rawConnection
       .getRepository(Channel)
-      .find();
+      .find({ relations: ['defaultTaxZone', 'defaultShippingZone'] });
     for (const channel of channels) {
       const ctx = new RequestContext({
         isAuthorized: true,
@@ -365,7 +365,7 @@ export class IndexService implements OnModuleInit, OnApplicationBootstrap {
   async triggerReindexForAllChannels(): Promise<void> {
     const channels = await this.connection.rawConnection
       .getRepository(Channel)
-      .find();
+      .find({ relations: ['defaultTaxZone', 'defaultShippingZone'] });
 
     for (const channel of channels) {
       const channelCtx = new RequestContext({

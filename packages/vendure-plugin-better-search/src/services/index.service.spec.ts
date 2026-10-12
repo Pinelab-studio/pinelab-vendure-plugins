@@ -132,6 +132,54 @@ describe('IndexService', () => {
     );
   }
 
+  describe('reindex tax zone context', () => {
+    it.each(['initial', 'scheduled'])(
+      'loads the default tax zone for %s indexing and preserves it in queued contexts',
+      async (source) => {
+        const defaultTaxZone = { id: 'tax-zone', name: 'Netherlands' };
+        const findChannels = vi.fn().mockImplementation(async (options) => {
+          const loaded = options?.relations?.includes('defaultTaxZone');
+          return [
+            new Channel({
+              id: 'channel-1',
+              token: 'retail',
+              availableLanguageCodes: ['nl', 'fr'] as any,
+              defaultLanguageCode: 'nl' as any,
+              defaultCurrencyCode: 'EUR' as any,
+              defaultTaxZone: loaded ? (defaultTaxZone as any) : undefined,
+            }),
+          ];
+        });
+        const connection = createMockRepository();
+        (connection.rawConnection.getRepository as any).mockReturnValue({
+          find: findChannels,
+        });
+        const service = createService({ connection });
+        const reindex = vi
+          .spyOn(service, 'triggerReindex')
+          .mockResolvedValue({} as any);
+
+        if (source === 'initial') {
+          await (service as any).buildMissingIndexes();
+        } else {
+          await service.triggerReindexForAllChannels();
+        }
+
+        expect(findChannels).toHaveBeenCalledWith({
+          relations: ['defaultTaxZone', 'defaultShippingZone'],
+        });
+        expect(reindex).toHaveBeenCalledTimes(2);
+        for (const [ctx] of reindex.mock.calls) {
+          const workerCtx = RequestContext.deserialize(ctx.serialize());
+          expect(workerCtx.channel.defaultTaxZone).toMatchObject(
+            defaultTaxZone
+          );
+          expect(workerCtx.languageCode).toBe(ctx.languageCode);
+        }
+      }
+    );
+  });
+
   describe('mapped asset URLs', () => {
     it.each([
       'http://example.com/image.jpg',
