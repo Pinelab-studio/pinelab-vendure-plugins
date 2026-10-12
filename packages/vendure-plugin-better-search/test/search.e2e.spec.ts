@@ -346,6 +346,37 @@ describe('searchSuggestions', () => {
     expect(result.searchSuggestions[0]).toHaveProperty('suggestion');
     expect(result.searchSuggestions[0].suggestion).toBeTruthy();
   });
+
+  it('suggests matching terms that can be used to search the catalog', async () => {
+    const { searchSuggestions } = await shopClient.query<{
+      searchSuggestions: { suggestion: string }[];
+    }>(SEARCH_SUGGESTIONS_QUERY, { term: 'appl' });
+    const suggestions = searchSuggestions.map((item) => item.suggestion);
+    expect(suggestions).toContain('apple');
+    expect(new Set(suggestions).size).toBe(suggestions.length);
+    expect(suggestions.length).toBeLessThanOrEqual(10);
+    const { items } = await search('apple');
+    expect(items.some((item) => item.slug === 'apple')).toBe(true);
+  });
+
+  it('suggests terms from plugin-configured custom indexed fields', async () => {
+    const { searchSuggestions } = await shopClient.query<{
+      searchSuggestions: { suggestion: string }[];
+    }>(SEARCH_SUGGESTIONS_QUERY, { term: 'somestringthatis' });
+    expect(searchSuggestions.map((item) => item.suggestion)).toContain(
+      'somestringthatisunique'
+    );
+  });
+
+  it.each(['', 'a', 'zzzzzzzzzzzzzzzzzzzzzzzz'])(
+    'returns no suggestions for %j',
+    async (term) => {
+      const result = await shopClient.query<{
+        searchSuggestions: { suggestion: string }[];
+      }>(SEARCH_SUGGESTIONS_QUERY, { term });
+      expect(result.searchSuggestions).toEqual([]);
+    }
+  );
 });
 
 describe('Multi-channel and multi-language', () => {

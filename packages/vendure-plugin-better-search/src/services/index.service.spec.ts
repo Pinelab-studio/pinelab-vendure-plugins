@@ -132,6 +132,65 @@ describe('IndexService', () => {
     );
   }
 
+  describe('mapped asset URLs', () => {
+    it.each([
+      'http://example.com/image.jpg',
+      'https://example.com/image.jpg',
+      'HTTPS://example.com/image.jpg',
+    ])(
+      'preserves absolute URL %s without calling the storage strategy',
+      (preview) => {
+        const toAbsoluteUrl = vi.fn();
+        const assetInjector = {
+          get: () => ({
+            assetOptions: { assetStorageStrategy: { toAbsoluteUrl } },
+          }),
+        } as unknown as Injector;
+        const variant = {
+          id: 'v',
+          product: { id: 'p', featuredAsset: { id: 'asset', preview } },
+        } as unknown as ProductVariant;
+        const mapped = defaultMapSearchDocuments(
+          mockRequestContext,
+          [variant],
+          assetInjector
+        );
+        expect(mapped.documents[0].productAssetPreview).toBe(preview);
+        expect(toAbsoluteUrl).not.toHaveBeenCalled();
+      }
+    );
+
+    it('converts relative asset URLs using the storage strategy', () => {
+      const toAbsoluteUrl = vi
+        .fn()
+        .mockReturnValue('https://example.com/image.jpg');
+      const assetInjector = {
+        get: () => ({
+          assetOptions: { assetStorageStrategy: { toAbsoluteUrl } },
+        }),
+      } as unknown as Injector;
+      const variant = {
+        id: 'v',
+        product: {
+          id: 'p',
+          featuredAsset: { id: 'asset', preview: 'image.jpg' },
+        },
+      } as unknown as ProductVariant;
+      const mapped = defaultMapSearchDocuments(
+        mockRequestContext,
+        [variant],
+        assetInjector
+      );
+      expect(mapped.documents[0].productAssetPreview).toBe(
+        'https://example.com/image.jpg'
+      );
+      expect(toAbsoluteUrl).toHaveBeenCalledWith(
+        expect.anything(),
+        'image.jpg'
+      );
+    });
+  });
+
   describe('indexed description text', () => {
     /** Creates a variant with localized and fallback text for engine-level tests. */
     function textVariant(description?: string): ProductVariant {

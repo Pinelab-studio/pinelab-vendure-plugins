@@ -68,13 +68,16 @@ export function defaultMapSearchDocuments(
           .replace(/\s+/g, ' ')
           .trim(),
         productAssetId: String(product?.featuredAsset?.id ?? ''),
+        // Already-absolute URLs must not be prefixed again by the storage strategy.
         productAssetPreview: preview
-          ? strategy.toAbsoluteUrl?.(
-              { headers: {}, url: '' } as Parameters<
-                NonNullable<typeof strategy.toAbsoluteUrl>
-              >[0],
-              preview
-            ) ?? preview
+          ? /^https?:\/\//i.test(preview)
+            ? preview
+            : strategy.toAbsoluteUrl?.(
+                { headers: {}, url: '' } as Parameters<
+                  NonNullable<typeof strategy.toAbsoluteUrl>
+                >[0],
+                preview
+              ) ?? preview
           : '',
         price: variant.price,
         priceWithTax: variant.priceWithTax,

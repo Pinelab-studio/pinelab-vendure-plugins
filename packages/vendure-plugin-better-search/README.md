@@ -97,49 +97,39 @@ plugins: [
 
 The default engine searches product names, slugs, and descriptions. You can supply your own `SearchEngine` implementation.
 
-### Custom searchable fields
+### Indexing custom fields and excluding products
 
-Configure `mapSearchDocuments` on the plugin, independently of the search engine. It receives the context, loaded variants with parent products, and Vendure injector. It may return a promise.
+Use the plugin-wide `mapSearchDocuments` callback. This example assumes Product custom fields `reference` and `excludeFromSearch` are configured:
 
 ```ts
 import {
   BetterSearchPlugin,
-  MinisearchEngine,
   defaultMapSearchDocuments,
 } from '@pinelab/vendure-plugin-better-search';
 
+type CustomFields = { reference?: string; excludeFromSearch?: boolean };
+
 BetterSearchPlugin.init({
-  searchEngine: new MinisearchEngine({
-    boost: { productName: 3, productReference: 2 },
-  }),
   mapSearchDocuments: (ctx, variants, injector) => {
-    const mapped = defaultMapSearchDocuments(ctx, variants, injector);
+    const included = variants.filter(
+      (v) => !(v.product.customFields as CustomFields).excludeFromSearch
+    );
+    const mapped = defaultMapSearchDocuments(ctx, included, injector);
     return {
-      indexedFields: [...mapped.indexedFields, 'productReference', 'reference'],
+      indexedFields: [...mapped.indexedFields, 'reference'],
       documents: mapped.documents.map((document, i) => ({
         ...document,
-        description: '', // Override default values without changing source products
-        productReference: String(variants[i].product.id),
-        reference: String(
-          (variants[i].product.customFields as { reference?: string })
-            .reference ?? ''
-        ),
-        internalLabel: 'stored but not searchable',
+        reference:
+          (included[i].product.customFields as CustomFields).reference ?? '',
       })),
     };
   },
 });
 ```
 
-Return at most one complete `SearchDocument` per supplied variant, preserving its `id` and `productId`. Omit variants (or return no documents) to exclude them from the index. During partial updates, previous documents for affected variants/products are removed before the returned documents are indexed, so exclusions also remove previously indexed results. The exported default mapper preserves localized text, description HTML stripping, channel prices, facets, collections, and asset URLs. You can override other values or map documents yourself. Additional relations are not loaded automatically.
+Preserve document `id` and `productId`; other defaults can be overridden, e.g. `description: ''`. All returned fields are stored, but only `indexedFields` are searchable. Custom fields are not added to storefront GraphQL.
 
-Only fields listed in `indexedFields` are searchable. All returned fields are stored and visible in index inspection, including custom fields, so avoid secrets and use JSON-serializable values. Storefront GraphQL remains unchanged. Convert custom values into searchable text; IDs use normal engine matching rather than special exact matching.
-
-Full rebuilds pass all variants. Partial updates pass only affected variants and **ignore returned `indexedFields`**, retaining the field schema from the last full rebuild. New fields can be stored during partial updates but are only searchable if already indexed. Manually reindex after changing field configuration or mapping logic.
-
-This replaces MiniSearch's `enrichSearchDocument` and `additionalIndexedFields` options. Custom engines now receive `createIndex(ctx, documents, indexedFields)` and `updateDocuments(ctx, index, documents)`, not variants. Existing serialized indexes are incompatible and require a manual full reindex.
-
-Other plugin options include `isEnabled` for channel-specific availability, `debounceIndexRebuildMs` for batching updates, and `reindexSchedule` for the nightly full reindex.
+Partial updates receive only affected variants, remove excluded documents, and ignore returned `indexedFields`. Run a full reindex after changing mapping or indexed fields.
 
 ## Search analytics
 
