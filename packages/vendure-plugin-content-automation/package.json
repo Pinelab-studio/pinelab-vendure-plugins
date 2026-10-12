@@ -1,0 +1,39 @@
+{
+  "name": "@pinelab/vendure-plugin-content-automation",
+  "version": "0.0.1",
+  "description": "Vendure plugin that orchestrates bulk generation and enrichment of entity content (e.g. SEO meta tags) per channel and language, via consumer-provided strategies.",
+  "keywords": [
+    "vendure",
+    "content",
+    "automation",
+    "ai",
+    "seo",
+    "bulk generation"
+  ],
+  "author": "Martijn van de Brug <martijn@pinelab.studio>",
+  "homepage": "https://plugins.pinelab.studio/",
+  "repository": "https://github.com/Pinelab-studio/pinelab-vendure-plugins",
+  "license": "MIT",
+  "private": false,
+  "publishConfig": {
+    "access": "public"
+  },
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md",
+    "CHANGELOG.md"
+  ],
+  "scripts": {
+    "build": "rimraf dist && tsc && copyfiles -u 1 'src/dashboard/**/*' dist/ && yarn build:dashboard",
+    "build:dashboard": "vite build --config ./vite.config.mts",
+    "dev:dashboard": "vite --clearScreen false",
+    "start": "ts-node test/dev-server.ts",
+    "test": "vitest run --bail 1",
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "catch-unknown": "^2.0.0"
+  }
+}
