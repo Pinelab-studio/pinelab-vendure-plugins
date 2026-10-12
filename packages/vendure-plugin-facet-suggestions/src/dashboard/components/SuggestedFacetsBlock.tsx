@@ -1,7 +1,20 @@
-import { api, Badge, useFormContext } from '@vendure/dashboard';
+import {
+  api,
+  Badge,
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+  MultiSelect,
+  useFormContext,
+} from '@vendure/dashboard';
 import { graphql } from '@/gql';
 import { useQuery } from '@tanstack/react-query';
-import { CheckCircle2Icon, AlertTriangleIcon } from 'lucide-react';
+import {
+  AlertTriangleIcon,
+  CheckCircle2Icon,
+  ChevronDownIcon,
+} from 'lucide-react';
+import { useEffect, useState } from 'react';
 
 const getRequiredFacetsDocument = graphql(`
   query GetRequiredFacets {
@@ -63,56 +76,78 @@ export function SuggestedFacetsBlock() {
       ),
     }));
 
+  const isComplete = requiredFacets.every((f) => f.selectedValues.length > 0);
+  const [isOpen, setIsOpen] = useState(!isComplete);
+
+  useEffect(() => {
+    setIsOpen(!isComplete);
+  }, [isComplete]);
+
   if (requiredFacets.length === 0) {
     return null;
   }
 
-  const isComplete = requiredFacets.every((f) => f.selectedValues.length > 0);
-
-  const toggleFacetValue = (valueId: string) => {
+  /** Replaces the selected values for one facet without changing other facets. */
+  const setSelectedFacetValues = (
+    facetValueIds: string[],
+    selectedValueIds: string[]
+  ) => {
     const current: string[] = watch('facetValueIds') ?? [];
-    const next = current.includes(valueId)
-      ? current.filter((id) => id !== valueId)
-      : [...current, valueId];
+    const facetValueIdSet = new Set(facetValueIds);
+    const next = [
+      ...current.filter((id) => !facetValueIdSet.has(id)),
+      ...selectedValueIds,
+    ];
     setValue('facetValueIds', next, { shouldDirty: true });
   };
 
   return (
-    <div className="space-y-3">
-      <div className="flex items-center gap-2">
-        <span className="text-sm font-medium">Suggested facets</span>
+    <Collapsible open={isOpen} onOpenChange={setIsOpen}>
+      <CollapsibleTrigger className="group flex w-full items-center justify-between rounded-md text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+        <span className="flex items-center gap-2 font-semibold">
+          <ChevronDownIcon className="h-4 w-4 transition-transform group-data-[state=closed]:-rotate-90" />
+          Suggested facets
+        </span>
         {isComplete ? (
-          <Badge variant="secondary" className="gap-1">
+          <Badge variant="success" className="gap-1">
             <CheckCircle2Icon className="h-3 w-3" />
             complete
           </Badge>
         ) : (
-          <Badge variant="outline" className="gap-1">
+          <Badge variant="warning" className="gap-1">
             <AlertTriangleIcon className="h-3 w-3" />
             incomplete
           </Badge>
         )}
-      </div>
-      {requiredFacets.map(({ facet, selectedValues }) => (
-        <div key={facet.id} className="flex items-center gap-2 flex-wrap">
-          <span className="text-sm text-muted-foreground min-w-32">
-            {facet.name}
-          </span>
-          {facet.values.map((value) => {
-            const isSelected = selectedValues.some((v) => v.id === value.id);
-            return (
-              <Badge
-                key={value.id}
-                variant={isSelected ? 'default' : 'outline'}
-                className="cursor-pointer select-none"
-                onClick={() => toggleFacetValue(value.id)}
-              >
-                {value.name}
-              </Badge>
-            );
-          })}
+      </CollapsibleTrigger>
+      <CollapsibleContent className="pt-4">
+        <div className="space-y-3">
+          {requiredFacets.map(({ facet, selectedValues }) => (
+            <div
+              key={facet.id}
+              className="grid gap-2 sm:grid-cols-[8rem_minmax(0,1fr)] sm:items-center"
+            >
+              <span className="text-sm font-medium">{facet.name}</span>
+              <MultiSelect
+                multiple
+                value={selectedValues.map((value) => value.id)}
+                onChange={(valueIds) =>
+                  setSelectedFacetValues(
+                    facet.values.map((value) => value.id),
+                    valueIds
+                  )
+                }
+                items={facet.values.map((value) => ({
+                  value: value.id,
+                  label: value.name,
+                }))}
+                placeholder="Select facet values"
+                className="w-full"
+              />
+            </div>
+          ))}
         </div>
-      ))}
-    </div>
+      </CollapsibleContent>
+    </Collapsible>
   );
 }
