@@ -347,12 +347,13 @@ describe('searchSuggestions', () => {
     expect(result.searchSuggestions[0].suggestion).toBeTruthy();
   });
 
-  it('suggests matching terms that can be used to search the catalog', async () => {
+  it('suggests complete product names that can be used to search the catalog', async () => {
     const { searchSuggestions } = await shopClient.query<{
       searchSuggestions: { suggestion: string }[];
     }>(SEARCH_SUGGESTIONS_QUERY, { term: 'appl' });
     const suggestions = searchSuggestions.map((item) => item.suggestion);
-    expect(suggestions).toContain('apple');
+    expect(suggestions).toContain('Apple');
+    expect(suggestions).toContain('Apple Banana Orange');
     expect(new Set(suggestions).size).toBe(suggestions.length);
     expect(suggestions.length).toBeLessThanOrEqual(10);
     const { items } = await search('apple');
@@ -363,12 +364,16 @@ describe('searchSuggestions', () => {
     const { searchSuggestions } = await shopClient.query<{
       searchSuggestions: { suggestion: string }[];
     }>(SEARCH_SUGGESTIONS_QUERY, { term: 'somestringthatis' });
-    expect(searchSuggestions.map((item) => item.suggestion)).toContain(
-      'somestringthatisunique'
-    );
+    const names = searchSuggestions.map((item) => item.suggestion);
+    expect(names.length).toBeGreaterThan(0);
+    expect(names).not.toContain('somestringthatisunique');
+    for (const name of names) {
+      const { items } = await search(name);
+      expect(items.some((item) => item.productName === name)).toBe(true);
+    }
   });
 
-  it.each(['', 'a', 'zzzzzzzzzzzzzzzzzzzzzzzz'])(
+  it.each(['', 'a', 'applf', 'zzzzzzzzzzzzzzzzzzzzzzzz'])(
     'returns no suggestions for %j',
     async (term) => {
       const result = await shopClient.query<{

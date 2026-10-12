@@ -6,7 +6,6 @@ import {
 } from '@nestjs/common';
 import {
   Channel,
-  ConfigService,
   Injector,
   EventBus,
   JobQueue,
@@ -43,10 +42,8 @@ const INDEX_CACHE_TTL = 10_000;
 export function defaultMapSearchDocuments(
   ctx: RequestContext,
   variants: ProductVariant[],
-  injector: Injector
+  _injector: Injector
 ): SearchDocumentMapping {
-  const strategy =
-    injector.get(ConfigService).assetOptions.assetStorageStrategy;
   return {
     indexedFields: ['productName', 'slug', 'description'],
     documents: variants.map((variant) => {
@@ -68,17 +65,8 @@ export function defaultMapSearchDocuments(
           .replace(/\s+/g, ' ')
           .trim(),
         productAssetId: String(product?.featuredAsset?.id ?? ''),
-        // Already-absolute URLs must not be prefixed again by the storage strategy.
-        productAssetPreview: preview
-          ? /^https?:\/\//i.test(preview)
-            ? preview
-            : strategy.toAbsoluteUrl?.(
-                { headers: {}, url: '' } as Parameters<
-                  NonNullable<typeof strategy.toAbsoluteUrl>
-                >[0],
-                preview
-              ) ?? preview
-          : '',
+        // Vendure's asset interceptor resolves this path when returning SearchResult assets.
+        productAssetPreview: preview ?? '',
         price: variant.price,
         priceWithTax: variant.priceWithTax,
         sku: variant.sku ?? '',

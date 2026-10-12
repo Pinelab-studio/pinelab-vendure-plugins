@@ -139,17 +139,21 @@ export class MinisearchEngine implements SearchEngine<MinisearchIndex> {
     });
   }
 
-  /** Suggests up to ten unique terms with engine-configured matching. */
+  /** Returns up to ten unique product names using prefix matching without fuzzy expansion. */
   searchSuggestions(
     _ctx: RequestContext,
     searchIndex: MinisearchIndex,
     term: string
   ): SearchSuggestion[] {
-    return [
-      ...new Set(searchIndex.index.autoSuggest(term).map((r) => r.suggestion)),
-    ]
-      .slice(0, 10)
-      .map((suggestion) => ({ suggestion }));
+    const suggestions = new Set<string>();
+    const hits = searchIndex.index.search(term, { fuzzy: false, prefix: true });
+    for (const hit of hits) {
+      const name = (hit.document as SearchDocument).productName;
+      if (!name) continue;
+      suggestions.add(name);
+      if (suggestions.size === 10) break;
+    }
+    return [...suggestions].map((suggestion) => ({ suggestion }));
   }
 
   /** Persists the schema with the index so reloads need no mapping callback. */
