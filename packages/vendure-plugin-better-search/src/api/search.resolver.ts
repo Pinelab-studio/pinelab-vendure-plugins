@@ -1,17 +1,29 @@
 import { Args, Query, Resolver } from '@nestjs/graphql';
 import { Ctx, RequestContext } from '@vendure/core';
+import type {
+  SearchInput,
+  SearchResponse,
+} from '@vendure/common/lib/generated-types';
+import { SearchSuggestion } from '../types';
 import { SearchService } from '../services/search.service';
-import { BetterSearchInput, BetterSearchResultList } from './generated/graphql';
 
 @Resolver()
 export class SearchShopResolver {
   constructor(private searchService: SearchService) {}
 
   @Query()
-  async betterSearch(
+  async search(
     @Ctx() ctx: RequestContext,
-    @Args() args: { input: BetterSearchInput }
-  ): Promise<BetterSearchResultList> {
-    return this.searchService.search(ctx, args.input);
+    @Args('input') input: SearchInput
+  ): Promise<SearchResponse> {
+    return this.searchService.search(ctx, input);
+  }
+
+  @Query()
+  async searchSuggestions(
+    @Ctx() ctx: RequestContext,
+    @Args('term') term: string
+  ): Promise<SearchSuggestion[]> {
+    return this.searchService.searchSuggestions(ctx, term);
   }
 }

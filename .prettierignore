@@ -6,3 +6,4 @@ __admin-ui
 *.min.js
 .temp
 generated
+local_cache

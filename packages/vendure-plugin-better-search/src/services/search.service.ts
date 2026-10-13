@@ -1,114 +1,157 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { ID, LanguageCode, Logger, RequestContext } from '@vendure/core';
-import { asError } from 'catch-unknown';
-import MiniSearch from 'minisearch';
+import { CurrencyCode, RequestContext } from '@vendure/core';
+import type {
+  SearchInput,
+  SearchResponse,
+  SearchResult,
+} from '@vendure/common/lib/generated-types';
+import { BETTER_SEARCH_PLUGIN_OPTIONS } from '../constants';
 import {
-  BetterSearchInput,
-  BetterSearchResult,
-  BetterSearchResultList,
-} from '../api/generated/graphql';
-import { BETTER_SEARCH_PLUGIN_OPTIONS, loggerCtx } from '../constants';
-import { BetterSearchConfig } from '../types';
+  BetterSearchDocument,
+  BetterSearchOptions,
+  SearchSuggestion,
+} from '../types';
 import { IndexService } from './index.service';
-
-interface CachedIndex {
-  channelId: ID;
-  languageCode: LanguageCode;
-  cachedAt: Date;
-  index: MiniSearch;
-}
+import { SearchLogService } from './search-log.service';
 
 @Injectable()
 export class SearchService {
-  /**
-   * In memory cache of created indices
-   */
-  private cachedIndices: Map<string, CachedIndex> = new Map();
-  private indexTtl = 5 * 60 * 1000; // 5 minutes in milliseconds
-
   constructor(
     private indexService: IndexService,
     @Inject(BETTER_SEARCH_PLUGIN_OPTIONS)
-    private options: BetterSearchConfig
+    private options: BetterSearchOptions,
+    private searchLogService: SearchLogService
   ) {}
 
+  /**
+   * Executes a full-text search using the configured engine and maps results
+   * to Vendure's standard SearchResponse shape.
+   * Supports term, product grouping and pagination; other filters are not implemented.
+   */
   async search(
     ctx: RequestContext,
-    input: BetterSearchInput
-  ): Promise<BetterSearchResultList> {
-    if (input.term.length < 2) {
-      // No search if term is too short
-      return {
-        items: [],
-        totalItems: 0,
-      };
+    input: SearchInput
+  ): Promise<SearchResponse> {
+    const term = input.term ?? '';
+    if (term.length < 2) {
+      return { items: [], totalItems: 0, facetValues: [], collections: [] };
     }
-    // Get index
-    const index = await this.getIndex(ctx);
+    const index = await this.indexService.getIndex(ctx);
+    const matches = await this.options.searchEngine!.search(ctx, index, term);
+    const docs = input.groupByProduct ? this.groupByProduct(matches) : matches;
     const skip = input.skip ?? 0;
-    const take = input.take ?? 10;
-    const allResults = index.search(
-      input.term
-    ) as unknown as BetterSearchResult[]; // Not sure why this is needed, but all fields are tested in e2e
-    const results = allResults.slice(skip, skip + take);
-    return {
-      items: results,
-      totalItems: allResults.length,
+    const paginatedDocs = docs.slice(
+      skip,
+      input.take == null ? undefined : skip + input.take
+    );
+    const currencyCode = ctx.channel.defaultCurrencyCode;
+    const channelId = String(ctx.channel.id);
+    const response: SearchResponse = {
+      items: paginatedDocs.map((doc) =>
+        this.mapToSearchResult(doc, currencyCode, channelId)
+      ),
+      totalItems: docs.length,
+      facetValues: [],
+      collections: [],
     };
+    this.searchLogService.record(ctx, term, response.totalItems);
+    return response;
+  }
+
+  /** Groups matching variants, retaining the highest-scoring variant as representative. */
+  private groupByProduct(
+    documents: BetterSearchDocument[]
+  ): BetterSearchDocument[] {
+    const products = new Map<string, BetterSearchDocument>();
+    for (const document of documents) {
+      const previous = products.get(document.productId);
+      if (!previous) {
+        products.set(document.productId, { ...document });
+        continue;
+      }
+      products.set(document.productId, {
+        ...(document.score > previous.score ? document : previous),
+        lowestPrice: Math.min(previous.lowestPrice, document.lowestPrice),
+        highestPrice: Math.max(previous.highestPrice, document.highestPrice),
+        lowestPriceWithTax: Math.min(
+          previous.lowestPriceWithTax,
+          document.lowestPriceWithTax
+        ),
+        highestPriceWithTax: Math.max(
+          previous.highestPriceWithTax,
+          document.highestPriceWithTax
+        ),
+        facetIds: [...new Set([...previous.facetIds, ...document.facetIds])],
+        facetValueIds: [
+          ...new Set([...previous.facetValueIds, ...document.facetValueIds]),
+        ],
+        collectionIds: [
+          ...new Set([...previous.collectionIds, ...document.collectionIds]),
+        ],
+        collectionNames: [
+          ...new Set([
+            ...previous.collectionNames,
+            ...document.collectionNames,
+          ]),
+        ],
+      });
+    }
+    return [...products.values()].sort((a, b) => b.score - a.score);
   }
 
   /**
-   * Get index from cache or from DB.
-   * Uses Stale-while-revalidate pattern: uses an outdated index if it exists,
-   * but fetches a new one from DB in the background.
+   * Returns a list of lightweight search suggestions for the given term.
+   * Intended for search-as-you-type use cases. This bypasses the index cache
+   * TTL check to keep the endpoint fast.
    */
-  private async getIndex(
-    ctx: RequestContext
-  ): Promise<MiniSearch<BetterSearchResult>> {
-    const cacheKey = `${ctx.channel.id}-${ctx.languageCode}`;
-    let cachedIndex = this.cachedIndices.get(cacheKey);
-    if (!cachedIndex) {
-      // Get new index from DB
-      const index = await this.indexService.getIndex(ctx);
-      if (!index) {
-        await this.indexService.triggerReindex(ctx);
-        throw Error(
-          `No index was created for channel '${ctx.channel.id}' and language '${ctx.languageCode}'`
-        );
-      }
-      cachedIndex = {
-        channelId: ctx.channel.id,
-        languageCode: ctx.languageCode,
-        cachedAt: new Date(),
-        index,
-      };
-      this.cachedIndices.set(cacheKey, cachedIndex);
+  async searchSuggestions(
+    ctx: RequestContext,
+    term: string
+  ): Promise<SearchSuggestion[]> {
+    if (term.length < 2) {
+      return [];
     }
-    if (cachedIndex.cachedAt < new Date(Date.now() - this.indexTtl)) {
-      // Get new index from DB in background - Stale-while-revalidate pattern
-      this.indexService
-        .getIndex(ctx)
-        .then((index) => {
-          if (!index) {
-            // Do nothing, we still have the old index in cache
-            return;
-          }
-          this.cachedIndices.set(cacheKey, {
-            channelId: ctx.channel.id,
-            languageCode: ctx.languageCode,
-            cachedAt: new Date(),
-            index,
-          });
-        })
-        .catch((err) => {
-          Logger.error(
-            `Failed to fetch new index for '${cacheKey}': ${
-              asError(err).message
-            }`,
-            loggerCtx
-          );
-        });
-    }
-    return cachedIndex.index;
+    const index = await this.indexService.getIndex(ctx, true);
+    return this.options.searchEngine!.searchSuggestions(ctx, index, term);
+  }
+
+  /**
+   * Maps an internal BetterSearchDocument to Vendure's SearchResult type.
+   * Price is always PriceRange (min/max); asset details come from the search index.
+   */
+  private mapToSearchResult(
+    doc: BetterSearchDocument,
+    currencyCode: CurrencyCode,
+    channelId: string
+  ): SearchResult {
+    return {
+      sku: doc.sku,
+      slug: doc.slug,
+      productId: doc.productId,
+      productName: doc.productName,
+      productAsset:
+        doc.productAssetId && doc.productAssetPreview
+          ? {
+              id: doc.productAssetId,
+              preview: doc.productAssetPreview,
+            }
+          : null,
+      productVariantId: doc.productVariantId,
+      productVariantName: doc.productVariantName,
+      productVariantAsset: null,
+      price: { min: doc.lowestPrice, max: doc.highestPrice },
+      priceWithTax: {
+        min: doc.lowestPriceWithTax,
+        max: doc.highestPriceWithTax,
+      },
+      currencyCode,
+      description: doc.description,
+      facetIds: doc.facetIds,
+      facetValueIds: doc.facetValueIds,
+      collectionIds: doc.collectionIds,
+      channelIds: [channelId],
+      enabled: true,
+      score: doc.score,
+    } as unknown as SearchResult;
   }
 }
