@@ -442,13 +442,84 @@ describe('IndexService', () => {
       });
     }
 
+    it('excludes disabled, deleted and other-channel variants from full rebuild prices', async () => {
+      const ctx = pricingContext();
+      const eligible = {
+        id: 'paid',
+        enabled: true,
+        channels: [ctx.channel],
+        price: 1736,
+        priceWithTax: 2100,
+      } as ProductVariant;
+      const product = new Product({
+        id: 'p',
+        variants: [
+          eligible,
+          {
+            ...eligible,
+            id: 'disabled',
+            enabled: false,
+            price: 0,
+          } as ProductVariant,
+          {
+            ...eligible,
+            id: 'deleted',
+            deletedAt: new Date(),
+            price: 0,
+          } as ProductVariant,
+          {
+            ...eligible,
+            id: 'other-channel',
+            channels: [new Channel({ id: 'other' })],
+            price: 0,
+          } as ProductVariant,
+        ],
+      });
+      const findAll = vi.fn().mockResolvedValue({ items: [product] });
+      const applyChannelPriceAndTax = vi
+        .fn()
+        .mockImplementation(async (variant) => variant);
+      const service = createService({
+        productService: { findAll } as unknown as ProductService,
+        productVariantService: { applyChannelPriceAndTax },
+        eventBus: {
+          publish: vi.fn().mockResolvedValue(undefined),
+        } as unknown as EventBus,
+      });
+      await service.buildIndex(ctx);
+      expect(findAll.mock.calls[0][2]).toContain('variants.channels');
+      expect(applyChannelPriceAndTax).toHaveBeenCalledTimes(1);
+      expect(applyChannelPriceAndTax.mock.calls[0][0].id).toBe('paid');
+      expect(mockSearchEngine.createIndex).toHaveBeenLastCalledWith(
+        expect.any(RequestContext),
+        [
+          expect.objectContaining({
+            id: 'paid',
+            price: 1736,
+            priceWithTax: 2100,
+          }),
+        ],
+        ['productName', 'slug', 'description']
+      );
+    });
+
     it('hydrates full rebuild prices, retaining returned variants and free prices', async () => {
       const ctx = pricingContext();
       const product = new Product({
         id: 'p',
         variants: [
-          { id: 'paid', price: 0 } as ProductVariant,
-          { id: 'free', price: 0 } as ProductVariant,
+          {
+            id: 'paid',
+            price: 0,
+            enabled: true,
+            channels: [ctx.channel],
+          } as ProductVariant,
+          {
+            id: 'free',
+            price: 0,
+            enabled: true,
+            channels: [ctx.channel],
+          } as ProductVariant,
         ],
       });
       const findAll = vi.fn().mockResolvedValue({ items: [product] });

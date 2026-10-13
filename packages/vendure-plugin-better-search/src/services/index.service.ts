@@ -452,6 +452,7 @@ export class IndexService implements OnModuleInit, OnApplicationBootstrap {
             'featuredAsset',
             'facetValues.translations',
             'variants.collections',
+            'variants.channels',
             'variants.productVariantPrices',
             'variants.taxCategory',
           ]
@@ -463,6 +464,15 @@ export class IndexService implements OnModuleInit, OnApplicationBootstrap {
         // Set all products on the variant object as well
         for (const product of products) {
           for (const variant of product.variants) {
+            if (
+              !variant.enabled ||
+              variant.deletedAt ||
+              !variant.channels.some(
+                (channel) => String(channel.id) === String(ctx.channelId)
+              )
+            ) {
+              continue;
+            }
             variant.product = product;
             const pricedVariant =
               await this.productVariantService.applyChannelPriceAndTax(
