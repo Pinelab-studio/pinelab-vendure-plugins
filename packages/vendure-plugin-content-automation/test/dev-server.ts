@@ -3,9 +3,10 @@ import {
   registerInitializer,
   SqljsInitializer,
 } from '@vendure/testing';
-import { VendureConfig } from '@vendure/core';
+import { Injector, Logger, VendureConfig } from '@vendure/core';
+import { ModuleRef } from '@nestjs/core';
 import { initialData } from '../../test/src/initial-data';
-import { runContentAutomationPopulation } from '../src';
+import { contentAutomationTask, runContentAutomationPopulation } from '../src';
 import { config } from './vendure-config';
 
 /**
@@ -28,4 +29,21 @@ import { config } from './vendure-config';
   });
   // Populate some demo updates for the dashboard
   await runContentAutomationPopulation(server.app);
+
+  const injector = new Injector(server.app.get(ModuleRef));
+  let running = false;
+  /** Runs the task for local testing without overlapping executions. */
+  function runDemoTask(): void {
+    if (running) return;
+    running = true;
+    contentAutomationTask
+      .execute(injector)
+      .catch((error: Error) =>
+        Logger.error(error.message, 'ContentAutomationDemo', error.stack)
+      )
+      .finally(() => {
+        running = false;
+      });
+  }
+  setInterval(runDemoTask, 10_000);
 })();

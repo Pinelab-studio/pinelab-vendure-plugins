@@ -15,7 +15,7 @@ function ContentAutomationUpdateListPage({ route }: { route: AnyRoute }) {
   return (
     <ListPage
       pageId="content-automation-update-list"
-      title="Content automation"
+      title="Content Automation"
       listQuery={contentAutomationUpdateListDocument}
       route={route}
       onSearchTermChange={(term) => ({
@@ -81,19 +81,19 @@ function ContentAutomationUpdateListPage({ route }: { route: AnyRoute }) {
         updatedAt: false,
         hash: false,
       }}
-      defaultSort={[{ id: 'createdAt', desc: true }]}
+      defaultSort={[{ id: 'updatedAt', desc: true }]}
     />
   );
 }
 
 export const contentAutomationUpdateListRoute: DashboardRouteDefinition = {
   path: '/content-automation',
-  loader: () => ({ breadcrumb: 'Content automation' }),
+  loader: () => ({ breadcrumb: 'Content Automation' }),
   component: (route) => <ContentAutomationUpdateListPage route={route} />,
   navMenuItem: {
     sectionId: 'catalog',
     id: 'content-automation',
-    title: 'Content automation',
+    title: 'Content Automation',
     icon: SparklesIcon,
   },
 };

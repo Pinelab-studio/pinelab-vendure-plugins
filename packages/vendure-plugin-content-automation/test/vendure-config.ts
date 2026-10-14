@@ -5,6 +5,7 @@ import {
   DefaultSchedulerPlugin,
   DefaultSearchPlugin,
   dummyPaymentHandler,
+  ID,
   LogLevel,
   mergeConfig,
   ProductService,
@@ -17,22 +18,40 @@ import { ContentAutomationPlugin, ContentAutomationStrategy } from '../src';
 
 /**
  * Creates a demo strategy for local development: pretends to generate content for every
- * product, without calling an AI provider or saving anything.
+ * product without calling an AI provider. The product-description strategy also
+ * appends the product name to its description to demonstrate saving content.
  */
 function createDemoStrategy(
   name: string,
   getResultMessage: (productName: string) => string,
   linkToEntity = true
-): ContentAutomationStrategy<{ id: string; name: string }> {
+): ContentAutomationStrategy<{ id: ID; name: string }> {
   return {
     name,
     async loadInputData(ctx, injector) {
       const products = await injector
         .get(ProductService)
         .findAll(ctx, { take: 1000 });
-      return products.items.map((p) => ({ id: String(p.id), name: p.name }));
+      return products.items.map((p) => ({ id: p.id, name: p.name }));
     },
-    generateAndSaveContent(ctx, injector, input) {
+    async generateAndSaveContent(ctx, injector, input) {
+      if (name === 'product-description') {
+        const productService = injector.get(ProductService);
+        const product = await productService.findOne(ctx, input.id);
+        if (!product) {
+          throw new Error(`Product '${input.id}' no longer exists`);
+        }
+        const note = `<br>[${name}] Content automation: name was changed to '${input.name}'`;
+        await productService.update(ctx, {
+          id: product.id,
+          translations: [
+            {
+              languageCode: ctx.languageCode,
+              description: `${product.description}\n${note}`,
+            },
+          ],
+        });
+      }
       return Promise.resolve({
         resultMessage: getResultMessage(input.name),
         entityUrl: linkToEntity ? `/products/${input.id}` : undefined,

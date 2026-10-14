@@ -7,9 +7,11 @@ import { Column, Entity, Index } from 'typeorm';
  * returns `false` or throws.
  */
 @Entity()
-// Used to look up whether an input with this hash was already processed.
+// Used to look up the latest successful state of an entity.
 // 191 chars per column keeps the index within MySQL's 3072-byte limit when using utf8mb4.
-@Index(['strategyName', 'channelId', 'languageCode', 'hash'])
+@Index(['strategyName', 'channelId', 'languageCode', 'entityId'], {
+  unique: true,
+})
 export class ContentAutomationUpdate extends VendureEntity {
   constructor(input?: DeepPartial<ContentAutomationUpdate>) {
     super(input);
@@ -17,6 +19,9 @@ export class ContentAutomationUpdate extends VendureEntity {
 
   @Column('varchar', { length: 191 })
   strategyName!: string;
+
+  @Column('varchar', { length: 191 })
+  entityId!: ID;
 
   // Separate index for listing the updates of a channel in the dashboard
   @Index()

@@ -8,6 +8,7 @@ import {
   ProductVariantService,
   mergeConfig,
   RequestContext,
+  RequestContextService,
   TransactionalConnection,
 } from '@vendure/core';
 import {
@@ -218,6 +219,21 @@ describe('ContentAutomationPlugin (e2e)', () => {
     await adminClient.query(UPDATE_CHANNEL, {
       input: { id: 'T_1', availableLanguageCodes: ['en', 'nl'] },
     });
+    const { zones } = await adminClient.query(gql`
+      query GetTestZones {
+        zones {
+          items {
+            id
+            name
+          }
+        }
+      }
+    `);
+    const defaultZone = zones.items.find(
+      (zone: { name: string }) => zone.name === initialData.defaultZone
+    );
+    if (!defaultZone)
+      throw new Error('Initial data default zone was not created');
     await adminClient.query(CREATE_CHANNEL, {
       input: {
         code: 'second-channel',
@@ -226,8 +242,8 @@ describe('ContentAutomationPlugin (e2e)', () => {
         availableLanguageCodes: ['en'],
         defaultCurrencyCode: 'USD',
         pricesIncludeTax: true,
-        defaultShippingZoneId: 'T_1',
-        defaultTaxZoneId: 'T_1',
+        defaultShippingZoneId: defaultZone.id,
+        defaultTaxZoneId: defaultZone.id,
       },
     });
   }, 60000);
@@ -342,7 +358,7 @@ describe('ContentAutomationPlugin (e2e)', () => {
       { id: '1', text: 'changed' },
       { id: '1', text: 'changed' },
     ]);
-    expect(await getUpdates()).toHaveLength(9);
+    expect(await getUpdates()).toHaveLength(6);
   });
 
   it('Retries failing jobs and stores no state when generation keeps failing', async () => {
@@ -363,7 +379,7 @@ describe('ContentAutomationPlugin (e2e)', () => {
       failedJobs.every((job: { attempts: number }) => job.attempts === 4)
     ).toBe(true);
     expect(testStrategy.generateAndSaveContent).toHaveBeenCalledTimes(12);
-    expect(await getUpdates()).toHaveLength(9);
+    expect(await getUpdates()).toHaveLength(6);
   }, 60000);
 
   it('Stores state when a failed job succeeds on retry', async () => {
@@ -381,7 +397,7 @@ describe('ContentAutomationPlugin (e2e)', () => {
     expect(result.jobsCreated).toBe(6);
     await waitForSettledJobs(30);
     const updates = await getUpdates();
-    expect(updates).toHaveLength(12);
+    expect(updates).toHaveLength(9);
     expect(updates.filter((u) => u.entityUrl === '/products/3')).toHaveLength(
       3
     );
@@ -402,7 +418,7 @@ describe('ContentAutomationPlugin (e2e)', () => {
       hash: defaultHash({ id: '2', text: 'b' }),
     });
     expect(testStrategy.generateAndSaveContent).not.toHaveBeenCalled();
-    expect(await getUpdates()).toHaveLength(12);
+    expect(await getUpdates()).toHaveLength(9);
   });
 
   it('Processes the initial population sequentially, without creating jobs', async () => {
@@ -563,7 +579,8 @@ describe('ContentAutomationPlugin (e2e)', () => {
     inputs = [...inputs, { id: '8', text: 'h' }];
     generate = () => Promise.resolve({});
     await service.createJobsForChangedInputs();
-    await waitForSettledJobs(60);
+    // The Dutch input for entity 1 also reverts to its previous value.
+    await waitForSettledJobs(61);
     const updates = (await getUpdates()).filter(
       (u) => u.hash === defaultHash({ id: '8', text: 'h' })
     );
@@ -599,8 +616,45 @@ describe('ContentAutomationPlugin (e2e)', () => {
     await adminClient.asSuperAdmin();
   });
 
+  it('Regenerates when input is reverted to a previous state', async () => {
+    const ctx = await server.app
+      .get(RequestContextService)
+      .create({ apiType: 'admin' });
+    const strategy: ContentAutomationStrategy<{ id: string; text: string }> = {
+      name: 'reversion-test',
+      loadInputData: async () => [],
+      generateAndSaveContent: vi.fn(async () => ({})),
+    };
+    const original = { id: 'reversion', text: 'a' };
+    const changed = { id: 'reversion', text: 'b' };
+    for (const input of [original, changed, original, original]) {
+      await service.generateAndStore(ctx, strategy, input, defaultHash(input));
+    }
+    expect(strategy.generateAndSaveContent).toHaveBeenCalledTimes(3);
+    const updates = (await getUpdates()).filter(
+      (u) => u.strategyName === strategy.name
+    );
+    expect(updates).toHaveLength(1);
+    expect(updates[0]).toMatchObject({
+      entityId: original.id,
+      hash: defaultHash(original),
+    });
+  });
+
   it('Has a timeout longer than the default 60 seconds of the scheduler', () => {
     expect(contentAutomationTask.options.timeout).toBe('1h');
+  });
+
+  it('Rejects duplicate strategy names at application startup', async () => {
+    const strategies = ContentAutomationPlugin.options.automationStrategies;
+    strategies.push(testStrategy);
+    try {
+      await expect(service.onApplicationBootstrap()).rejects.toThrow(
+        'Duplicates: test-strategy'
+      );
+    } finally {
+      strategies.pop();
+    }
   });
 
   it('Throws on duplicate strategy names', () => {

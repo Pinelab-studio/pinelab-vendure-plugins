@@ -21,7 +21,9 @@ export interface ContentAutomationResult {
  * A Vendure project can have multiple automation strategies, for example a
  * product description strategy and a variant 'usage' content strategy.
  */
-export interface ContentAutomationStrategy<TInput = { id: ID }> {
+export interface ContentAutomationStrategy<
+  TInput extends { id: ID } = { id: ID }
+> {
   /**
    * Stable, unique key, e.g. "product-description-ai".
    * Used in persisted processing state, so don't change it after going live.
@@ -37,7 +39,7 @@ export interface ContentAutomationStrategy<TInput = { id: ID }> {
 
   /**
    * Returns a deterministic fingerprint of the source fields relevant to generation.
-   * Must include the id of the entity, so inputs of different entities never have the same hash.
+   * Inputs are tracked separately by their id, strategy, channel and language.
    * Optional: by default the plugin generates a hash from all fields in the input.
    */
   generateHash?(ctx: RequestContext, input: TInput): string;
@@ -65,8 +67,8 @@ export interface ContentAutomationStrategy<TInput = { id: ID }> {
 export interface ContentAutomationJobData {
   ctx: SerializedRequestContext;
   strategyName: string;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- The input type is defined by the strategy
-  input: any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Consumer-defined serializable fields
+  input: { id: ID; [key: string]: any };
   hash: string;
 }
 
@@ -77,5 +79,5 @@ export interface ContentAutomationPluginOptions {
   /**
    * Different strategies may automate different entity types or use different content providers.
    */
-  automationStrategies: Array<ContentAutomationStrategy<unknown>>;
+  automationStrategies: Array<ContentAutomationStrategy<{ id: ID }>>;
 }

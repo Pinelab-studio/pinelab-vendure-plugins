@@ -1,6 +1,6 @@
 {
   "name": "@pinelab/vendure-plugin-content-automation",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "Vendure plugin that orchestrates bulk generation and enrichment of entity content (e.g. SEO meta tags) per channel and language, via consumer-provided strategies.",
   "keywords": [
     "vendure",
@@ -10,7 +10,7 @@
     "seo",
     "bulk generation"
   ],
-  "author": "Martijn van de Brug <martijn@pinelab.studio>",
+  "author": "Surafel Tariku <surafelmelese09@gmail.com>",
   "homepage": "https://plugins.pinelab.studio/",
   "repository": "https://github.com/Pinelab-studio/pinelab-vendure-plugins",
   "license": "MIT",

@@ -4,6 +4,7 @@ import {
   Channel,
   ChannelService,
   Injector,
+  ID,
   JobQueue,
   JobQueueService,
   LanguageCode,
@@ -23,11 +24,11 @@ import {
   ContentAutomationPluginOptions,
   ContentAutomationStrategy,
 } from '../types';
-import { defaultHash, normalizeHash } from './util';
+import { defaultHash, findDuplicates, normalizeHash } from './util';
 
 const JOB_RETRIES = 3;
 
-type AnyStrategy = ContentAutomationStrategy<unknown>;
+type AnyStrategy = ContentAutomationStrategy<{ id: ID }>;
 
 /**
  * Called for every input that changed since its last successful generation.
@@ -35,7 +36,7 @@ type AnyStrategy = ContentAutomationStrategy<unknown>;
 type ChangedInputHandler = (
   ctx: RequestContext,
   strategy: AnyStrategy,
-  input: unknown,
+  input: { id: ID },
   hash: string
 ) => Promise<void>;
 
@@ -57,7 +58,18 @@ export class ContentAutomationService implements OnApplicationBootstrap {
     this.injector = new Injector(moduleRef);
   }
 
+  /** Validates strategy names at startup before registering the job queue. */
   async onApplicationBootstrap(): Promise<void> {
+    const duplicates = findDuplicates(
+      this.options.automationStrategies.map((strategy) => strategy.name)
+    );
+    if (duplicates.length) {
+      throw new Error(
+        `Content automation strategy names must be unique. Duplicates: ${duplicates.join(
+          ', '
+        )}`
+      );
+    }
     this.jobQueue = await this.jobQueueService.createQueue({
       name: 'content-automation',
       process: async (job) =>
@@ -146,10 +158,10 @@ export class ContentAutomationService implements OnApplicationBootstrap {
   async generateAndStore(
     ctx: RequestContext,
     strategy: AnyStrategy,
-    input: unknown,
+    input: { id: ID },
     hash: string
   ): Promise<ContentAutomationUpdate | undefined> {
-    if (await this.isProcessed(ctx, strategy.name, hash)) {
+    if (await this.isProcessed(ctx, strategy.name, input.id, hash)) {
       return;
     }
     const result = await strategy.generateAndSaveContent(
@@ -160,14 +172,24 @@ export class ContentAutomationService implements OnApplicationBootstrap {
     if (result === false) {
       return;
     }
-    return this.connection.getRepository(ctx, ContentAutomationUpdate).save(
+    const repository = this.connection.getRepository(
+      ctx,
+      ContentAutomationUpdate
+    );
+    const key = {
+      strategyName: strategy.name,
+      entityId: String(input.id),
+      channelId: String(ctx.channelId),
+      languageCode: ctx.languageCode,
+    };
+    const existing = await repository.findOne({ where: key });
+    return repository.save(
       new ContentAutomationUpdate({
-        strategyName: strategy.name,
-        channelId: String(ctx.channelId),
-        languageCode: ctx.languageCode,
+        ...key,
+        id: existing?.id,
         hash,
-        resultMessage: result.resultMessage,
-        entityUrl: result.entityUrl,
+        resultMessage: result.resultMessage ?? null,
+        entityUrl: result.entityUrl ?? null,
       })
     );
   }
@@ -194,6 +216,8 @@ export class ContentAutomationService implements OnApplicationBootstrap {
    * When loading inputs fails, the error is logged and the next
    * strategy/channel/language is processed. When processing a single input
    * fails, the error is logged and the next input is processed.
+   *
+   * @param handler the callback; either push to job queue or handle syncronously; up to the caller
    */
   private async forEachChangedInput(
     handler: ChangedInputHandler
@@ -212,8 +236,8 @@ export class ContentAutomationService implements OnApplicationBootstrap {
             channelOrToken: channel,
             languageCode,
           });
-          let inputs: unknown[];
-          let processedHashes: Set<string>;
+          let inputs: Array<{ id: ID }>;
+          let processedHashes: Map<string, string>;
           try {
             inputs = await strategy.loadInputData(ctx, this.injector);
             processedHashes = await this.getProcessedHashes(ctx, strategy.name);
@@ -236,7 +260,8 @@ export class ContentAutomationService implements OnApplicationBootstrap {
                   ? strategy.generateHash(ctx, input)
                   : defaultHash(input)
               );
-              if (processedHashes.has(hash)) {
+              if (processedHashes.get(String(input.id)) === hash) {
+                // This means the hash for this entity is the same as last time, so we skip it
                 continue;
               }
               await handler(ctx, strategy, input, hash);
@@ -258,43 +283,49 @@ export class ContentAutomationService implements OnApplicationBootstrap {
   }
 
   /**
-   * Loads all hashes that were processed successfully for this strategy, channel
-   * and language at once, so the inputs can be compared without a query per input.
+   * Loads the latest successful hash per entity for this strategy, channel
+   * and language, so inputs can be compared without a query per input.
    */
   private async getProcessedHashes(
     ctx: RequestContext,
     strategyName: string
-  ): Promise<Set<string>> {
+  ): Promise<Map<string, string>> {
     const updates = await this.connection
       .getRepository(ctx, ContentAutomationUpdate)
       .find({
-        select: { hash: true },
+        select: { entityId: true, hash: true },
         where: {
           strategyName,
           channelId: String(ctx.channelId),
           languageCode: ctx.languageCode,
         },
       });
-    return new Set(updates.map((u) => u.hash));
+    return new Map(
+      updates.map((update) => [String(update.entityId), update.hash])
+    );
   }
 
   /**
-   * Checks if content was already generated successfully for this hash,
-   * strategy, channel and language.
+   * Checks whether this hash matches the entity's latest successful generation
+   * for this strategy, channel and language.
    */
   private async isProcessed(
     ctx: RequestContext,
     strategyName: string,
+    entityId: ID,
     hash: string
   ): Promise<boolean> {
-    return this.connection.getRepository(ctx, ContentAutomationUpdate).exists({
-      where: {
-        strategyName,
-        channelId: String(ctx.channelId),
-        languageCode: ctx.languageCode,
-        hash,
-      },
-    });
+    const latest = await this.connection
+      .getRepository(ctx, ContentAutomationUpdate)
+      .findOne({
+        where: {
+          strategyName,
+          channelId: String(ctx.channelId),
+          languageCode: ctx.languageCode,
+          entityId: String(entityId),
+        },
+      });
+    return latest?.hash === hash;
   }
 
   private getLanguages(channel: Channel): LanguageCode[] {

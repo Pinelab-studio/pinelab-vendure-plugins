@@ -122,7 +122,7 @@ The `ctx` passed to your strategy is an Admin API context for the channel and la
 
 ### Important: what to include in the input
 
-- **Include the id of the entity.** The plugin recognizes an already processed input by its hash. Inputs of different entities should never have the same hash. The default hash includes all fields, so this is only a concern when you implement `generateHash` yourself.
+- **Include the id of the entity.** Every input must contain `id: ID`. The plugin compares its hash against the latest successful update for that entity, strategy, channel and language. Reverting to an older input regenerates content.
 - **Don't include fields your strategy writes.** If the input of the meta tags strategy would include the meta title, every generation changes the input, and the product would be regenerated every night.
 
 ## How it works
@@ -131,7 +131,7 @@ Every night, a scheduled task with id `content-automation` runs:
 
 1. For every strategy, every channel, and every available language of that channel, `loadInputData()` is called.
 2. A hash is generated for every input.
-3. If a `ContentAutomationUpdate` with the same strategy, channel, language and hash exists, the input is unchanged and skipped.
+3. If the latest `ContentAutomationUpdate` for the entity, strategy, channel and language has the same hash, the input is unchanged and skipped.
 4. For every changed input, a job is created in the `content-automation` job queue, containing the strategy name, the input, the hash and the serialized `RequestContext`.
 5. The job resolves the strategy by its name, and calls `generateAndSaveContent()` with the original ctx and input:
    - When a result is returned, a `ContentAutomationUpdate` is stored.
@@ -162,13 +162,14 @@ Every successful generation is stored as a `ContentAutomationUpdate`:
 | Field           | Description                                           |
 | --------------- | ----------------------------------------------------- |
 | `strategyName`  | The strategy that generated the content.              |
+| `entityId`      | The input's required entity id.                       |
 | `channelId`     | The channel the content was generated for.            |
 | `languageCode`  | The language the content was generated for.           |
 | `hash`          | The hash of the input the content was generated from. |
 | `resultMessage` | The optional message returned by the strategy.        |
 | `entityUrl`     | The optional Dashboard URL returned by the strategy.  |
 
-The generated content itself is not stored by the plugin: your strategy saves it on the entity. A new record is created for every successful generation, so the records are a log of all updates.
+The generated content itself is not stored by the plugin: your strategy saves it on the entity. One record is kept per entity, strategy, channel and language, enforced by a composite unique index. Successful generation updates its hash, result message and entity URL; `false` or errors leave the previous state unchanged. These records represent current state, not an audit log.
 
 When a job runs and the hash of its input was already stored in the meantime, for example by a duplicate job, the job is skipped without calling your strategy.
 
@@ -180,7 +181,7 @@ The updates of the active channel can be queried via the Admin API, with Vendure
 query {
   contentAutomationUpdates(
     options: {
-      sort: { createdAt: DESC }
+      sort: { updatedAt: DESC }
       filter: { strategyName: { eq: "product-metatags-ai" } }
     }
   ) {
@@ -237,7 +238,6 @@ The plugin adds a **Content automation** page under the Catalog section of the D
 ## Limitations
 
 - The plugin only creates new jobs when the nightly task runs. When a job is still queued or retrying during the next nightly run, a second job is created for the same input. The second job is skipped if the first one succeeded, but if both jobs run at the same moment, content can be generated twice.
-- Unchanged inputs are recognized by their hash. If an input changes and then changes back to a previous state, it isn't regenerated, because the hash of the previous state was already stored.
 - Inputs that return `false` are offered to your strategy again on every run. Return `false` before doing expensive work, like calling an AI provider.
 - `loadInputData()` returns all inputs of a channel and language at once, so they are all kept in memory during the run. Keep inputs small for very large catalogs.
-- A `ContentAutomationUpdate` is added for every successful generation, and records are never deleted. The table grows with every change to your inputs.
+- Only the latest successful state is retained per entity, strategy, channel and language. Previous generation results are overwritten.
