@@ -86,6 +86,7 @@
           "order-cleanup",
           "coinbase",
           "content-health",
+          "content-automation",
           "customer-managed-groups",
           "docs-website",
           "drop-off-points",
