@@ -1,6 +1,6 @@
 {
   "name": "@pinelab/vendure-plugin-content-automation",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Vendure plugin that orchestrates bulk generation and enrichment of entity content (e.g. SEO meta tags) per channel and language, via consumer-provided strategies.",
   "keywords": [
     "vendure",
