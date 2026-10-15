@@ -101,6 +101,10 @@ import { createSettledOrder } from '../../test/src/shop-utils';
 import { waitFor } from '../../test/src/test-helpers';
 import { createMockResponse } from './util';
 
+// Since @vendure/testing 3.7.0 the SimpleGraphQLClient uses global fetch, so
+// fetch mocks must pass non-QLS requests (the test GraphQL client) through.
+const realFetch = globalThis.fetch;
+
 beforeEach(() => {
   vi.unstubAllGlobals();
 });
@@ -114,7 +118,8 @@ it('Runs full sync', async () => {
   let updatedProducts: FulfillmentProduct[] = [];
   vi.stubGlobal(
     'fetch',
-    vi.fn((url, { method, body }) => {
+    vi.fn((url: string, init: any = {}) => {
+      const { method, body } = init;
       // Mock get all fulfillment products
       if (method === 'GET' && url.includes('fulfillment/products')) {
         return createMockResponse({
@@ -156,6 +161,8 @@ it('Runs full sync', async () => {
           },
         });
       }
+      // Non-QLS requests (e.g. the GraphQL test client) go to the real server
+      return realFetch(url, init);
     })
   );
   await adminClient.asSuperAdmin();
@@ -286,13 +293,16 @@ it('Pushes order to QLS', async () => {
   const createdOrders: string[] = [];
   vi.stubGlobal(
     'fetch',
-    vi.fn((url, { method, body }) => {
+    vi.fn((url: string, init: any = {}) => {
+      const { method, body } = init;
       if (method === 'POST' && url.includes('fulfillment/orders')) {
         createdOrders.push(body);
         return createMockResponse({
           data: { id: '1' },
         });
       }
+      // Non-QLS requests (e.g. the GraphQL test client) go to the real server
+      return realFetch(url, init);
     })
   );
   const variants = await getAllVariants(adminClient);
@@ -356,10 +366,14 @@ it('Emits QlsOrderFailedEvent when order push fails', async () => {
     },
     pagination: null,
   };
-  // Mock fulfilment order failure response
+  // Mock fulfilment order failure response. Only QLS requests are mocked;
+  // other requests (e.g. the GraphQL test client) go to the real server.
   vi.stubGlobal(
     'fetch',
-    vi.fn(async (url, { method }) => {
+    vi.fn(async (url: string, init?: any) => {
+      if (!String(url).includes('fulfillment')) {
+        return realFetch(url, init);
+      }
       return {
         ok: false,
         status: 400,

@@ -340,10 +340,13 @@ describe('ContentHealthPlugin (e2e)', () => {
     const goodCollectionUrl = `${STOREFRONT_ORIGIN}/en/collections/good-collection`;
     const brokenProductUrl = `${STOREFRONT_ORIGIN}/en/products/broken-product`;
     mockAgent = new MockAgent();
-    // Unmocked requests reject immediately instead of attempting real
-    // network — this is what makes `broken-product` (deliberately left
-    // unmocked below) simulate a page-fetch failure.
-    mockAgent.disableNetConnect();
+    // Since @vendure/testing 3.7.0 the SimpleGraphQLClient uses global fetch,
+    // which routes through the global undici dispatcher. Only allow the local
+    // test server through; unmocked external requests (storefront.test) still
+    // reject immediately instead of attempting real network. This is what
+    // makes `broken-product` (deliberately left unmocked below) simulate a
+    // page-fetch failure.
+    mockAgent.enableNetConnect(/localhost/);
     setGlobalDispatcher(mockAgent);
     const storefrontClient = mockAgent.get(STOREFRONT_ORIGIN);
     storefrontClient

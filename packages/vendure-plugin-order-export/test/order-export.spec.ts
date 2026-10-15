@@ -84,7 +84,8 @@ describe('Order export plugin', function () {
     );
     expect(res.status).toBe(200);
     expect(res.headers.get('Content-type')).toContain('text/csv');
-    expect(res.body.pipe).toBeDefined();
+    // With native fetch (vendure 3.7.0) the body is a ReadableStream
+    expect(res.body).not.toBeNull();
   });
 
   afterAll(() => {
