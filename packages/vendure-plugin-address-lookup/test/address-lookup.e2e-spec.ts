@@ -249,11 +249,22 @@ function mockFetch(
   statusText: string,
   bodyJson: any
 ) {
-  return vi.fn().mockResolvedValue({
-    ok,
-    status,
-    statusText: statusText,
-    json: async () => bodyJson,
-    text: async () => JSON.stringify(bodyJson),
+  // Keep a reference to the real fetch. Since @vendure/testing 3.7.0 the
+  // SimpleGraphQLClient also uses global fetch, so the mock must let
+  // test-server requests (localhost) through untouched.
+  const realFetch = globalThis.fetch;
+  return vi.fn((url: string | URL, init?: RequestInit) => {
+    if (String(url).includes('localhost')) {
+      return realFetch(url, init);
+    }
+    // Mocked response for the BAG API
+    return Promise.resolve({
+      ok,
+      status,
+      statusText: statusText,
+      headers: { get: () => null },
+      json: async () => bodyJson,
+      text: async () => JSON.stringify(bodyJson),
+    });
   });
 }
