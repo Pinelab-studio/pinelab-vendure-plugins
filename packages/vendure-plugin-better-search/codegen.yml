@@ -1,4 +1,7 @@
-schema: 'src/api/api-extensions.ts'
+schema:
+  - 'src/api/api-extensions.ts'
+  - '../../node_modules/@vendure/core/dist/api/schema/common/*.graphql'
+  - '../../node_modules/@vendure/core/dist/api/schema/admin-api/*.graphql'
 generates:
   ./src/api/generated/graphql.ts:
     plugins:
@@ -7,6 +10,8 @@ generates:
       - typed-document-node
     config:
       enumsAsTypes: true
+      enumValues:
+        Permission: '@vendure/common/lib/generated-types#Permission'
       avoidOptionals: false
       scalars:
         DateTime: Date

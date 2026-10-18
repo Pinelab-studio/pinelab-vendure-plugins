@@ -1,53 +1,60 @@
 import gql from 'graphql-tag';
-import { BetterSearchPlugin } from '../better-search.plugin';
 
-export const shopApiExtensions = () => {
-  // Map the custom fields to the graphql schema. E.g. "facetValueNames: [String!]!"
-  const customFields = Object.entries(
-    BetterSearchPlugin.options.indexableFields
-  )
-    // Only include fields that have a graphqlFieldType
-    .filter(([, value]) => value.graphqlFieldType)
-    .map(([key, value]) => {
-      return `${key}: ${value.graphqlFieldType}`;
-    })
-    .join('\n');
-
-  return gql`
-  type BetterSearchResult {
-    productId: ID!
-    slug: String!
-    productName: String!
-    productAsset: BetterSearchResultAsset
-    lowestPrice: Float!
-    lowestPriceWithTax: Float!
-    highestPrice: Float!
-    highestPriceWithTax: Float!
-    facetValueIds: [ID!]!
-    collectionIds: [ID!]!
-    collectionNames: [String!]!
-    skus: [String!]!
-    ${customFields}
-  }
-
-  type BetterSearchResultAsset {
+export const adminApiExtensions = gql`
+  type SearchLogAggregate implements Node {
     id: ID!
-    preview: String!
+    term: String!
+    searchCount: Int!
+    lastSearchedAt: DateTime!
+    resultCount: Int!
+    languageCode: LanguageCode!
   }
 
-  type BetterSearchResultList {
-    items: [BetterSearchResult!]!
+  type SearchLogAggregateList implements PaginatedList {
+    items: [SearchLogAggregate!]!
     totalItems: Int!
   }
 
-  input BetterSearchInput {
-    term: String!
+  input SearchLogAggregateListOptions {
     skip: Int
     take: Int
+    sort: SearchLogAggregateSortParameter
+    filter: SearchLogAggregateFilterParameter
+    filterOperator: LogicalOperator
+  }
+
+  input SearchLogAggregateSortParameter {
+    term: SortOrder
+    searchCount: SortOrder
+    lastSearchedAt: SortOrder
+    resultCount: SortOrder
+    languageCode: SortOrder
+  }
+
+  input SearchLogAggregateFilterParameter {
+    term: StringOperators
+    searchCount: NumberOperators
+    lastSearchedAt: DateOperators
+    resultCount: NumberOperators
+    languageCode: StringOperators
+    _and: [SearchLogAggregateFilterParameter!]
+    _or: [SearchLogAggregateFilterParameter!]
   }
 
   extend type Query {
-    betterSearch(input: BetterSearchInput!): BetterSearchResultList!
+    searchLogAggregates(
+      options: SearchLogAggregateListOptions
+    ): SearchLogAggregateList!
+    inspectSearchIndex(skip: Int, take: Int): JSON!
   }
 `;
-};
+
+export const shopApiExtensions = gql`
+  type SearchSuggestion {
+    suggestion: String!
+  }
+
+  extend type Query {
+    searchSuggestions(term: String!): [SearchSuggestion!]!
+  }
+`;

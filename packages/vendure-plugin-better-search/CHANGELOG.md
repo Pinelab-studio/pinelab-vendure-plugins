@@ -1,6 +1,10 @@
-# 0.5.0 (2026-08-05)
+# 1.0.1-beta.5 (2026-10-13)
 
-- Upgraded to Vendure 3.6.3
+- Exclude unavailable variants from search price ranges.
+
+# 1.0.0 (2026-02-05)
+
+- Refactored the plugin to be a full Search Plugin, instead of a custom search query.
 
 # 0.4.0 (2026-02-05)
 

@@ -1,0 +1,1345 @@
+import {
+  Channel,
+  CurrencyCode,
+  ConfigService,
+  ImportParser,
+  Injector,
+  LanguageCode,
+  Logger,
+  Product,
+  ProductVariant,
+  EventBus,
+  JobQueueService,
+  ProductService,
+  RequestContext,
+  TransactionalConnection,
+} from '@vendure/core';
+import { ModuleRef } from '@nestjs/core';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+import { IndexService, defaultMapSearchDocuments } from './index.service';
+import {
+  BetterSearchDocument,
+  IndexJobData,
+  SearchDocumentMapper,
+} from '../types';
+import { SearchService } from './search.service';
+import { MinisearchEngine } from '../config/minisearch-engine';
+
+const injector = {
+  get: () => ({ assetOptions: { assetStorageStrategy: {} } }),
+} as unknown as Injector;
+
+/** Maps test fixtures before handing them to the engine. */
+async function mappedIndex(
+  engine: MinisearchEngine,
+  ctx: RequestContext,
+  variants: ProductVariant[]
+) {
+  const mapped = defaultMapSearchDocuments(ctx, variants, injector);
+  return engine.createIndex(ctx, mapped.documents, mapped.indexedFields);
+}
+
+const mockSearch = vi.fn();
+const mockSerialize = vi.fn().mockReturnValue('serialized-data');
+const mockDeserialize = vi.fn().mockReturnValue({ deserialized: true });
+const mockGetDocuments = vi.fn().mockResolvedValue([]);
+const mockRemoveDocuments = vi.fn().mockResolvedValue({ removed: true });
+const mockUpdateDocuments = vi.fn().mockResolvedValue({ updated: true });
+
+const mockSearchEngine = {
+  search: (...args: unknown[]) => mockSearch(...args),
+  createIndex: vi.fn().mockResolvedValue({ created: true }),
+  serializeIndex: (index: unknown) => mockSerialize(index),
+  deserializeIndex: (data: unknown) => mockDeserialize(data),
+  getDocuments: (...args: unknown[]) => mockGetDocuments(...args),
+  removeDocuments: (...args: unknown[]) => mockRemoveDocuments(...args),
+  updateDocuments: (...args: unknown[]) => mockUpdateDocuments(...args),
+  searchSuggestions: vi.fn().mockResolvedValue([]),
+};
+
+const mockRequestContext = {
+  apiType: 'admin',
+  channel: {
+    token: 'test-channel',
+    availableLanguageCodes: ['en'],
+  },
+  languageCode: 'en',
+  serialize: () => ({}),
+} as unknown as RequestContext;
+
+const createMockRepository = (overrides?: {
+  findOne?: () => Promise<any>;
+  save?: () => Promise<any>;
+  find?: () => Promise<Array<{ id: string; data: string }>>;
+  channelFind?: () => Promise<any[]>;
+}) => {
+  const repo = {
+    find: vi.fn().mockResolvedValue([]),
+    findOne: vi.fn().mockResolvedValue(undefined),
+    save: vi
+      .fn()
+      .mockImplementation((entity) =>
+        Promise.resolve({ ...entity, updatedAt: new Date() })
+      ),
+    ...overrides,
+  };
+  const channelRepo = {
+    find: vi.fn().mockResolvedValue(overrides?.channelFind?.() ?? []),
+  };
+  return {
+    getRepository: vi.fn().mockReturnValue(repo),
+    rawConnection: {
+      getRepository: vi.fn().mockReturnValue(channelRepo),
+    },
+  } as unknown as TransactionalConnection;
+};
+
+describe('IndexService', () => {
+  beforeEach(() => {
+    vi.useRealTimers();
+    vi.clearAllMocks();
+  });
+
+  function createService(overrides?: {
+    connection?: TransactionalConnection;
+    debounceMs?: number;
+    isEnabled?: (ctx: RequestContext) => boolean | Promise<boolean>;
+    productService?: ProductService;
+    productVariantService?: any;
+    eventBus?: EventBus;
+    mapSearchDocuments?: SearchDocumentMapper;
+  }): IndexService {
+    const connection = overrides?.connection ?? createMockRepository();
+    const options = {
+      debounceIndexRebuildMs: overrides?.debounceMs ?? 50,
+      isEnabled: overrides?.isEnabled,
+      searchEngine: mockSearchEngine,
+      mapSearchDocuments: overrides?.mapSearchDocuments,
+    };
+    return new IndexService(
+      connection,
+      options as any,
+      { createQueue: vi.fn() } as unknown as JobQueueService,
+      overrides?.productService ?? ({} as ProductService),
+      overrides?.productVariantService ?? ({} as any),
+      overrides?.eventBus ??
+        ({
+          ofType: vi.fn().mockReturnValue({ subscribe: vi.fn() }),
+        } as unknown as EventBus),
+      injector as unknown as ModuleRef
+    );
+  }
+
+  describe('reindex tax zone context', () => {
+    it.each(['initial', 'scheduled'])(
+      'loads the default tax zone for %s indexing and preserves it in queued contexts',
+      async (source) => {
+        const defaultTaxZone = { id: 'tax-zone', name: 'Netherlands' };
+        const findChannels = vi.fn().mockImplementation(async (options) => {
+          const loaded = options?.relations?.includes('defaultTaxZone');
+          return [
+            new Channel({
+              id: 'channel-1',
+              token: 'retail',
+              availableLanguageCodes: ['nl', 'fr'] as any,
+              defaultLanguageCode: 'nl' as any,
+              defaultCurrencyCode: 'EUR' as any,
+              defaultTaxZone: loaded ? (defaultTaxZone as any) : undefined,
+            }),
+          ];
+        });
+        const connection = createMockRepository();
+        (connection.rawConnection.getRepository as any).mockReturnValue({
+          find: findChannels,
+        });
+        const service = createService({ connection });
+        const reindex = vi
+          .spyOn(service, 'triggerReindex')
+          .mockResolvedValue({} as any);
+
+        if (source === 'initial') {
+          await (service as any).buildMissingIndexes();
+        } else {
+          await service.triggerReindexForAllChannels();
+        }
+
+        expect(findChannels).toHaveBeenCalledWith({
+          relations: ['defaultTaxZone', 'defaultShippingZone'],
+        });
+        expect(reindex).toHaveBeenCalledTimes(2);
+        for (const [ctx] of reindex.mock.calls) {
+          const workerCtx = RequestContext.deserialize(ctx.serialize());
+          expect(workerCtx.channel.defaultTaxZone).toMatchObject(
+            defaultTaxZone
+          );
+          expect(workerCtx.languageCode).toBe(ctx.languageCode);
+        }
+      }
+    );
+  });
+
+  describe('mapped asset URLs', () => {
+    it.each([
+      'http://example.com/image.jpg',
+      'https://example.com/image.jpg',
+      'HTTPS://example.com/image.jpg',
+    ])(
+      'preserves absolute URL %s without calling the storage strategy',
+      (preview) => {
+        const toAbsoluteUrl = vi.fn();
+        const assetInjector = {
+          get: () => ({
+            assetOptions: { assetStorageStrategy: { toAbsoluteUrl } },
+          }),
+        } as unknown as Injector;
+        const variant = {
+          id: 'v',
+          product: { id: 'p', featuredAsset: { id: 'asset', preview } },
+        } as unknown as ProductVariant;
+        const mapped = defaultMapSearchDocuments(
+          mockRequestContext,
+          [variant],
+          assetInjector
+        );
+        expect(mapped.documents[0].productAssetPreview).toBe(preview);
+        expect(toAbsoluteUrl).not.toHaveBeenCalled();
+      }
+    );
+  });
+  describe('indexed description text', () => {
+    /** Creates a variant with localized and fallback text for engine-level tests. */
+    function textVariant(description?: string): ProductVariant {
+      return {
+        id: 'text-variant',
+        productId: 'text-product',
+        product: {
+          name: '<b>Catalog</b>',
+          slug: 'catalog-slug',
+          description: '<p>Fallback description</p>',
+          translations: [
+            {
+              languageCode: LanguageCode.en,
+              name: '<b>Catalog</b>',
+              slug: 'catalog-slug',
+              description,
+            },
+          ],
+        },
+      } as unknown as ProductVariant;
+    }
+
+    it.each([
+      [
+        '<p class="markupattribute">Fresh <strong>orchard</strong></p><p>Fruit</p>',
+        'Fresh orchard Fruit',
+      ],
+      ['  Plain\n\t text   ', 'Plain text'],
+      ['', ''],
+      [undefined, ''],
+      ['<p>Fruit &amp; vegetables&nbsp;</p>', 'Fruit &amp; vegetables&nbsp;'],
+      [
+        '<script>retainedscript</script><style>retainedstyle</style>',
+        'retainedscript retainedstyle',
+      ],
+    ])(
+      'normalizes description %j without changing names or slugs',
+      async (description, expected) => {
+        const ctx = { languageCode: LanguageCode.en } as RequestContext;
+        const engine = new MinisearchEngine();
+        const variant = textVariant(description);
+        const index = await mappedIndex(engine, ctx, [variant]);
+        const documents = await engine.getDocuments(index, 0, 10);
+        expect(documents[0]).toMatchObject({
+          productName: '<b>Catalog</b>',
+          slug: 'catalog-slug',
+          description: expected,
+        });
+        expect(variant.product.translations[0].description).toBe(description);
+      }
+    );
+
+    it('indexes content words without indexing description tags or attributes', async () => {
+      const ctx = { languageCode: LanguageCode.en } as RequestContext;
+      const engine = new MinisearchEngine();
+      const index = await mappedIndex(engine, ctx, [
+        textVariant(
+          '<section data-markupattribute="markupvalue">Orchard</section><p>Harvest</p>'
+        ),
+      ]);
+      expect(await engine.search(ctx, index, 'orchard')).toHaveLength(1);
+      expect(await engine.search(ctx, index, 'harvest')).toHaveLength(1);
+      for (const term of ['section', 'markupattribute', 'markupvalue']) {
+        expect(await engine.search(ctx, index, term)).toHaveLength(0);
+      }
+      await engine.updateDocuments(
+        ctx,
+        index,
+        defaultMapSearchDocuments(
+          ctx,
+          [textVariant('<p>Updated orchard</p>')],
+          injector
+        ).documents
+      );
+      expect((await engine.search(ctx, index, 'updated'))[0].description).toBe(
+        'Updated orchard'
+      );
+    });
+
+    it('normalizes fallback descriptions and preserves missing-product behavior', async () => {
+      const ctx = { languageCode: LanguageCode.de } as RequestContext;
+      const engine = new MinisearchEngine();
+      const index = await mappedIndex(engine, ctx, [
+        textVariant('<p>English translation</p>'),
+        { id: 'missing-product' } as ProductVariant,
+      ]);
+      const documents = await engine.getDocuments(index, 0, 10);
+      expect(documents[0].description).toBe('Fallback description');
+      expect(documents[1]).toMatchObject({
+        productName: '',
+        slug: '',
+        description: '',
+      });
+    });
+  });
+
+  describe('enriched search documents', () => {
+    const ctx = { languageCode: LanguageCode.en } as RequestContext;
+    /** Supplies a loaded parent product and searchable default text. */
+    function customVariant(): ProductVariant {
+      return {
+        id: 'custom-variant',
+        productId: '987654321',
+        product: {
+          id: '987654321',
+          name: 'Catalog',
+          slug: 'catalog-slug',
+          description: 'orchardharvest',
+          customFields: { reference: 'customreferenceunique' },
+        },
+      } as unknown as ProductVariant;
+    }
+
+    it('stores arbitrary fields and restores field schema through partial updates and reloads', async () => {
+      const engine = new MinisearchEngine({ prefix: false, fuzzy: false });
+      const mapped = defaultMapSearchDocuments(
+        ctx,
+        [customVariant()],
+        injector
+      );
+      const document = {
+        ...mapped.documents[0],
+        hidden: { value: 'unindexedword' },
+      };
+      const index = await engine.createIndex(ctx, [document], ['productName']);
+      const reloaded = engine.deserializeIndex(engine.serializeIndex(index));
+      expect(await engine.getDocuments(reloaded, 0, 10)).toEqual([document]);
+      expect(await engine.search(ctx, reloaded, 'orchardharvest')).toHaveLength(
+        0
+      );
+      expect(await engine.search(ctx, reloaded, 'catal')).toHaveLength(0);
+      const updated = {
+        ...document,
+        productName: 'Replacement',
+        extra: 'storedonly',
+      };
+      await engine.updateDocuments(ctx, reloaded, [updated]);
+      const restored = engine.deserializeIndex(engine.serializeIndex(reloaded));
+      expect(await engine.getDocuments(restored, 0, 10)).toEqual([updated]);
+      expect(await engine.search(ctx, restored, 'catalog')).toHaveLength(0);
+      expect(await engine.search(ctx, restored, 'replacement')).toHaveLength(1);
+      expect(await engine.search(ctx, restored, 'storedonly')).toHaveLength(0);
+      expect(() => engine.deserializeIndex('{}')).toThrow('full reindex');
+    });
+
+    it('allows overriding description while indexing loaded custom fields', async () => {
+      const engine = new MinisearchEngine();
+      const variant = customVariant();
+      const mapper = vi.fn(async (ctx, variants, injector) => {
+        const mapped = defaultMapSearchDocuments(ctx, variants, injector);
+        return {
+          indexedFields: [...mapped.indexedFields, 'reference'],
+          documents: mapped.documents.map((d) => ({
+            ...d,
+            description: '',
+            reference: 'customreferenceunique',
+          })),
+        };
+      });
+      const service = createService({ mapSearchDocuments: mapper });
+      const mapped = await service['mapDocuments'](ctx, [variant]);
+      expect(mapper).toHaveBeenCalledWith(ctx, [variant], expect.any(Injector));
+      const index = await engine.createIndex(
+        ctx,
+        mapped.documents,
+        mapped.indexedFields
+      );
+      expect((await engine.getDocuments(index, 0, 10))[0].description).toBe('');
+      expect(await engine.search(ctx, index, 'orchardharvest')).toHaveLength(0);
+      for (const term of ['catalog', 'catalog-slug', 'customreferenceunique']) {
+        expect((await engine.search(ctx, index, term))[0]).toMatchObject({
+          productVariantId: 'custom-variant',
+          description: '',
+        });
+      }
+      expect(variant.product.description).toBe('orchardharvest');
+    });
+
+    it.each([0, 1])(
+      'allows returning %i documents from a larger batch',
+      async (count) => {
+        const service = createService({
+          mapSearchDocuments: (ctx, variants, injector) => {
+            const mapped = defaultMapSearchDocuments(ctx, variants, injector);
+            return { ...mapped, documents: mapped.documents.slice(0, count) };
+          },
+        });
+        const result = await service['mapDocuments'](ctx, [
+          customVariant(),
+          { ...customVariant(), id: 'other' } as ProductVariant,
+        ]);
+        expect(result.documents).toHaveLength(count);
+      }
+    );
+
+    it.each(['id', 'productId', 'duplicate'])(
+      'rejects invalid mapping identities: %s',
+      async (invalid) => {
+        const service = createService({
+          mapSearchDocuments: (ctx, variants, injector) => {
+            const mapped = defaultMapSearchDocuments(ctx, variants, injector);
+            if (invalid === 'duplicate')
+              mapped.documents[1] = mapped.documents[0];
+            else mapped.documents[0][invalid] = 'changed';
+            return mapped;
+          },
+        });
+        await expect(
+          service['mapDocuments'](ctx, [
+            customVariant(),
+            { ...customVariant(), id: 'other' } as ProductVariant,
+          ])
+        ).rejects.toThrow('mapSearchDocuments');
+      }
+    );
+  });
+
+  describe('indexed prices', () => {
+    /** Creates a channel context with a known default currency. */
+    function pricingContext(): RequestContext {
+      return new RequestContext({
+        apiType: 'admin',
+        isAuthorized: true,
+        authorizedAsOwnerOnly: false,
+        languageCode: LanguageCode.en,
+        channel: new Channel({
+          id: 'channel-1',
+          token: 'pricing-channel',
+          defaultCurrencyCode: CurrencyCode.EUR,
+          availableLanguageCodes: [LanguageCode.en],
+        }),
+      });
+    }
+
+    it('excludes disabled, deleted and other-channel variants from full rebuild prices', async () => {
+      const ctx = pricingContext();
+      const eligible = {
+        id: 'paid',
+        enabled: true,
+        channels: [ctx.channel],
+        price: 1736,
+        priceWithTax: 2100,
+      } as ProductVariant;
+      const product = new Product({
+        id: 'p',
+        variants: [
+          eligible,
+          {
+            ...eligible,
+            id: 'disabled',
+            enabled: false,
+            price: 0,
+          } as ProductVariant,
+          {
+            ...eligible,
+            id: 'deleted',
+            deletedAt: new Date(),
+            price: 0,
+          } as ProductVariant,
+          {
+            ...eligible,
+            id: 'other-channel',
+            channels: [new Channel({ id: 'other' })],
+            price: 0,
+          } as ProductVariant,
+        ],
+      });
+      const findAll = vi.fn().mockResolvedValue({ items: [product] });
+      const applyChannelPriceAndTax = vi
+        .fn()
+        .mockImplementation(async (variant) => variant);
+      const service = createService({
+        productService: { findAll } as unknown as ProductService,
+        productVariantService: { applyChannelPriceAndTax },
+        eventBus: {
+          publish: vi.fn().mockResolvedValue(undefined),
+        } as unknown as EventBus,
+      });
+      await service.buildIndex(ctx);
+      expect(findAll.mock.calls[0][2]).toContain('variants.channels');
+      expect(applyChannelPriceAndTax).toHaveBeenCalledTimes(1);
+      expect(applyChannelPriceAndTax.mock.calls[0][0].id).toBe('paid');
+      expect(mockSearchEngine.createIndex).toHaveBeenLastCalledWith(
+        expect.any(RequestContext),
+        [
+          expect.objectContaining({
+            id: 'paid',
+            price: 1736,
+            priceWithTax: 2100,
+          }),
+        ],
+        ['productName', 'slug', 'description']
+      );
+    });
+
+    it('hydrates full rebuild prices, retaining returned variants and free prices', async () => {
+      const ctx = pricingContext();
+      const product = new Product({
+        id: 'p',
+        variants: [
+          {
+            id: 'paid',
+            price: 0,
+            enabled: true,
+            channels: [ctx.channel],
+          } as ProductVariant,
+          {
+            id: 'free',
+            price: 0,
+            enabled: true,
+            channels: [ctx.channel],
+          } as ProductVariant,
+        ],
+      });
+      const findAll = vi.fn().mockResolvedValue({ items: [product] });
+      const applyChannelPriceAndTax = vi
+        .fn()
+        .mockImplementation(async (variant) => ({
+          ...variant,
+          price: variant.id === 'paid' ? 1000 : 0,
+          priceWithTax: variant.id === 'paid' ? 1200 : 0,
+        }));
+      const service = createService({
+        productService: { findAll } as unknown as ProductService,
+        productVariantService: { applyChannelPriceAndTax },
+        eventBus: {
+          publish: vi.fn().mockResolvedValue(undefined),
+        } as unknown as EventBus,
+      });
+      await service.buildIndex(ctx);
+      expect(applyChannelPriceAndTax).toHaveBeenCalledTimes(2);
+      expect(applyChannelPriceAndTax.mock.calls[0][1].channelId).toBe(
+        ctx.channelId
+      );
+      expect(applyChannelPriceAndTax.mock.calls[0][1].currencyCode).toBe(
+        ctx.currencyCode
+      );
+      expect(findAll.mock.calls[0][2]).toEqual(
+        expect.arrayContaining([
+          'variants.productVariantPrices',
+          'variants.taxCategory',
+        ])
+      );
+      expect(mockSearchEngine.createIndex).toHaveBeenLastCalledWith(
+        expect.any(RequestContext),
+        [
+          expect.objectContaining({
+            price: 1000,
+            priceWithTax: 1200,
+            productId: 'p',
+          }),
+          expect.objectContaining({
+            price: 0,
+            priceWithTax: 0,
+            productId: 'p',
+          }),
+        ],
+        ['productName', 'slug', 'description']
+      );
+      product.translations = [
+        {
+          languageCode: LanguageCode.en,
+          name: 'Nike',
+          slug: 'nike',
+          description: '',
+        },
+      ] as any;
+      const engine = new MinisearchEngine();
+      const index = await engine.createIndex(
+        ctx,
+        mockSearchEngine.createIndex.mock.calls
+          .at(-1)![1]
+          .map((d: object) => ({ ...d, productName: 'Nike', slug: 'nike' })),
+        ['productName', 'slug', 'description']
+      );
+      const reloaded = engine.deserializeIndex(engine.serializeIndex(index));
+      const results = await engine.search(ctx, reloaded, 'nike');
+      expect(
+        results.map((document) => document.lowestPrice).sort((a, b) => a - b)
+      ).toEqual([0, 1000]);
+      expect(
+        results
+          .map((document) => document.lowestPriceWithTax)
+          .sort((a, b) => a - b)
+      ).toEqual([0, 1200]);
+    });
+
+    it.each(['product', 'variant'])(
+      'retains hydrated prices on partial %s updates',
+      async (path) => {
+        const ctx = pricingContext();
+        const product = new Product({
+          id: 'p',
+          enabled: true,
+          channels: [ctx.channel],
+        });
+        const variant = new ProductVariant({
+          id: 'v',
+          productId: 'p',
+          enabled: true,
+          channels: [ctx.channel],
+          product,
+        });
+        const pricedVariant = {
+          ...variant,
+          price: 2000,
+          priceWithTax: 2400,
+        } as ProductVariant;
+        product.variants = [variant];
+        const applyChannelPriceAndTax = vi
+          .fn()
+          .mockResolvedValue(pricedVariant);
+        const findOne = vi.fn().mockResolvedValue(pricedVariant);
+        const service = createService({
+          connection: createMockRepository({
+            findOne: vi.fn().mockResolvedValue({ data: 'stored' }),
+          }),
+          productService: {
+            findOne: vi.fn().mockResolvedValue(product),
+          } as unknown as ProductService,
+          productVariantService: { applyChannelPriceAndTax, findOne },
+          mapSearchDocuments: async (ctx, variants, injector) => ({
+            ...defaultMapSearchDocuments(ctx, variants, injector),
+            indexedFields: ['ignored-partial-field'],
+          }),
+          eventBus: {
+            publish: vi.fn().mockResolvedValue(undefined),
+          } as unknown as EventBus,
+        });
+        await service.updateIndex(ctx, {
+          type: 'partial',
+          ctx: ctx.serialize(),
+          updateProductIds: path === 'product' ? ['p'] : [],
+          updateVariantIds: path === 'variant' ? ['v'] : [],
+          removeProductIds: [],
+          removeVariantIds: [],
+        });
+        expect(mockUpdateDocuments).toHaveBeenLastCalledWith(
+          ctx,
+          expect.anything(),
+          [
+            expect.objectContaining({
+              id: 'v',
+              productId: 'p',
+              price: 2000,
+              priceWithTax: 2400,
+            }),
+          ]
+        );
+        if (path === 'product') {
+          expect(applyChannelPriceAndTax).toHaveBeenCalledWith(variant, ctx);
+          return;
+        }
+        expect(findOne).toHaveBeenCalledWith(ctx, 'v', expect.any(Array));
+        expect(applyChannelPriceAndTax).not.toHaveBeenCalled();
+      }
+    );
+  });
+
+  describe('serialized index size logging', () => {
+    it('logs MB per index and totals, replacing previous sizes without rereading all data', async () => {
+      const find = vi.fn().mockResolvedValue([
+        { id: 'test-channel-en', data: 'old' },
+        { id: 'another-channel-en', data: 'x'.repeat(2_000_000) },
+      ]);
+      const service = createService({
+        connection: createMockRepository({ find }),
+      });
+      const log = vi.spyOn(Logger, 'info').mockImplementation(() => undefined);
+      const sizes = service as unknown as {
+        logIndexSizes(
+          ctx: RequestContext,
+          key: string,
+          serialized: string
+        ): Promise<void>;
+      };
+      try {
+        await sizes.logIndexSizes(
+          mockRequestContext,
+          'test-channel-en',
+          'x'.repeat(1_000_000)
+        );
+        expect(log).toHaveBeenLastCalledWith(
+          "Index 'test-channel-en' size: 1.00 MB; total across 2 stored indexes: 3.00 MB (serialized)",
+          expect.any(String)
+        );
+        await sizes.logIndexSizes(
+          mockRequestContext,
+          'test-channel-en',
+          'x'.repeat(4_000_000)
+        );
+        expect(log).toHaveBeenLastCalledWith(
+          "Index 'test-channel-en' size: 4.00 MB; total across 2 stored indexes: 6.00 MB (serialized)",
+          expect.any(String)
+        );
+        expect(find).toHaveBeenCalledTimes(1);
+      } finally {
+        log.mockRestore();
+      }
+    });
+  });
+
+  describe('search products CSV', () => {
+    it('parses all fixture products and their asset references', async () => {
+      const parser = new ImportParser({
+        defaultLanguageCode: LanguageCode.en,
+        customFields: { Product: [], ProductVariant: [] },
+      } as unknown as ConfigService);
+      const result = await parser.parseProducts(
+        readFileSync(resolve('test/search-products.csv'), 'utf8')
+      );
+
+      expect(result.errors).toEqual([]);
+      expect(result.results).toHaveLength(14);
+      expect(
+        result.results.every(({ product }) =>
+          product.assetPaths.includes('sample-asset.jpg')
+        )
+      ).toBe(true);
+    });
+  });
+
+  describe('SearchService product grouping', () => {
+    /** Creates a minimal indexed variant document for grouping tests. */
+    function document(
+      id: string,
+      productId: string,
+      price: number,
+      score: number
+    ): BetterSearchDocument {
+      return {
+        productVariantId: id,
+        productVariantName: id,
+        productId,
+        productAssetId: null,
+        productAssetPreview: null,
+        productName: productId,
+        sku: id,
+        slug: productId,
+        description: '',
+        lowestPrice: price,
+        highestPrice: price,
+        lowestPriceWithTax: price * 1.2,
+        highestPriceWithTax: price * 1.2,
+        score,
+        facetIds: [],
+        facetValueIds: [id],
+        collectionIds: [id],
+        collectionNames: [id],
+      };
+    }
+
+    /** Provides search results without requiring a persisted index. */
+    function searchService(): SearchService {
+      const indexService = createService();
+      vi.spyOn(indexService, 'getIndex').mockResolvedValue({});
+      mockSearch.mockResolvedValue([
+        document('v1', 'p1', 100, 10),
+        document('v2', 'p1', 200, 8),
+        document('v3', 'p2', 50, 5),
+      ]);
+      return new SearchService(
+        indexService,
+        {
+          searchEngine: mockSearchEngine,
+        } as any,
+        { record: vi.fn() } as any
+      );
+    }
+
+    it('returns one result per product with combined price ranges and memberships', async () => {
+      const result = await searchService().search(mockRequestContext, {
+        term: 'test',
+        groupByProduct: true,
+      });
+      expect(result.totalItems).toBe(2);
+      expect(result.items.map((item) => item.productId)).toEqual(['p1', 'p2']);
+      expect(result.items[0]).toMatchObject({
+        productVariantId: 'v1',
+        score: 10,
+        price: { min: 100, max: 200 },
+        priceWithTax: { min: 120, max: 240 },
+        facetValueIds: ['v1', 'v2'],
+        collectionIds: ['v1', 'v2'],
+      });
+    });
+
+    it.each([false, undefined])(
+      'preserves variant results when grouping is %s',
+      async (groupByProduct) => {
+        const result = await searchService().search(mockRequestContext, {
+          term: 'test',
+          groupByProduct,
+        });
+        expect(result.totalItems).toBe(3);
+        expect(result.items.map((item) => item.productVariantId)).toEqual([
+          'v1',
+          'v2',
+          'v3',
+        ]);
+      }
+    );
+
+    it('paginates after grouping and counts all matching products', async () => {
+      const result = await searchService().search(mockRequestContext, {
+        term: 'test',
+        groupByProduct: true,
+        skip: 1,
+        take: 1,
+      });
+      expect(result.totalItems).toBe(2);
+      expect(result.items.map((item) => item.productId)).toEqual(['p2']);
+    });
+  });
+
+  describe('partial regression coverage', () => {
+    /** Creates a removal payload without relying on private service state. */
+    function removal(): Extract<IndexJobData, { type: 'partial' }> {
+      return {
+        type: 'partial',
+        ctx: mockRequestContext.serialize(),
+        updateProductIds: [],
+        updateVariantIds: [],
+        removeProductIds: ['1'],
+        removeVariantIds: [],
+      };
+    }
+
+    it('enqueues the public payload unchanged with retries', async () => {
+      const add = vi.fn().mockResolvedValue({ id: 'job' });
+      const service = createService();
+      Object.assign(service, { jobQueue: { add } });
+      const data = removal();
+      expect(await service.triggerPartialReindex(data)).toEqual({ id: 'job' });
+      expect(add).toHaveBeenCalledWith(data, { retries: 2 });
+    });
+
+    it.each([
+      { enabled: false, deletedAt: null, channels: [{ id: undefined }] },
+      { enabled: true, deletedAt: new Date(), channels: [{ id: undefined }] },
+      { enabled: true, deletedAt: null, channels: [{ id: 'other' }] },
+    ])(
+      'excludes disabled, deleted or unassigned products: %j',
+      async (product) => {
+        const service = createService({
+          connection: createMockRepository({
+            findOne: vi.fn().mockResolvedValue({ data: 'stored' }),
+          }),
+          productService: {
+            findOne: vi.fn().mockResolvedValue(product),
+          } as unknown as ProductService,
+          eventBus: {
+            publish: vi.fn().mockResolvedValue(undefined),
+          } as unknown as EventBus,
+        });
+        await service.updateIndex(mockRequestContext, {
+          ...removal(),
+          removeProductIds: [],
+          updateProductIds: ['1'],
+        });
+        expect(mockUpdateDocuments).toHaveBeenLastCalledWith(
+          mockRequestContext,
+          { removed: true },
+          []
+        );
+      }
+    );
+
+    it('skips deletion fallback languages without an existing index', async () => {
+      vi.useFakeTimers();
+      const service = createService();
+      const enqueue = vi.spyOn(service, 'triggerPartialReindex');
+      await service.debouncedRebuildIndex(
+        mockRequestContext,
+        { productIds: ['1'], remove: true },
+        true
+      );
+      await vi.advanceTimersByTimeAsync(100);
+      expect(enqueue).not.toHaveBeenCalled();
+    });
+
+    it('fails partial jobs when the index is missing', async () => {
+      await expect(
+        createService().updateIndex(mockRequestContext, removal())
+      ).rejects.toThrow('No index found');
+    });
+
+    it('serializes writes and recovers after a failed save', async () => {
+      const save = vi
+        .fn()
+        .mockRejectedValueOnce(new Error('save failed'))
+        .mockResolvedValue({ updatedAt: new Date() });
+      const connection = createMockRepository({
+        findOne: vi.fn().mockResolvedValue({ data: 'stored' }),
+        save,
+      });
+      const service = createService({
+        connection,
+        eventBus: {
+          publish: vi.fn().mockResolvedValue(undefined),
+        } as unknown as EventBus,
+      });
+      const first = service.updateIndex(mockRequestContext, removal());
+      const second = service.updateIndex(mockRequestContext, removal());
+      await expect(first).rejects.toThrow('save failed');
+      await expect(second).resolves.toBe(0);
+      expect(save).toHaveBeenCalledTimes(2);
+      expect(mockDeserialize).toHaveBeenCalledWith('stored');
+    });
+
+    it('routes updates to assigned channels and deletion fallback to all channels', async () => {
+      const channels = [
+        { id: '1', token: 'one', availableLanguageCodes: ['en'] },
+        { id: '2', token: 'two', availableLanguageCodes: ['en', 'de'] },
+      ];
+      const findOne = vi.fn().mockResolvedValue({ channels: [channels[1]] });
+      const connection = {
+        getRepository: vi.fn((_, entity) =>
+          entity === Channel
+            ? { find: vi.fn().mockResolvedValue(channels) }
+            : entity === Product || entity === ProductVariant
+            ? { findOne }
+            : {}
+        ),
+      } as unknown as TransactionalConnection;
+      const service = createService({ connection });
+      const debounce = vi
+        .spyOn(service, 'debouncedRebuildIndex')
+        .mockResolvedValue(undefined);
+      await service.reindexAffectedChannels(mockRequestContext, {
+        productIds: ['1'],
+      });
+      expect(debounce).toHaveBeenCalledTimes(1);
+      expect(debounce.mock.calls[0][0].channel.token).toBe('two');
+      debounce.mockClear();
+      findOne.mockResolvedValue(undefined);
+      await service.reindexAffectedChannels(mockRequestContext, {
+        variantIds: ['2'],
+        remove: true,
+      });
+      expect(debounce).toHaveBeenCalledTimes(2);
+      expect(debounce.mock.calls.every((call) => call[2] === true)).toBe(true);
+    });
+
+    it('does not resurrect a variant belonging to a removed product', async () => {
+      const findOne = vi.fn().mockResolvedValue({
+        id: 'v',
+        productId: '1',
+        enabled: true,
+        channels: [{ id: undefined }],
+        product: { enabled: true, channels: [{ id: undefined }] },
+      });
+      const service = createService({
+        connection: createMockRepository({
+          findOne: vi.fn().mockResolvedValue({ data: 'stored' }),
+        }),
+        productVariantService: { findOne },
+        eventBus: {
+          publish: vi.fn().mockResolvedValue(undefined),
+        } as unknown as EventBus,
+      });
+      await service.updateIndex(mockRequestContext, {
+        ...removal(),
+        updateVariantIds: ['v'],
+      });
+      expect(mockUpdateDocuments).toHaveBeenLastCalledWith(
+        mockRequestContext,
+        { removed: true },
+        []
+      );
+    });
+  });
+
+  describe('getIndex', () => {
+    it('returns cached index when TTL is valid', async () => {
+      const service = createService();
+      const mockBuildIndex = vi
+        .spyOn(service, 'buildIndex')
+        .mockResolvedValue(5);
+
+      const cachedIndex = { my: 'index' };
+      (service as any).cachedIndices.set('test-channel-en', {
+        index: cachedIndex,
+        updatedAt: new Date(),
+        lastCheckedAt: Date.now(),
+      });
+
+      const result = await service.getIndex(mockRequestContext);
+
+      expect(result).toBe(cachedIndex);
+      expect(mockBuildIndex).not.toHaveBeenCalled();
+      mockBuildIndex.mockRestore();
+    });
+
+    it('returns cached index when ignoreCacheTtl is true even if TTL expired', async () => {
+      const service = createService();
+      const mockBuildIndex = vi
+        .spyOn(service, 'buildIndex')
+        .mockResolvedValue(5);
+
+      const cachedIndex = { my: 'index' };
+      (service as any).cachedIndices.set('test-channel-en', {
+        index: cachedIndex,
+        updatedAt: new Date('2024-01-01'),
+        lastCheckedAt: Date.now() - 20_000,
+      });
+
+      const result = await service.getIndex(mockRequestContext, true);
+
+      expect(result).toBe(cachedIndex);
+      expect(mockBuildIndex).not.toHaveBeenCalled();
+      mockBuildIndex.mockRestore();
+    });
+
+    it('returns cached index when TTL expired but DB updatedAt is older', async () => {
+      const dbDate = new Date('2024-01-01');
+      const cacheDate = new Date('2024-02-01');
+
+      const connection = createMockRepository({
+        findOne: vi.fn().mockResolvedValue({ updatedAt: dbDate }),
+      });
+      const service = createService({ connection });
+      const mockBuildIndex = vi
+        .spyOn(service, 'buildIndex')
+        .mockResolvedValue(5);
+
+      (service as any).cachedIndices.set('test-channel-en', {
+        index: { my: 'index' },
+        updatedAt: cacheDate,
+        lastCheckedAt: Date.now() - 20_000,
+      });
+
+      const result = await service.getIndex(mockRequestContext);
+
+      expect(result).toEqual({ my: 'index' });
+      expect(mockBuildIndex).not.toHaveBeenCalled();
+      mockBuildIndex.mockRestore();
+    });
+
+    it('loads fresh record when TTL expired and DB updatedAt is newer', async () => {
+      const cacheDate = new Date('2024-01-01');
+      const dbDate = new Date('2024-02-01');
+
+      const connection = createMockRepository({
+        findOne: vi.fn().mockImplementation((args) => {
+          if (args?.select?.includes('updatedAt')) {
+            return Promise.resolve({ updatedAt: dbDate });
+          }
+          return Promise.resolve({
+            id: 'test-channel-en',
+            data: 'fresh-data',
+            updatedAt: dbDate,
+          });
+        }),
+      });
+      const service = createService({ connection });
+      const mockBuildIndex = vi
+        .spyOn(service, 'buildIndex')
+        .mockResolvedValue(5);
+
+      (service as any).cachedIndices.set('test-channel-en', {
+        index: { my: 'old-index' },
+        updatedAt: cacheDate,
+        lastCheckedAt: Date.now() - 20_000,
+      });
+
+      const result = await service.getIndex(mockRequestContext);
+
+      expect(result).toEqual({ deserialized: true });
+      expect(mockBuildIndex).not.toHaveBeenCalled();
+      expect(mockDeserialize).toHaveBeenCalledWith('fresh-data');
+      mockBuildIndex.mockRestore();
+    });
+
+    it('loads from DB when no cache exists', async () => {
+      const dbDate = new Date('2024-03-01');
+      const connection = createMockRepository({
+        findOne: vi.fn().mockResolvedValue({
+          id: 'test-channel-en',
+          data: 'db-data',
+          updatedAt: dbDate,
+        }),
+      });
+      const service = createService({ connection });
+      const mockBuildIndex = vi
+        .spyOn(service, 'buildIndex')
+        .mockResolvedValue(5);
+
+      const result = await service.getIndex(mockRequestContext);
+
+      expect(result).toEqual({ deserialized: true });
+      expect(mockDeserialize).toHaveBeenCalledWith('db-data');
+      expect(mockBuildIndex).not.toHaveBeenCalled();
+
+      // Verify cache was populated
+      const cached = (service as any).cachedIndices.get('test-channel-en');
+      expect(cached.index).toEqual({ deserialized: true });
+      expect(cached.updatedAt).toEqual(dbDate);
+      mockBuildIndex.mockRestore();
+    });
+
+    it('throws when no cache and no DB record exists', async () => {
+      const connection = createMockRepository();
+      const service = createService({ connection });
+
+      await expect(service.getIndex(mockRequestContext)).rejects.toThrow(
+        "No index found for channel 'test-channel' (en)"
+      );
+    });
+  });
+
+  describe('updateIndex', () => {
+    it('removes affected documents and persists the returned updated index', async () => {
+      const connection = createMockRepository({
+        findOne: vi.fn().mockResolvedValue({ data: 'stored' }),
+      });
+      const publish = vi.fn().mockResolvedValue(undefined);
+      const service = createService({
+        connection,
+        productService: { findOne: vi.fn() } as unknown as ProductService,
+        productVariantService: { findOne: vi.fn() },
+        eventBus: { publish } as unknown as EventBus,
+      });
+      const currentIndex = { current: true };
+      (service as any).cachedIndices.set('test-channel-en', {
+        index: currentIndex,
+        updatedAt: new Date(),
+        lastCheckedAt: Date.now(),
+      });
+      mockGetDocuments.mockResolvedValueOnce([
+        { id: 'variant-1', productId: 'product-1' },
+      ]);
+
+      const count = await service.updateIndex(mockRequestContext, {
+        type: 'partial',
+        ctx: {} as any,
+        updateProductIds: [],
+        updateVariantIds: [],
+        removeProductIds: ['product-1'],
+        removeVariantIds: [],
+      });
+
+      expect(count).toBe(1);
+      expect(mockRemoveDocuments).toHaveBeenCalledWith(
+        mockRequestContext,
+        { deserialized: true },
+        [],
+        ['product-1']
+      );
+      expect(mockUpdateDocuments).toHaveBeenCalledWith(
+        mockRequestContext,
+        { removed: true },
+        []
+      );
+      expect(mockSerialize).toHaveBeenCalledWith({ updated: true });
+      expect(publish).toHaveBeenCalledWith(
+        expect.objectContaining({
+          numberOfProductsIndexed: 1,
+          type: 'partial',
+        })
+      );
+    });
+  });
+
+  describe('debouncedRebuildIndex', () => {
+    it('deduplicates IDs and lets removals take precedence', async () => {
+      vi.useFakeTimers();
+      const service = createService({ debounceMs: 100 });
+      const triggerSpy = vi
+        .spyOn(service as any, 'triggerPartialReindex')
+        .mockResolvedValue(undefined);
+
+      await service.debouncedRebuildIndex(mockRequestContext, {
+        productIds: ['1', '1'],
+        variantIds: ['2', '2'],
+      });
+      await service.debouncedRebuildIndex(mockRequestContext, {
+        productIds: ['1'],
+        variantIds: ['2'],
+        remove: true,
+      });
+      await service.debouncedRebuildIndex(mockRequestContext, {
+        productIds: ['1'],
+        variantIds: ['2'],
+      });
+
+      await vi.advanceTimersByTimeAsync(100);
+
+      expect(triggerSpy).toHaveBeenCalledTimes(1);
+      const batch = triggerSpy.mock.calls[0][0] as any;
+      expect([...batch.updateProductIds]).toEqual([]);
+      expect([...batch.updateVariantIds]).toEqual([]);
+      expect([...batch.removeProductIds]).toEqual(['1']);
+      expect([...batch.removeVariantIds]).toEqual(['2']);
+    });
+
+    it('creates one partial batch per available language', async () => {
+      vi.useFakeTimers();
+      const service = createService({ debounceMs: 100 });
+      const triggerSpy = vi
+        .spyOn(service as any, 'triggerPartialReindex')
+        .mockResolvedValue(undefined);
+      const ctx = {
+        ...mockRequestContext,
+        channel: {
+          token: 'test-channel',
+          availableLanguageCodes: ['en', 'de'],
+        },
+      } as unknown as RequestContext;
+
+      await service.debouncedRebuildIndex(ctx, { productIds: ['1'] });
+      await vi.advanceTimersByTimeAsync(100);
+
+      expect(triggerSpy).toHaveBeenCalledTimes(2);
+      expect(
+        triggerSpy.mock.calls
+          .map(([batch]) => (batch as any).ctx._languageCode)
+          .sort()
+      ).toEqual(['de', 'en']);
+    });
+
+    it('does not queue updates when search is disabled', async () => {
+      vi.useFakeTimers();
+      const service = createService({
+        debounceMs: 100,
+        isEnabled: () => false,
+      });
+      const triggerSpy = vi
+        .spyOn(service as any, 'triggerPartialReindex')
+        .mockResolvedValue(undefined);
+
+      await service.debouncedRebuildIndex(mockRequestContext, {
+        productIds: ['1'],
+      });
+      await vi.advanceTimersByTimeAsync(100);
+
+      expect(triggerSpy).not.toHaveBeenCalled();
+    });
+
+    it('adds full and partial jobs with two retries', async () => {
+      vi.useFakeTimers();
+      const service = createService({ debounceMs: 100 });
+      const add = vi.fn().mockResolvedValue(undefined);
+      (service as any).jobQueue = { add };
+
+      await service.triggerReindex(mockRequestContext);
+      await service.debouncedRebuildIndex(mockRequestContext, {
+        variantIds: ['2'],
+      });
+      await vi.advanceTimersByTimeAsync(100);
+
+      expect(add).toHaveBeenCalledTimes(2);
+      expect(add.mock.calls[0][1]).toEqual({ retries: 2 });
+      expect(add.mock.calls[1][1]).toEqual({ retries: 2 });
+      expect(add.mock.calls[1][0]).toMatchObject({
+        type: 'partial',
+        updateVariantIds: ['2'],
+      });
+    });
+  });
+
+  describe('buildMissingIndexes', () => {
+    const channelA = {
+      id: '1',
+      token: 'channel-a',
+      availableLanguageCodes: ['en'],
+      defaultCurrencyCode: 'USD',
+      defaultLanguageCode: 'en',
+    };
+    const channelB = {
+      id: '2',
+      token: 'channel-b',
+      availableLanguageCodes: ['en', 'de'],
+      defaultCurrencyCode: 'USD',
+      defaultLanguageCode: 'en',
+    };
+
+    it('triggers reindex for channels without existing index', async () => {
+      const connection = createMockRepository({
+        channelFind: () => Promise.resolve([channelA, channelB]),
+      });
+      const service = createService({ connection });
+      const triggerReindexSpy = vi
+        .spyOn(service, 'triggerReindex')
+        .mockResolvedValue(undefined as any);
+
+      await (service as any).buildMissingIndexes();
+
+      // Should trigger 3 reindexes: channel-a-en, channel-b-en, channel-b-de
+      expect(triggerReindexSpy).toHaveBeenCalledTimes(3);
+      triggerReindexSpy.mockRestore();
+    });
+
+    it('skips channels where isEnabled returns false', async () => {
+      const connection = createMockRepository({
+        channelFind: () => Promise.resolve([channelA, channelB]),
+      });
+      const service = createService({
+        connection,
+        isEnabled: (ctx: RequestContext) => ctx.channel.token !== 'channel-b',
+      });
+      const triggerReindexSpy = vi
+        .spyOn(service, 'triggerReindex')
+        .mockResolvedValue(undefined as any);
+
+      await (service as any).buildMissingIndexes();
+
+      // Should only trigger for channel-a (1 language)
+      expect(triggerReindexSpy).toHaveBeenCalledTimes(1);
+      triggerReindexSpy.mockRestore();
+    });
+
+    it('skips channels where index already exists', async () => {
+      const connection = createMockRepository({
+        channelFind: () => Promise.resolve([channelA]),
+        findOne: () =>
+          Promise.resolve({
+            id: 'channel-a-en',
+            data: 'existing-index',
+            updatedAt: new Date(),
+          }),
+      });
+      const service = createService({ connection });
+      const triggerReindexSpy = vi
+        .spyOn(service, 'triggerReindex')
+        .mockResolvedValue(undefined as any);
+
+      await (service as any).buildMissingIndexes();
+
+      // Should not trigger any reindex because index already exists
+      expect(triggerReindexSpy).not.toHaveBeenCalled();
+      triggerReindexSpy.mockRestore();
+    });
+  });
+});
