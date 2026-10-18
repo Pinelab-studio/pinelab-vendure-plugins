@@ -10,7 +10,7 @@ This plugin syncs orders to the SendCloud fulfillment platform.
 2. The order stays in `PaymentSettled` state in Vendure — **no fulfillment is created at this point**.
 3. Once an order has been sent to SendCloud, SendCloud is responsible for tracking status. The Vendure order will simply be transitioned to `Delivered` by the included scheduled task. This is because orders are sometimes cancelled and duplicated in Sendcloud, resulting in misaligned stock.
 4. A private note is added to the order after each sync attempt, indicating success or failure.
-5. Only orders that have been synced to SendCloud successfully are transitioned to `Delivered` by the scheduled task. Orders that failed to sync stay in their current state (e.g. `PaymentSettled`), so they can still be modified and synced again with the `sendToSendCloud(orderId: ID!)` Admin API mutation.
+5. Only orders that have been synced to SendCloud successfully are transitioned to `Delivered` by the scheduled task. Orders that failed to sync stay in their current state (e.g. `PaymentSettled`), so they can still be modified and synced again with the `Sync to SendCloud` action on the order detail page, or the `sendToSendCloud(orderId: ID!)` Admin API mutation.
 
 ## Getting started
 

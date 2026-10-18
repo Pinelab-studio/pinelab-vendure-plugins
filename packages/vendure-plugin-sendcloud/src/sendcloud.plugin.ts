@@ -39,6 +39,7 @@ import { channelCustomFields, sendcloudPermission } from './custom-fields';
     return config;
   },
   compatibility: '>=3.1.0',
+  dashboard: './dashboard/index.tsx',
 })
 export class SendcloudPlugin {
   private static options: SendcloudPluginOptions;
