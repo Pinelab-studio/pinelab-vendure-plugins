@@ -14,6 +14,10 @@ import { channelCustomFields, sendcloudPermission } from './custom-fields';
 @VendurePlugin({
   adminApiExtensions: {
     schema: gql`
+      # Logged by plugin versions <= 2.1.x, needed to query the history of those orders
+      extend enum HistoryEntryType {
+        SENDCLOUD_NOTIFICATION
+      }
       extend type Mutation {
         sendToSendCloud(orderId: ID!): Boolean!
       }

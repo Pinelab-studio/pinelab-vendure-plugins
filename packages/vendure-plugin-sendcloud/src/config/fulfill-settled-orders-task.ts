@@ -4,6 +4,7 @@ import { SendcloudService } from '../api/sendcloud.service';
 /**
  * Scheduled task that finds all PaymentSettled orders placed within the last N days
  * that use the SendCloud fulfillment handler, and transitions them to Delivered.
+ * Orders that haven't been synced to SendCloud are skipped.
  *
  * This task is opt-in: add it to `schedulerOptions.tasks` in your Vendure config.
  *
@@ -25,7 +26,7 @@ import { SendcloudService } from '../api/sendcloud.service';
 export const fulfillSettledOrdersTask = new ScheduledTask({
   id: 'sendcloud-fulfill-settled-orders',
   description:
-    'Fulfill settled SendCloud orders to Delivered. Only processes orders in PaymentSettled state with the SendCloud handler.',
+    'Fulfill settled SendCloud orders to Delivered. Only processes orders in PaymentSettled state with the SendCloud handler that have been synced to SendCloud.',
   params: {
     /** Number of days to look back for settled orders */
     settledSinceDays: 90,
