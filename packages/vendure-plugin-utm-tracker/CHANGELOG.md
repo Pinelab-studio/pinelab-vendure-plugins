@@ -1,3 +1,7 @@
+# 1.7.1 (2026-10-21)
+
+- Hide UTM attribution when no attributed values exist.
+
 # 1.7.0 (2026-09-16)
 
 - Added optional client-ID (`clid`) tracking through the Shop and Admin APIs.
