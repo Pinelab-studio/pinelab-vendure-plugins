@@ -2,6 +2,7 @@ import { defineDashboardExtension } from '@vendure/dashboard';
 import {
   UtmAttributionBlock,
   UtmParametersBlock,
+  useUtmParameters,
 } from './components/UtmParametersBlock';
 
 defineDashboardExtension({
@@ -9,6 +10,14 @@ defineDashboardExtension({
     {
       id: 'utm-parameters',
       title: 'UTM attribution',
+      shouldRender: (context) => {
+        const { data } = useUtmParameters(context.entity?.id as string);
+        return (
+          data?.order?.utmParameters.some(
+            (param) => param.attributedValue != null
+          ) ?? false
+        );
+      },
       location: {
         pageId: 'order-detail',
         column: 'main',
