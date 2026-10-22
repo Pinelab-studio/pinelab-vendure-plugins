@@ -271,13 +271,29 @@ export class KlaviyoService implements OnApplicationBootstrap {
   async subscribeToList(
     ctx: RequestContext,
     emailAddress: string,
-    listId: string
+    listId: string,
+    firstName?: string | null,
+    lastName?: string | null
   ): Promise<void> {
     const session = this.getKlaviyoSession(ctx);
     if (!session) {
       throw new UserInputError('Klaviyo is not enabled');
     }
     const klaviyoApi = new ProfilesApi(session);
+    const givenName = firstName?.trim();
+    const familyName = lastName?.trim();
+    if (givenName || familyName) {
+      await klaviyoApi.createOrUpdateProfile({
+        data: {
+          type: 'profile',
+          attributes: {
+            email: emailAddress,
+            ...(givenName ? { firstName: givenName } : {}),
+            ...(familyName ? { lastName: familyName } : {}),
+          },
+        },
+      });
+    }
     await klaviyoApi.subscribeProfiles({
       data: {
         type: 'profile-subscription-bulk-create-job',

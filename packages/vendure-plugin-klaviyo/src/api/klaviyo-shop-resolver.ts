@@ -17,14 +17,23 @@ export class KlaviyoShopResolver {
     return await this.klaviyoService.handleCheckoutStarted(ctx);
   }
 
+  /** Subscribes a profile to a list, optionally updating supplied names. */
   @Mutation()
   async subscribeToKlaviyoList(
     @Ctx() ctx: RequestContext,
     @Args('emailAddress') emailAddress: string,
-    @Args('listId') list: string
+    @Args('listId') list: string,
+    @Args('firstName') firstName?: string | null,
+    @Args('lastName') lastName?: string | null
   ): Promise<boolean> {
     this.checkForSessionExistance(ctx);
-    await this.klaviyoService.subscribeToList(ctx, emailAddress, list);
+    await this.klaviyoService.subscribeToList(
+      ctx,
+      emailAddress,
+      list,
+      firstName,
+      lastName
+    );
     return true;
   }
 

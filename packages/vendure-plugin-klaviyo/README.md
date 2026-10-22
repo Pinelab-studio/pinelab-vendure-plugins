@@ -133,9 +133,13 @@ mutation {
   subscribeToKlaviyoList(
     emailAddress: "testing@pinelab.studio"
     listId: "WpeFJd"
+    firstName: "Jane"
+    lastName: "Doe"
   )
 }
 ```
+
+`firstName` and `lastName` are optional; an email address and list ID alone remain sufficient. Supplied names are trimmed and saved to the Klaviyo profile before subscribing. Omitted, null, or blank names leave existing profile names unchanged. Profile update and subscription errors are returned to the caller; if subscription fails after the profile update succeeds, the updated names remain saved.
 
 This mutation requires an active session, which means a customer should have interacted with the Vendure API already. This can be done for example by fetching an active order. This is to prevent unwanted bot sign ups. The customer will also receive a double opt-in email, asking them to confirm signing up for marketing emails.
 

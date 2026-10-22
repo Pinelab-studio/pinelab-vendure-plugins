@@ -11,7 +11,12 @@ export const shopApiExtensions = gql`
     Subscribe an email address to a Klaviyo list.
     Klaviyo also sends a confirmation before the subscription is active (double opt-in).
     """
-    subscribeToKlaviyoList(emailAddress: String!, listId: String!): Boolean!
+    subscribeToKlaviyoList(
+      emailAddress: String!
+      listId: String!
+      firstName: String
+      lastName: String
+    ): Boolean!
     """
     Subscribe an email address for back in stock notifications for a given product.
     'catalogItemId' is the id of the product or product variant in the Klaviyo catalog. This depends on your feed setup.
