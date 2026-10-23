@@ -1,3 +1,7 @@
+# 2.2.1 (2026-10-23)
+
+- Prevent Sendcloud job scheduling failures from causing unhandled promise rejections.
+
 # 2.2.0 (2026-07-21)
 
 - Moved configurations from DB into code
