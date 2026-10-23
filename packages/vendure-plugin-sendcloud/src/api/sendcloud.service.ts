@@ -55,13 +55,21 @@ export class SendcloudService implements OnApplicationBootstrap {
   async onApplicationBootstrap(): Promise<void> {
     // Listen for Settled orders to sync to sendcloud
     this.eventBus.ofType(OrderPlacedEvent).subscribe(async (event) => {
-      await this.jobQueue.add(
-        {
-          orderCode: event.order.code,
-          ctx: event.ctx.serialize(),
-        },
-        { retries: this.options.maxRetries ?? 10 }
-      );
+      try {
+        await this.jobQueue.add(
+          {
+            orderCode: event.order.code,
+            ctx: event.ctx.serialize(),
+          },
+          { retries: this.options.maxRetries ?? 10 }
+        );
+      } catch (error) {
+        Logger.error(
+          `Failed to queue Sendcloud sync for order ${event.order.code} for channel ${event.ctx.channel.token}: ${error}`,
+          loggerCtx,
+          error instanceof Error ? error.stack : undefined
+        );
+      }
     });
     // Handle jobs
     this.jobQueue = await this.jobQueueService.createQueue({
