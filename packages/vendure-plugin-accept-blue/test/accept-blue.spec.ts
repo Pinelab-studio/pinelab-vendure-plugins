@@ -27,7 +27,12 @@ import { afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { SetShippingAddress } from '../../test/src/generated/shop-graphql';
 import { initialData } from '../../test/src/initial-data';
 import { waitFor } from '../../test/src/test-helpers';
-import { AcceptBluePlugin, AcceptBlueSubscriptionEvent } from '../src';
+import {
+  AcceptBluePlugin,
+  AcceptBlueSubscriptionEvent,
+  DefaultSubscriptionStrategy,
+  Subscription,
+} from '../src';
 import {
   AcceptBlueSubscription,
   MutationUpdateAcceptBlueSubscriptionArgs,
@@ -41,6 +46,7 @@ import {
   NoncePaymentMethodInput,
   SecCode,
 } from '../src/types';
+import { getNrOfBillingCyclesLeft } from '../src/util';
 import {
   ADD_ITEM_TO_ORDER,
   ADD_PAYMENT_TO_ORDER,
@@ -88,6 +94,28 @@ let nockInstance: nock.Scope;
  */
 let placedOrder: Order | undefined;
 
+/**
+ * Lets a test alter the recurring part of the subscription that the default strategy defines
+ */
+let recurringOverride: (
+  recurring: Subscription['recurring']
+) => Partial<Subscription['recurring']> = () => ({});
+
+class OverridableSubscriptionStrategy extends DefaultSubscriptionStrategy {
+  override defineSubscription(
+    ...args: Parameters<DefaultSubscriptionStrategy['defineSubscription']>
+  ): Subscription {
+    const subscription = super.defineSubscription(...args);
+    return {
+      ...subscription,
+      recurring: {
+        ...subscription.recurring,
+        ...recurringOverride(subscription.recurring),
+      },
+    };
+  }
+}
+
 let testingNonceToken = {
   source: 'nonce-1234567',
   expiry_year: 2025,
@@ -103,6 +131,7 @@ beforeAll(async () => {
       AcceptBluePlugin.init({
         vendureHost: 'https://my-vendure-backend.io',
         sendReceiptEmail: false,
+        subscriptionStrategy: new OverridableSubscriptionStrategy(),
         additionalChargeInput: async (ctx, injector, order) => {
           return {
             amount_details: {
@@ -1541,5 +1570,130 @@ describe('Admin API', () => {
     expect(events.length).toBe(1);
     expect(event.subscription.id).toBe(6014);
     expect(event.type).toBe('updated');
+  });
+});
+
+describe('Number of billing cycles left on recurring schedule', () => {
+  const addCheckPaymentAndGetScheduleRequests = async (): Promise<any[]> => {
+    nockInstance
+      .persist()
+      .get(`/customers`)
+      .query({
+        active: true,
+        customer_number: haydenZiemeCustomerDetails.customer_number,
+      })
+      .reply(200, [haydenZiemeCustomerDetails]);
+    nockInstance
+      .persist()
+      .get(
+        `/customers/${haydenZiemeCustomerDetails.id}/payment-methods?limit=100`
+      )
+      .reply(200, haydenSavedPaymentMethods);
+    const scheduleRequests: any[] = [];
+    nockInstance
+      .persist()
+      .post(
+        `/customers/${haydenZiemeCustomerDetails.id}/recurring-schedules`,
+        (body) => {
+          scheduleRequests.push(body);
+          return true;
+        }
+      )
+      .reply(201, createMockRecurringScheduleResult({}));
+    nockInstance
+      .persist()
+      .post(`/transactions/charge`)
+      .reply(201, checkChargeResult);
+    await shopClient.asAnonymousUser();
+    await shopClient.asUserWithCredentials(
+      'hayden.zieme12@hotmail.com',
+      'test'
+    );
+    await shopClient.query(ADD_ITEM_TO_ORDER, {
+      productVariantId: '3',
+      quantity: 1,
+    });
+    await shopClient.query(SET_SHIPPING_METHOD, { id: [1] });
+    await shopClient.query(TRANSITION_ORDER_TO, { state: 'ArrangingPayment' });
+    const testCheck =
+      haydenSavedPaymentMethods[haydenSavedPaymentMethods.length - 1];
+    const metadata: CheckPaymentMethodInput = {
+      name: testCheck.name!,
+      routing_number: testCheck.routing_number!,
+      account_number: testCheck.account_number!,
+      account_type: testCheck.account_type! as AccountType,
+      sec_code: testCheck.sec_code! as SecCode,
+    };
+    const { addPaymentToOrder: order } = await shopClient.query(
+      ADD_PAYMENT_TO_ORDER,
+      { input: { method: acceptBluePaymentMethod.code, metadata } }
+    );
+    expect(order.state).toBe('PaymentSettled');
+    return scheduleRequests;
+  };
+
+  const fourMonthsAfter = (date: Date): Date =>
+    new Date(date.getFullYear(), date.getMonth() + 4, date.getDate(), 12);
+
+  afterEach(() => {
+    recurringOverride = () => ({});
+  });
+
+  it('Calculates num_left from the end date when no numLeft is given', async () => {
+    let expected = 0;
+    recurringOverride = (recurring) => {
+      const endDate = fourMonthsAfter(recurring.startDate);
+      expected = getNrOfBillingCyclesLeft(
+        recurring.startDate,
+        endDate,
+        'monthly'
+      );
+      return { endDate };
+    };
+    const requests = await addCheckPaymentAndGetScheduleRequests();
+    expect(requests.length).toBe(1);
+    expect(expected).toBeGreaterThan(1);
+    expect(requests[0].num_left).toBe(expected);
+  });
+
+  it('Overrides the calculated num_left with numLeft', async () => {
+    let calculated = 0;
+    recurringOverride = (recurring) => {
+      const endDate = fourMonthsAfter(recurring.startDate);
+      calculated = getNrOfBillingCyclesLeft(
+        recurring.startDate,
+        endDate,
+        'monthly'
+      );
+      return { endDate, numLeft: 99 };
+    };
+    const requests = await addCheckPaymentAndGetScheduleRequests();
+    expect(requests.length).toBe(1);
+    expect(calculated).not.toBe(99);
+    expect(requests[0].num_left).toBe(99);
+  });
+
+  it('Ignores a numLeft of 0 and falls back to the calculated num_left', async () => {
+    let expected = 0;
+    recurringOverride = (recurring) => {
+      const endDate = fourMonthsAfter(recurring.startDate);
+      expected = getNrOfBillingCyclesLeft(
+        recurring.startDate,
+        endDate,
+        'monthly'
+      );
+      return { endDate, numLeft: 0 };
+    };
+    const requests = await addCheckPaymentAndGetScheduleRequests();
+    expect(requests.length).toBe(1);
+    expect(expected).toBeGreaterThan(1);
+    expect(requests[0].num_left).toBe(expected);
+  });
+
+  it('Falls back to num_left 0 (ongoing) for a numLeft of 0 without an end date', async () => {
+    recurringOverride = () => ({ numLeft: 0 });
+    const requests = await addCheckPaymentAndGetScheduleRequests();
+    expect(requests.length).toBe(1);
+    expect(requests[0].num_left).toBe(0);
   });
 });
