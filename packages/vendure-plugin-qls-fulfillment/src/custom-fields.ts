@@ -17,6 +17,8 @@ declare module '@vendure/core' {
   interface CustomOrderFields {
     qlsServicePointId?: string;
     qlsServicePointDetails?: string;
+    qlsTrackingCodes?: string[];
+    qlsTrackingUrls?: string[];
   }
 }
 
@@ -62,6 +64,40 @@ export const orderCustomFields: CustomFieldConfig[] = [
     nullable: true,
     public: true,
     readonly: false,
+    ui: { tab: 'QLS' },
+  },
+  {
+    name: 'qlsTrackingCodes',
+    type: 'string',
+    list: true,
+    label: [{ value: 'QLS Tracking Codes', languageCode: LanguageCode.en }],
+    description: [
+      {
+        value:
+          'Barcodes/tracking codes of all shipments/parcels created for this order in QLS.',
+        languageCode: LanguageCode.en,
+      },
+    ],
+    nullable: true,
+    public: false,
+    readonly: true,
+    ui: { tab: 'QLS' },
+  },
+  {
+    name: 'qlsTrackingUrls',
+    type: 'string',
+    list: true,
+    label: [{ value: 'QLS Tracking URLs', languageCode: LanguageCode.en }],
+    description: [
+      {
+        value:
+          'Tracking URLs of all shipments/parcels created for this order in QLS.',
+        languageCode: LanguageCode.en,
+      },
+    ],
+    nullable: true,
+    public: false,
+    readonly: true,
     ui: { tab: 'QLS' },
   },
 ];
