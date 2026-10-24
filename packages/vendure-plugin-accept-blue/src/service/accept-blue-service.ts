@@ -428,14 +428,18 @@ export class AcceptBlueService implements OnApplicationBootstrap {
     ).map((subscription) => {
       // Mapping and validation for all subscriptions, before actually calling the Accept Blue API
       const {
-        recurring: { startDate, endDate },
+        recurring: { startDate, endDate, numLeft },
       } = subscription;
       // throws error if frequency can't be mapped
       const frequency = toAcceptBlueFrequency(subscription);
-      // Get number of billing cycles if an end date is given
-      const billingCyclesLeft = endDate
-        ? getNrOfBillingCyclesLeft(startDate, endDate, frequency)
-        : 0;
+      // A positive numLeft overrides the number of billing cycles calculated from the end date.
+      // 0 means 'ongoing' at Accept Blue, so it is not accepted as an override
+      const billingCyclesLeft =
+        numLeft && numLeft > 0
+          ? numLeft
+          : endDate
+          ? getNrOfBillingCyclesLeft(startDate, endDate, frequency)
+          : 0;
       // Only pass next_run_date if it's not today, because the API requires this date to be in the future
       const nextRunDate = isToday(startDate) ? undefined : startDate;
       return {

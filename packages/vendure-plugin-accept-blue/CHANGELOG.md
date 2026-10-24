@@ -1,3 +1,7 @@
+# 3.10.0 (2026-10-23)
+
+- Added optional `numLeft` to `Subscription.recurring`. When set to a positive number, it overrides the number of billing cycles calculated from the start and end date. A `numLeft` of 0 is ignored, because 0 means 'ongoing' at Accept Blue, and the calculated value is used instead.
+
 # 3.9.1 (2026-06-29)
 
 - Fix `additionalChargeInput` monetary amounts not being divided by 100 before sending to Accept Blue. Amounts in `amount_details` and `line_items` are now automatically converted from Vendure cents to dollars.
