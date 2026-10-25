@@ -8,7 +8,9 @@ export async function getPlugins() {
   const directories = await readdir(packages, { withFileTypes: true });
   const plugins = await Promise.all(
     directories
-      .filter((directory) => directory.isDirectory() && !excluded.has(directory.name))
+      .filter(
+        (directory) => directory.isDirectory() && !excluded.has(directory.name)
+      )
       .map(async (directory) => {
         const base = new URL(`${directory.name}/`, packages);
         const [metadata, readme, changelog] = await Promise.all([
@@ -22,11 +24,15 @@ export async function getPlugins() {
           version: string;
         };
         const sourceFiles = await readdir(new URL('src/', base));
-        const pluginFile = sourceFiles.find((file) => file.endsWith('.plugin.ts'));
+        const pluginFile = sourceFiles.find((file) =>
+          file.endsWith('.plugin.ts')
+        );
         const pluginSource = pluginFile
           ? await readFile(new URL(`src/${pluginFile}`, base), 'utf8')
           : '';
-        const compatibility = pluginSource.match(/compatibility:\s*['"]([^'"]+)['"]/)?.[1];
+        const compatibility = pluginSource.match(
+          /compatibility:\s*['"]([^'"]+)['"]/
+        )?.[1];
         const title = readme.split('\n')[0].replace(/^#\s*/, '').trim();
         return {
           ...pkg,
@@ -37,7 +43,7 @@ export async function getPlugins() {
           readme: readme.replace(/^.*Official documentation.*$/gm, ''),
           changelog,
         };
-      }),
+      })
   );
   return plugins.sort((a, b) => a.title.localeCompare(b.title));
 }

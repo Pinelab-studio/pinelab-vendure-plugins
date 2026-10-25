@@ -19,14 +19,14 @@ This is the approved migration plan. Implementation details and validation were 
 
 ## Route contract
 
-| Content | Required public route |
-| --- | --- |
-| Homepage | `/` |
-| Plugin documentation | `/plugin/{existing-slug}/` |
-| Plugin changelog | `/plugin/{existing-slug}/changelog/` |
-| Guides overview | `/guides/` |
-| Guide | `/guides/{existing-slug}/` |
-| AI integration page | `/ai-integration/` |
+| Content              | Required public route                |
+| -------------------- | ------------------------------------ |
+| Homepage             | `/`                                  |
+| Plugin documentation | `/plugin/{existing-slug}/`           |
+| Plugin changelog     | `/plugin/{existing-slug}/changelog/` |
+| Guides overview      | `/guides/`                           |
+| Guide                | `/guides/{existing-slug}/`           |
+| AI integration page  | `/ai-integration/`                   |
 
 Preserve public assets referenced by migrated content and continue serving a real 404 page. Retain the existing site origin, `https://plugins.pinelab.studio`, and trailing-slash canonical URLs seen in the current sitemap.
 

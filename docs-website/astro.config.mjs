@@ -1,6 +1,9 @@
 // @ts-check
 import { defineConfig } from 'astro/config';
+import { getPlugins } from './src/utils/plugins.ts';
 import starlight from '@astrojs/starlight';
+
+const plugins = await getPlugins();
 
 export default defineConfig({
   site: 'https://plugins.pinelab.studio',
@@ -8,7 +11,9 @@ export default defineConfig({
   integrations: [
     starlight({
       title: 'Pinelab Vendure Plugins',
-      favicon: '/favicon.png',
+      favicon: '/pinelab-sticker.png',
+      logo: { src: './public/pinelab-plugins-logo.png', replacesTitle: true },
+      customCss: ['./src/styles/pinelab.css'],
       expressiveCode: {
         shiki: { langAlias: { Dockerfile: 'dockerfile', env: 'dotenv' } },
       },
@@ -21,7 +26,13 @@ export default defineConfig({
       ],
       sidebar: [
         { label: 'Home', slug: '' },
-        { label: 'Plugins', items: [{ autogenerate: { directory: 'plugin' } }] },
+        {
+          label: 'Plugins',
+          items: plugins.map((plugin) => ({
+            label: plugin.title,
+            link: `/plugin/${plugin.slug}/`,
+          })),
+        },
         { label: 'Guides', items: [{ autogenerate: { directory: 'guides' } }] },
         { label: 'AI integration', slug: 'ai-integration' },
       ],

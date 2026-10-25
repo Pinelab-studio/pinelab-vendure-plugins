@@ -13,14 +13,25 @@ async function generatePluginDocs() {
     const directory = new URL(`${plugin.slug}/`, output);
     await mkdir(directory, { recursive: true });
     const editBase = `https://github.com/Pinelab-studio/pinelab-vendure-plugins/edit/main/packages/${plugin.directory}`;
-    const metadata = `[View on npm](https://www.npmjs.com/package/${plugin.name}) · [Changelog](/plugin/${plugin.slug}/changelog/)\n\nVersion: ${plugin.version}${plugin.compatibility ? ` · Vendure compatibility: ${plugin.compatibility}` : ''}\n\n\`\`\`sh\nnpm install ${plugin.name}\n\`\`\`\n`;
+    const metadata = `[View on npm](https://www.npmjs.com/package/${
+      plugin.name
+    }) · [Changelog](/plugin/${plugin.slug}/changelog/)\n\nVersion: ${
+      plugin.version
+    }${
+      plugin.compatibility
+        ? ` · Vendure compatibility: ${plugin.compatibility}`
+        : ''
+    }\n\n\`\`\`sh\nnpm install ${plugin.name}\n\`\`\`\n`;
     await writeFile(
       new URL('index.md', directory),
       frontmatter({
         title: plugin.title,
         description: plugin.description,
         editUrl: `${editBase}/README.md`,
-      }) + metadata + '\n\n' + plugin.readme,
+      }) +
+        metadata +
+        '\n\n' +
+        plugin.readme
     );
     await writeFile(
       new URL('changelog.md', directory),
@@ -29,15 +40,21 @@ async function generatePluginDocs() {
         description: `Release history for ${plugin.name}.`,
         editUrl: `${editBase}/CHANGELOG.md`,
         sidebar: { hidden: true },
-      }) + `[← Plugin documentation](/plugin/${plugin.slug}/) · [View on npm](https://www.npmjs.com/package/${plugin.name})\n\n` + plugin.changelog,
+      }) +
+        `[← Plugin documentation](/plugin/${plugin.slug}/) · [View on npm](https://www.npmjs.com/package/${plugin.name})\n\n` +
+        plugin.changelog
     );
   }
-  console.log(`Generated Starlight documentation for ${plugins.length} plugins.`);
+  console.log(
+    `Generated Starlight documentation for ${plugins.length} plugins.`
+  );
 }
 
 /** JSON values are also valid YAML, avoiding manual escaping of package metadata. */
 function frontmatter(data: Record<string, unknown>) {
-  return `---\n${Object.entries(data).map(([key, value]) => `${key}: ${JSON.stringify(value)}`).join('\n')}\n---\n\n`;
+  return `---\n${Object.entries(data)
+    .map(([key, value]) => `${key}: ${JSON.stringify(value)}`)
+    .join('\n')}\n---\n\n`;
 }
 
 await generatePluginDocs();
