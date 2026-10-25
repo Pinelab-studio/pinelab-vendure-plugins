@@ -1,15 +1,19 @@
-/* Pinelab Plugins visual identity, adapted to Starlight's theme variables. */
+/* Customize only Starlight's supported theme properties.
+   https://starlight.astro.build/guides/css-and-tailwind/#custom-css-styles */
 :root {
-  color-scheme: dark;
   --sl-font: 'Ubuntu', sans-serif;
   --sl-font-mono: 'Ubuntu Mono', 'SFMono-Regular', Consolas, 'Liberation Mono',
     monospace;
+  --sl-text-body: 1.125rem;
+  --sl-text-body-sm: 1rem;
+  --sl-line-height: 1.65;
+}
 
-  /* Original site's bright green accent: rgb(188, 246, 96). */
+:root[data-theme='dark'] {
+  /* Pinelab's green accent and neutral dark palette. */
   --sl-color-accent-low: #1c2e00;
   --sl-color-accent: #bcf660;
   --sl-color-accent-high: #d9f9aa;
-  --sl-color-text-accent: #bcf660;
 
   --sl-color-white: #f3f3f2;
   --sl-color-gray-1: #dfdfde;
@@ -20,117 +24,11 @@
   --sl-color-gray-6: #292b2d;
   --sl-color-gray-7: #1c1d1e;
   --sl-color-black: #101010;
-
-  --sl-color-bg: #101010;
-  --sl-color-bg-nav: #1c1c1c;
-  --sl-color-bg-sidebar: #191919;
-  --sl-color-bg-inline-code: #242627;
-  --sl-color-hairline: #414141;
-  --sl-color-hairline-light: #414141;
-  --sl-color-hairline-shade: #090909;
-  --sl-color-backdrop-overlay: rgb(0 0 0 / 72%);
-
-  --sl-text-body: 1.125rem;
-  --sl-text-body-sm: 1rem;
-  --sl-line-height: 1.65;
 }
 
 :root[data-theme='light'] {
-  /* The reference site is deliberately dark, so retain the brand palette if the
-     theme switch is used while keeping Starlight's accessible light colors. */
-  color-scheme: light;
+  /* Use Starlight's default light neutrals with a matching green accent. */
   --sl-color-accent-low: #e6f8ce;
   --sl-color-accent: #416b00;
   --sl-color-accent-high: #294400;
-  --sl-color-text-accent: #416b00;
-  --sl-color-bg-nav: #f3f3f2;
-  --sl-color-bg-sidebar: #f3f3f2;
-}
-
-/* Hide the theme picker in both desktop and mobile navigation. */
-starlight-theme-select {
-  display: none;
-}
-
-/* Keep the compact, technical wordmark feel and crisp bordered controls. */
-.site-title,
-.sidebar-content a,
-.pagination-links a,
-.card,
-.sl-markdown-content :is(th, td) {
-  font-family: var(--sl-font);
-}
-
-.site-title {
-  font-weight: 700;
-  letter-spacing: 0.015em;
-}
-
-.site-title img {
-  height: 1.5rem;
-  width: auto;
-}
-
-.sl-markdown-content a:not(:where(.not-content *)) {
-  text-decoration-thickness: 1px;
-  text-underline-offset: 0.2em;
-}
-
-.sl-markdown-content code {
-  border-radius: 0.35rem;
-}
-
-/* Keep code flush with the header bar above it. */
-.sl-markdown-content pre {
-  border-radius: 0 0 0.35rem 0.35rem;
-}
-
-.sl-markdown-content pre code {
-  border-radius: 0;
-}
-
-.sl-markdown-content :is(blockquote, .starlight-aside) {
-  border-radius: 0.35rem;
-}
-
-.plugin-card {
-  position: relative;
-  padding: 1.5rem;
-  border-top: 3px solid var(--plugin-color);
-}
-
-.plugin-card-icon {
-  display: flex;
-  align-items: center;
-  height: 3rem;
-  color: var(--plugin-color);
-}
-
-.plugin-card-icon img {
-  object-fit: contain;
-  margin: 0;
-}
-
-.plugin-card h3 {
-  margin-top: 1rem;
-  font-size: var(--sl-text-h4);
-}
-
-.plugin-card h3 a::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-}
-
-.plugin-card:focus-within,
-.plugin-card:hover {
-  outline: 2px solid var(--plugin-color);
-  outline-offset: 2px;
-}
-
-/* Make Starlight's framed cards echo the subtle outlined plugin cards. */
-.card {
-  border-color: var(--sl-color-hairline);
-  border-radius: 0.5rem;
-  background: transparent;
 }

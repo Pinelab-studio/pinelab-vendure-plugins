@@ -33,7 +33,7 @@ The build emits a static site to `dist/`. Starlight handles the sitemap and Page
 
 Open `/design-system/` on the dev server or production preview to compare all Starlight component families and their documented variations, plus a hero, in normal documentation context. Edit `src/content/docs/design-system.mdx` to adjust examples and `src/styles/pinelab.css` to change the shared site styling.
 
-The workbench is hidden from navigation, Pagefind, and the sitemap, and has a `noindex, nofollow` robots tag. It is not private: anyone with its URL can open it. The site currently hides its theme picker; use browser developer tools to change the `<html>` element's `data-theme` attribute when comparing light and dark styles.
+The workbench is hidden from navigation, Pagefind, and the sitemap, and has a `noindex, nofollow` robots tag. It is not private: anyone with its URL can open it. Use Starlight's theme picker to compare light and dark styles. The shared stylesheet customizes only Starlight's supported theme variables; components retain their default styling.
 
 ## Validation
 
