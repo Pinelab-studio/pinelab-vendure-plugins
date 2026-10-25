@@ -18,6 +18,10 @@ export default defineConfig({
       favicon: '/pinelab-sticker.png',
       logo: { src: './public/pinelab-plugins-logo.png', replacesTitle: true },
       customCss: ['./src/styles/pinelab.css'],
+      components: {
+        ThemeProvider: './src/components/ThemeProvider.astro',
+        ThemeSelect: './src/components/ThemeSelect.astro',
+      },
       expressiveCode: {
         shiki: { langAlias: { Dockerfile: 'dockerfile', env: 'dotenv' } },
       },

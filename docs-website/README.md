@@ -1,6 +1,6 @@
 # Pinelab plugin documentation
 
-An Astro Starlight site using the default theme, navigation, syntax highlighting, and Pagefind search.
+An Astro Starlight site using default components, navigation, syntax highlighting, and Pagefind search with Pinelab's dark-only theme.
 
 ## Development
 
@@ -33,12 +33,12 @@ The build emits a static site to `dist/`. Starlight handles the sitemap and Page
 
 Open `/design-system/` on the dev server or production preview to compare all Starlight component families and their documented variations, plus a hero, in normal documentation context. Edit `src/content/docs/design-system.mdx` to adjust examples and `src/styles/pinelab.css` to change the shared site styling.
 
-The workbench is hidden from navigation, Pagefind, and the sitemap, and has a `noindex, nofollow` robots tag. It is not private: anyone with its URL can open it. Use Starlight's theme picker to compare light and dark styles. The shared stylesheet customizes only Starlight's supported theme variables; components retain their default styling.
+The workbench is hidden from navigation, Pagefind, and the sitemap, and has a `noindex, nofollow` robots tag. It is not private: anyone with its URL can open it. The site uses only Pinelab's dark theme. Starlight's supported `ThemeProvider` and `ThemeSelect` overrides retain its server-rendered dark theme and omit the picker, without reading device preferences or saved theme choices. The shared stylesheet customizes only Starlight's supported theme variables; visual components retain their default styling.
 
 ## Validation
 
 No test suite is installed. Run the production build, compare `dist/` paths with the [live sitemap](https://plugins.pinelab.studio/sitemap-0.xml), and smoke-check representative plugin, changelog, guide, and AI integration pages. Review heading anchors and npm links as well as the homepage's `#plugins` section.
 
-Use the production preview to check search, mobile navigation, theme switching, and the default 404 page. Pagefind search is indexed during the production build.
+Use the production preview to check search, mobile navigation, the fixed dark theme, and the default 404 page. Pagefind search is indexed during the production build.
 
 See [STARLIGHT-MIGRATION-PLAN.md](./STARLIGHT-MIGRATION-PLAN.md) for the migration scope and route contract.

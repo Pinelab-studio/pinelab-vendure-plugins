@@ -25,10 +25,3 @@
   --sl-color-gray-7: #1c1d1e;
   --sl-color-black: #101010;
 }
-
-:root[data-theme='light'] {
-  /* Use Starlight's default light neutrals with a matching green accent. */
-  --sl-color-accent-low: #e6f8ce;
-  --sl-color-accent: #416b00;
-  --sl-color-accent-high: #294400;
-}
