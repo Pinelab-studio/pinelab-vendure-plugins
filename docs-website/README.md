@@ -29,6 +29,12 @@ The build emits a static site to `dist/`. Starlight handles the sitemap and Page
 - Generated pages set edit links to the canonical package README/changelog on GitHub.
 - LLM endpoints are intentionally not generated. `/ai-integration/` remains available with guidance on sharing documentation URLs.
 
+## Design-system workbench
+
+Open `/design-system/` on the dev server or production preview to compare all Starlight component families and their documented variations, plus a hero, in normal documentation context. Edit `src/content/docs/design-system.mdx` to adjust examples and `src/styles/pinelab.css` to change the shared site styling.
+
+The workbench is hidden from navigation, Pagefind, and the sitemap, and has a `noindex, nofollow` robots tag. It is not private: anyone with its URL can open it. The site currently hides its theme picker; use browser developer tools to change the `<html>` element's `data-theme` attribute when comparing light and dark styles.
+
 ## Validation
 
 No test suite is installed. Run the production build, compare `dist/` paths with the [live sitemap](https://plugins.pinelab.studio/sitemap-0.xml), and smoke-check representative plugin, changelog, guide, and AI integration pages. Review heading anchors and npm links as well as the homepage's `#plugins` section.

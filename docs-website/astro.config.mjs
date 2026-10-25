@@ -2,6 +2,7 @@
 import { defineConfig } from 'astro/config';
 import { getPlugins } from './src/utils/plugins.ts';
 import starlight from '@astrojs/starlight';
+import sitemap from '@astrojs/sitemap';
 
 const plugins = await getPlugins();
 
@@ -9,6 +10,9 @@ export default defineConfig({
   site: 'https://plugins.pinelab.studio',
   trailingSlash: 'always',
   integrations: [
+    sitemap({
+      filter: (page) => new URL(page).pathname !== '/design-system/',
+    }),
     starlight({
       title: 'Pinelab Vendure Plugins',
       favicon: '/pinelab-sticker.png',
