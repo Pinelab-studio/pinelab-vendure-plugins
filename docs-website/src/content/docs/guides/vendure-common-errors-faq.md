@@ -1,5 +1,5 @@
 ---
-slug: vendure-common-errors-faq
+slug: guides/vendure-common-errors-faq
 title: Vendure Common Errors
 description: Common Vendure errors and how to fix them. Short, concise entries for issues you might hit when running or extending a Vendure shop.
 pubDate: 2026-07-09

@@ -1,5 +1,5 @@
 ---
-slug: gcp-cloud-logging-vendure
+slug: guides/gcp-cloud-logging-vendure
 title: Send Vendure logs to Google Cloud Logging
 description: Wire up a custom VendureLogger that sends server and worker logs to Google Cloud Logging via Winston, so everything is visible in the GCP Log Viewer.
 pubDate: 2026-06-25

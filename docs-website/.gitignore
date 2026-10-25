@@ -1,0 +1,5 @@
+node_modules/
+.astro/
+dist/
+# Disposable Starlight inputs generated from ../packages; never edit these copies.
+src/content/docs/plugin/

@@ -1,5 +1,5 @@
 ---
-slug: vendure-seo-checklist
+slug: guides/vendure-seo-checklist
 title: SEO checklist for Vendure
 description: A practical SEO implementation guid for Vendure shops; meta tags, JSON-LD structured data, image alt text, robots.txt and sitemaps.
 pubDate: 2026-05-06
