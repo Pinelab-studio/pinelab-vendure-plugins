@@ -23,6 +23,12 @@ export interface Subscription {
     intervalCount: number;
     startDate: Date;
     endDate?: Date;
+    /**
+     * The number of billing cycles left.
+     * When set to a positive number, this overrides any number of billing cycles calculated from the start and end date.
+     * 0 (or a negative number) is ignored, because 0 means 'ongoing' for some payment providers.
+     */
+    numLeft?: number;
   };
 }
 

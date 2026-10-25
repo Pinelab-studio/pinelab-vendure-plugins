@@ -101,9 +101,50 @@ import { createSettledOrder } from '../../test/src/shop-utils';
 import { waitFor } from '../../test/src/test-helpers';
 import { createMockResponse } from './util';
 
+// Since @vendure/testing 3.7.0 the SimpleGraphQLClient uses global fetch, so
+// fetch mocks must pass non-QLS requests (the test GraphQL client) through.
+const realFetch = globalThis.fetch;
+
 beforeEach(() => {
   vi.unstubAllGlobals();
 });
+
+const webhookUrl = `http://localhost:3050/qls/webhook/${E2E_DEFAULT_CHANNEL_TOKEN}?secret=1234`;
+
+/**
+ * POST an incoming QLS webhook payload for the current test channel
+ */
+function postWebhook(body: unknown): Promise<Response> {
+  return adminClient.fetch(webhookUrl, {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
+}
+
+/**
+ * Fetch the QLS tracking custom fields of an order by its code
+ */
+async function getOrderTrackingCustomFields(orderCode: string): Promise<{
+  qlsTrackingCodes: string[] | null;
+  qlsTrackingUrls: string[] | null;
+}> {
+  const { orders } = await adminClient.query(
+    gql`
+      query GetOrderTrackingCustomFields($code: String!) {
+        orders(options: { filter: { code: { eq: $code } } }) {
+          items {
+            customFields {
+              qlsTrackingCodes
+              qlsTrackingUrls
+            }
+          }
+        }
+      }
+    `,
+    { code: orderCode }
+  );
+  return orders.items[0]?.customFields;
+}
 
 it('Should start successfully', async () => {
   expect(serverStarted).toBe(true);
@@ -114,7 +155,8 @@ it('Runs full sync', async () => {
   let updatedProducts: FulfillmentProduct[] = [];
   vi.stubGlobal(
     'fetch',
-    vi.fn((url, { method, body }) => {
+    vi.fn((url: string, init: any = {}) => {
+      const { method, body } = init;
       // Mock get all fulfillment products
       if (method === 'GET' && url.includes('fulfillment/products')) {
         return createMockResponse({
@@ -156,6 +198,8 @@ it('Runs full sync', async () => {
           },
         });
       }
+      // Non-QLS requests (e.g. the GraphQL test client) go to the real server
+      return realFetch(url, init);
     })
   );
   await adminClient.asSuperAdmin();
@@ -286,13 +330,16 @@ it('Pushes order to QLS', async () => {
   const createdOrders: string[] = [];
   vi.stubGlobal(
     'fetch',
-    vi.fn((url, { method, body }) => {
+    vi.fn((url: string, init: any = {}) => {
+      const { method, body } = init;
       if (method === 'POST' && url.includes('fulfillment/orders')) {
         createdOrders.push(body);
         return createMockResponse({
           data: { id: '1' },
         });
       }
+      // Non-QLS requests (e.g. the GraphQL test client) go to the real server
+      return realFetch(url, init);
     })
   );
   const variants = await getAllVariants(adminClient);
@@ -356,10 +403,14 @@ it('Emits QlsOrderFailedEvent when order push fails', async () => {
     },
     pagination: null,
   };
-  // Mock fulfilment order failure response
+  // Mock fulfilment order failure response. Only QLS requests are mocked;
+  // other requests (e.g. the GraphQL test client) go to the real server.
   vi.stubGlobal(
     'fetch',
-    vi.fn(async (url, { method }) => {
+    vi.fn(async (url: string, init?: any) => {
+      if (!String(url).includes('fulfillment')) {
+        return realFetch(url, init);
+      }
       return {
         ok: false,
         status: 400,
@@ -381,3 +432,112 @@ it('Emits QlsOrderFailedEvent when order push fails', async () => {
   expect(event.failedAt).toBeInstanceOf(Date);
   expect(event.fullError).toContain('Ongeldige indeling (NNNN)');
 }, 7000); // Takes longer because we delay custom field updating by 5 seconds
+
+it('Stores tracking code and url from a shipment.barcode webhook', async () => {
+  const order = await createSettledOrder(shopClient, 1, true, [
+    { id: '1', quantity: 1 },
+  ]);
+  const res = await postWebhook({
+    id: 'shipment-1',
+    reference: order.code,
+    carrier_id: 'carrier-1',
+    barcode: '3SIJVT018672738',
+    tracking_url: 'https://v2.goparcel.nl/track/3SIJVT018672738/9711RS',
+  });
+  expect(res.status).toBe(201);
+  const customFields = await getOrderTrackingCustomFields(order.code);
+  expect(customFields.qlsTrackingCodes).toEqual(['3SIJVT018672738']);
+  expect(customFields.qlsTrackingUrls).toEqual([
+    'https://v2.goparcel.nl/track/3SIJVT018672738/9711RS',
+  ]);
+});
+
+it('Falls back to the nested shipment when the root barcode is not yet populated', async () => {
+  const order = await createSettledOrder(shopClient, 1, true, [
+    { id: '1', quantity: 1 },
+  ]);
+  const res = await postWebhook({
+    id: 'shipment-2',
+    reference: order.code,
+    carrier_id: 'carrier-1',
+    barcode: null,
+    tracking_url: null,
+    deliveries: [
+      {
+        shipments: [
+          {
+            id: 'shipment-2',
+            barcode: '3SNESTED12345',
+            tracking_url: 'https://v2.goparcel.nl/track/3SNESTED12345/9711RS',
+          },
+        ],
+      },
+    ],
+  });
+  expect(res.status).toBe(201);
+  const customFields = await getOrderTrackingCustomFields(order.code);
+  expect(customFields.qlsTrackingCodes).toEqual(['3SNESTED12345']);
+  expect(customFields.qlsTrackingUrls).toEqual([
+    'https://v2.goparcel.nl/track/3SNESTED12345/9711RS',
+  ]);
+});
+
+it('Accumulates tracking codes for multiple shipments on the same order', async () => {
+  const order = await createSettledOrder(shopClient, 1, true, [
+    { id: '1', quantity: 1 },
+  ]);
+  await postWebhook({
+    id: 'shipment-3a',
+    reference: order.code,
+    carrier_id: 'carrier-1',
+    barcode: '3SFIRSTPARCEL',
+    tracking_url: 'https://v2.goparcel.nl/track/3SFIRSTPARCEL/9711RS',
+  });
+  await postWebhook({
+    id: 'shipment-3b',
+    reference: order.code,
+    carrier_id: 'carrier-1',
+    barcode: '3SSECONDPARCEL',
+    tracking_url: 'https://v2.goparcel.nl/track/3SSECONDPARCEL/9711RS',
+  });
+  const customFields = await getOrderTrackingCustomFields(order.code);
+  expect(customFields.qlsTrackingCodes).toEqual([
+    '3SFIRSTPARCEL',
+    '3SSECONDPARCEL',
+  ]);
+  expect(customFields.qlsTrackingUrls).toEqual([
+    'https://v2.goparcel.nl/track/3SFIRSTPARCEL/9711RS',
+    'https://v2.goparcel.nl/track/3SSECONDPARCEL/9711RS',
+  ]);
+});
+
+it('Ignores duplicate shipment.barcode webhooks for the same tracking code', async () => {
+  const order = await createSettledOrder(shopClient, 1, true, [
+    { id: '1', quantity: 1 },
+  ]);
+  const webhookBody = {
+    id: 'shipment-4',
+    reference: order.code,
+    carrier_id: 'carrier-1',
+    barcode: '3SDUPLICATE',
+    tracking_url: 'https://v2.goparcel.nl/track/3SDUPLICATE/9711RS',
+  };
+  await postWebhook(webhookBody);
+  await postWebhook(webhookBody);
+  const customFields = await getOrderTrackingCustomFields(order.code);
+  expect(customFields.qlsTrackingCodes).toEqual(['3SDUPLICATE']);
+  expect(customFields.qlsTrackingUrls).toEqual([
+    'https://v2.goparcel.nl/track/3SDUPLICATE/9711RS',
+  ]);
+});
+
+it('Ignores shipment.barcode webhook for an unknown order reference', async () => {
+  const res = await postWebhook({
+    id: 'shipment-5',
+    reference: 'non-existing-order-code',
+    carrier_id: 'carrier-1',
+    barcode: '3SUNKNOWNORDER',
+    tracking_url: 'https://v2.goparcel.nl/track/3SUNKNOWNORDER/9711RS',
+  });
+  expect(res.status).toBe(201);
+});

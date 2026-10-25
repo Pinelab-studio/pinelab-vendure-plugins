@@ -13,6 +13,7 @@ import {
   JobQueue,
   JobQueueService,
   Logger,
+  Order,
   OrderPlacedEvent,
   OrderService,
   OrderState,
@@ -31,6 +32,7 @@ import {
   FulfillmentOrderInput,
   FulfillmentOrderLineInput,
   IncomingOrderWebhook,
+  IncomingShipmentWebhook,
 } from '../lib/client-types';
 import { getQlsClient } from '../lib/qls-client';
 import { QlsOrderFailedEvent } from './qls-order-failed-event';
@@ -379,6 +381,77 @@ export class QlsOrderService implements OnModuleInit, OnApplicationBootstrap {
       `Successfully updated order '${orderCode}' to '${vendureOrderState}'`,
       loggerCtx
     );
+  }
+
+  /**
+   * Store the tracking code and tracking URL from an incoming `shipment.barcode` webhook
+   * on the order's custom fields. Codes/URLs are accumulated, because an order can have
+   * multiple shipments/parcels.
+   */
+  async handleShipmentBarcodeWebhook(
+    ctx: RequestContext,
+    body: IncomingShipmentWebhook
+  ): Promise<void> {
+    const orderCode = body.reference;
+    const { barcode, trackingUrl } = this.getShipmentTrackingInfo(body);
+    if (!barcode) {
+      Logger.info(
+        `Ignoring shipment.barcode webhook for order '${orderCode}', because no barcode was found in the payload`,
+        loggerCtx
+      );
+      return;
+    }
+    const order = await this.orderService.findOneByCode(ctx, orderCode, []);
+    if (!order) {
+      return Logger.warn(
+        `Order with code '${orderCode}' not found, ignoring shipment.barcode webhook`,
+        loggerCtx
+      );
+    }
+    const existingCodes = order.customFields.qlsTrackingCodes ?? [];
+    if (existingCodes.includes(barcode)) {
+      Logger.info(
+        `Tracking code '${barcode}' already stored for order '${orderCode}', ignoring duplicate shipment.barcode webhook`,
+        loggerCtx
+      );
+      return;
+    }
+    const existingUrls = order.customFields.qlsTrackingUrls ?? [];
+    await this.connection.getRepository(ctx, Order).update(
+      { id: order.id },
+      {
+        customFields: {
+          qlsTrackingCodes: [...existingCodes, barcode],
+          qlsTrackingUrls: trackingUrl
+            ? [...existingUrls, trackingUrl]
+            : existingUrls,
+        },
+      }
+    );
+    Logger.info(
+      `Stored tracking code '${barcode}' for order '${orderCode}'`,
+      loggerCtx
+    );
+  }
+
+  /**
+   * The root `barcode`/`tracking_url` fields on the webhook payload are sometimes not yet
+   * populated, so fall back to the nested shipment with the same id under `deliveries[].shipments[]`.
+   */
+  private getShipmentTrackingInfo(body: IncomingShipmentWebhook): {
+    barcode: string | null;
+    trackingUrl: string | null;
+  } {
+    if (body.barcode) {
+      return { barcode: body.barcode, trackingUrl: body.tracking_url };
+    }
+    const nestedShipment = body.deliveries
+      ?.flatMap((delivery) => delivery.shipments ?? [])
+      .find((shipment) => shipment.id === body.id);
+    return {
+      barcode: nestedShipment?.barcode ?? null,
+      trackingUrl: nestedShipment?.tracking_url ?? null,
+    };
   }
 
   async triggerPushOrder(

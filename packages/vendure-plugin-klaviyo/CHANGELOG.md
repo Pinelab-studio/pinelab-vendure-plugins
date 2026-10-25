@@ -1,3 +1,7 @@
+# 1.14.0 (2026-10-22)
+
+- Add optional first and last names to newsletter subscriptions.
+
 # 1.13.0 (2026-08-05)
 
 - Upgraded to Vendure 3.6.3

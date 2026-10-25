@@ -1,8 +1,12 @@
-# 2.3.0 (2026-10-18)
+# 2.3.0 (2026-10-25)
 
 - The `fulfillSettledOrdersTask` only fulfills orders that have been synced to SendCloud. Orders that failed to sync stay in their current state, so they can be modified and synced again.
 - Restored the `SENDCLOUD_NOTIFICATION` history entry type, so the history of orders synced by plugin versions <= 2.1.x can be queried again.
 - Added a `Sync to SendCloud` action to the order detail page in the dashboard, to sync an order again.
+
+# 2.2.1 (2026-10-23)
+
+- Prevent Sendcloud job scheduling failures from causing unhandled promise rejections.
 
 # 2.2.0 (2026-07-21)
 

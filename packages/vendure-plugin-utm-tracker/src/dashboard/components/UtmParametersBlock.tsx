@@ -37,7 +37,7 @@ const getUtmParametersDocument = graphql(`
 /**
  * Fetches and caches the UTM parameters connected to an order.
  */
-function useUtmParameters(orderId?: string) {
+export function useUtmParameters(orderId?: string) {
   return useQuery({
     queryKey: ['order-utm-parameters', orderId],
     queryFn: () => api.query(getUtmParametersDocument, { orderId: orderId! }),
