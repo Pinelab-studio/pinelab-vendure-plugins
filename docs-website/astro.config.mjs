@@ -1,52 +1,52 @@
 // @ts-check
-import { defineConfig, fontProviders } from 'astro/config';
-import tailwindcss from '@tailwindcss/vite';
-import react from '@astrojs/react';
+import { defineConfig } from 'astro/config';
+import { getPlugins } from './src/utils/plugins.ts';
+import starlight from '@astrojs/starlight';
 import sitemap from '@astrojs/sitemap';
 
-// https://astro.build/config
+const plugins = await getPlugins();
+
 export default defineConfig({
   site: 'https://plugins.pinelab.studio',
-  prefetch: {
-    prefetchAll: true,
-    defaultStrategy: 'viewport',
-  },
-  // Fonts API: downloads, self-hosts, preloads and generates optimized
-  // monospace fallbacks to avoid FOUT/FOIT on slow (mobile) connections.
-  fonts: [
-    {
-      provider: fontProviders.fontsource(),
-      name: 'Ubuntu Mono',
-      cssVariable: '--font-ubuntu-mono',
-      weights: [400, 700],
-      styles: ['normal'],
-      optimizedFallbacks: true,
-    },
-  ],
-  markdown: {
-    // Single dark theme: site has no light/dark toggle, body is dark.
-    // https://docs.astro.build/en/guides/syntax-highlighting/
-    shikiConfig: {
-      theme: 'github-dark',
-    },
-  },
-  image: {
-    // Authorize remote image hosts used in guide hero images. Images
-    // from these hosts can be optimized and have their dimensions
-    // inferred at build time via `inferSize`.
-    // https://docs.astro.build/en/guides/images/#authorizing-remote-images
-    domains: ['images.unsplash.com'],
-  },
+  trailingSlash: 'always',
   vite: {
-    plugins: [tailwindcss()],
+    preview: {
+      allowedHosts: true,
+    },
   },
   integrations: [
-    react(),
-    // Sitemap under sitemap-0.xml
     sitemap({
-      filter: (page) => {
-        return !page.includes('/billing') && !page.includes('/llms/');
+      filter: (page) => new URL(page).pathname !== '/design-system/',
+    }),
+    starlight({
+      title: 'Pinelab Vendure Plugins',
+      favicon: '/pinelab-sticker.png',
+      logo: { src: './public/pinelab-plugins-logo.png', replacesTitle: true },
+      customCss: ['./src/styles/pinelab.css'],
+      components: {
+        Header: './src/components/Header.astro',
+        PageFrame: './src/components/PageFrame.astro',
+        MarkdownContent: './src/components/MarkdownContent.astro',
+        ThemeProvider: './src/components/ThemeProvider.astro',
+        ThemeSelect: './src/components/ThemeSelect.astro',
       },
+      expressiveCode: {
+        shiki: { langAlias: { Dockerfile: 'dockerfile', env: 'dotenv' } },
+      },
+      sidebar: [
+        { label: 'AI integration', slug: 'ai-integration' },
+        {
+          label: 'Recipes',
+          items: [{ autogenerate: { directory: 'recipes' } }],
+        },
+        {
+          label: 'Plugins',
+          items: plugins.map((plugin) => ({
+            label: plugin.title,
+            link: `/plugin/${plugin.slug}/`,
+          })),
+        },
+      ],
     }),
   ],
 });

@@ -1,0 +1,47 @@
+# Pinelab plugin documentation
+
+An Astro Starlight site using default components, navigation, syntax highlighting, and Pagefind search with Pinelab's dark-only theme.
+
+## Development
+
+Use Node 24 and Yarn Classic. Run commands from `docs-website/`, not the monorepo root:
+
+```sh
+corepack yarn install --frozen-lockfile
+corepack yarn dev
+```
+
+Build and preview the production site (including search):
+
+```sh
+corepack yarn build
+corepack yarn preview
+```
+
+The build emits a static site to `dist/`. Starlight handles the sitemap and Pagefind index; no server adapter is needed. Netlify should use `docs-website` as its base directory, `yarn build` as its command, and `dist` as its publish directory.
+
+## Plugin popularity
+
+Homepage cards and the sidebar sort by monthly npm downloads from the checked-in `plugin-downloads.json`, highest first, with alphabetical ties. Packages missing from the snapshot count as zero. Builds never request npm download statistics.
+
+Run `yarn refresh:downloads` separately to refresh the snapshot, then commit the updated JSON. Requests are sequential and spaced 1.5 seconds apart. If npm fails, the command exits without replacing the previous snapshot; builds can continue using the existing data.
+
+## Content
+
+- Edit site pages in `src/content/docs/`. Recipes and best practices are fetched from the engineering repository before dev/build into gitignored Markdown files in `src/content/docs/recipes/`, then processed by the same Starlight loader as plugin docs. No custom HTML rendering or transformations are applied.
+- Edit plugin README files, changelogs, and package metadata in their original `../packages/` directories, not in this website. The migration itself does not modify those packages.
+- `scripts/generate-docs.ts` refreshes the gitignored `src/content/docs/plugin/` directory before every `dev` and `build`. These are disposable build inputs, not a second maintained source. Restart the dev command after editing a package source.
+- Plugin URLs derive from their npm package names with the `@pinelab/` prefix removed, preserving the existing website's slugs. Plugin pages link to the full npm package name and changelog.
+- Generated pages set edit links to the canonical package README/changelog on GitHub.
+- LLM endpoints are intentionally not generated. `/ai-integration/` remains available with guidance on sharing documentation URLs.
+
+## Design-system workbench
+
+Open `/design-system/` on the dev server or production preview to compare all Starlight component families and their documented variations, plus a hero, in normal documentation context. Edit `src/content/docs/design-system.mdx` to adjust examples and `src/styles/pinelab.css` to change the shared site styling.
+
+The workbench is hidden from navigation, Pagefind, and the sitemap, and has a `noindex, nofollow` robots tag. It is not private: anyone with its URL can open it. The site uses only Pinelab's dark theme. Starlight's supported `ThemeProvider` and `ThemeSelect` overrides retain its server-rendered dark theme and omit the picker, without reading device preferences or saved theme choices. The shared stylesheet customizes only Starlight's supported theme variables; visual components retain their default styling.
+
+## Validation
+
+No test suite is installed. Run the production build, compare `dist/` paths with the [live sitemap](https://plugins.pinelab.studio/sitemap-0.xml), and smoke-check representative plugin, changelog, guide, and AI integration pages. Review heading anchors and npm links as well as the homepage's `#plugins` section.
+Use the production preview to check search, mobile navigation, the fixed dark theme, and the default 404 page. Pagefind search is indexed during the production build.

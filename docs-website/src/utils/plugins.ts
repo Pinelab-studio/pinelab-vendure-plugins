@@ -1,227 +1,81 @@
-import { readdir, readFile } from 'fs/promises';
-import type { Dirent } from 'node:fs';
-import path from 'path';
-import { marked } from 'marked';
-import hljs from 'highlight.js';
-import { getIcon } from './icons';
-import { rehype } from 'rehype';
-import rehypeAutolinkHeadings from 'rehype-autolink-headings';
+import { readdir, readFile } from 'node:fs/promises';
 
-interface PackageJson {
-  name: string;
-  description: string;
-  version: string;
-  icon: string;
-  keywords?: string[];
-  dependencies?: Record<string, string>;
-  author?: string | { name?: string; email?: string; url?: string };
-  license?: string;
-}
+const packages = new URL('../../../packages/', import.meta.url);
+const excluded = new Set(['test', 'util', '_vendure-plugin-template']);
 
-export interface PluginAuthor {
-  name: string;
-  email?: string;
-  url?: string;
-}
-
-export interface Plugin {
-  name: string;
-  npmName: string;
-  compatibility?: string;
-  version: string;
-  slug: string;
-  description: string;
-  icon: string;
-  keywords: string[];
-  readme: string;
-  /**
-   * Non-html formatted markdown content
-   */
-  markdownReadme: string;
-  changelog: string;
-  markdownChangelog: string;
-  nrOfDependencies: number;
-  /** ISO date string of last npm publish, if available */
-  lastModified?: string;
-  author: PluginAuthor;
-  license: string;
-  /**
-   * Path within the GitHub repo where this plugin's `package.json` lives,
-   * relative to the repo root. E.g. `packages/vendure-plugin-store-credit`.
-   */
-  repoSubpath: string;
-}
-
-const packageDir = '../packages/';
-let plugins: Plugin[] = [];
-
-/**
- * Get all plugin directories starting with `vendure-plugin`
- */
-export async function getPluginDirectories(): Promise<Dirent[]> {
-  return (await readdir(packageDir, { withFileTypes: true }))
-    .filter((dir) => dir.isDirectory())
-    .filter(
-      (dir) => !['test', 'util', '_vendure-plugin-template'].includes(dir.name)
-    ); // Exclude test and util directories
-}
-
-export async function getPlugins(): Promise<Plugin[]> {
-  if (plugins?.length) {
-    return plugins;
-  }
-  const pluginDirectories = await getPluginDirectories();
-  for (const pluginDir of pluginDirectories) {
-    try {
-      const packageJsonFilePath = path.join(
-        packageDir,
-        pluginDir.name,
-        'package.json'
-      );
-      const packageJson: PackageJson = JSON.parse(
-        await readFile(packageJsonFilePath, 'utf8')
-      );
-      // README
-      const readmeFilePath = path.join(packageDir, pluginDir.name, 'README.md');
-      let readme = await readFile(readmeFilePath, 'utf8');
-      // Remove official docs link from readme
-      readme = readme.replace(/^.*Official documentation.*$/gm, '');
-      // Get title from first line
-      const name = readme.split('\n')[0].replace('#', '').trim();
-      const htmlDocs = await parseMarkdown(readme);
-      // CHANGELOG
-      const changelogFilePath = path.join(
-        packageDir,
-        pluginDir.name,
-        'CHANGELOG.md'
-      );
-      const changelog = await readFile(changelogFilePath, 'utf8');
-      const changelogContent = await parseMarkdown(changelog);
-      const compatibility = await getCompatibilityRange(pluginDir.name);
-      const lastModified = await getLastModified(packageJson.name);
-      const slug = packageJson.name.replace('@pinelab/', '');
-      plugins.push({
-        name,
-        npmName: packageJson.name,
-        version: packageJson.version,
-        slug,
-        description: packageJson.description,
-        icon: getIcon(slug),
-        keywords: packageJson.keywords ?? [],
-        readme: htmlDocs,
-        markdownReadme: readme,
-        changelog: changelogContent,
-        markdownChangelog: changelog,
-        compatibility,
-        nrOfDependencies: packageJson.dependencies
-          ? Object.keys(packageJson.dependencies).length
-          : 0,
-        lastModified,
-        author: parseAuthor(packageJson.author),
-        license: packageJson.license ?? 'MIT',
-        repoSubpath: `packages/${pluginDir.name}`,
-      });
-    } catch (e) {
-      console.error(`Error reading plugin ${pluginDir.name}`, e);
-    }
-  }
-  // Sort newest first by lastModified; missing dates sink to the bottom
-  plugins = plugins.sort((a, b) => {
-    const aDate = a.lastModified ? new Date(a.lastModified).getTime() : 0;
-    const bDate = b.lastModified ? new Date(b.lastModified).getTime() : 0;
-    return bDate - aDate;
-  });
-  return plugins;
-}
-
-/**
- * Parse raw Readme.md string to HTML
- */
-export async function parseMarkdown(readmeString: string): Promise<string> {
-  // `highlight` example uses https://highlightjs.org
-  marked.setOptions({
-    renderer: new marked.Renderer(),
-    highlight: function (code: any, lang: any) {
-      const language = hljs.getLanguage(lang) ? lang : 'plaintext';
-      return hljs.highlight(code, { language }).value;
-    },
-    langPrefix: 'hljs language-', // highlight.js css expects a top-level 'hljs' class.
-    pedantic: false,
-    gfm: true,
-    breaks: false,
-    sanitize: false,
-    // smartLists: true,
-    smartypants: false,
-    xhtml: false,
-  });
-  const html = marked.parse(readmeString);
-  // Add anchor links to headings
-  const result = await rehype()
-    .data('settings', { fragment: true })
-    .use(rehypeAutolinkHeadings, {
-      behavior: 'append',
-    })
-    .process(html);
-  return String(result);
-}
-
-export async function getCompatibilityRange(
-  pluginDirectoryName: string
-): Promise<string | undefined> {
-  const srcDir = path.join(packageDir, pluginDirectoryName, 'src');
-  const files = await readdir(srcDir);
-  const pluginFile = files.find((f) => f.endsWith('.plugin.ts'));
-  if (!pluginFile) {
-    return;
-  }
-  const fileContent = await readFile(path.join(srcDir, pluginFile), 'utf-8');
-  const matches = fileContent.match(/compatibility:\s*['"]([^'"]+)['"]/);
-  return matches?.[1];
-}
-
-/**
- * Fetches the last published date for a package from the npm registry.
- * Returns undefined if the request fails or the package isn't published.
- */
-export async function getLastModified(
-  packageName: string
-): Promise<string | undefined> {
-  const response = await fetch(`https://registry.npmjs.org/${packageName}`);
-  if (!response.ok) {
-    console.error(`Error fetching last modified date for ${packageName}`);
-    return undefined;
-  }
-  const data = (await response.json()) as { time?: { modified?: string } };
-  return data.time?.modified;
-}
-
-/**
- * Normalizes the package.json `author` field (string or object) into a
- * structured PluginAuthor. Falls back to "Pinelab Studio" if absent.
- */
-export function parseAuthor(author: PackageJson['author']): PluginAuthor {
-  const fallback: PluginAuthor = {
-    name: 'Pinelab Studio',
-    url: 'https://pinelab.studio',
-  };
-  if (!author) return fallback;
-  if (typeof author === 'string') {
-    // Format: "Name <email> (url)"
-    const match = author.match(
-      /^([^<(]+?)\s*(?:<([^>]+)>)?\s*(?:\(([^)]+)\))?$/
+/** Fetch all public GitHub contributors at build time, preserving contribution order. */
+export async function getContributors() {
+  const contributors: Array<{
+    login: string;
+    html_url: string;
+    avatar_url: string;
+    contributions: number;
+  }> = [];
+  for (let page = 1; ; page++) {
+    const response = await fetch(
+      `https://api.github.com/repos/Pinelab-studio/pinelab-vendure-plugins/contributors?per_page=100&page=${page}`,
+      { signal: AbortSignal.timeout(30_000) }
     );
-    if (match) {
-      return {
-        name: match[1].trim() || fallback.name,
-        email: match[2]?.trim(),
-        url: match[3]?.trim(),
-      };
+    if (!response.ok) {
+      throw new Error(`Unable to fetch contributors (${response.status})`);
     }
-    return { name: author };
+    const batch = (await response.json()) as typeof contributors;
+    contributors.push(...batch);
+    if (batch.length < 100) return contributors;
   }
-  return {
-    name: author.name ?? fallback.name,
-    email: author.email,
-    url: author.url,
-  };
+}
+
+/** Read package documentation without changing or duplicating its source files. */
+export async function getPlugins() {
+  const snapshot = JSON.parse(
+    await readFile(
+      new URL('../../plugin-downloads.json', import.meta.url),
+      'utf8'
+    )
+  ) as { downloads: Record<string, number> };
+  const directories = await readdir(packages, { withFileTypes: true });
+  const plugins = await Promise.all(
+    directories
+      .filter(
+        (directory) => directory.isDirectory() && !excluded.has(directory.name)
+      )
+      .map(async (directory) => {
+        const base = new URL(`${directory.name}/`, packages);
+        const [metadata, readme, changelog] = await Promise.all([
+          readFile(new URL('package.json', base), 'utf8'),
+          readFile(new URL('README.md', base), 'utf8'),
+          readFile(new URL('CHANGELOG.md', base), 'utf8'),
+        ]);
+        const pkg = JSON.parse(metadata) as {
+          name: string;
+          description: string;
+          version: string;
+        };
+        const sourceFiles = await readdir(new URL('src/', base));
+        const pluginFile = sourceFiles.find((file) =>
+          file.endsWith('.plugin.ts')
+        );
+        const pluginSource = pluginFile
+          ? await readFile(new URL(`src/${pluginFile}`, base), 'utf8')
+          : '';
+        const compatibility = pluginSource.match(
+          /compatibility:\s*['"]([^'"]+)['"]/
+        )?.[1];
+        const title = readme.split('\n')[0].replace(/^#\s*/, '').trim();
+        return {
+          ...pkg,
+          monthlyDownloads: snapshot.downloads[pkg.name] ?? 0,
+          title,
+          slug: pkg.name.replace('@pinelab/', ''),
+          directory: directory.name,
+          compatibility,
+          readme: readme.replace(/^.*Official documentation.*$/gm, ''),
+          changelog,
+        };
+      })
+  );
+  return plugins.sort(
+    (a, b) =>
+      b.monthlyDownloads - a.monthlyDownloads || a.title.localeCompare(b.title)
+  );
 }

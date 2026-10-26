@@ -1,0 +1,130 @@
+---
+title: Pinelab Vendure Plugins
+description: Production-tested Vendure plugins and practical recipes from Pinelab Studio.
+template: splash
+hero:
+  title: Battle-tested Vendure plugins
+  tagline: Vendure plugins built by Pinelab, used for solving real problems for our clients. Licensed under MIT, free to use, forever.
+  image:
+    file: ../../../public/vendure-conf.webp
+    alt: Vendure conference
+  actions:
+    - text: Build me a custom plugin
+      link: https://pinelab.studio/contact/?q=I+would+like+a+custom+plugin
+      icon: right-arrow
+    - text: Plugins
+      link: '#plugins'
+      icon: down-arrow
+      variant: minimal
+---
+
+import { getCollection } from 'astro:content';
+import { CardGrid, Icon } from '@astrojs/starlight/components';
+import { pluginIcons } from '../../utils/plugin-icons';
+import { getContributors } from '../../utils/plugins';
+
+Enjoying our free knowledge and plugins? [Consider leaving us a review](https://www.trustpilot.com/review/pinelab.studio).
+
+## Plugins
+
+<CardGrid>
+  {(
+    await getCollection(
+      'docs',
+      ({ id }) => id.startsWith('plugin/') && !id.endsWith('/changelog')
+    )
+  )
+    .sort(
+      (a, b) =>
+        (b.data.pluginMonthlyDownloads ?? 0) -
+          (a.data.pluginMonthlyDownloads ?? 0) ||
+        a.data.title.localeCompare(b.data.title)
+    )
+    .map((plugin) => (
+      <article
+        className="card plugin-card"
+        style={{ '--plugin-color': pluginIcons[plugin.id.slice(7)].color }}
+      >
+        <div className="plugin-card-icon" aria-hidden="true">
+          {pluginIcons[plugin.id.slice(7)].logo ? (
+            <img
+              src={`/icons/${pluginIcons[plugin.id.slice(7)].logo}`}
+              alt=""
+              loading="lazy"
+              width="48"
+              height="48"
+            />
+          ) : (
+            <Icon name={pluginIcons[plugin.id.slice(7)].icon} size="2rem" />
+          )}
+        </div>
+        <h3>
+          <a href={`/${plugin.id}/`}>{plugin.data.title}</a>
+        </h3>
+        <p>{plugin.data.description}</p>
+      </article>
+    ))}
+</CardGrid>
+
+## Recipes
+
+Practical recipes and best practices from our engineering documentation, updated from GitHub on every build.
+
+<CardGrid>
+  {(await getCollection('docs', ({ id }) => id.startsWith('recipes/')))
+    .sort(
+      (a, b) =>
+        (a.data.sidebar.order ?? 1) - (b.data.sidebar.order ?? 1) ||
+        a.data.title.localeCompare(b.data.title)
+    )
+    .map((recipe) => (
+      <article
+        className="card plugin-card"
+        style={{ '--plugin-color': 'var(--brand)' }}
+      >
+        <div className="plugin-card-icon" aria-hidden="true">
+          <Icon name="open-book" size="2rem" />
+        </div>
+        <h3>
+          <a href={`/${recipe.id}/`}>{recipe.data.title}</a>
+        </h3>
+        <p>{recipe.data.description}</p>
+      </article>
+    ))}
+</CardGrid>
+
+## Contributors
+
+Thanks to everyone who contributed to our plugins!
+
+<div className="contributors">
+  {(await getContributors()).map((contributor) => (
+    <a
+      className="contributor"
+      href={contributor.html_url}
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label={`${contributor.login}: ${contributor.contributions} contributions`}
+      aria-describedby={`contributor-${contributor.login}`}
+    >
+      <img
+        src={contributor.avatar_url}
+        alt=""
+        loading="lazy"
+        width="80"
+        height="80"
+      />
+      <span
+        className="contributor-tooltip"
+        role="tooltip"
+        id={`contributor-${contributor.login}`}
+      >
+        <span>{contributor.login}</span>
+        <small>
+          {contributor.contributions}{' '}
+          {contributor.contributions === 1 ? 'contribution' : 'contributions'}
+        </small>
+      </span>
+    </a>
+  ))}
+</div>

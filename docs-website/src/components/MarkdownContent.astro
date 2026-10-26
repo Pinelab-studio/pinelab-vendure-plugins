@@ -1,0 +1,45 @@
+---
+import DefaultMarkdownContent from '@astrojs/starlight/components/MarkdownContent.astro';
+import { Badge } from '@astrojs/starlight/components';
+
+const metadata = Astro.locals.starlightRoute.entry.data.pluginMetadata;
+---
+
+<DefaultMarkdownContent>
+  {
+    metadata && (
+      <div class="plugin-badges">
+        <a href={metadata.npmUrl}>
+          <Badge text={`view v${metadata.version} on npm`} variant="note" />
+        </a>
+        <a href={metadata.changelogUrl}>
+          <Badge text="Changelog" variant="tip" />
+        </a>
+      </div>
+    )
+  }
+  <slot />
+</DefaultMarkdownContent>
+
+<style>
+  .plugin-badges {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .plugin-badges > :global(*) {
+    margin: 0;
+  }
+
+  .plugin-badges a {
+    display: inline-flex;
+    text-decoration: none;
+  }
+
+  .plugin-badges a:hover {
+    opacity: 0.8;
+  }
+</style>

@@ -2,3 +2,7 @@
 /plugin/vendure-plugin-picklist/ /plugin/vendure-plugin-order-pdfs/ 301
 /plugin/vendure-plugin-dutch-postalcode/ /plugin/vendure-plugin-address-lookup/ 301
 /support/ / 301
+/guides/ /recipes/ 301
+/guides/gcp-cloud-logging-vendure/ /recipes/gcp-cloud-logging-vendure/ 301
+/guides/vendure-common-errors-faq/ /recipes/vendure-common-errors/ 301
+/guides/vendure-seo-checklist/ /recipes/storefront-seo/ 301
