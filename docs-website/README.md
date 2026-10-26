@@ -44,7 +44,4 @@ The workbench is hidden from navigation, Pagefind, and the sitemap, and has a `n
 ## Validation
 
 No test suite is installed. Run the production build, compare `dist/` paths with the [live sitemap](https://plugins.pinelab.studio/sitemap-0.xml), and smoke-check representative plugin, changelog, guide, and AI integration pages. Review heading anchors and npm links as well as the homepage's `#plugins` section.
-
 Use the production preview to check search, mobile navigation, the fixed dark theme, and the default 404 page. Pagefind search is indexed during the production build.
-
-See [STARLIGHT-MIGRATION-PLAN.md](./STARLIGHT-MIGRATION-PLAN.md) for the migration scope and route contract.
