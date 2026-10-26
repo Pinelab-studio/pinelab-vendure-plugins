@@ -20,6 +20,12 @@ corepack yarn preview
 
 The build emits a static site to `dist/`. Starlight handles the sitemap and Pagefind index; no server adapter is needed. Netlify should use `docs-website` as its base directory, `yarn build` as its command, and `dist` as its publish directory.
 
+## Plugin popularity
+
+Homepage cards and the sidebar sort by monthly npm downloads from the checked-in `plugin-downloads.json`, highest first, with alphabetical ties. Packages missing from the snapshot count as zero. Builds never request npm download statistics.
+
+Run `yarn refresh:downloads` separately to refresh the snapshot, then commit the updated JSON. Requests are sequential and spaced 1.5 seconds apart. If npm fails, the command exits without replacing the previous snapshot; builds can continue using the existing data.
+
 ## Content
 
 - Edit site pages in `src/content/docs/`. Recipes and best practices are fetched from the engineering repository before dev/build into gitignored Markdown files in `src/content/docs/recipes/`, then processed by the same Starlight loader as plugin docs. No custom HTML rendering or transformations are applied.

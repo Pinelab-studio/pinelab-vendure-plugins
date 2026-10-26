@@ -10,6 +10,7 @@
     "dev": "node scripts/generate-docs.ts && astro dev",
     "build": "node scripts/generate-docs.ts && astro build",
     "preview": "astro preview",
+    "refresh:downloads": "node scripts/refresh-plugin-downloads.ts",
     "astro": "astro"
   },
   "dependencies": {

@@ -26,6 +26,7 @@ export default defineConfig({
       components: {
         Header: './src/components/Header.astro',
         PageFrame: './src/components/PageFrame.astro',
+        MarkdownContent: './src/components/MarkdownContent.astro',
         ThemeProvider: './src/components/ThemeProvider.astro',
         ThemeSelect: './src/components/ThemeSelect.astro',
       },

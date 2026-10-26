@@ -21,8 +21,9 @@ hero:
 import { getCollection } from 'astro:content';
 import { CardGrid, Icon } from '@astrojs/starlight/components';
 import { pluginIcons } from '../../utils/plugin-icons';
+import { getContributors } from '../../utils/plugins';
 
-Happy with our plugins? [Consider leaving us a review](https://www.trustpilot.com/review/pinelab.studio).
+Enjoying our free knowledge and plugins? [Consider leaving us a review](https://www.trustpilot.com/review/pinelab.studio).
 
 ## Plugins
 
@@ -33,7 +34,12 @@ Happy with our plugins? [Consider leaving us a review](https://www.trustpilot.co
       ({ id }) => id.startsWith('plugin/') && !id.endsWith('/changelog')
     )
   )
-    .sort((a, b) => a.data.title.localeCompare(b.data.title))
+    .sort(
+      (a, b) =>
+        (b.data.pluginMonthlyDownloads ?? 0) -
+          (a.data.pluginMonthlyDownloads ?? 0) ||
+        a.data.title.localeCompare(b.data.title)
+    )
     .map((plugin) => (
       <article
         className="card plugin-card"
@@ -90,3 +96,35 @@ Practical recipes and best practices from our engineering documentation, updated
 ## Contributors
 
 Thanks to everyone who contributed to our plugins!
+
+<div className="contributors">
+  {(await getContributors()).map((contributor) => (
+    <a
+      className="contributor"
+      href={contributor.html_url}
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label={`${contributor.login}: ${contributor.contributions} contributions`}
+      aria-describedby={`contributor-${contributor.login}`}
+    >
+      <img
+        src={contributor.avatar_url}
+        alt=""
+        loading="lazy"
+        width="80"
+        height="80"
+      />
+      <span
+        className="contributor-tooltip"
+        role="tooltip"
+        id={`contributor-${contributor.login}`}
+      >
+        <span>{contributor.login}</span>
+        <small>
+          {contributor.contributions}{' '}
+          {contributor.contributions === 1 ? 'contribution' : 'contributions'}
+        </small>
+      </span>
+    </a>
+  ))}
+</div>

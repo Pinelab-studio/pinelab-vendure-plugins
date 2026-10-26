@@ -17,21 +17,19 @@ async function generatePluginDocs() {
   for (const plugin of plugins) {
     const directory = new URL(`${plugin.slug}/`, output);
     await mkdir(directory, { recursive: true });
-    const metadata = `[View on npm](https://www.npmjs.com/package/${
-      plugin.name
-    }) · [Changelog](/plugin/${plugin.slug}/changelog/)\n\nVersion: ${
-      plugin.version
-    }${
-      plugin.compatibility
-        ? ` · Vendure compatibility: ${plugin.compatibility}`
-        : ''
-    }\n\n\`\`\`sh\nnpm install ${plugin.name}\n\`\`\`\n`;
+    const metadata = `\`\`\`sh\nnpm install ${plugin.name}\n\`\`\`\n`;
     await writeFile(
       new URL('index.md', directory),
       frontmatter({
         title: plugin.title,
         description: plugin.description,
         pluginReadmeUrl: `https://github.com/Pinelab-studio/pinelab-vendure-plugins/blob/main/packages/${plugin.directory}/README.md`,
+        pluginMonthlyDownloads: plugin.monthlyDownloads,
+        pluginMetadata: {
+          npmUrl: `https://www.npmjs.com/package/${plugin.name}`,
+          changelogUrl: `/plugin/${plugin.slug}/changelog/`,
+          version: plugin.version,
+        },
         editUrl: false,
       }) +
         metadata +

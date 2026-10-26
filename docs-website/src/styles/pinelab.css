@@ -71,6 +71,26 @@
   width: auto;
 }
 
+/* A faint glow and softer grid on detail pages. */
+body:has(.sidebar-pane) {
+  background-color: var(--page);
+  background-image: radial-gradient(
+      ellipse at 50% 24rem,
+      color-mix(in srgb, var(--glow) 30%, transparent),
+      transparent 45rem
+    ),
+    linear-gradient(
+      color-mix(in srgb, var(--grid) 50%, transparent) 1px,
+      transparent 1px
+    ),
+    linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--grid) 50%, transparent) 1px,
+      transparent 1px
+    );
+  background-size: auto, 5rem 5rem, 5rem 5rem;
+}
+
 /* Restrict the decorative background to splash pages. */
 [data-has-hero][data-has-sidebar='false'],
 body:has(.hero):not(:has(.sidebar-pane)) {
@@ -258,6 +278,58 @@ body:has(.hero):not(:has(.sidebar-pane)) {
 :where(a, button, select, input):focus-visible {
   outline: 3px solid var(--brand);
   outline-offset: 4px;
+}
+
+.contributors {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 2rem 3rem;
+  margin-block: 2rem 4rem;
+}
+
+.contributor {
+  position: relative;
+  display: block;
+  border-radius: 50%;
+}
+
+.contributors .contributor img {
+  display: block;
+  width: clamp(3rem, 8vw, 5rem);
+  height: auto;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  margin: 0;
+}
+
+.contributor-tooltip {
+  position: absolute;
+  z-index: 10;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  visibility: hidden;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: 0.5rem;
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: var(--shadow);
+  white-space: nowrap;
+  font-size: 1rem;
+}
+
+.contributor-tooltip small {
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.contributor:hover .contributor-tooltip,
+.contributor:focus-visible .contributor-tooltip {
+  visibility: visible;
 }
 
 @media (prefers-reduced-motion: reduce) {
