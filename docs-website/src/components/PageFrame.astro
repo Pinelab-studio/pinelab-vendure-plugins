@@ -1,0 +1,32 @@
+---
+import DefaultPageFrame from '@astrojs/starlight/components/PageFrame.astro';
+import Footer from './Footer.astro';
+---
+
+<DefaultPageFrame>
+  <slot name="header" slot="header" />
+  <slot name="sidebar" slot="sidebar" />
+  <slot />
+</DefaultPageFrame>
+<Footer />
+
+<style>
+  /* Constrain the desktop sticky sidebar to the page, above the footer. */
+  @media (min-width: 50rem) {
+    :global(.page) {
+      position: relative;
+    }
+    :global(.page > .sidebar) {
+      position: absolute;
+      inset-block: var(--sl-nav-height) 0;
+      inset-inline-start: 0;
+      width: var(--sl-sidebar-width);
+    }
+    :global(.page > .sidebar > .sidebar-pane) {
+      position: sticky;
+      inset-block: auto;
+      top: var(--sl-nav-height);
+      height: calc(100dvh - var(--sl-nav-height));
+    }
+  }
+</style>

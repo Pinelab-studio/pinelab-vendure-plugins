@@ -22,7 +22,7 @@ The build emits a static site to `dist/`. Starlight handles the sitemap and Page
 
 ## Content
 
-- Edit guides and site pages in `src/content/docs/`.
+- Edit site pages in `src/content/docs/`. Recipes and best practices are fetched from the engineering repository before dev/build into gitignored Markdown files in `src/content/docs/recipes/`, then processed by the same Starlight loader as plugin docs. No custom HTML rendering or transformations are applied.
 - Edit plugin README files, changelogs, and package metadata in their original `../packages/` directories, not in this website. The migration itself does not modify those packages.
 - `scripts/generate-docs.ts` refreshes the gitignored `src/content/docs/plugin/` directory before every `dev` and `build`. These are disposable build inputs, not a second maintained source. Restart the dev command after editing a package source.
 - Plugin URLs derive from their npm package names with the `@pinelab/` prefix removed, preserving the existing website's slugs. Plugin pages link to the full npm package name and changelog.

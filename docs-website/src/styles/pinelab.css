@@ -1,27 +1,267 @@
-/* Customize only Starlight's supported theme properties.
-   https://starlight.astro.build/guides/css-and-tailwind/#custom-css-styles */
-:root {
-  --sl-font: 'Ubuntu', sans-serif;
-  --sl-font-mono: 'Ubuntu Mono', 'SFMono-Regular', Consolas, 'Liberation Mono',
-    monospace;
-  --sl-text-body: 1.125rem;
-  --sl-text-body-sm: 1rem;
-  --sl-line-height: 1.65;
+/* THEME OPTIONS
+   Keep exactly ONE option uncommented. All five share the layout below.
+   These palettes also work when the site is locked to data-theme="dark".
+*/
+
+/* OPTION 1 — Pine mist (active): charcoal forest with soft lime accents. */
+/* :root:root {
+  --page: #131a15;
+  --surface: #1b251e;
+  --ink: #edf5e9;
+  --muted: #b0bfad;
+  --line: #344438;
+  --brand: #bcf660;
+  --brand-hover: #d3ff94;
+  --brand-soft: #2b3d20;
+  --on-brand: #17250d;
+  --glow: #bcf66024;
+  --grid: #bcf66008;
+  --shadow: 0 12px 36px #00000030;
+} */
+
+/* OPTION 2 — Midnight lime: near-black canvas, vivid Pinelab green. */
+:root:root {
+  --page: #10150f;
+  --surface: #192117;
+  --ink: #f1f7eb;
+  --muted: #b1bfaa;
+  --line: #33412d;
+  --brand: #bcf660;
+  --brand-hover: #d2ff94;
+  --brand-soft: #283d19;
+  --on-brand: #18240d;
+  --glow: #9de43725;
+  --grid: #bcf66009;
+  --shadow: 0 16px 40px #00000030;
 }
 
-:root[data-theme='dark'] {
-  /* Pinelab's green accent and neutral dark palette. */
-  --sl-color-accent-low: #1c2e00;
-  --sl-color-accent: #bcf660;
-  --sl-color-accent-high: #d9f9aa;
+/* Shared Starlight theme and Aspire-inspired styling. */
+:root:root {
+  color-scheme: dark;
+  --sl-font: 'Ubuntu', sans-serif;
+  --sl-font-mono: 'Ubuntu Mono', 'SFMono-Regular', Consolas, monospace;
+  --sl-text-body: 1.125rem;
+  --sl-text-body-sm: 1rem;
+  --sl-line-height: 1.7;
+  --sl-color-white: var(--ink);
+  --sl-color-gray-1: var(--ink);
+  --sl-color-gray-2: var(--muted);
+  --sl-color-gray-3: var(--muted);
+  --sl-color-gray-4: var(--muted);
+  --sl-color-gray-5: var(--line);
+  --sl-color-gray-6: var(--surface);
+  --sl-color-gray-7: var(--page);
+  --sl-color-black: var(--page);
+  --sl-color-bg: var(--page);
+  --sl-color-bg-nav: var(--surface);
+  --sl-color-bg-sidebar: var(--surface);
+  --sl-color-bg-inline-code: var(--brand-soft);
+  --sl-color-text: var(--ink);
+  --sl-color-text-accent: var(--brand);
+  --sl-color-accent: var(--brand);
+  --sl-color-accent-low: var(--brand-soft);
+  --sl-color-accent-high: var(--brand);
+  --sl-color-hairline: var(--line);
+  --sl-color-hairline-light: var(--line);
+  --sl-color-hairline-shade: var(--line);
+}
 
-  --sl-color-white: #f3f3f2;
-  --sl-color-gray-1: #dfdfde;
-  --sl-color-gray-2: #bcbdbd;
-  --sl-color-gray-3: #929597;
-  --sl-color-gray-4: #666a6c;
-  --sl-color-gray-5: #414446;
-  --sl-color-gray-6: #292b2d;
-  --sl-color-gray-7: #1c1d1e;
-  --sl-color-black: #101010;
+.site-title img {
+  height: 1rem;
+  width: auto;
+}
+
+/* Restrict the decorative background to splash pages. */
+[data-has-hero][data-has-sidebar='false'],
+body:has(.hero):not(:has(.sidebar-pane)) {
+  background-color: var(--page);
+  background-image: radial-gradient(
+      ellipse at 50% 24rem,
+      var(--glow),
+      transparent 45rem
+    ),
+    linear-gradient(var(--grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  background-size: auto, 5rem 5rem, 5rem 5rem;
+}
+
+.hero {
+  padding-block: clamp(2rem, 6vw, 6rem);
+  gap: 2.5rem;
+}
+
+.hero h1 {
+  font-size: clamp(2.75rem, 5.5vw, 5.5rem);
+  font-weight: 800;
+  line-height: 1.04;
+  letter-spacing: -0.045em;
+  text-wrap: balance;
+}
+
+.hero .tagline {
+  font-size: clamp(1.125rem, 2vw, 1.5rem);
+  line-height: 1.6;
+  max-width: 44ch;
+}
+
+.hero > img[alt='Vendure conference'] {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  height: auto;
+  object-fit: cover;
+  border-radius: 45% 0;
+}
+
+.sl-link-button {
+  border-radius: 0.65rem;
+  font-weight: 700;
+  padding: 0.85rem 1.4rem;
+  transition: background-color 160ms ease, box-shadow 160ms ease;
+}
+
+.sl-link-button.primary {
+  color: var(--on-brand);
+  background: var(--brand);
+  border-color: var(--brand);
+  box-shadow: var(--shadow);
+}
+
+.sl-link-button.primary:hover {
+  background: var(--brand-hover);
+  border-color: var(--brand-hover);
+}
+
+.sl-link-button.secondary {
+  color: var(--ink);
+  background: var(--surface);
+  border-color: var(--line);
+}
+
+.card,
+.plugin-card,
+.sl-link-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 1rem;
+  box-shadow: var(--shadow);
+}
+
+.plugin-card {
+  position: relative;
+  display: grid;
+  grid-template-columns: 2.75rem minmax(0, 1fr);
+  align-content: start;
+  align-items: center;
+  gap: 1rem;
+  padding: clamp(1.25rem, 3vw, 2.5rem);
+  border-radius: 1rem;
+  box-shadow: none;
+  background: var(--sl-color-black);
+}
+
+.plugin-card .plugin-card-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  color: var(--plugin-color);
+  border: 1px solid var(--plugin-color);
+  background: color-mix(
+    in srgb,
+    var(--plugin-color) 15%,
+    var(--sl-color-black)
+  );
+  border-radius: 0.25rem;
+}
+
+.plugin-card-icon img {
+  width: 1.875rem;
+  height: 1.875rem;
+  object-fit: contain;
+  margin: 0;
+}
+
+.plugin-card h3 {
+  margin: 0;
+  font-size: 1.3rem;
+  line-height: 1.35;
+  letter-spacing: -0.02em;
+}
+
+.plugin-card h3 a {
+  color: var(--sl-color-white);
+  text-decoration: none;
+}
+
+.plugin-card h3 a::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+}
+
+.plugin-card p {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: var(--muted);
+}
+
+.plugin-card:hover,
+.plugin-card:focus-within {
+  border-color: var(--plugin-color);
+}
+
+.plugin-card:focus-within {
+  outline: 2px solid var(--plugin-color);
+  outline-offset: 3px;
+}
+
+/* Match the rounded plugin cards on documentation pagination. */
+.pagination-links {
+  gap: 0.75rem;
+}
+
+.pagination-links a {
+  font-size: 0.8rem;
+  padding: 0.75rem 1rem;
+  gap: 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: 1rem;
+  background: var(--sl-color-black);
+  color: var(--muted);
+  box-shadow: none;
+}
+
+.pagination-links a svg {
+  color: var(--brand);
+}
+
+.pagination-links .link-title {
+  color: var(--ink);
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.35;
+  letter-spacing: -0.02em;
+}
+
+.pagination-links a:hover,
+.pagination-links a:focus-visible {
+  border-color: var(--brand);
+}
+
+.sl-markdown-content h2 {
+  letter-spacing: -0.035em;
+  font-weight: 700;
+}
+
+:where(a, button, select, input):focus-visible {
+  outline: 3px solid var(--brand);
+  outline-offset: 4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sl-link-button {
+    transition: none;
+  }
 }

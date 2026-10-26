@@ -1,16 +1,20 @@
 ---
 title: Pinelab Vendure Plugins
-description: Production-tested Vendure plugins and practical guides from Pinelab Studio.
+description: Production-tested Vendure plugins and practical recipes from Pinelab Studio.
 template: splash
 hero:
-  title: Pinelab Vendure Plugins
-  tagline: Production-tested plugins and practical guides for building with Vendure.
+  title: Battle-tested Vendure plugins
+  tagline: Vendure plugins built by Pinelab, used for solving real problems for our clients. Licensed under MIT, free to use, forever.
+  image:
+    file: ../../../public/vendure-conf.webp
+    alt: Vendure conference
   actions:
-    - text: Explore plugins
-      link: '#plugins'
+    - text: Build me a custom plugin
+      link: https://pinelab.studio/contact/?q=I+would+like+a+custom+plugin
       icon: right-arrow
-    - text: Read the guides
-      link: /guides/
+    - text: Plugins
+      link: '#plugins'
+      icon: down-arrow
       variant: minimal
 ---
 
@@ -18,9 +22,9 @@ import { getCollection } from 'astro:content';
 import { CardGrid, Icon } from '@astrojs/starlight/components';
 import { pluginIcons } from '../../utils/plugin-icons';
 
-## Plugins
+Happy with our plugins? [Consider leaving us a review](https://www.trustpilot.com/review/pinelab.studio).
 
-Extend your Vendure store with plugins maintained by Pinelab Studio. Choose a plugin to read its documentation, installation instructions, and release history.
+## Plugins
 
 <CardGrid>
   {(
@@ -56,9 +60,33 @@ Extend your Vendure store with plugins maintained by Pinelab Studio. Choose a pl
     ))}
 </CardGrid>
 
-## Get started
+## Recipes
 
-- [Practical Vendure guides](/guides/)
-- [Using this documentation with AI assistants](/ai-integration/)
-- [Source code on GitHub](https://github.com/Pinelab-studio/pinelab-vendure-plugins)
-- [Get help from Pinelab](https://pinelab.studio/contact/)
+Practical recipes and best practices from our engineering documentation, updated from GitHub on every build.
+
+<CardGrid>
+  {(await getCollection('docs', ({ id }) => id.startsWith('recipes/')))
+    .sort(
+      (a, b) =>
+        (a.data.sidebar.order ?? 1) - (b.data.sidebar.order ?? 1) ||
+        a.data.title.localeCompare(b.data.title)
+    )
+    .map((recipe) => (
+      <article
+        className="card plugin-card"
+        style={{ '--plugin-color': 'var(--brand)' }}
+      >
+        <div className="plugin-card-icon" aria-hidden="true">
+          <Icon name="open-book" size="2rem" />
+        </div>
+        <h3>
+          <a href={`/${recipe.id}/`}>{recipe.data.title}</a>
+        </h3>
+        <p>{recipe.data.description}</p>
+      </article>
+    ))}
+</CardGrid>
+
+## Contributors
+
+Thanks to everyone who contributed to our plugins!

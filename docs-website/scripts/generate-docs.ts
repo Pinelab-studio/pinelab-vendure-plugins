@@ -1,5 +1,10 @@
 import { mkdir, rm, writeFile } from 'node:fs/promises';
 import { getPlugins } from '../src/utils/plugins.ts';
+import {
+  getEngineeringDocs,
+  stripFrontmatter,
+  markdownLabel,
+} from '../src/utils/engineering-docs.ts';
 
 const output = new URL('../src/content/docs/plugin/', import.meta.url);
 
@@ -12,7 +17,6 @@ async function generatePluginDocs() {
   for (const plugin of plugins) {
     const directory = new URL(`${plugin.slug}/`, output);
     await mkdir(directory, { recursive: true });
-    const editBase = `https://github.com/Pinelab-studio/pinelab-vendure-plugins/edit/main/packages/${plugin.directory}`;
     const metadata = `[View on npm](https://www.npmjs.com/package/${
       plugin.name
     }) · [Changelog](/plugin/${plugin.slug}/changelog/)\n\nVersion: ${
@@ -27,7 +31,8 @@ async function generatePluginDocs() {
       frontmatter({
         title: plugin.title,
         description: plugin.description,
-        editUrl: `${editBase}/README.md`,
+        pluginReadmeUrl: `https://github.com/Pinelab-studio/pinelab-vendure-plugins/blob/main/packages/${plugin.directory}/README.md`,
+        editUrl: false,
       }) +
         metadata +
         '\n\n' +
@@ -38,7 +43,7 @@ async function generatePluginDocs() {
       frontmatter({
         title: `${plugin.title} changelog`,
         description: `Release history for ${plugin.name}.`,
-        editUrl: `${editBase}/CHANGELOG.md`,
+        editUrl: false,
         sidebar: { hidden: true },
       }) +
         `[← Plugin documentation](/plugin/${plugin.slug}/) · [View on npm](https://www.npmjs.com/package/${plugin.name})\n\n` +
@@ -57,4 +62,69 @@ function frontmatter(data: Record<string, unknown>) {
     .join('\n')}\n---\n\n`;
 }
 
+/** Fetch disposable Markdown files for the same Starlight pipeline as plugin docs. */
+async function generateRecipeDocs() {
+  const { sources } = await getEngineeringDocs();
+  const output = new URL('../src/content/docs/recipes/', import.meta.url);
+  const recipes = sources.map(({ path, markdown }) => {
+    const slug = path
+      .replace(/^docs\/(best-practices|recipes)\//, '')
+      .replace(/\.md$/, '');
+    const metadata =
+      markdown.match(/^\uFEFF?---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/)?.[1] ??
+      '';
+    // Leave YAML parsing to Astro, including quoted and multiline metadata values.
+    const yaml = /^title:/m.test(metadata)
+      ? metadata
+      : metadata.replace(/^name:/m, 'title:');
+    const title = stripFrontmatter(markdown).match(/^#\s+(.+)$/m)?.[1] ?? slug;
+    return { path, slug, title, markdown, yaml };
+  });
+  const slugs = new Set<string>(['index']);
+  for (const { slug } of recipes) {
+    if (slugs.has(slug))
+      throw new Error(`Duplicate recipe route: recipes/${slug}`);
+    slugs.add(slug);
+  }
+  // Fetch and validate everything before replacing generated inputs.
+  await rm(output, { recursive: true, force: true });
+  await mkdir(output, { recursive: true });
+  for (const recipe of recipes) {
+    const file = new URL(`${recipe.slug}.md`, output);
+    await mkdir(new URL('.', file), { recursive: true });
+    const metadata = frontmatter({
+      ...(!/^title:/m.test(recipe.yaml) ? { title: recipe.title } : {}),
+      engineeringPath: recipe.path,
+      sidebar: {
+        order: recipe.path.startsWith('docs/best-practices/') ? 0 : 1,
+      },
+      editUrl: false,
+    });
+    await writeFile(
+      file,
+      metadata.replace(/---\n\n$/, `${recipe.yaml}\n---\n\n`) +
+        stripFrontmatter(recipe.markdown)
+    );
+  }
+  await writeFile(
+    new URL('index.md', output),
+    frontmatter({
+      title: 'Recipes',
+      description: 'Engineering recipes and best practices from Pinelab.',
+      sidebar: { hidden: true },
+      editUrl: false,
+    }) +
+      recipes
+        .map(
+          ({ title, slug }) => `- [${markdownLabel(title)}](/recipes/${slug}/)`
+        )
+        .join('\n') +
+      '\n'
+  );
+  console.log(
+    `Generated Starlight documentation for ${recipes.length} recipes.`
+  );
+}
+
 await generatePluginDocs();
+await generateRecipeDocs();

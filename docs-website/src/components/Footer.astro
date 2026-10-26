@@ -1,0 +1,80 @@
+<footer class="pinelab-footer" aria-label="Pinelab Studio">
+  <div class="footer-columns">
+    <section>
+      <h2><a href="https://pinelab.studio/">Pinelab.studio</a></h2>
+      <p>Cornelis Trooststraat 48, 8932 BR<br />Leeuwarden, The Netherlands</p>
+      <p>CoC 94997713<br />VAT NL002345678B01</p>
+    </section>
+    <nav aria-label="Contact">
+      <h2>Contact</h2>
+      <a href="mailto:Martijn@pinelab.studio">Martijn@pinelab.studio</a>
+      <a href="https://www.linkedin.com/company/pinelab-studio">LinkedIn</a>
+      <a href="https://github.com/Pinelab-studio/">GitHub</a>
+    </nav>
+    <nav aria-label="Pages">
+      <h2>Pages</h2>
+      <a href="/">Home</a>
+      <a href="/#plugins">Plugins</a>
+      <a href="https://github.com/Pinelab-studio/pinelab-engineering/"
+        >Engineering Principles</a
+      >
+      <a href="/ai-integration/">AI integration</a>
+      <a href="https://pinelab.studio/contact/">Contact</a>
+    </nav>
+    <nav aria-label="Resources">
+      <h2>Resources</h2>
+      <a href="https://pinelab.studio/">Pinelab.studio</a>
+    </nav>
+  </div>
+  <p class="copyright">© Your trusted partner in ecommerce since 2021</p>
+</footer>
+
+<style>
+  .pinelab-footer {
+    position: relative;
+    z-index: auto;
+    width: 100%;
+    padding: clamp(2rem, 5vw, 4rem)
+      max(var(--sl-content-pad-x, 1rem), calc((100% - 67.5rem) / 2));
+    border-top: 1px solid var(--line);
+    background: var(--surface);
+    color: var(--muted);
+    font-size: var(--sl-text-sm);
+  }
+  .footer-columns {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr));
+    gap: 2rem;
+  }
+  h2 {
+    margin: 0 0 1rem;
+    color: var(--ink);
+    font-size: 1rem;
+    font-weight: 700;
+  }
+  p {
+    margin: 0 0 1rem;
+  }
+  nav a {
+    display: block;
+    margin-bottom: 0.5rem;
+  }
+  a {
+    color: var(--muted);
+    text-decoration: none;
+    overflow-wrap: anywhere;
+  }
+  h2 a,
+  a:hover {
+    color: var(--brand);
+  }
+  a:hover {
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+  }
+  .copyright {
+    border-top: 1px solid var(--line);
+    margin: 2rem 0 0;
+    padding-top: 1.25rem;
+  }
+</style>

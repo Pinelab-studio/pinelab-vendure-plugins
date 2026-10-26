@@ -9,6 +9,11 @@ const plugins = await getPlugins();
 export default defineConfig({
   site: 'https://plugins.pinelab.studio',
   trailingSlash: 'always',
+  vite: {
+    preview: {
+      allowedHosts: true,
+    },
+  },
   integrations: [
     sitemap({
       filter: (page) => new URL(page).pathname !== '/design-system/',
@@ -19,21 +24,20 @@ export default defineConfig({
       logo: { src: './public/pinelab-plugins-logo.png', replacesTitle: true },
       customCss: ['./src/styles/pinelab.css'],
       components: {
+        Header: './src/components/Header.astro',
+        PageFrame: './src/components/PageFrame.astro',
         ThemeProvider: './src/components/ThemeProvider.astro',
         ThemeSelect: './src/components/ThemeSelect.astro',
       },
       expressiveCode: {
         shiki: { langAlias: { Dockerfile: 'dockerfile', env: 'dotenv' } },
       },
-      social: [
-        {
-          icon: 'github',
-          label: 'GitHub',
-          href: 'https://github.com/Pinelab-studio/pinelab-vendure-plugins',
-        },
-      ],
       sidebar: [
-        { label: 'Home', slug: '' },
+        { label: 'AI integration', slug: 'ai-integration' },
+        {
+          label: 'Recipes',
+          items: [{ autogenerate: { directory: 'recipes' } }],
+        },
         {
           label: 'Plugins',
           items: plugins.map((plugin) => ({
@@ -41,8 +45,6 @@ export default defineConfig({
             link: `/plugin/${plugin.slug}/`,
           })),
         },
-        { label: 'Guides', items: [{ autogenerate: { directory: 'guides' } }] },
-        { label: 'AI integration', slug: 'ai-integration' },
       ],
     }),
   ],
