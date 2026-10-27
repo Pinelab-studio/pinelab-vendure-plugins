@@ -109,14 +109,14 @@ describe('IndexService', () => {
     productService?: ProductService;
     productVariantService?: any;
     eventBus?: EventBus;
-    mapSearchDocuments?: SearchDocumentMapper;
+    indexAdditionalFields?: SearchDocumentMapper;
   }): IndexService {
     const connection = overrides?.connection ?? createMockRepository();
     const options = {
       debounceIndexRebuildMs: overrides?.debounceMs ?? 50,
       isEnabled: overrides?.isEnabled,
       searchEngine: mockSearchEngine,
-      mapSearchDocuments: overrides?.mapSearchDocuments,
+      indexAdditionalFields: overrides?.indexAdditionalFields,
     };
     return new IndexService(
       connection,
@@ -365,8 +365,7 @@ describe('IndexService', () => {
     it('allows overriding description while indexing loaded custom fields', async () => {
       const engine = new MinisearchEngine();
       const variant = customVariant();
-      const mapper = vi.fn(async (ctx, variants, injector) => {
-        const mapped = defaultMapSearchDocuments(ctx, variants, injector);
+      const mapper = vi.fn(async (_ctx, _variants, mapped) => {
         return {
           indexedFields: [...mapped.indexedFields, 'reference'],
           documents: mapped.documents.map((d) => ({
@@ -376,9 +375,16 @@ describe('IndexService', () => {
           })),
         };
       });
-      const service = createService({ mapSearchDocuments: mapper });
+      const service = createService({ indexAdditionalFields: mapper });
       const mapped = await service['mapDocuments'](ctx, [variant]);
-      expect(mapper).toHaveBeenCalledWith(ctx, [variant], expect.any(Injector));
+      expect(mapper).toHaveBeenCalledWith(
+        ctx,
+        [variant],
+        expect.objectContaining({
+          indexedFields: ['productName', 'slug', 'description'],
+        }),
+        expect.any(Injector)
+      );
       const index = await engine.createIndex(
         ctx,
         mapped.documents,
@@ -399,8 +405,7 @@ describe('IndexService', () => {
       'allows returning %i documents from a larger batch',
       async (count) => {
         const service = createService({
-          mapSearchDocuments: (ctx, variants, injector) => {
-            const mapped = defaultMapSearchDocuments(ctx, variants, injector);
+          indexAdditionalFields: (_ctx, _variants, mapped) => {
             return { ...mapped, documents: mapped.documents.slice(0, count) };
           },
         });
@@ -416,8 +421,7 @@ describe('IndexService', () => {
       'rejects invalid mapping identities: %s',
       async (invalid) => {
         const service = createService({
-          mapSearchDocuments: (ctx, variants, injector) => {
-            const mapped = defaultMapSearchDocuments(ctx, variants, injector);
+          indexAdditionalFields: (_ctx, _variants, mapped) => {
             if (invalid === 'duplicate')
               mapped.documents[1] = mapped.documents[0];
             else mapped.documents[0][invalid] = 'changed';
@@ -429,7 +433,7 @@ describe('IndexService', () => {
             customVariant(),
             { ...customVariant(), id: 'other' } as ProductVariant,
           ])
-        ).rejects.toThrow('mapSearchDocuments');
+        ).rejects.toThrow('indexAdditionalFields');
       }
     );
   });
@@ -640,8 +644,8 @@ describe('IndexService', () => {
           }),
           productService,
           productVariantService: { applyChannelPriceAndTax, findOne },
-          mapSearchDocuments: async (ctx, variants, injector) => ({
-            ...defaultMapSearchDocuments(ctx, variants, injector),
+          indexAdditionalFields: async (_ctx, _variants, mapped) => ({
+            ...mapped,
             indexedFields: ['ignored-partial-field'],
           }),
           eventBus: {

@@ -1,6 +1,9 @@
 import { PluginCommonModule, Type, VendurePlugin } from '@vendure/core';
 import { MinisearchEngine } from './config/minisearch-engine';
-import { adminApiExtensions, shopApiExtensions } from './api/api-extensions';
+import {
+  adminApiExtensions,
+  createShopApiExtensions,
+} from './api/api-extensions';
 import { SearchAdminResolver } from './api/search-admin.resolver';
 import { SearchShopResolver } from './api/search.resolver';
 import { BETTER_SEARCH_PLUGIN_OPTIONS } from './constants';
@@ -42,7 +45,7 @@ import { SearchLogResolver } from './api/search-log.resolver';
   compatibility: '^3.0.0',
   dashboard: './dashboard/index.tsx',
   shopApiExtensions: {
-    schema: shopApiExtensions,
+    schema: () => createShopApiExtensions(BetterSearchPlugin.options),
     resolvers: [SearchShopResolver],
   },
   adminApiExtensions: {

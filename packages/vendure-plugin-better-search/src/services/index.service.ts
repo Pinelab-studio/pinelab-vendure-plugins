@@ -200,9 +200,19 @@ export class IndexService implements OnModuleInit, OnApplicationBootstrap {
     ctx: RequestContext,
     variants: ProductVariant[]
   ): Promise<SearchDocumentMapping> {
-    const result = await (
-      this.options.mapSearchDocuments ?? defaultMapSearchDocuments
-    )(ctx, variants, this.injector);
+    const defaultDocumentMapping = defaultMapSearchDocuments(
+      ctx,
+      variants,
+      this.injector
+    );
+    const result = this.options.indexAdditionalFields
+      ? await this.options.indexAdditionalFields(
+          ctx,
+          variants,
+          defaultDocumentMapping,
+          this.injector
+        )
+      : defaultDocumentMapping;
     const expected = new Map(
       variants.map((v) => [
         String(v.id),
@@ -215,7 +225,7 @@ export class IndexService implements OnModuleInit, OnApplicationBootstrap {
         expected.get(document.id) !== document.productId
       ) {
         throw new Error(
-          'mapSearchDocuments must preserve unique variant and product IDs'
+          'indexAdditionalFields must preserve unique variant and product IDs'
         );
       }
       expected.delete(document.id);

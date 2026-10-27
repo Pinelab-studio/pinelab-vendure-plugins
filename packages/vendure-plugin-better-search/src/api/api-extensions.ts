@@ -1,4 +1,19 @@
 import gql from 'graphql-tag';
+import { BetterSearchOptions } from '../types';
+
+/** Generates the Shop API extension from explicitly configured output fields. */
+export function createShopApiExtensions(options: BetterSearchOptions) {
+  const fields = Object.entries(options.exposeAdditionalGraphqlFields ?? {});
+  if (!fields.length) return shopApiExtensions;
+  return gql`
+    ${shopApiExtensions}
+    extend type SearchResult {
+      ${fields
+        .map(([name, field]) => `${name}: ${field.graphqlType}`)
+        .join('\n')}
+    }
+  `;
+}
 
 export const adminApiExtensions = gql`
   type SearchLogAggregate implements Node {

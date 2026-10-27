@@ -67,7 +67,7 @@ export class SearchService {
     const channelId = String(ctx.channel.id);
     const response: SearchResponse = {
       items: paginatedDocs.map((doc) =>
-        this.mapToSearchResult(doc, currencyCode, channelId)
+        this.mapToSearchResult(ctx, doc, currencyCode, channelId)
       ),
       totalItems: docs.length,
       facetValues: [],
@@ -231,11 +231,18 @@ export class SearchService {
    * Price is always PriceRange (min/max); asset details come from the search index.
    */
   private mapToSearchResult(
+    ctx: RequestContext,
     doc: BetterSearchDocument,
     currencyCode: CurrencyCode,
     channelId: string
   ): SearchResult {
+    const additionalFields = Object.fromEntries(
+      Object.entries(this.options.exposeAdditionalGraphqlFields ?? {}).map(
+        ([name, field]) => [name, field.value(ctx, doc.document)]
+      )
+    );
     return {
+      ...additionalFields,
       sku: doc.sku,
       slug: doc.slug,
       productId: doc.productId,

@@ -108,39 +108,77 @@ plugins: [
 
 The default engine searches product names, slugs, and descriptions. You can supply your own `SearchEngine` implementation.
 
-### Indexing custom fields and excluding products
+### Indexing and exposing custom fields
 
-Use the plugin-wide `mapSearchDocuments` callback. This example assumes Product custom fields `reference` and `excludeFromSearch` are configured:
+Use `indexAdditionalFields` to add data to the search index, and `exposeAdditionalGraphqlFields` to explicitly expose stored data on the Shop API's `SearchResult`. These are independent: storing a field does not make it searchable or expose it through GraphQL.
+
+This example assumes Product custom fields `reference`, `assetThumbnail`, and `excludeFromSearch` are configured:
 
 ```ts
-import {
-  BetterSearchPlugin,
-  defaultMapSearchDocuments,
-} from '@pinelab/vendure-plugin-better-search';
+import { BetterSearchPlugin } from '@pinelab/vendure-plugin-better-search';
 
-type CustomFields = { reference?: string; excludeFromSearch?: boolean };
+type CustomFields = {
+  reference?: string;
+  assetThumbnail?: string;
+  excludeFromSearch?: boolean;
+};
 
 BetterSearchPlugin.init({
-  mapSearchDocuments: (ctx, variants, injector) => {
-    const included = variants.filter(
-      (v) => !(v.product.customFields as CustomFields).excludeFromSearch
-    );
-    const mapped = defaultMapSearchDocuments(ctx, included, injector);
-    return {
-      indexedFields: [...mapped.indexedFields, 'reference'],
-      documents: mapped.documents.map((document, i) => ({
-        ...document,
-        reference:
-          (included[i].product.customFields as CustomFields).reference ?? '',
-      })),
-    };
+  indexAdditionalFields: (
+    _ctx,
+    variants,
+    defaultDocumentMapping,
+    _injector
+  ) => ({
+    // Only fields listed here are searchable.
+    indexedFields: [...defaultDocumentMapping.indexedFields, 'reference'],
+    documents: defaultDocumentMapping.documents.flatMap((document, i) => {
+      const customFields = variants[i].product.customFields as CustomFields;
+      if (customFields.excludeFromSearch) return [];
+      return [
+        {
+          ...document,
+          reference: customFields.reference ?? '',
+          // Stored for GraphQL, but not searched.
+          assetThumbnail: customFields.assetThumbnail ?? null,
+        },
+      ];
+    }),
+  }),
+  exposeAdditionalGraphqlFields: {
+    reference: {
+      graphqlType: 'String!',
+      value: (_ctx, document) => document.reference,
+    },
+    assetThumbnail: {
+      graphqlType: 'String',
+      value: (_ctx, document) => document.assetThumbnail,
+    },
   },
 });
 ```
 
-Preserve document `id` and `productId`; other defaults can be overridden, e.g. `description: ''`. All returned fields are stored, but only `indexedFields` are searchable. Custom fields are not added to storefront GraphQL.
+Query the exposed fields directly:
 
-Partial updates receive only affected variants, remove excluded documents, and ignore returned `indexedFields`. Run a full reindex after changing mapping or indexed fields.
+```graphql
+query {
+  search(input: { term: "your-reference", groupByProduct: true }) {
+    items {
+      productName
+      reference
+      assetThumbnail
+    }
+  }
+}
+```
+
+- `indexAdditionalFields` replaces `mapSearchDocuments`. It receives the request context, loaded variants, already-mapped default documents, and Vendure's injector. Return a `SearchDocumentMapping` or a Promise of one; no manual call to `defaultMapSearchDocuments` is needed.
+- Preserve document `id` and `productId`; other defaults can be overridden, e.g. `description: ''`. Omit documents to exclude variants from search. All returned fields are stored, but only `indexedFields` are searchable.
+- GraphQL field names and `graphqlType` declarations are read at startup, even when the index is empty. Any valid GraphQL output type can be referenced, including scalars, enums, objects, lists, and non-null wrappers; referenced types must already exist in the schema. Restart Vendure after changing these definitions.
+- `value(ctx, document)` runs synchronously when search results are returned, using the original indexed document and the current request context. Keep it inexpensive: return stored data or a simple transformation, not a Promise or an asynchronous lookup. Plain `String` fields do not receive automatic asset-URL transformations.
+- With `groupByProduct: true`, additional fields come from the highest-scoring representative variant, while prices and facets retain their normal aggregation.
+- Partial updates receive only affected variants, remove excluded documents, and ignore returned `indexedFields`. Run a full reindex after changing indexed data or searchable fields.
+- Custom `SearchEngine` implementations must include the original `SearchDocument` in each returned `BetterSearchDocument`'s `document` property so GraphQL callbacks can access additional fields.
 
 ## Search analytics
 

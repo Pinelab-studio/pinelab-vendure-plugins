@@ -119,6 +119,7 @@ export class MinisearchEngine implements SearchEngine<MinisearchIndex> {
     return hits.map((hit) => {
       const d = hit.document as SearchDocument;
       return {
+        document: d,
         productVariantId: d.id,
         productId: d.productId,
         productName: d.productName,

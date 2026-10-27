@@ -35,8 +35,19 @@ export interface SearchDocumentMapping {
 export type SearchDocumentMapper = (
   ctx: RequestContext,
   variants: ProductVariant[],
+  defaultDocumentMapping: SearchDocumentMapping,
   injector: Injector
 ) => SearchDocumentMapping | Promise<SearchDocumentMapping>;
+
+/** Static GraphQL output types and synchronous values derived from indexed documents. */
+export type AdditionalGraphqlFields<T extends SearchDocument = SearchDocument> =
+  Record<
+    string,
+    {
+      graphqlType: string;
+      value: (ctx: RequestContext, document: T) => unknown;
+    }
+  >;
 
 /** Serializable payload processed by the better-search-index worker queue. */
 export type IndexJobData =
@@ -55,6 +66,8 @@ export type IndexJobData =
  * Contains all fields needed to construct a Vendure SearchResult.
  */
 export interface BetterSearchDocument {
+  /** Original indexed document, including consumer-defined fields. */
+  document: SearchDocument;
   /** Variant ID (equals the document id in the search index) */
   productVariantId: string;
   productId: string;
@@ -128,7 +141,10 @@ export interface BetterSearchOptions {
   searchEngine?: SearchEngine;
 
   /** Maps full/partial batches. Partial updates ignore returned indexedFields. */
-  mapSearchDocuments?: SearchDocumentMapper;
+  indexAdditionalFields?: SearchDocumentMapper;
+
+  /** Explicitly exposes indexed data on the Shop API SearchResult type. */
+  exposeAdditionalGraphqlFields?: AdditionalGraphqlFields;
 }
 
 /**

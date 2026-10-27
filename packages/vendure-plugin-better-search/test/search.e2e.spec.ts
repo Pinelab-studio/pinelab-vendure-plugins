@@ -28,10 +28,7 @@ import { BetterSearchPlugin, BetterSearchLog } from '../src';
 import { SearchLogService } from '../src/services/search-log.service';
 import { SearchLogAggregationService } from '../src/services/search-log-aggregation.service';
 import { BetterSearchIndexEvent } from '../src/events/better-search-index.event';
-import {
-  IndexService,
-  defaultMapSearchDocuments,
-} from '../src/services/index.service';
+import { IndexService } from '../src/services/index.service';
 import {
   ASSIGN_PRODUCTS_TO_CHANNEL,
   CREATE_CHANNEL,
@@ -70,15 +67,26 @@ beforeAll(async () => {
     },
     plugins: [
       BetterSearchPlugin.init({
-        mapSearchDocuments: (ctx, variants, injector) => {
-          const mapped = defaultMapSearchDocuments(ctx, variants, injector);
+        indexAdditionalFields: (_ctx, _variants, mapped) => {
           return {
             indexedFields: [...mapped.indexedFields, 'myCustomIndexablefield'],
             documents: mapped.documents.map((document) => ({
               ...document,
-              myCustomIndexablefield: 'someStringThatIsUnique',
+              myCustomIndexablefield: 'someStringThatIsUnique', // this will be searchable
+              assetThumbnail: 'storedonlythumbnailtoken', // this is only stored
+              privateSearchValue: 'not-exposed',
             })),
           };
+        },
+        exposeAdditionalGraphqlFields: {
+          assetThumbnail: {
+            graphqlType: 'String',
+            value: (_ctx, document) => document.assetThumbnail,
+          },
+          customReference: {
+            graphqlType: 'String!',
+            value: (_ctx, document) => document.myCustomIndexablefield,
+          },
         },
       }),
       AssetServerPlugin.init({
@@ -130,6 +138,38 @@ beforeAll(async () => {
   // test doesn't pay schema-build / first-request latency.
   await shopClient.query(WARMUP_QUERY, { term: 'warmup' }).catch(() => {});
 }, 60000);
+
+describe('Additional GraphQL fields', () => {
+  it('indexes additional fields using the default mapping and exposes their values', async () => {
+    const result = await shopClient.query<{
+      search: { items: Array<{ customReference: string; slug: string }> };
+    }>(ADDITIONAL_FIELDS_QUERY, {
+      input: { term: 'someStringThatIsUnique', take: 1 },
+    });
+    expect(result.search.items).toHaveLength(1);
+    expect(result.search.items[0]).toMatchObject({
+      customReference: 'someStringThatIsUnique',
+      slug: expect.any(String),
+    });
+  });
+
+  it('exposes stored-only fields without making them searchable or exposing private fields', async () => {
+    const result = await shopClient.query<{
+      search: { items: Array<{ assetThumbnail: string }> };
+      __type: { fields: Array<{ name: string }> };
+    }>(STORED_ONLY_FIELDS_QUERY, { input: { term: 'apple', take: 1 } });
+    expect(result.search.items).toEqual([
+      { assetThumbnail: 'storedonlythumbnailtoken' },
+    ]);
+    expect(result.__type.fields.map((field) => field.name)).not.toContain(
+      'privateSearchValue'
+    );
+    const unsearchable = await shopClient.query(STORED_ONLY_FIELDS_QUERY, {
+      input: { term: 'storedonlythumbnailtoken' },
+    });
+    expect(unsearchable.search.items).toEqual([]);
+  });
+});
 
 describe('Relevance', () => {
   it('searches a custom static field configured through the plugin mapper', async () => {
@@ -1108,6 +1148,32 @@ async function search(query: string): Promise<{ items: SearchResultItem[] }> {
   await expectSearchPrices(items);
   return { items };
 }
+
+const STORED_ONLY_FIELDS_QUERY = gql`
+  query StoredOnlyFields($input: SearchInput!) {
+    search(input: $input) {
+      items {
+        assetThumbnail
+      }
+    }
+    __type(name: "SearchResult") {
+      fields {
+        name
+      }
+    }
+  }
+`;
+
+const ADDITIONAL_FIELDS_QUERY = gql`
+  query AdditionalFields($input: SearchInput!) {
+    search(input: $input) {
+      items {
+        slug
+        customReference
+      }
+    }
+  }
+`;
 
 const FILTER_FIXTURES = gql`
   query FilterFixtures {
