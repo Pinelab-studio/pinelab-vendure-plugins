@@ -6,6 +6,7 @@ import {
   ErrorResult,
   EventBus,
   FulfillmentStateTransitionError,
+  HistoryService,
   ID,
   Injector,
   JobQueue,
@@ -20,11 +21,17 @@ import {
 } from '@vendure/core';
 import {
   AddFulfillmentToOrderResult,
+  HistoryEntryType,
   ItemsAlreadyFulfilledError,
 } from '@vendure/common/lib/generated-types';
 import { Fulfillment } from '@vendure/core/dist/entity/fulfillment/fulfillment.entity';
 import { toParcelInput } from './sendcloud.adapter';
-import { loggerCtx, PLUGIN_OPTIONS } from './constants';
+import {
+  LEGACY_HISTORY_ENTRY_TYPE,
+  loggerCtx,
+  PLUGIN_OPTIONS,
+  SYNC_SUCCESS_NOTE,
+} from './constants';
 import { SendcloudClient } from './sendcloud.client';
 import { sendcloudHandler } from './sendcloud.handler';
 import { Parcel, ParcelInputItem } from './types/sendcloud-api.types';
@@ -49,7 +56,8 @@ export class SendcloudService implements OnApplicationBootstrap {
     private jobQueueService: JobQueueService,
     private moduleRef: ModuleRef,
     @Inject(PLUGIN_OPTIONS) private options: SendcloudPluginOptions,
-    private entityHydrator: EntityHydrator
+    private entityHydrator: EntityHydrator,
+    private historyService: HistoryService
   ) {}
 
   async onApplicationBootstrap(): Promise<void> {
@@ -227,7 +235,7 @@ export class SendcloudService implements OnApplicationBootstrap {
       ? `Failed to sync to SendCloud: ${
           error instanceof Error ? error.message : JSON.stringify(error)
         }`
-      : `Successfully synced to SendCloud`;
+      : SYNC_SUCCESS_NOTE;
     await this.orderService.addNoteToOrder(ctx, {
       id: orderId,
       isPublic: false,
@@ -241,6 +249,8 @@ export class SendcloudService implements OnApplicationBootstrap {
    * - PaymentAuthorized: create fulfillment only (no shipping transitions)
    * - PaymentSettled: fulfill + transition to Shipped + transition to Delivered
    * - Shipped: transition existing fulfillment(s) to Delivered
+   *
+   * Orders that haven't been synced to SendCloud are skipped.
    *
    * Intended to be called by the `fulfillSettledOrdersTask` scheduled task.
    */
@@ -291,6 +301,14 @@ export class SendcloudService implements OnApplicationBootstrap {
             continue;
           }
           try {
+            if (!(await this.isSyncedToSendcloud(channelCtx, order.id))) {
+              Logger.warn(
+                `Order ${order.code} (${order.state}) has not been synced to SendCloud. Not fulfilling this order.`,
+                loggerCtx
+              );
+              summary.skipped++;
+              continue;
+            }
             if (order.state === 'PaymentAuthorized') {
               await this.createFulfillmentOnly(channelCtx, order);
               Logger.info(
@@ -326,6 +344,33 @@ export class SendcloudService implements OnApplicationBootstrap {
       loggerCtx
     );
     return summary;
+  }
+
+  /**
+   * Check if the order history contains a successful sync to SendCloud
+   */
+  private async isSyncedToSendcloud(
+    ctx: RequestContext,
+    orderId: ID
+  ): Promise<boolean> {
+    const history = await this.historyService.getHistoryForOrder(
+      ctx,
+      orderId,
+      false,
+      {
+        filter: {
+          type: {
+            in: [HistoryEntryType.ORDER_NOTE, LEGACY_HISTORY_ENTRY_TYPE],
+          },
+        },
+      }
+    );
+    return history.items.some(
+      ({ type, data }) =>
+        (type === HistoryEntryType.ORDER_NOTE &&
+          data?.note === SYNC_SUCCESS_NOTE) ||
+        ((type as string) === LEGACY_HISTORY_ENTRY_TYPE && data?.valid === true)
+    );
   }
 
   /**

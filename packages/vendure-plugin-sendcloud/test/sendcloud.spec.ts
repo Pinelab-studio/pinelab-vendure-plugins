@@ -10,9 +10,12 @@ import {
   ChannelService,
   configureDefaultOrderProcess,
   DefaultLogger,
+  HistoryService,
   Injector,
   LogLevel,
   mergeConfig,
+  OrderService,
+  RequestContextService,
 } from '@vendure/core';
 import { ModuleRef } from '@nestjs/core';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
@@ -25,7 +28,7 @@ import {
   sendcloudHandler,
   SendcloudPlugin,
 } from '../src';
-import { updateSendCloudConfig } from './test.helpers';
+import { getSyncSuccessNote, updateSendCloudConfig } from './test.helpers';
 import {
   addShippingMethod,
   fulfill,
@@ -45,6 +48,7 @@ describe('SendCloud', () => {
   let server: TestServer;
   let orderCode: string | undefined;
   let orderId: string | undefined;
+  let unsyncedOrderId: string | undefined;
   let channelId: string;
 
   beforeAll(async () => {
@@ -177,6 +181,7 @@ describe('SendCloud', () => {
       const o = await getOrder(adminClient, String(id));
       return o?.state === 'PaymentSettled' && body?.parcel ? true : undefined;
     });
+    await waitFor(() => getSyncSuccessNote(adminClient, String(id)));
     const order = await getOrder(adminClient, String(id));
     orderCode = order?.code;
     orderId = order?.id;
@@ -262,6 +267,7 @@ describe('SendCloud', () => {
       const o = await getOrder(adminClient, String(newId));
       return o?.state === 'PaymentSettled' ? true : undefined;
     });
+    await waitFor(() => getSyncSuccessNote(adminClient, String(newId)));
     const settledOrder = await getOrder(adminClient, String(newId));
     expect(settledOrder?.state).toBe('PaymentSettled');
     // verify allocation exists before creating fulfillment
@@ -310,6 +316,7 @@ describe('SendCloud', () => {
       const o = await getOrder(adminClient, String(newId));
       return o?.state === 'PaymentSettled' ? true : undefined;
     });
+    await waitFor(() => getSyncSuccessNote(adminClient, String(newId)));
     const settledOrder = await getOrder(adminClient, String(newId));
     expect(settledOrder?.state).toBe('PaymentSettled');
     // allocation should exist before transitioning to Shipped
@@ -370,6 +377,7 @@ describe('SendCloud', () => {
       true,
       [{ id: 'T_1', quantity: 1 }]
     );
+    unsyncedOrderId = String(failedOrderId);
     await waitFor(async () => {
       const o = await getOrder(adminClient, String(failedOrderId));
       return o?.state === 'PaymentSettled' ? true : undefined;
@@ -432,6 +440,99 @@ describe('SendCloud', () => {
       .post('/api/v2/parcels')
       .reply(200, { parcel: { id: 'test-id' } });
   }, 60000);
+
+  it('Does not fulfill orders that failed to sync to SendCloud', async () => {
+    const injector = new Injector(server.app.get(ModuleRef));
+    const result = await fulfillSettledOrdersTask.execute(injector);
+    expect(result).toEqual({ fulfilled: 0, skipped: 1, failed: 0 });
+    const order = await getOrder(adminClient, String(unsyncedOrderId));
+    expect(order?.state).toBe('PaymentSettled');
+    expect(order?.fulfillments).toHaveLength(0);
+  });
+
+  it('Fulfills the order after it has been synced to SendCloud manually', async () => {
+    const { sendToSendCloud } = await adminClient.query(
+      gql`
+        mutation SendToSendCloud($orderId: ID!) {
+          sendToSendCloud(orderId: $orderId)
+        }
+      `,
+      { orderId: unsyncedOrderId }
+    );
+    expect(sendToSendCloud).toBe(true);
+    const injector = new Injector(server.app.get(ModuleRef));
+    const result = await fulfillSettledOrdersTask.execute(injector);
+    expect(result).toEqual({ fulfilled: 1, skipped: 0, failed: 0 });
+    const order = await getOrder(adminClient, String(unsyncedOrderId));
+    expect(order?.state).toBe('Delivered');
+  });
+
+  it('Fulfills orders that were synced by plugin versions <= 2.1.x', async () => {
+    const { id, code } = await createSettledOrder(shopClient, 1);
+    // Remove the sync note, so only the legacy history entries are checked
+    const syncNote = await waitFor(() =>
+      getSyncSuccessNote(adminClient, String(id))
+    );
+    await adminClient.query(
+      gql`
+        mutation DeleteOrderNote($id: ID!) {
+          deleteOrderNote(id: $id) {
+            result
+          }
+        }
+      `,
+      { id: syncNote.id }
+    );
+    const ctx = await server.app
+      .get(RequestContextService)
+      .create({ apiType: 'admin' });
+    // The API returns encoded IDs, so get the order's database ID
+    const orderEntity = await server.app
+      .get(OrderService)
+      .findOneByCode(ctx, code);
+    const addLegacyHistoryEntry = (valid: boolean) =>
+      server.app.get(HistoryService).createHistoryEntryForOrder(
+        {
+          ctx,
+          orderId: orderEntity!.id,
+          type: 'SENDCLOUD_NOTIFICATION' as any,
+          data: { name: 'SendCloud', valid },
+        },
+        false
+      );
+    const injector = new Injector(server.app.get(ModuleRef));
+    await addLegacyHistoryEntry(false);
+    let result = await fulfillSettledOrdersTask.execute(injector);
+    expect(result).toEqual({ fulfilled: 0, skipped: 1, failed: 0 });
+    expect((await getOrder(adminClient, String(id)))?.state).toBe(
+      'PaymentSettled'
+    );
+    await addLegacyHistoryEntry(true);
+    result = await fulfillSettledOrdersTask.execute(injector);
+    expect(result).toEqual({ fulfilled: 1, skipped: 0, failed: 0 });
+    expect((await getOrder(adminClient, String(id)))?.state).toBe('Delivered');
+    // The history with legacy entries should still be queryable
+    const { order } = await adminClient.query(
+      gql`
+        query OrderHistory($id: ID!) {
+          order(id: $id) {
+            history {
+              items {
+                type
+                data
+              }
+            }
+          }
+        }
+      `,
+      { id }
+    );
+    expect(
+      order.history.items.filter(
+        (entry: any) => entry.type === 'SENDCLOUD_NOTIFICATION'
+      )
+    ).toHaveLength(2);
+  });
 
   afterAll(async () => {
     await server.destroy();
