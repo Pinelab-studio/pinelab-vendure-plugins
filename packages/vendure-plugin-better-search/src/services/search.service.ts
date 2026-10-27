@@ -9,6 +9,7 @@ import { BETTER_SEARCH_PLUGIN_OPTIONS } from '../constants';
 import {
   BetterSearchDocument,
   BetterSearchOptions,
+  SearchDocument,
   SearchSuggestion,
 } from '../types';
 import { IndexService } from './index.service';
@@ -83,14 +84,15 @@ export class SearchService {
   private mapStoredDocument(
     stored: Record<string, unknown>
   ): BetterSearchDocument {
-    const document = (stored.document ?? stored) as Record<string, unknown>;
+    const document = (stored.document ?? stored) as SearchDocument;
     return {
+      document,
       productVariantId: String(document.id),
       productId: String(document.productId),
       productName: String(document.productName ?? ''),
       productVariantName: String(document.productName ?? ''),
-      productAssetId: (document.productAssetId as string) || null,
-      productAssetPreview: (document.productAssetPreview as string) || null,
+      productAssetId: document.productAssetId || null,
+      productAssetPreview: document.productAssetPreview || null,
       slug: String(document.slug ?? ''),
       description: String(document.description ?? ''),
       sku: String(document.sku ?? ''),
@@ -98,10 +100,10 @@ export class SearchService {
       highestPrice: Number(document.price ?? 0),
       lowestPriceWithTax: Number(document.priceWithTax ?? 0),
       highestPriceWithTax: Number(document.priceWithTax ?? 0),
-      facetIds: (document.facetIds as string[]) ?? [],
-      facetValueIds: (document.facetValueIds as string[]) ?? [],
-      collectionIds: (document.collectionIds as string[]) ?? [],
-      collectionNames: (document.collectionNames as string[]) ?? [],
+      facetIds: document.facetIds ?? [],
+      facetValueIds: document.facetValueIds ?? [],
+      collectionIds: document.collectionIds ?? [],
+      collectionNames: document.collectionNames ?? [],
       score: 0,
     };
   }

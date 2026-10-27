@@ -140,6 +140,31 @@ beforeAll(async () => {
 }, 60000);
 
 describe('Additional GraphQL fields', () => {
+  it('preserves additional fields in filter-only searches', async () => {
+    const fixtures = await shopClient.query<{
+      collections: { items: Array<{ id: string; name: string }> };
+    }>(FILTER_FIXTURES);
+    const electronics = fixtures.collections.items.find(
+      (collection) => collection.name === 'Electronics'
+    )!;
+    const result = await shopClient.query<{
+      search: { items: Array<{ customReference: string; slug: string }> };
+    }>(ADDITIONAL_FIELDS_QUERY, {
+      input: { collectionId: electronics.id, groupByProduct: true },
+    });
+    expect(result.search.items.map((item) => item.slug).sort()).toEqual([
+      'peripherals-history-wireless-mouse',
+      'quasar',
+      'quasar-telescope',
+      'telescope',
+      'wireless-mouse',
+      'wireless-mouse-usb',
+    ]);
+    expect(result.search.items.map((item) => item.customReference)).toEqual(
+      Array(6).fill('someStringThatIsUnique')
+    );
+  });
+
   it('indexes additional fields using the default mapping and exposes their values', async () => {
     const result = await shopClient.query<{
       search: { items: Array<{ customReference: string; slug: string }> };
