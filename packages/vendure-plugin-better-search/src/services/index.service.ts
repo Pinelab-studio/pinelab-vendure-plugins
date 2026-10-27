@@ -622,6 +622,7 @@ export class IndexService implements OnModuleInit, OnApplicationBootstrap {
       const product = await this.productService.findOne(ctx, productId, [
         'translations',
         'channels',
+        'featuredAsset',
         'facetValues',
         'facetValues.translations',
         'variants',
@@ -667,6 +668,7 @@ export class IndexService implements OnModuleInit, OnApplicationBootstrap {
         'product',
         'channels',
         'product.channels',
+        'product.featuredAsset',
         'product.translations',
         'product.facetValues',
         'product.facetValues.translations',

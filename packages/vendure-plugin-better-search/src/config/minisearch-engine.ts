@@ -94,7 +94,9 @@ export class MinisearchEngine implements SearchEngine<MinisearchIndex> {
     skip: number,
     take: number
   ): Promise<Record<string, unknown>[]> {
-    return this.storedDocuments(searchIndex).slice(skip, skip + take);
+    return this.storedDocuments(searchIndex)
+      .slice(skip, skip + take)
+      .map((document) => ({ ...document }));
   }
 
   /** Converts engine hits into the shared storefront result contract. */

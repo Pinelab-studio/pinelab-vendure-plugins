@@ -304,6 +304,44 @@ describe('Pagination', () => {
     expect(asset?.preview).toMatch(/^http:\/\/localhost:3051\/assets\//);
   });
 
+  it('preserves featured assets after a partial product update', async () => {
+    const productsResult = (await adminClient.query(GET_PRODUCTS)) as {
+      products: { items: Array<{ id: string; slug: string }> };
+    };
+    const apple = productsResult.products.items.find(
+      (product) => product.slug === 'apple'
+    )!;
+    const before = await shopClient.query<SearchQueryResult>(SEARCH_QUERY, {
+      input: { term: 'apple', groupByProduct: true },
+    });
+    const assetBefore = before.search.items.find(
+      (item) => item.productId === apple.id
+    )?.productAsset;
+    expect(assetBefore?.id).toBeTruthy();
+
+    await adminClient.query(UPDATE_PRODUCT, {
+      input: {
+        id: apple.id,
+        translations: [
+          {
+            languageCode: LanguageCode.en,
+            description: 'Partial update keeps the featured image',
+          },
+        ],
+      },
+    });
+    const after = await shopClient.query<SearchQueryResult>(SEARCH_QUERY, {
+      input: { term: 'apple', groupByProduct: true },
+    });
+    expect(
+      after.search.items.find((item) => item.productId === apple.id)
+        ?.productAsset
+    ).toMatchObject({
+      id: assetBefore!.id,
+      preview: expect.stringMatching(/^http:\/\/localhost:3051\/assets\//),
+    });
+  });
+
   it('returns distinct products across consecutive pages when grouped by product', async () => {
     const firstPage = await shopClient.query<SearchQueryResult>(SEARCH_QUERY, {
       input: { term: 'ap', groupByProduct: true, skip: 0, take: 3 },
@@ -331,9 +369,78 @@ describe('Pagination', () => {
   });
 });
 
-// describe('Filtering', () => {
-//   // TODO implement later, when we have decided on what search algorithm to use based on performance and relevance.
-// });
+describe('Filtering', () => {
+  let sportsId: string;
+  let nikeId: string;
+  let electronicsId: string;
+
+  beforeAll(async () => {
+    const result = await adminClient.query<{
+      facets: { items: Array<{ values: Array<{ id: string; name: string }> }> };
+      collections: { items: Array<{ id: string; name: string }> };
+    }>(FILTER_FIXTURES);
+    const values = result.facets.items.flatMap((facet) => facet.values);
+    sportsId = values.find(
+      (value) => value.name.toLowerCase() === 'sports'
+    )!.id;
+    nikeId = values.find((value) => value.name.toLowerCase() === 'nike')!.id;
+    electronicsId = result.collections.items.find(
+      (collection) => collection.name === 'Electronics'
+    )!.id;
+  });
+
+  it.each([
+    {
+      operator: 'OR',
+      expectedSlugs: ['nike-running-shoes-men', 'shoes-for-running'],
+    },
+    {
+      operator: 'AND',
+      expectedSlugs: ['nike-running-shoes-men'],
+    },
+  ])(
+    'searches by facetValueFilters with $operator',
+    async ({ operator, expectedSlugs }) => {
+      const result = await shopClient.query<{
+        search: { totalItems: number; items: SearchResultItem[] };
+      }>(SEARCH_QUERY, {
+        input: {
+          term: 'shoes',
+          facetValueFilters:
+            operator === 'OR'
+              ? [{ or: [sportsId, nikeId] }]
+              : [{ and: sportsId }, { and: nikeId }],
+          groupByProduct: true,
+        },
+      });
+      expect(result.search.totalItems).toBe(expectedSlugs.length);
+      expect(result.search.items.map((item) => item.slug).sort()).toEqual(
+        expectedSlugs
+      );
+    }
+  );
+
+  it('searches by collectionIds containing a single ID', async () => {
+    const result = await shopClient.query<{
+      search: { totalItems: number; items: SearchResultItem[] };
+    }>(SEARCH_QUERY, {
+      input: {
+        term: 'someStringThatIsUnique',
+        collectionIds: [electronicsId],
+        groupByProduct: true,
+      },
+    });
+    expect(result.search.totalItems).toBe(6);
+    expect(result.search.items.map((item) => item.slug).sort()).toEqual([
+      'peripherals-history-wireless-mouse',
+      'quasar',
+      'quasar-telescope',
+      'telescope',
+      'wireless-mouse',
+      'wireless-mouse-usb',
+    ]);
+  });
+});
 
 describe('searchSuggestions', () => {
   it('returns suggestions for a 2-letter term', async () => {
@@ -1001,6 +1108,25 @@ async function search(query: string): Promise<{ items: SearchResultItem[] }> {
   await expectSearchPrices(items);
   return { items };
 }
+
+const FILTER_FIXTURES = gql`
+  query FilterFixtures {
+    facets {
+      items {
+        values {
+          id
+          name
+        }
+      }
+    }
+    collections {
+      items {
+        id
+        name
+      }
+    }
+  }
+`;
 
 const ADMIN_SEARCH_COMPATIBILITY = gql`
   query AdminSearchCompatibility {

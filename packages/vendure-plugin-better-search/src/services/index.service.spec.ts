@@ -260,6 +260,15 @@ describe('IndexService', () => {
       }
     );
 
+    it('returns independent stored documents for unscored filtering', async () => {
+      const ctx = { languageCode: LanguageCode.en } as RequestContext;
+      const engine = new MinisearchEngine();
+      const index = await mappedIndex(engine, ctx, [textVariant('')]);
+      const returned = await engine.getDocuments(index, 0, 10);
+      returned[0].price = 123;
+      expect((await engine.getDocuments(index, 0, 10))[0].price).not.toBe(123);
+    });
+
     it('indexes content words without indexing description tags or attributes', async () => {
       const ctx = { languageCode: LanguageCode.en } as RequestContext;
       const engine = new MinisearchEngine();
@@ -596,13 +605,14 @@ describe('IndexService', () => {
     });
 
     it.each(['product', 'variant'])(
-      'retains hydrated prices on partial %s updates',
+      'loads featured assets on partial %s updates',
       async (path) => {
         const ctx = pricingContext();
         const product = new Product({
           id: 'p',
           enabled: true,
           channels: [ctx.channel],
+          featuredAsset: { id: 'asset', preview: 'preview-url' } as any,
         });
         const variant = new ProductVariant({
           id: 'v',
@@ -621,13 +631,14 @@ describe('IndexService', () => {
           .fn()
           .mockResolvedValue(pricedVariant);
         const findOne = vi.fn().mockResolvedValue(pricedVariant);
+        const productService = {
+          findOne: vi.fn().mockResolvedValue(product),
+        } as unknown as ProductService;
         const service = createService({
           connection: createMockRepository({
             findOne: vi.fn().mockResolvedValue({ data: 'stored' }),
           }),
-          productService: {
-            findOne: vi.fn().mockResolvedValue(product),
-          } as unknown as ProductService,
+          productService,
           productVariantService: { applyChannelPriceAndTax, findOne },
           mapSearchDocuments: async (ctx, variants, injector) => ({
             ...defaultMapSearchDocuments(ctx, variants, injector),
@@ -654,14 +665,25 @@ describe('IndexService', () => {
               productId: 'p',
               price: 2000,
               priceWithTax: 2400,
+              productAssetId: 'asset',
+              productAssetPreview: 'preview-url',
             }),
           ]
         );
         if (path === 'product') {
+          expect(productService.findOne).toHaveBeenCalledWith(
+            ctx,
+            'p',
+            expect.arrayContaining(['featuredAsset'])
+          );
           expect(applyChannelPriceAndTax).toHaveBeenCalledWith(variant, ctx);
           return;
         }
-        expect(findOne).toHaveBeenCalledWith(ctx, 'v', expect.any(Array));
+        expect(findOne).toHaveBeenCalledWith(
+          ctx,
+          'v',
+          expect.arrayContaining(['product.featuredAsset'])
+        );
         expect(applyChannelPriceAndTax).not.toHaveBeenCalled();
       }
     );

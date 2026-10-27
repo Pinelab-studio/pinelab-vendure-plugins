@@ -26,19 +26,38 @@ export class SearchService {
   /**
    * Executes a full-text search using the configured engine and maps results
    * to Vendure's standard SearchResponse shape.
-   * Supports term, product grouping and pagination; other filters are not implemented.
+   * Supports term search, existing Vendure facet and collection filters, grouping,
+   * and pagination.
    */
   async search(
     ctx: RequestContext,
     input: SearchInput
   ): Promise<SearchResponse> {
     const term = input.term ?? '';
-    if (term.length < 2) {
+    const hasFilters = Boolean(
+      input.facetValueIds?.length ||
+        input.facetValueFilters?.length ||
+        input.collectionId ||
+        input.collectionIds?.length
+    );
+    if (term.length < 2 && !hasFilters) {
       return { items: [], totalItems: 0, facetValues: [], collections: [] };
     }
     const index = await this.indexService.getIndex(ctx);
-    const matches = await this.options.searchEngine!.search(ctx, index, term);
-    const docs = input.groupByProduct ? this.groupByProduct(matches) : matches;
+    const matches =
+      term.length >= 2
+        ? await this.options.searchEngine!.search(ctx, index, term)
+        : (
+            await this.options.searchEngine!.getDocuments(
+              index,
+              0,
+              Number.MAX_SAFE_INTEGER
+            )
+          ).map((doc) => this.mapStoredDocument(doc));
+    const filtered = matches.filter((doc) => this.matchesFilters(doc, input));
+    const docs = input.groupByProduct
+      ? this.groupByProduct(filtered)
+      : filtered;
     const skip = input.skip ?? 0;
     const paginatedDocs = docs.slice(
       skip,
@@ -54,8 +73,100 @@ export class SearchService {
       facetValues: [],
       collections: [],
     };
-    this.searchLogService.record(ctx, term, response.totalItems);
+    if (term.length >= 2) {
+      this.searchLogService.record(ctx, term, response.totalItems);
+    }
     return response;
+  }
+
+  /** Converts engine-independent stored data into the shared result document shape. */
+  private mapStoredDocument(
+    stored: Record<string, unknown>
+  ): BetterSearchDocument {
+    const document = (stored.document ?? stored) as Record<string, unknown>;
+    return {
+      productVariantId: String(document.id),
+      productId: String(document.productId),
+      productName: String(document.productName ?? ''),
+      productVariantName: String(document.productName ?? ''),
+      productAssetId: (document.productAssetId as string) || null,
+      productAssetPreview: (document.productAssetPreview as string) || null,
+      slug: String(document.slug ?? ''),
+      description: String(document.description ?? ''),
+      sku: String(document.sku ?? ''),
+      lowestPrice: Number(document.price ?? 0),
+      highestPrice: Number(document.price ?? 0),
+      lowestPriceWithTax: Number(document.priceWithTax ?? 0),
+      highestPriceWithTax: Number(document.priceWithTax ?? 0),
+      facetIds: (document.facetIds as string[]) ?? [],
+      facetValueIds: (document.facetValueIds as string[]) ?? [],
+      collectionIds: (document.collectionIds as string[]) ?? [],
+      collectionNames: (document.collectionNames as string[]) ?? [],
+      score: 0,
+    };
+  }
+
+  /** Matches a document against Vendure's facet and collection filter inputs. */
+  private matchesFilters(
+    document: BetterSearchDocument,
+    input: SearchInput
+  ): boolean {
+    const requestedCollectionIds = [
+      ...(input.collectionId ? [String(input.collectionId)] : []),
+      ...(input.collectionIds ?? []).map(String),
+    ];
+    if (
+      requestedCollectionIds.length &&
+      !requestedCollectionIds.some((id) => document.collectionIds.includes(id))
+    ) {
+      return false;
+    }
+    const filterGroups = new Map<string, { and: string[]; or: string[] }>();
+    for (const filter of input.facetValueFilters ?? []) {
+      if (filter.and != null) {
+        const ids = (Array.isArray(filter.and) ? filter.and : [filter.and]).map(
+          String
+        );
+        const key = 'and';
+        const group = filterGroups.get(key) ?? { and: [], or: [] };
+        group.and.push(...ids);
+        filterGroups.set(key, group);
+      }
+      if (filter.or != null) {
+        const ids = (Array.isArray(filter.or) ? filter.or : [filter.or]).map(
+          String
+        );
+        const key = 'or';
+        const group = filterGroups.get(key) ?? { and: [], or: [] };
+        group.or.push(...ids);
+        filterGroups.set(key, group);
+      }
+    }
+    for (const group of filterGroups.values()) {
+      if (
+        group.and.length &&
+        !group.and.every((id) => document.facetValueIds.includes(id))
+      ) {
+        return false;
+      }
+      if (
+        group.or.length &&
+        !group.or.some((id) => document.facetValueIds.includes(id))
+      ) {
+        return false;
+      }
+    }
+    const requiredFacetIds = (input.facetValueIds ?? []).map(String);
+    const requireAll = String(input.facetValueOperator).toLowerCase() === 'and';
+    if (
+      requiredFacetIds.length &&
+      (requireAll
+        ? !requiredFacetIds.every((id) => document.facetValueIds.includes(id))
+        : !requiredFacetIds.some((id) => document.facetValueIds.includes(id)))
+    ) {
+      return false;
+    }
+    return true;
   }
 
   /** Groups matching variants, retaining the highest-scoring variant as representative. */

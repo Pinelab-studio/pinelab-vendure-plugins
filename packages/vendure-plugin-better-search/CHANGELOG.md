@@ -1,3 +1,8 @@
+# 1.1.0 (2026-10-27)
+
+- Fix missing product images after partial search index updates.
+- Add facet-value and collection filtering, including searches without a term.
+
 # 1.0.1-beta.5 (2026-10-13)
 
 - Exclude unavailable variants from search price ranges.

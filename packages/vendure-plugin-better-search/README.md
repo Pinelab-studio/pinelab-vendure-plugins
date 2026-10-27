@@ -41,7 +41,16 @@ Use Vendure's standard Shop API `search` query:
 
 ```graphql
 query {
-  search(input: { term: "dumbbells", groupByProduct: true, take: 20 }) {
+  search(
+    input: {
+      term: "dumbbells"
+      groupByProduct: true
+      take: 20
+      # Optional: replace with your collection and facet value IDs.
+      collectionIds: ["1"]
+      facetValueFilters: [{ and: "2" }, { or: ["3", "4"] }]
+    }
+  ) {
     totalItems
     items {
       productId
@@ -63,6 +72,8 @@ query {
   }
 }
 ```
+
+This filters to collection `1` and facet value `2` AND (`3` OR `4`). Omit `term` to browse by filters only.
 
 For autocomplete, use the lightweight `searchSuggestions` query:
 
