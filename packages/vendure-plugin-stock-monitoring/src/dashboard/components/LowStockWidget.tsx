@@ -1,6 +1,7 @@
 import {
   api,
   DashboardBaseWidget,
+  DetailPageButton,
   Table,
   TableBody,
   TableCell,
@@ -73,12 +74,10 @@ export function LowStockWidget() {
                     className={available <= 0 ? 'bg-destructive/10' : undefined}
                   >
                     <TableCell>
-                      <a
+                      <DetailPageButton
                         href={`/product-variants/${variant.id}`}
-                        className="hover:underline"
-                      >
-                        {variant.name}
-                      </a>
+                        label={variant.name}
+                      />
                     </TableCell>
                     <TableCell className="text-right">{available}</TableCell>
                   </TableRow>

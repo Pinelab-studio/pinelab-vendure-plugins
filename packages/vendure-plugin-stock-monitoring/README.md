@@ -24,9 +24,10 @@ plugins: [
 
 The "Low stock" widget is provided as a React Dashboard extension — no Admin UI compilation step is needed.
 
-When you start the server and login, you can find `Low stock` under the dashboard's `add widget` button.
+When you start the server and login, you can find `Low stock` under the dashboard's `add widget` button. The widget is only shown to administrators with the `ReadCatalog` permission.
 
 ### Caveats
 
 1. This plugin doesn't use the `StockLocationStrategy` because of performance reasons. Instead, it fetches the stock level for each variant from the database and calculates its absolute stock based on the `stockOnHand` and `stockAllocated` fields.
-2. Performance: Each allocation, sale or adjustment in `StockMovementEvent` will create a job that triggers a stock check: get saleable stock, compare with variant threshold, and emit event if variant dropped below threshold.
+2. Performance: Each allocation or stock-lowering adjustment in `StockMovementEvent` creates a job that triggers a stock check: get saleable stock, compare with variant threshold, and emit event if variant dropped below threshold. Sales (fulfillments) don't trigger a check, because they lower `stockOnHand` and `stockAllocated` by the same amount, so saleable stock doesn't change.
+3. Variants that don't track inventory (`trackInventory` set to `FALSE`, or `INHERIT` while the global setting is off) never emit the event.

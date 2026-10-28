@@ -8,6 +8,8 @@ defineDashboardExtension({
       name: 'Low stock',
       component: LowStockWidget,
       defaultSize: { w: 6, h: 4 },
+      // The widget's productVariantsWithLowStock query requires ReadCatalog
+      requiresPermissions: ['ReadCatalog'],
     },
   ],
 });

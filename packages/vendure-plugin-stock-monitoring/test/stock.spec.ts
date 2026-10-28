@@ -12,8 +12,9 @@ import * as fs from 'fs';
 import gql from 'graphql-tag';
 import * as path from 'path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { fulfill } from '../../test/src/admin-utils';
 import { initialData } from '../../test/src/initial-data';
-import { createSettledOrder } from '../../test/src/shop-utils';
+import { createSettledOrder, SettledOrder } from '../../test/src/shop-utils';
 import { waitFor } from '../../test/src/test-helpers';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
 import { StockDroppedBelowThresholdEvent, StockMonitoringPlugin } from '../src';
@@ -129,6 +130,7 @@ describe('Stock monitoring plugin', function () {
   });
 
   const emittedEvents: StockDroppedBelowThresholdEvent[] = [];
+  let placedOrder: SettledOrder;
 
   it('Places an order so that variant T_1 drops below threshold of 104', async () => {
     // Listen for emitted events
@@ -138,7 +140,7 @@ describe('Stock monitoring plugin', function () {
       .subscribe((event) => {
         emittedEvents.push(event);
       });
-    const placedOrder = await createSettledOrder(shopClient, 1, true, [
+    placedOrder = await createSettledOrder(shopClient, 1, true, [
       { id: 'T_1', quantity: 2 }, // 105 - 2 = 103 which is below threshold of 104
     ]);
     expect(placedOrder.lines.length).toBe(1);
@@ -169,6 +171,91 @@ describe('Stock monitoring plugin', function () {
     expect(emittedEvents[0].stockAfterAdjustment).toBe(103);
   });
 
+  it('Does not emit the event again when the order is fulfilled', async () => {
+    const fulfillment = await fulfill(
+      adminClient,
+      'manual-fulfillment',
+      [[placedOrder.lines[0].id, 2]],
+      [
+        { name: 'method', value: 'Manual' },
+        { name: 'trackingCode', value: 'TRACK-1' },
+      ]
+    );
+    expect(fulfillment.state).toBe('Pending');
+    await waitForEarlierStockChecks();
+    const eventsForT1 = emittedEvents
+      .filter((event) => event.productVariant.id === 1)
+      .map((event) => [
+        event.stockBeforeAdjustment,
+        event.stockAfterAdjustment,
+      ]);
+    // Only the event from the allocation when the order was placed
+    expect(eventsForT1).toEqual([[105, 103]]);
+  });
+
+  it('Does not emit the event for variants that do not track inventory', async () => {
+    await adminClient.query(UPDATE_VARIANTS, {
+      input: [{ id: 'T_3', trackInventory: 'FALSE' }],
+    });
+    // The allocation doesn't change untracked stock (100), so a stock check would see a drop from 101 to 100: below the global threshold of 101
+    await createSettledOrder(shopClient, 1, true, [{ id: 'T_3', quantity: 1 }]);
+    await waitForEarlierStockChecks();
+    const eventsForT3 = emittedEvents
+      .filter((event) => event.productVariant.id === 3)
+      .map((event) => [
+        event.stockBeforeAdjustment,
+        event.stockAfterAdjustment,
+      ]);
+    expect(eventsForT3).toEqual([]);
+  });
+
+  it('Does not emit the event for variants that inherit a disabled global inventory setting', async () => {
+    const { updateGlobalSettings } = await adminClient.query(
+      UPDATE_GLOBAL_SETTINGS,
+      { input: { trackInventory: false } }
+    );
+    expect(updateGlobalSettings.trackInventory).toBe(false);
+    await adminClient.query(UPDATE_VARIANTS, {
+      input: [{ id: 'T_4', trackInventory: 'INHERIT' }],
+    });
+    // Same as above: T_4's stock (100) doesn't change, so a stock check would see a drop from 101 to 100
+    await createSettledOrder(shopClient, 1, true, [{ id: 'T_4', quantity: 1 }]);
+    await waitForEarlierStockChecks();
+    const eventsForT4 = emittedEvents
+      .filter((event) => event.productVariant.id === 4)
+      .map((event) => [
+        event.stockBeforeAdjustment,
+        event.stockAfterAdjustment,
+      ]);
+    expect(eventsForT4).toEqual([]);
+  });
+
+  /**
+   * Waits until every stock check enqueued so far has run, so a test can assert that no event was emitted.
+   * Drops marker variant T_2 below its threshold and waits for that event:
+   * the test job queue runs jobs one at a time in order, so earlier checks have finished by then.
+   */
+  async function waitForEarlierStockChecks(): Promise<void> {
+    const countMarkerEvents = () =>
+      emittedEvents.filter((event) => event.productVariant.id === 2).length;
+    const markerEventsBefore = countMarkerEvents();
+    // Raising stock doesn't trigger a stock check
+    await adminClient.query(UPDATE_VARIANTS, {
+      input: [
+        {
+          id: 'T_2',
+          stockOnHand: 1000,
+          customFields: { stockMonitoringThreshold: 500 },
+        },
+      ],
+    });
+    // Dropping from 1000 to 0 crosses the threshold of 500
+    await adminClient.query(UPDATE_VARIANTS, {
+      input: [{ id: 'T_2', stockOnHand: 0 }],
+    });
+    await waitFor(() => countMarkerEvents() > markerEventsBefore);
+  }
+
   afterAll(async () => {
     await server.destroy();
   }, 100000);
@@ -181,6 +268,25 @@ export const GET_OUT_OF_STOCK_VARIANTS = gql`
       enabled
       stockOnHand
       productId
+    }
+  }
+`;
+
+export const UPDATE_VARIANTS = gql`
+  mutation UpdateProductVariants($input: [UpdateProductVariantInput!]!) {
+    updateProductVariants(input: $input) {
+      id
+    }
+  }
+`;
+
+export const UPDATE_GLOBAL_SETTINGS = gql`
+  mutation UpdateGlobalSettings($input: UpdateGlobalSettingsInput!) {
+    updateGlobalSettings(input: $input) {
+      ... on GlobalSettings {
+        id
+        trackInventory
+      }
     }
   }
 `;

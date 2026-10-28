@@ -1,3 +1,10 @@
+# 3.1.3 (2026-10-28)
+
+- Fixed `StockDroppedBelowThresholdEvent` being emitted a second time when an order is fulfilled. Sales lower `stockOnHand` and `stockAllocated` by the same amount, so they don't change saleable stock and no longer trigger a stock check.
+- Variants that don't track inventory (`trackInventory` set to `FALSE`, or `INHERIT` while the global setting is off) no longer emit `StockDroppedBelowThresholdEvent`. Vendure doesn't change their stock on allocation, so the stock check saw a drop that didn't happen.
+- Fixed Low stock widget links returning a 404: variants now open their detail page within the dashboard's base path, using Vendure's `DetailPageButton`.
+- The Low stock widget is only shown to administrators with the `ReadCatalog` permission, which its query requires.
+
 # 3.1.2 (2026-08-21)
 
 - Fixed `getVariantsBelowThreshold` query failing on PostgreSQL (`column "FALSE" does not exist`): use a bound string parameter instead of the double-quoted `"FALSE"` (an identifier in Postgres), and reference the full expressions in `HAVING` instead of SELECT aliases (which Postgres does not allow in `HAVING`). The configured `globalThreshold` is now bound as a query parameter too. Works across PostgreSQL, MySQL and SQLite.
