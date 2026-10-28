@@ -172,6 +172,7 @@ describe('Stock monitoring plugin', function () {
   });
 
   it('Does not emit the event again when the order is fulfilled', async () => {
+    // Fulfil the order that dropped T_1 below its threshold
     const fulfillment = await fulfill(
       adminClient,
       'manual-fulfillment',
@@ -182,6 +183,7 @@ describe('Stock monitoring plugin', function () {
       ]
     );
     expect(fulfillment.state).toBe('Pending');
+    // Wait until a stock check for the fulfillment would have run
     await waitForEarlierStockChecks();
     const eventsForT1 = emittedEvents
       .filter((event) => event.productVariant.id === 1)
@@ -230,6 +232,17 @@ describe('Stock monitoring plugin', function () {
     expect(eventsForT4).toEqual([]);
   });
 
+  it('Does not list variants that do not track inventory as low stock', async () => {
+    // Global tracking is still off, so neither T_3 (FALSE) nor T_4 (INHERIT) is tracked.
+    // T_2 (0, from the marker) and T_1 (103, threshold 104) remain, lowest stock first
+    const { productVariantsWithLowStock } = await adminClient.query(
+      GET_OUT_OF_STOCK_VARIANTS
+    );
+    expect(
+      productVariantsWithLowStock.map((variant: { id: string }) => variant.id)
+    ).toEqual(['T_2', 'T_1']);
+  });
+
   /**
    * Waits until every stock check enqueued so far has run, so a test can assert that no event was emitted.
    * Drops marker variant T_2 below its threshold and waits for that event:
@@ -264,6 +277,7 @@ describe('Stock monitoring plugin', function () {
 export const GET_OUT_OF_STOCK_VARIANTS = gql`
   query productVariantsWithLowStock {
     productVariantsWithLowStock {
+      id
       name
       enabled
       stockOnHand

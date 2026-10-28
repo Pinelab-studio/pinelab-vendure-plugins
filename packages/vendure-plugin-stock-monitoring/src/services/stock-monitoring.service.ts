@@ -118,6 +118,10 @@ export class StockMonitoringService
     let variantIds = await this.cacheService.get<ID[]>(cacheKey);
     if (!variantIds) {
       // No cache hit, so we lookup what variants are below the threshold and cache the ids
+      // Only list variants whose stock Vendure tracks: TRUE, or INHERIT while tracking is on by default
+      const trackedFlags = (await this.tracksInventoryByDefault(ctx))
+        ? [GlobalFlag.TRUE, GlobalFlag.INHERIT]
+        : [GlobalFlag.TRUE];
       const result = await this.connection
         .getRepository(ctx, ProductVariant)
         .createQueryBuilder('pv')
@@ -134,8 +138,8 @@ export class StockMonitoringService
         .setParameters({ globalThreshold: this.options.globalThreshold })
         .where('pv.deletedAt IS NULL')
         .andWhere('pv.enabled = :enabled', { enabled: true })
-        // A double-quoted "FALSE" is a column identifier on Postgres, so bind it as a string param
-        .andWhere('pv.trackInventory != :noTrack', { noTrack: 'FALSE' })
+        // Bind the flags as string params: a double-quoted "TRUE" is a column identifier on Postgres
+        .andWhere('pv.trackInventory IN (:...trackedFlags)', { trackedFlags })
         .groupBy('pv.id')
         // Repeat the expressions instead of the SELECT aliases: Postgres rejects aliases in HAVING
         .having(
@@ -209,20 +213,29 @@ export class StockMonitoringService
 
   /**
    * Whether Vendure tracks the inventory of this variant.
-   * `INHERIT` falls back to `GlobalSettings.trackInventory`. It is deprecated in favour of `Channel.trackInventory`,
-   * but Vendure's `StockMovementService` still uses it to decide whether stock levels change, so we use it too.
    */
   private async tracksInventory(
     ctx: RequestContext,
     variant: ProductVariant
   ): Promise<boolean> {
     if (variant.trackInventory === GlobalFlag.INHERIT) {
-      const { trackInventory } = await this.globalSettingsService.getSettings(
-        ctx
-      );
-      return trackInventory;
+      return this.tracksInventoryByDefault(ctx);
     }
     return variant.trackInventory === GlobalFlag.TRUE;
+  }
+
+  /**
+   * Whether Vendure tracks the inventory of variants set to `INHERIT`.
+   * Reads `GlobalSettings.trackInventory`. It is deprecated in favour of `Channel.trackInventory`,
+   * but Vendure's `StockMovementService` still uses it to decide whether stock levels change, so we use it too.
+   */
+  private async tracksInventoryByDefault(
+    ctx: RequestContext
+  ): Promise<boolean> {
+    const { trackInventory } = await this.globalSettingsService.getSettings(
+      ctx
+    );
+    return trackInventory;
   }
 
   private getCacheKey(ctx: RequestContext): string {

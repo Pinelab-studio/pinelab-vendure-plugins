@@ -4,6 +4,7 @@
 - Variants that don't track inventory (`trackInventory` set to `FALSE`, or `INHERIT` while the global setting is off) no longer emit `StockDroppedBelowThresholdEvent`. Vendure doesn't change their stock on allocation, so the stock check saw a drop that didn't happen.
 - Fixed Low stock widget links returning a 404: variants now open their detail page within the dashboard's base path, using Vendure's `DetailPageButton`.
 - The Low stock widget is only shown to administrators with the `ReadCatalog` permission, which its query requires.
+- The Low stock widget no longer lists variants with `trackInventory` set to `INHERIT` while the global setting is off, because Vendure doesn't track their stock.
 
 # 3.1.2 (2026-08-21)
 
