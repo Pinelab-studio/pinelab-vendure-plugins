@@ -47,6 +47,7 @@ export const invoiceListRoute: DashboardRouteDefinition = {
     id: 'invoice-list',
     url: '/invoice-list',
     title: 'Invoices',
+    requiresPermission: 'AllowInvoicesPermission',
   },
   path: '/invoice-list',
   loader: () => ({
