@@ -1,6 +1,15 @@
-# 0.5.0 (2026-08-05)
+# 1.1.0 (2026-10-27)
 
-- Upgraded to Vendure 3.6.3
+- Fix missing product images after partial search index updates.
+- Add facet-value and collection filtering, including searches without a term.
+
+# 1.0.1-beta.5 (2026-10-13)
+
+- Exclude unavailable variants from search price ranges.
+
+# 1.0.0 (2026-02-05)
+
+- Refactored the plugin to be a full Search Plugin, instead of a custom search query.
 
 # 0.4.0 (2026-02-05)
 
