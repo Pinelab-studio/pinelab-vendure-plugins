@@ -11,6 +11,8 @@ IMPORTANT: Prefer retrieval-led reasoning (via MCP or supplied external links) o
 
 ## General
 
+- Read and apply [Pinelab Plugin Philosophy](./PHILISOPHY.md) before designing, planning, or architecting new plugins.
+- **README instruction:** Always start each plugin README with a human-readable description—a single paragraph or bullet points explaining what the plugin does and how to use it.
 - Always ask before creating new files.
 - This is a monorepo managed with Yarn workspaces (`packages/*`). Each plugin lives under `packages/vendure-plugin-<name>`.
 - Any dev dependencies should be installed in the root `package.json` under `devDependencies`. Any plugin-specific dependencies should be installed in the plugin's `package.json` under `dependencies`.
