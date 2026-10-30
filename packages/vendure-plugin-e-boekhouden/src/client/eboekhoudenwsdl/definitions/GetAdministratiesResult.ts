@@ -1,5 +1,5 @@
-import { ErrorMsg } from './ErrorMsg';
 import { Administraties } from './Administraties';
+import { ErrorMsg } from './ErrorMsg';
 
 /**
  * GetAdministratiesResult

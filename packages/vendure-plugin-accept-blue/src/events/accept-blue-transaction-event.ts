@@ -16,7 +16,7 @@ export class AcceptBlueTransactionEvent extends VendureEvent {
      * OrderLine including the order relation
      */
     public orderLine: OrderLine,
-    public transactionId?: number
+    public transactionId?: number,
   ) {
     super();
   }

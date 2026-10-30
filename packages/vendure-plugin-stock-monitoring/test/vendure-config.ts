@@ -1,5 +1,6 @@
 require('dotenv').config();
 
+import path from 'node:path';
 import {
   DefaultLogger,
   DefaultSearchPlugin,
@@ -7,9 +8,8 @@ import {
   mergeConfig,
   VendureConfig,
 } from '@vendure/core';
-import { testConfig } from '@vendure/testing';
 import { DashboardPlugin } from '@vendure/dashboard/plugin';
-import path from 'path';
+import { testConfig } from '@vendure/testing';
 import { StockMonitoringPlugin } from '../src/stock-monitoring.plugin';
 
 export const config: VendureConfig = mergeConfig(testConfig, {

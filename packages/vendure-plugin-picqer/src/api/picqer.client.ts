@@ -1,6 +1,6 @@
+import crypto from 'node:crypto';
 import { Logger } from '@vendure/core';
 import axios, { AxiosInstance } from 'axios';
-import crypto from 'crypto';
 import { loggerCtx } from '../constants';
 import {
   CustomerData,
@@ -42,7 +42,7 @@ export class PicqerClient {
       baseURL: `${apiEndpoint}/api/v1/`,
       timeout: 5000,
       headers: {
-        Authorization: `Basic ${Buffer.from(apiKey + ':').toString('base64')}`,
+        Authorization: `Basic ${Buffer.from(`${apiKey}:`).toString('base64')}`,
         'User-Agent': `VendurePicqerPlugin (${storefrontUrl} - ${supportEmail})`,
       },
     });
@@ -67,17 +67,17 @@ export class PicqerClient {
    * Fetches active and inactive products
    */
   async getProductByCode(
-    productCode: string
+    productCode: string,
   ): Promise<ProductData | undefined> {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const [activeProducts, inactiveProducts] = await Promise.all([
       this.rawRequest(
         'get',
-        `/products?productcode=${encodeURIComponent(productCode)}`
+        `/products?productcode=${encodeURIComponent(productCode)}`,
       ),
       this.rawRequest(
         'get',
-        `/products?productcode=${encodeURIComponent(productCode)}&inactive`
+        `/products?productcode=${encodeURIComponent(productCode)}&inactive`,
       ),
     ]);
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
@@ -85,7 +85,7 @@ export class PicqerClient {
     if (result.length > 1) {
       Logger.warn(
         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-        `Picqer returned multiple products for product code ${productCode}, using the first result (${result[0].idproduct})`
+        `Picqer returned multiple products for product code ${productCode}, using the first result (${result[0].idproduct})`,
       );
     }
     // eslint-disable-next-line @typescript-eslint/no-unsafe-return
@@ -103,7 +103,7 @@ export class PicqerClient {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       const products = await this.rawRequest(
         'get',
-        `/products?offset=${offset}`
+        `/products?offset=${offset}`,
       );
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       Logger.info(`Fetched ${products.length} products`, loggerCtx);
@@ -128,7 +128,7 @@ export class PicqerClient {
 
   async updateProduct(
     productId: string | number,
-    input: ProductInput
+    input: ProductInput,
   ): Promise<ProductData> {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-return
     return await this.rawRequest('put', `/products/${productId}`, input);
@@ -139,7 +139,7 @@ export class PicqerClient {
    */
   async addImage(
     productId: string | number,
-    base64EncodedImage: string
+    base64EncodedImage: string,
   ): Promise<ProductData> {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-return
     return await this.rawRequest('post', `/products/${productId}/images`, {
@@ -197,7 +197,7 @@ export class PicqerClient {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const customers: CustomerData[] = await this.rawRequest(
       'get',
-      `/customers?search=${encodeURIComponent(emailAddress)}`
+      `/customers?search=${encodeURIComponent(emailAddress)}`,
     );
     if (!customers.length) {
       return undefined;
@@ -208,7 +208,7 @@ export class PicqerClient {
     const customer = customers[0];
     Logger.warn(
       `Picqer returned multiple customers for email address ${emailAddress}, using the first result (${customer.idcustomer})`,
-      loggerCtx
+      loggerCtx,
     );
     return customer;
   }
@@ -221,7 +221,7 @@ export class PicqerClient {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       const warehouses: Warehouse[] = await this.rawRequest(
         'get',
-        `/warehouses?offset=${offset}`
+        `/warehouses?offset=${offset}`,
       );
       Logger.info(`Fetched ${warehouses.length} warehouses`, loggerCtx);
       allWarehouses.push(...warehouses);
@@ -234,7 +234,7 @@ export class PicqerClient {
     }
     Logger.info(
       `Fetched a total of ${allWarehouses.length} warehouses`,
-      loggerCtx
+      loggerCtx,
     );
     return allWarehouses;
   }
@@ -246,7 +246,7 @@ export class PicqerClient {
 
   async updateCustomer(
     id: number,
-    input: CustomerInput
+    input: CustomerInput,
   ): Promise<CustomerData> {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-return
     return await this.rawRequest('put', `/customers/${id}`, input);
@@ -257,19 +257,19 @@ export class PicqerClient {
    */
   async createOrUpdateCustomer(
     emailAddress: string,
-    input: CustomerInput
+    input: CustomerInput,
   ): Promise<CustomerData> {
     const existingCustomer = await this.getCustomer(emailAddress);
     if (!existingCustomer) {
       Logger.info(
         `Customer '${emailAddress}' not found, creating new customer`,
-        loggerCtx
+        loggerCtx,
       );
       return this.createCustomer(input);
     }
     Logger.info(
       `Existing customer '${emailAddress}' found, updating customer ${existingCustomer.idcustomer}`,
-      loggerCtx
+      loggerCtx,
     );
     return this.updateCustomer(existingCustomer.idcustomer, input);
   }
@@ -281,7 +281,7 @@ export class PicqerClient {
    */
   async getOrCreateMinimalCustomer(
     emailAddress: string,
-    name: string
+    name: string,
   ): Promise<CustomerData> {
     const existingCustomer = await this.getCustomer(emailAddress);
     if (existingCustomer) {
@@ -289,7 +289,7 @@ export class PicqerClient {
     }
     Logger.info(
       `Customer '${emailAddress}' not found, creating new customer`,
-      loggerCtx
+      loggerCtx,
     );
     return this.createCustomer({ emailaddress: emailAddress, name });
   }
@@ -303,20 +303,20 @@ export class PicqerClient {
   async createOrUpdateProduct(
     sku: string,
     input: ProductInput,
-    shouldUpdateVatGroup = true
+    shouldUpdateVatGroup = true,
   ): Promise<ProductData> {
     const product = await this.getProductByCode(sku);
     if (!product) {
       Logger.debug(
         `Product '${sku}' not found, creating new product in Picqer`,
-        loggerCtx
+        loggerCtx,
       );
       return this.createProduct(input);
     }
     const productId = product.idproduct;
     Logger.debug(
       `Existing product '${productId}' found for sku '${sku}', updating product in Picqer`,
-      loggerCtx
+      loggerCtx,
     );
     if (!shouldUpdateVatGroup) {
       // Keep VAT group as is
@@ -332,12 +332,12 @@ export class PicqerClient {
     method: 'post' | 'get' | 'put' | 'delete',
     url: string,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    data?: any
+    data?: any,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   ): Promise<any> {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-explicit-any
     const result = await this.instance({ method, url, data }).catch((e: any) =>
-      this.handleError(e, url)
+      this.handleError(e, url),
     );
     // eslint-disable-next-line  @typescript-eslint/no-unsafe-return
     return result?.data;
@@ -379,7 +379,7 @@ export class PicqerClient {
     if (results.length > this.responseLimit) {
       Logger.error(
         `Picqer response limit exceeded for "${path}". Pagination is required, but this is not implemented yet.`,
-        loggerCtx
+        loggerCtx,
       );
     }
   }

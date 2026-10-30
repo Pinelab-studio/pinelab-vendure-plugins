@@ -1,9 +1,9 @@
 import { PluginCommonModule, VendurePlugin } from '@vendure/core';
-import { AnonymizeOrderPluginOptions } from './types';
-import { AnonymizeOrderService } from './anonymized-order.service';
-import { PLUGIN_INIT_OPTIONS } from './constants';
 import { AnonymizeOrderShopResolver } from './anonymized-order.resolver';
+import { AnonymizeOrderService } from './anonymized-order.service';
 import { anonymizeOrderShopSchema } from './api-extensions';
+import { PLUGIN_INIT_OPTIONS } from './constants';
+import { AnonymizeOrderPluginOptions } from './types';
 
 @VendurePlugin({
   providers: [
@@ -24,9 +24,9 @@ export class AnonymizedOrderPlugin {
   static options: AnonymizeOrderPluginOptions | undefined;
 
   static init(
-    options: AnonymizeOrderPluginOptions
+    options: AnonymizeOrderPluginOptions,
   ): typeof AnonymizedOrderPlugin {
-    this.options = options;
+    AnonymizedOrderPlugin.options = options;
     return AnonymizedOrderPlugin;
   }
 }

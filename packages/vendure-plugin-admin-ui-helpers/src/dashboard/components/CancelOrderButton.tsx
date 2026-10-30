@@ -1,10 +1,6 @@
-import { api, getDetailQueryOptions } from '@vendure/dashboard';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-
-import React from 'react';
+import { api, getDetailQueryOptions, graphql } from '@vendure/dashboard';
 import { toast } from 'sonner';
-
-import { graphql } from '@vendure/dashboard';
 
 const REFUND_ORDER = graphql(`
   mutation RefundOrder($input: RefundOrderInput!) {
@@ -51,7 +47,7 @@ export const orderDetailDocument = graphql(
         }
       }
     }
-  `
+  `,
 );
 
 export function CancelOrderButton({
@@ -96,7 +92,7 @@ export function CancelOrderButton({
         ['PaymentSettled', 'Delivered', 'Shipped'].includes(orderState) &&
         entity.payments?.length
       ) {
-        let lines = entity.lines.map((line: any) => ({
+        const lines = entity.lines.map((line: any) => ({
           quantity: line.quantity,
           orderLineId: String(line.id),
         }));

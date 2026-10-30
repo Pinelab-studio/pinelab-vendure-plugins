@@ -1,5 +1,5 @@
+import { ReadStream } from 'node:fs';
 import { Response } from 'express';
-import { ReadStream } from 'fs';
 import { InvoiceEntity } from '../../entities/invoice.entity';
 
 /**
@@ -20,7 +20,7 @@ interface BaseStorageStrategy {
     tmpFile: string,
     invoiceNumber: number,
     channelToken: string,
-    isCreditInvoice: boolean
+    isCreditInvoice: boolean,
   ): Promise<string>;
 
   init(): Promise<void>;
@@ -52,6 +52,6 @@ export interface LocalStorageStrategy extends BaseStorageStrategy {
    */
   streamFile(
     invoice: InvoiceEntity,
-    res: Response
+    res: Response,
   ): Promise<ReadStream> | ReadStream;
 }

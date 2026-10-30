@@ -1,5 +1,5 @@
-import { gql } from 'graphql-tag';
 import { CreateCustomerGroupInput } from '@vendure/common/lib/generated-types';
+import { gql } from 'graphql-tag';
 
 export const addCustomerToGroups = gql`
   mutation createCustomerGroup($input: CreateCustomerGroupInput!) {

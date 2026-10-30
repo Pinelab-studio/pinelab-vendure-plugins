@@ -8,13 +8,13 @@ export class DHLCarrier implements DropOffPointCarrier {
   constructor(private readonly countryCode = 'NL') {}
 
   async getDropOffPoints(
-    ctx: RequestContext,
-    input: ParcelDropOffPointSearchInput
+    _ctx: RequestContext,
+    input: ParcelDropOffPointSearchInput,
   ): Promise<DropOffPoint[]> {
     let url = `https://api-gw.dhlparcel.nl/parcel-shop-locations/${
       this.countryCode
     }?limit=10&postalCode=${encodeURIComponent(
-      input.postalCode
+      input.postalCode,
     )}&showUnavailable=false`;
     if (input.houseNumber) {
       url += `&houseNumber=${input.houseNumber}`;
@@ -22,7 +22,7 @@ export class DHLCarrier implements DropOffPointCarrier {
     const response = await fetch(url);
     if (!response.ok) {
       throw new Error(
-        `Failed to fetch DHL drop-off points: [${response.status}] ${response.statusText}`
+        `Failed to fetch DHL drop-off points: [${response.status}] ${response.statusText}`,
       );
     }
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-explicit-any

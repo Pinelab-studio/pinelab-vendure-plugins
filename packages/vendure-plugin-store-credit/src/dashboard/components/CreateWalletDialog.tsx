@@ -1,15 +1,7 @@
-import * as React from 'react';
 import * as AlertDialogPrimitive from '@radix-ui/react-alert-dialog';
-import { useForm } from 'react-hook-form';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useMatches } from '@tanstack/react-router';
-import { toast } from 'sonner';
 import {
-  api,
-  Button,
-  graphql,
-  Input,
-  FormFieldWrapper,
   AlertDialog,
   AlertDialogCancel,
   AlertDialogContent,
@@ -18,8 +10,16 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
+  api,
+  Button,
+  FormFieldWrapper,
+  graphql,
   handleNestedFormSubmit,
+  Input,
 } from '@vendure/dashboard';
+import * as React from 'react';
+import { useForm } from 'react-hook-form';
+import { toast } from 'sonner';
 
 export const CREATE_WALLET = graphql(`
   mutation CreateWallet($input: CreateWalletInput!) {
@@ -81,7 +81,7 @@ export const CreateWalletDialog: React.FC<
       <AlertDialogContent>
         <form
           onSubmit={handleNestedFormSubmit(form, (data) =>
-            mutate({ customerId, ...data })
+            mutate({ customerId, ...data }),
           )}
         >
           <AlertDialogHeader>

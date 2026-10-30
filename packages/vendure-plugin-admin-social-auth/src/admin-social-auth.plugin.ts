@@ -28,7 +28,7 @@ export interface AdminSocialAuthPluginOptions {
     // Set Google as auth
     if (pluginOptions.google?.oAuthClientId) {
       config.authOptions.adminAuthenticationStrategy.push(
-        new GoogleAuthStrategy(pluginOptions.google.oAuthClientId)
+        new GoogleAuthStrategy(pluginOptions.google.oAuthClientId),
       );
       Logger.info(`Registered Google auth login for administrators`, loggerCtx);
     }
@@ -41,9 +41,9 @@ export class AdminSocialAuthPlugin {
   static options: AdminSocialAuthPluginOptions;
 
   static init(
-    options: AdminSocialAuthPluginOptions
+    options: AdminSocialAuthPluginOptions,
   ): Type<AdminSocialAuthPlugin> {
-    this.options = options;
+    AdminSocialAuthPlugin.options = options;
     return AdminSocialAuthPlugin;
   }
 }

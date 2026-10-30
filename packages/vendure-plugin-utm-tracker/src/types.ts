@@ -23,7 +23,7 @@ export interface UTMTrackerPluginInitOptions {
    */
   getCampaignDisplayName?: (
     ctx: RequestContext,
-    utmParameters: UTMParameterInput
+    utmParameters: UTMParameterInput,
   ) => string | undefined;
 }
 
@@ -40,7 +40,7 @@ export interface AttributionModel {
    */
   calculateAttribution(
     utmParameters: UtmOrderParameter[],
-    order: Order
+    order: Order,
   ): AttributionResult[];
 }
 

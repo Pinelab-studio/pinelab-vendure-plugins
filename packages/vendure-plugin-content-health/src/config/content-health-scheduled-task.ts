@@ -27,7 +27,7 @@ export const contentHealthScanTask = new ScheduledTask({
  * so this returns the shared `contentHealthScanTask` singleton.
  */
 export function buildContentHealthScanTask(
-  option?: ContentHealthPluginOptions['scheduledTask']
+  option?: ContentHealthPluginOptions['scheduledTask'],
 ): ScheduledTask {
   return option
     ? contentHealthScanTask.configure(option)

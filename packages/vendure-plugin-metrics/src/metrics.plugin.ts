@@ -1,20 +1,13 @@
-import { OnApplicationBootstrap } from '@nestjs/common';
-import { AdminUiExtension } from '@vendure/ui-devkit/compiler';
-import {
-  PluginCommonModule,
-  RequestContext,
-  VendurePlugin,
-} from '@vendure/core';
-import path from 'path';
-import { adminSchema, shopSchema } from './api/schema.graphql';
+import { PluginCommonModule, VendurePlugin } from '@vendure/core';
 import { MetricsAdminResolver } from './api/metrics.admin-resolver';
-import { MetricsService } from './services/metrics.service';
-import { MetricStrategy } from './services/metric-strategy';
+import { adminSchema, shopSchema } from './api/schema.graphql';
 import { PLUGIN_INIT_OPTIONS } from './constants';
-import { RevenuePerProduct } from './metrics/revenue-per-product';
-import { AverageOrderValueMetric } from './metrics/average-order-value';
-import { UnitsSoldMetric } from './metrics/units-sold-metric';
 import { MetricSummary } from './entities/metric-summary.entity';
+import { AverageOrderValueMetric } from './metrics/average-order-value';
+import { RevenuePerProduct } from './metrics/revenue-per-product';
+import { UnitsSoldMetric } from './metrics/units-sold-metric';
+import type { MetricStrategy } from './services/metric-strategy';
+import { MetricsService } from './services/metrics.service';
 export interface MetricsPluginOptions {
   /**
    * The enabled metrics shown in the widget.
@@ -54,21 +47,10 @@ export class MetricsPlugin {
   };
 
   static init(options: Partial<MetricsPluginOptions>): typeof MetricsPlugin {
-    this.options = {
-      ...this.options,
+    MetricsPlugin.options = {
+      ...MetricsPlugin.options,
       ...options,
     };
     return MetricsPlugin;
   }
-
-  static ui: AdminUiExtension = {
-    extensionPath: path.join(__dirname, 'ui'),
-    ngModules: [
-      {
-        type: 'shared',
-        ngModuleFileName: 'metrics-widget.shared-module.ts',
-        ngModuleName: 'MetricsWidgetSharedModule',
-      },
-    ],
-  };
 }

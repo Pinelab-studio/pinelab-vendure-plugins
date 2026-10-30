@@ -12,7 +12,7 @@ export async function assignOrdersToChannel(
   targetChannelId: ID,
   injector: Injector,
   ctx: RequestContext,
-  batch: number = 10
+  batch: number = 10,
 ): Promise<void> {
   await assignEntitiesToChannel<Order>(
     sourceChannelId,
@@ -20,7 +20,7 @@ export async function assignOrdersToChannel(
     injector,
     ctx,
     getOrders,
-    batch
+    batch,
   );
 }
 
@@ -29,7 +29,7 @@ function getOrders(
   sourceChanneId: ID,
   injector: Injector,
   skip: number = 0,
-  take: number = 10
+  take: number = 10,
 ): Promise<Order[]> {
   const conn = injector.get(TransactionalConnection);
   const orderRepo = conn.getRepository(ctx, Order);

@@ -32,7 +32,7 @@ export class AddItemOverrideResolver {
 
   constructor(
     private readonly entityHydrator: EntityHydrator,
-    moduleRef: ModuleRef
+    moduleRef: ModuleRef,
   ) {
     this.injector = new Injector(moduleRef);
   }
@@ -44,7 +44,7 @@ export class AddItemOverrideResolver {
     @Ctx() ctx: RequestContext,
     @Args() args: MutationAddItemToOrderArgs,
     @Relations({ entity: Order, omit: ['aggregateOrder', 'sellerOrders'] })
-    relations: RelationPaths<Order>
+    relations: RelationPaths<Order>,
   ): Promise<ErrorResultUnion<UpdateOrderItemsResult, Order>> {
     const result = await this.injector
       .get(ShopOrderResolver)
@@ -54,7 +54,7 @@ export class AddItemOverrideResolver {
     }
     const order = result as Order;
     const orderLine = order.lines.find(
-      (line) => line.productVariant.id == args.productVariantId
+      (line) => line.productVariant.id === args.productVariantId,
     );
     if (orderLine) {
       await this.validate(ctx, orderLine);
@@ -69,7 +69,7 @@ export class AddItemOverrideResolver {
     @Ctx() ctx: RequestContext,
     @Args() args: MutationAdjustOrderLineArgs,
     @Relations({ entity: Order, omit: ['aggregateOrder', 'sellerOrders'] })
-    relations: RelationPaths<Order>
+    relations: RelationPaths<Order>,
   ): Promise<ErrorResultUnion<UpdateOrderItemsResult, Order>> {
     const result = await this.injector
       .get(ShopOrderResolver)
@@ -78,7 +78,7 @@ export class AddItemOverrideResolver {
       return result;
     }
     const order = result as Order;
-    const orderLine = order.lines.find((line) => line.id == args.orderLineId);
+    const orderLine = order.lines.find((line) => line.id === args.orderLineId);
     if (orderLine) {
       await this.validate(ctx, orderLine);
     }
@@ -90,7 +90,7 @@ export class AddItemOverrideResolver {
    */
   private async validate(
     ctx: RequestContext,
-    orderLine: OrderLine
+    orderLine: OrderLine,
   ): Promise<void> {
     await this.entityHydrator.hydrate(ctx, orderLine, {
       relations: ['productVariant'],
@@ -100,20 +100,20 @@ export class AddItemOverrideResolver {
     });
     const maxPerOrder = getChannelAwareValue(
       ctx,
-      orderLine.productVariant.product.customFields.maxPerOrder
+      orderLine.productVariant.product.customFields.maxPerOrder,
     );
     const onlyAllowPer = getChannelAwareValue(
       ctx,
-      orderLine.productVariant.product.customFields.onlyAllowPer
+      orderLine.productVariant.product.customFields.onlyAllowPer,
     );
     if (maxPerOrder && orderLine.quantity > maxPerOrder) {
       throw new UserInputError(
-        `You are only allowed to order max ${maxPerOrder} of item '${orderLine.productVariant.name}'`
+        `You are only allowed to order max ${maxPerOrder} of item '${orderLine.productVariant.name}'`,
       );
     }
     if (onlyAllowPer && orderLine.quantity % onlyAllowPer !== 0) {
       throw new UserInputError(
-        `You are only allowed to order a multiple of ${onlyAllowPer} item '${orderLine.productVariant.name}'`
+        `You are only allowed to order a multiple of ${onlyAllowPer} item '${orderLine.productVariant.name}'`,
       );
     }
     // Throwing an error is sufficient, because it prevents the transaction form being committed, so no items are added

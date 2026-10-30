@@ -11,16 +11,16 @@ import {
   UserInputError,
 } from '@vendure/core';
 import { PLUGIN_INIT_OPTIONS } from '../constants';
-import { InvoicePluginConfig } from '../index';
-import { InvoiceService } from '../services/invoice.service';
+import { InvoiceConfigEntity } from '../entities/invoice-config.entity';
 import {
   Invoice,
   InvoiceConfigInput,
   QueryInvoicesArgs,
 } from '../generated-graphql-types';
-import { InvoiceConfigEntity } from '../entities/invoice-config.entity';
-import { invoicePermission } from './invoice-common.resolver';
+import { InvoicePluginConfig } from '../index';
 import { AccountingService } from '../services/accounting.service';
+import { InvoiceService } from '../services/invoice.service';
+import { invoicePermission } from './invoice-common.resolver';
 
 @Resolver()
 export class InvoiceAdminResolver {
@@ -28,18 +28,18 @@ export class InvoiceAdminResolver {
     private invoiceService: InvoiceService,
     private accountingService: AccountingService,
     private orderService: OrderService,
-    @Inject(PLUGIN_INIT_OPTIONS) private config: InvoicePluginConfig
+    @Inject(PLUGIN_INIT_OPTIONS) _config: InvoicePluginConfig,
   ) {}
 
   @Mutation()
   @Allow(invoicePermission.Permission)
   async exportInvoiceToAccountingPlatform(
     @Ctx() ctx: RequestContext,
-    @Args('invoiceNumber') invoiceNumber: number
+    @Args('invoiceNumber') invoiceNumber: number,
   ): Promise<boolean> {
     await this.accountingService.exportInvoiceToAccountingPlatform(
       ctx,
-      invoiceNumber
+      invoiceNumber,
     );
     return true;
   }
@@ -49,7 +49,7 @@ export class InvoiceAdminResolver {
   @Allow(invoicePermission.Permission)
   async upsertInvoiceConfig(
     @Ctx() ctx: RequestContext,
-    @Args('input') input: InvoiceConfigInput
+    @Args('input') input: InvoiceConfigInput,
   ): Promise<InvoiceConfigEntity> {
     return this.invoiceService.upsertConfig(ctx, input);
   }
@@ -59,22 +59,22 @@ export class InvoiceAdminResolver {
   @Allow(invoicePermission.Permission)
   async createInvoice(
     @Ctx() ctx: RequestContext,
-    @Args('orderId') orderId: ID
+    @Args('orderId') orderId: ID,
   ): Promise<Invoice> {
     const order = await this.orderService.findOne(ctx, orderId, ['customer']);
     if (!order?.customer?.emailAddress) {
       throw new UserInputError(
-        `Can not generate invoice for an order without 'customer.emailAddress'`
+        `Can not generate invoice for an order without 'customer.emailAddress'`,
       );
     }
     const invoice = await this.invoiceService.createInvoicesForOrder(
       ctx.channel.token,
       order.code,
-      false
+      false,
     );
     if (!invoice) {
       throw new UserInputError(
-        `Could not generate invoice for order. Please check the logs for more information.`
+        `Could not generate invoice for order. Please check the logs for more information.`,
       );
     }
     return {
@@ -86,7 +86,7 @@ export class InvoiceAdminResolver {
         ctx,
         invoice.invoiceNumber,
         order.code,
-        order.customer.emailAddress
+        order.customer.emailAddress,
       ),
     };
   }
@@ -94,7 +94,7 @@ export class InvoiceAdminResolver {
   @Query()
   @Allow(invoicePermission.Permission)
   async invoiceConfig(
-    @Ctx() ctx: RequestContext
+    @Ctx() ctx: RequestContext,
   ): Promise<InvoiceConfigEntity | undefined> {
     return this.invoiceService.getConfig(ctx);
   }
@@ -103,7 +103,7 @@ export class InvoiceAdminResolver {
   @Allow(invoicePermission.Permission)
   async invoices(
     @Ctx() ctx: RequestContext,
-    @Args() args: QueryInvoicesArgs
+    @Args() args: QueryInvoicesArgs,
   ): Promise<PaginatedList<Invoice>> {
     return this.invoiceService.findAll(ctx, args.options || undefined);
   }

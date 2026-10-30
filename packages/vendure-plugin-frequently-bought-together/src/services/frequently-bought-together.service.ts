@@ -40,7 +40,7 @@ export class FrequentlyBoughtTogetherService implements OnApplicationBootstrap {
     private options: PluginInitOptions,
     private jobQueueService: JobQueueService,
     private productService: ProductService,
-    private entityHydrator: EntityHydrator
+    private entityHydrator: EntityHydrator,
   ) {}
 
   async onApplicationBootstrap(): Promise<void> {
@@ -48,13 +48,13 @@ export class FrequentlyBoughtTogetherService implements OnApplicationBootstrap {
       name: 'frequently-bought-together-calculation',
       process: async (job) =>
         this.createFrequentlyBoughtTogetherRelations(
-          RequestContext.deserialize(job.data.ctx)
+          RequestContext.deserialize(job.data.ctx),
         ).catch((e) => {
           Logger.error(
             `Failed to calculate frequently bought together relations: ${
               asError(e).message
             }`,
-            loggerCtx
+            loggerCtx,
           );
           throw e;
         }),
@@ -65,7 +65,7 @@ export class FrequentlyBoughtTogetherService implements OnApplicationBootstrap {
    * Calculate frequently bought together relations and set on the products
    */
   async createFrequentlyBoughtTogetherRelations(
-    ctx: RequestContext
+    ctx: RequestContext,
   ): Promise<number> {
     const support =
       typeof this.options.supportLevel === 'function'
@@ -74,7 +74,7 @@ export class FrequentlyBoughtTogetherService implements OnApplicationBootstrap {
     const { itemSets, uniqueProducts } = await this.getItemSets(ctx, support);
     const relatedProductsPerProduct = getRelatedProductsPerProduct(
       itemSets,
-      this.options.maxRelatedProducts
+      this.options.maxRelatedProducts,
     );
     for (const [
       productId,
@@ -93,27 +93,27 @@ export class FrequentlyBoughtTogetherService implements OnApplicationBootstrap {
         `Set frequently bought together products for '${productId}' to [${supportPerProduct
           .map((s) => s.productId)
           .join(',')}]`,
-        loggerCtx
+        loggerCtx,
       );
     }
     Logger.info(
       `Set frequently bought together relations for ${relatedProductsPerProduct.size} products`,
-      loggerCtx
+      loggerCtx,
     );
     return uniqueProducts;
   }
 
   async previewItemSets(
     ctx: RequestContext,
-    support: number
+    support: number,
   ): Promise<FrequentlyBoughtTogetherPreview> {
     const { itemSets, maxMemoryUsedInMB, uniqueProducts } =
       await this.getItemSets(ctx, support);
     const best = itemSets.slice(0, 10);
     const worst = itemSets.slice(-10);
     const bestAndWorstProductIds = [
-      ...best.map((i) => i.items).flat(),
-      ...worst.map((i) => i.items).flat(),
+      ...best.flatMap((i) => i.items),
+      ...worst.flatMap((i) => i.items),
     ];
     const allProducts = bestAndWorstProductIds.length
       ? await this.productService.findByIds(ctx, bestAndWorstProductIds)
@@ -121,13 +121,13 @@ export class FrequentlyBoughtTogetherService implements OnApplicationBootstrap {
     // Replace ID's with product names
     const bestItemSets = best.map((is) => ({
       items: is.items.map(
-        (id) => allProducts.find((v) => v.id === id)?.name || String(id)
+        (id) => allProducts.find((v) => v.id === id)?.name || String(id),
       ),
       support: is.support,
     }));
     const worstItemSets = worst.map((is) => ({
       items: is.items.map(
-        (id) => allProducts.find((v) => v.id === id)?.name || String(id)
+        (id) => allProducts.find((v) => v.id === id)?.name || String(id),
       ),
       support: is.support,
     }));
@@ -146,7 +146,7 @@ export class FrequentlyBoughtTogetherService implements OnApplicationBootstrap {
    */
   async getSortedProducts(
     ctx: RequestContext,
-    product: Product
+    product: Product,
   ): Promise<Product[]> {
     await this.entityHydrator.hydrate(ctx, product, {
       relations: ['customFields.frequentlyBoughtWith'],
@@ -156,12 +156,12 @@ export class FrequentlyBoughtTogetherService implements OnApplicationBootstrap {
     }
     try {
       const supportPerProduct: Partial<Support>[] = JSON.parse(
-        product.customFields.frequentlyBoughtWithSupport || '[]'
+        product.customFields.frequentlyBoughtWithSupport || '[]',
       );
       if (!Array.isArray(supportPerProduct)) {
         Logger.error(
           `product.customFields.frequentlyBoughtWithSupport for product '${product.id}' is not an array`,
-          loggerCtx
+          loggerCtx,
         );
         return [];
       }
@@ -175,7 +175,7 @@ export class FrequentlyBoughtTogetherService implements OnApplicationBootstrap {
     } catch (e) {
       Logger.error(
         `Failed to get sorted products: ${asError(e).message}`,
-        loggerCtx
+        loggerCtx,
       );
       return [];
     }
@@ -183,7 +183,7 @@ export class FrequentlyBoughtTogetherService implements OnApplicationBootstrap {
 
   private async getItemSets(
     ctx: RequestContext,
-    support: number
+    support: number,
   ): Promise<FrequentlyBoughtTogetherCalculationResult> {
     const rss = [0];
     rss.push(process.memoryUsage().rss);
@@ -206,7 +206,7 @@ export class FrequentlyBoughtTogetherService implements OnApplicationBootstrap {
     const transactions = new Map<ID, ID[]>();
     result.forEach((row) => {
       const transactionsForOrder = transactions.get(row.orderId) || [];
-      const productId = row['productVariant_productId'];
+      const productId = row.productVariant_productId;
       if (!transactionsForOrder.includes(productId)) {
         // Only add if productID is not already in the list
         transactionsForOrder.push(productId);
@@ -234,7 +234,7 @@ export class FrequentlyBoughtTogetherService implements OnApplicationBootstrap {
     const maxMemoryUsedInMB = Math.round(Math.max(...rss) / 1024 / 1024);
     Logger.info(
       `Found ${itemSets.length} item sets for ${totalUniqueProducts.size} products from ${matrix.length} orders and ${result.length} order lines. Max memory used: ${maxMemoryUsedInMB}MB`,
-      loggerCtx
+      loggerCtx,
     );
     return {
       itemSets,

@@ -1,4 +1,4 @@
-import { VendureEntity, DeepPartial, CachedSession } from '@vendure/core';
+import { CachedSession, DeepPartial, VendureEntity } from '@vendure/core';
 import { Column, Entity, PrimaryColumn } from 'typeorm';
 
 @Entity()

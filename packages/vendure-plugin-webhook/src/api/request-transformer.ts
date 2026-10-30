@@ -11,7 +11,7 @@ import { Webhook } from './webhook.entity';
 export type TransformFn<T extends EventWithContext> = (
   event: T,
   injector: Injector,
-  webhook: Webhook
+  webhook: Webhook,
 ) => WebhookRequest | Promise<WebhookRequest> | false | Promise<false>;
 
 export type EventWithContext = VendureEvent & {
@@ -29,7 +29,7 @@ export class RequestTransformer<T extends Array<Type<EventWithContext>>> {
   readonly transform: TransformFn<InstanceType<T[number]>>;
 
   constructor(
-    private readonly options: {
+    readonly options: {
       name: string;
       /**
        * The events that this transformer supports
@@ -40,7 +40,7 @@ export class RequestTransformer<T extends Array<Type<EventWithContext>>> {
        * When returning `false`, the webhook will not be called.
        */
       transform: TransformFn<InstanceType<T[number]>>;
-    }
+    },
   ) {
     this.name = options.name;
     this.supportedEvents = options.supportedEvents;
@@ -52,7 +52,7 @@ export class RequestTransformer<T extends Array<Type<EventWithContext>>> {
 new RequestTransformer({
   name: 'Stringify Product events',
   supportedEvents: [ProductEvent, ProductVariantEvent],
-  transform: (event: ProductEvent | ProductVariantEvent, injector) => {
+  transform: (_event: ProductEvent | ProductVariantEvent, _injector) => {
     return {};
   },
 });

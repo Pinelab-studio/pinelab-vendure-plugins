@@ -1,5 +1,6 @@
 require('dotenv').config();
 
+import path from 'node:path';
 import {
   DefaultLogger,
   DefaultSearchPlugin,
@@ -7,11 +8,10 @@ import {
   mergeConfig,
   VendureConfig,
 } from '@vendure/core';
-import { testConfig } from '@vendure/testing';
 import { DashboardPlugin } from '@vendure/dashboard/plugin';
-import path from 'path';
-import { GoogleSheetLoaderPlugin } from '../src';
+import { testConfig } from '@vendure/testing';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
+import { GoogleSheetLoaderPlugin } from '../src';
 import { TestDataStrategy } from './test-data-strategy';
 
 export const config: VendureConfig = mergeConfig(testConfig, {

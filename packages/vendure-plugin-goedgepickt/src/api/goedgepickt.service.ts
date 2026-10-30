@@ -1,9 +1,14 @@
+import util from 'node:util';
 import {
   Inject,
   Injectable,
   OnApplicationBootstrap,
   OnModuleInit,
 } from '@nestjs/common';
+import {
+  CreateProductVariantInput,
+  UpdateProductVariantInput,
+} from '@vendure/common/lib/generated-types';
 import {
   ChannelService,
   ConfigService,
@@ -30,8 +35,9 @@ import {
   translateDeep,
   UserInputError,
 } from '@vendure/core';
+import { asError } from 'catch-unknown';
+import { Request as ExpressRequest } from 'express';
 import { In, IsNull } from 'typeorm';
-import util from 'util';
 import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
 import { GoedgepicktClient } from './goedgepickt.client';
 import { goedgepicktHandler } from './goedgepickt.handler';
@@ -45,12 +51,6 @@ import {
   PullStockError,
   PullStockResult,
 } from './goedgepickt.types';
-import {
-  CreateProductVariantInput,
-  UpdateProductVariantInput,
-} from '@vendure/common/lib/generated-types';
-import { Request as ExpressRequest } from 'express';
-import { asError } from 'catch-unknown';
 
 interface StockInput {
   variantId: ID;
@@ -113,11 +113,11 @@ export class GoedgepicktService
   implements OnApplicationBootstrap, OnModuleInit
 {
   readonly queryLimit: number;
-  //@ts-ignore -- For some reason nested props are not allowed in job data, while they are stringifyable
+  //@ts-expect-error -- For some reason nested props are not allowed in job data, while they are stringifyable
   jobQueue!: JobQueue<JobData>;
 
   constructor(
-    private variantService: ProductVariantService,
+    _variantService: ProductVariantService,
     private channelService: ChannelService,
     @Inject(PLUGIN_INIT_OPTIONS) private config: GoedgepicktPluginConfig,
     private configService: ConfigService,
@@ -127,7 +127,7 @@ export class GoedgepicktService
     private entityHydrator: EntityHydrator,
     private listQueryBuilder: ListQueryBuilder,
     private eventBus: EventBus,
-    private productPriceApplicator: ProductPriceApplicator
+    private productPriceApplicator: ProductPriceApplicator,
   ) {
     this.queryLimit = configService.apiOptions.adminListQueryLimit;
   }
@@ -146,14 +146,14 @@ export class GoedgepicktService
             await this.updateVendureOrderStatus(
               ctx,
               data.orderCode,
-              data.orderUuid
+              data.orderUuid,
             );
           } else if (data.action === 'incoming-stock-webhook') {
             await this.handleStockUpdateJob(ctx, data.sku);
           } else {
             return Logger.error(
               `Invalid jobqueue action '${JSON.stringify(data)}'`,
-              loggerCtx
+              loggerCtx,
             );
           }
         } catch (error) {
@@ -163,7 +163,7 @@ export class GoedgepicktService
           ) {
             Logger.info(
               `Failed to process job ${data.action} (${id}) for channel ${data.ctx._channel.token}: ${error}`,
-              loggerCtx
+              loggerCtx,
             );
             throw error;
           }
@@ -176,7 +176,7 @@ export class GoedgepicktService
             `Failed to process job ${data.action} (${id}) for channel ${
               data.ctx._channel.token
             }: ${error}. Job data: ${util.inspect(loggableData, false, 5)}`,
-            loggerCtx
+            loggerCtx,
           );
           throw error;
         }
@@ -192,7 +192,7 @@ export class GoedgepicktService
           orderCode: event.order.code,
           ctx: event.ctx.serialize(),
         },
-        { retries: 3 }
+        { retries: 3 },
       );
     });
     // Listen for Variant changes
@@ -209,7 +209,7 @@ export class GoedgepicktService
             | UpdateProductVariantInput[];
 
           const isContentUpdated = updatedOrCreatedInput?.some(
-            (i) => i.customFields || i.translations || i.price || i.sku
+            (i) => i.customFields || i.translations || i.price || i.sku,
           );
           if (!isContentUpdated) {
             // Only push products on content updates like custom fields, names, slugs
@@ -222,7 +222,7 @@ export class GoedgepicktService
           Logger.error(
             `Error handling ProductVariantEvent`,
             loggerCtx,
-            error.stack
+            error.stack,
           );
         }
       });
@@ -245,17 +245,17 @@ export class GoedgepicktService
             ctx: ctx.serialize(),
             skus: batch,
           },
-          { retries: 20 }
+          { retries: 20 },
         )
         .catch((err) => {
           Logger.error(
             `Failed to create 'push-products' jobs: ${err}`,
-            loggerCtx
+            loggerCtx,
           );
         });
       Logger.info(
         `Created 'push-products' job for ${skus.length} variants for channel ${ctx.channel.token}`,
-        loggerCtx
+        loggerCtx,
       );
     }
   }
@@ -274,12 +274,12 @@ export class GoedgepicktService
     const orderStatusWebhook = webhooks.find(
       (webhook) =>
         webhook.targetUrl === webhookTarget &&
-        webhook.webhookEvent === GoedgepicktEvent.orderStatusChanged
+        webhook.webhookEvent === GoedgepicktEvent.orderStatusChanged,
     );
     const stockWebhook = webhooks.find(
       (webhook) =>
         webhook.targetUrl === webhookTarget &&
-        webhook.webhookEvent === GoedgepicktEvent.stockChanged
+        webhook.webhookEvent === GoedgepicktEvent.stockChanged,
     );
     if (!orderStatusWebhook) {
       const created = await client.createWebhook({
@@ -288,7 +288,7 @@ export class GoedgepicktService
       });
       Logger.info(
         `Created OrderStatusWebhook '${created.webhookUuid}' because it didn't exist.`,
-        loggerCtx
+        loggerCtx,
       );
     } else {
       Logger.info(`OrderStatusWebhook already present`, loggerCtx);
@@ -300,7 +300,7 @@ export class GoedgepicktService
       });
       Logger.info(
         `Created StockWebhook '${created.webhookUuid}' because it didn't exist.`,
-        loggerCtx
+        loggerCtx,
       );
     } else {
       Logger.info(`StockWebhook already present`, loggerCtx);
@@ -312,7 +312,7 @@ export class GoedgepicktService
    */
   async handleStockUpdateJob(
     ctx: RequestContext,
-    productSku: string
+    productSku: string,
   ): Promise<void> {
     const client = this.getClientForChannel(ctx);
     if (!client) {
@@ -322,7 +322,7 @@ export class GoedgepicktService
     if (!ggProduct) {
       Logger.warn(
         `Product with sku '${productSku}' doesn't exists in GoedGepickt. Ignoring incoming stock update event`,
-        loggerCtx
+        loggerCtx,
       );
       return;
     }
@@ -330,7 +330,7 @@ export class GoedgepicktService
     if (ggStock === null || ggStock === undefined) {
       Logger.warn(
         `Product with sku '${productSku}' has no freeStock in GoedGepickt. Ignoring incoming stock update event`,
-        loggerCtx
+        loggerCtx,
       );
       return;
     }
@@ -338,7 +338,7 @@ export class GoedgepicktService
     if (!variants.length) {
       Logger.warn(
         `No variants found for product with sku '${productSku}' for channel '${ctx.channel.token}' in Vendure. Ignoring incoming stock update event...`,
-        loggerCtx
+        loggerCtx,
       );
       return;
     }
@@ -355,7 +355,7 @@ export class GoedgepicktService
   async updateVendureOrderStatus(
     ctx: RequestContext,
     orderCode: string,
-    orderUuid: string
+    orderUuid: string,
   ): Promise<void> {
     const client = this.getClientForChannel(ctx);
     if (!client) {
@@ -365,7 +365,7 @@ export class GoedgepicktService
     if (!ggOrder) {
       Logger.warn(
         `Order with uuid '${orderUuid}' doesn't exists in GoedGepickt. Ignoring incoming order status update for order'${orderCode}'`,
-        loggerCtx
+        loggerCtx,
       );
       return;
     }
@@ -374,14 +374,14 @@ export class GoedgepicktService
     if (!vendureOrder) {
       Logger.warn(
         `Order with code ${orderCode} doesn't exists. Not updating status to ${newStatus} for this order in channel ${ctx.channel.token}`,
-        loggerCtx
+        loggerCtx,
       );
       return;
     }
     if (newStatus !== 'completed') {
       return Logger.info(
         `No status updates needed for order ${orderCode} for status ${newStatus}`,
-        loggerCtx
+        loggerCtx,
       );
     }
     if (vendureOrder.state === 'Delivered') {
@@ -392,7 +392,7 @@ export class GoedgepicktService
       // This can have multiple causes, like offline payments that need to be manually settled.
       Logger.info(
         `Order ${orderCode} is in PaymentAuthorized state. Not updating status to Delivered, because it's payment still needs to be settled.`,
-        loggerCtx
+        loggerCtx,
       );
       return;
     }
@@ -412,16 +412,16 @@ export class GoedgepicktService
     if (!ctx.channel.customFields.ggEnabled) {
       Logger.info(
         `GoedGepickt plugin is disabled for channel ${ctx.channel.token}`,
-        loggerCtx
+        loggerCtx,
       );
       return undefined;
     }
     const [uuid, apiKey] = (ctx.channel.customFields.ggUuidApiKey || '').split(
-      ':'
+      ':',
     );
     if (!uuid || !apiKey) {
       throw Error(
-        `GoedGepickt plugin is enabled, but incomplete config found for channel ${ctx.channel.token}`
+        `GoedGepickt plugin is enabled, but incomplete config found for channel ${ctx.channel.token}`,
       );
     }
     return new GoedgepicktClient({
@@ -459,7 +459,7 @@ export class GoedgepicktService
     const client = this.getClientForChannel(ctx);
     if (!client) {
       throw new UserInputError(
-        `GoedGepickt is not configured for channel ${channelToken}`
+        `GoedGepickt is not configured for channel ${channelToken}`,
       );
     }
     const [ggProducts, variants] = await Promise.all([
@@ -468,7 +468,7 @@ export class GoedgepicktService
     ]);
     Logger.info(
       `Pull stock: Fetching stock levels for ${variants.length} variants from GoedGepickt for channel ${channelToken}`,
-      loggerCtx
+      loggerCtx,
     );
     // Update stock levels based on GG products
     const stockLevelInputs: StockInput[] = [];
@@ -477,14 +477,14 @@ export class GoedgepicktService
       if (!variantId) {
         Logger.info(
           `No variant found for product with sku ${p.sku}`,
-          loggerCtx
+          loggerCtx,
         );
         return;
       }
       if (p.stock?.freeStock === undefined || p.stock?.freeStock === null) {
         Logger.error(
           `No stock found on product from GoedGepickt with sku ${p.sku}`,
-          loggerCtx
+          loggerCtx,
         );
         return;
       }
@@ -500,7 +500,7 @@ export class GoedgepicktService
     }
     Logger.info(
       `Pulled stock levels for ${stockLevelInputs.length} variants for channel ${channelToken}`,
-      loggerCtx
+      loggerCtx,
     );
   }
 
@@ -512,13 +512,13 @@ export class GoedgepicktService
     const client = this.getClientForChannel(ctx);
     if (!client) {
       throw new UserInputError(
-        `GoedGepickt is not configured for channel ${channelToken}`
+        `GoedGepickt is not configured for channel ${channelToken}`,
       );
     }
     const variants = await this.getVariants(ctx);
     Logger.info(
       `Push products: Pushing ${variants.length} Vendure variants for channel ${channelToken} to GoedGepickt`,
-      loggerCtx
+      loggerCtx,
     );
     const skus = variants.map((v) => v.sku);
     this.createPushProductJobs(ctx, skus);
@@ -532,7 +532,7 @@ export class GoedgepicktService
    */
   async pushSkusToGoedGepickt(
     ctx: RequestContext,
-    { skus: variantSkus }: PushProductsJobData
+    { skus: variantSkus }: PushProductsJobData,
   ): Promise<void> {
     const client = this.getClientForChannel(ctx);
     if (!client) {
@@ -544,7 +544,7 @@ export class GoedgepicktService
       if (!variant) {
         Logger.info(
           `No variants found for sku ${sku} in channel ${ctx.channel.token}. Not pushing to GoedGepickt`,
-          loggerCtx
+          loggerCtx,
         );
         continue;
       }
@@ -567,14 +567,14 @@ export class GoedgepicktService
       }
     }
     Logger.info(
-      `Created/updated ${variantSkus.length} variants to GoedGepickt for channel ${ctx.channel.token}`
+      `Created/updated ${variantSkus.length} variants to GoedGepickt for channel ${ctx.channel.token}`,
     );
   }
 
   async logHistoryEntry(
     ctx: RequestContext,
     orderId: ID,
-    error?: unknown
+    error?: unknown,
   ): Promise<void> {
     const note = error
       ? `Failed to sync to GoedGepickt: ${
@@ -593,7 +593,7 @@ export class GoedgepicktService
    */
   private async updateVendureStock(
     ctx: RequestContext,
-    stockInput: StockInput[]
+    stockInput: StockInput[],
   ): Promise<ProductVariant[]> {
     if (!stockInput.length) {
       return [];
@@ -625,7 +625,7 @@ export class GoedgepicktService
       .join(', ');
     Logger.info(
       `Updated stock of variants for channel ${ctx.channel.token}: ${stockLog}`,
-      loggerCtx
+      loggerCtx,
     );
     return variants;
   }
@@ -636,7 +636,7 @@ export class GoedgepicktService
    */
   async pullStockForProduct(
     ctx: RequestContext,
-    productId: ID
+    productId: ID,
   ): Promise<PullStockResult> {
     const client = this.getClientForChannel(ctx);
     if (!client) {
@@ -714,7 +714,7 @@ export class GoedgepicktService
    */
   private async createOrder(
     ctx: RequestContext,
-    order: Order
+    order: Order,
   ): Promise<GgOrder | undefined> {
     try {
       const client = this.getClientForChannel(ctx);
@@ -732,25 +732,24 @@ export class GoedgepicktService
         !order.shippingAddress.streetLine1
       ) {
         throw Error(
-          `Missing required order fields streetLine1, streetLine2. Cannot push order to GoedGepickt`
+          `Missing required order fields streetLine1, streetLine2. Cannot push order to GoedGepickt`,
         );
       }
       const { houseNumber, addition } =
         GoedgepicktService.splitHouseNumberAndAddition(
-          order.shippingAddress.streetLine2
+          order.shippingAddress.streetLine2,
         );
       if (!houseNumber) {
         throw Error(
-          `Order ${order.code} has no house number in streetLine2. Cannot push order to GoedGepickt`
+          `Order ${order.code} has no house number in streetLine2. Cannot push order to GoedGepickt`,
         );
       }
-      const billingAddress =
-        order.billingAddress && order.billingAddress.streetLine1
-          ? order.billingAddress
-          : order.shippingAddress;
+      const billingAddress = order.billingAddress?.streetLine1
+        ? order.billingAddress
+        : order.shippingAddress;
       const { houseNumber: billingHouseNumber, addition: billingAddition } =
         GoedgepicktService.splitHouseNumberAndAddition(
-          billingAddress.streetLine2 ?? ''
+          billingAddress.streetLine2 ?? '',
         );
       const orderStatus =
         (await this.config.determineOrderStatus?.(ctx, order)) || 'open';
@@ -758,7 +757,7 @@ export class GoedgepicktService
         orderId: order.code,
         orderDisplayId: order.code,
         createDate: GoedgepicktService.toLocalTime(
-          order.orderPlacedAt || order.updatedAt
+          order.orderPlacedAt || order.updatedAt,
         )!,
         orderStatus,
         orderItems,
@@ -819,12 +818,12 @@ export class GoedgepicktService
   private async transitionToState(
     ctx: RequestContext,
     order: Order,
-    state: 'Shipped' | 'Delivered'
+    state: 'Shipped' | 'Delivered',
   ) {
     const result = await this.orderService.transitionToState(
       ctx,
       order.id,
-      state
+      state,
     );
     const errorResult = result as OrderStateTransitionError;
     if (errorResult.errorCode) {
@@ -841,7 +840,7 @@ export class GoedgepicktService
   private async getVariants(
     ctx: RequestContext,
     sku?: string,
-    productId?: ID
+    productId?: ID,
   ): Promise<VariantWithImage[]> {
     const translatedVariants: VariantWithImage[] = [];
     const take = 100;
@@ -865,7 +864,7 @@ export class GoedgepicktService
           channelId: ctx.channelId,
           where: { deletedAt: IsNull() },
           ctx,
-        }
+        },
       );
       if (sku) {
         // Normalize the sku parameter so numeric IDs stay numbers,
@@ -882,8 +881,8 @@ export class GoedgepicktService
       skip += take;
       const variantsWithPrice = await Promise.all(
         variants.map((v) =>
-          this.productPriceApplicator.applyChannelPriceAndTax(v, ctx)
-        )
+          this.productPriceApplicator.applyChannelPriceAndTax(v, ctx),
+        ),
       );
       const mappedVariants = variantsWithPrice
         .map((v) => translateDeep(v, ctx.languageCode))
@@ -898,7 +897,7 @@ export class GoedgepicktService
    */
   private setAbsoluteImage(
     ctx: RequestContext,
-    variant: Translated<ProductVariant> | ProductVariant
+    variant: Translated<ProductVariant> | ProductVariant,
   ): VariantWithImage {
     let imageUrl =
       variant.featuredAsset?.preview || variant.product?.featuredAsset?.preview;
@@ -915,7 +914,7 @@ export class GoedgepicktService
       imageUrl =
         this.configService.assetOptions.assetStorageStrategy.toAbsoluteUrl(
           ctx.req || mockReq,
-          imageUrl
+          imageUrl,
         );
     }
     return {
@@ -933,7 +932,7 @@ export class GoedgepicktService
    */
   async pushOrderToGoedGepickt(
     ctx: RequestContext,
-    orderCode: string
+    orderCode: string,
   ): Promise<void> {
     const client = this.getClientForChannel(ctx);
     if (!client) {
@@ -941,13 +940,13 @@ export class GoedgepicktService
     }
     Logger.info(
       `Syncing order ${orderCode} for channel ${ctx.channel.token} to GoedGepickt`,
-      loggerCtx
+      loggerCtx,
     );
     let order = await this.orderService.findOneByCode(ctx, orderCode);
     if (!order) {
       Logger.error(
         `No order found with code ${orderCode}. Can not sync this order.`,
-        loggerCtx
+        loggerCtx,
       );
       return;
     }
@@ -962,19 +961,19 @@ export class GoedgepicktService
     const hasGoedgepicktHandler = order.shippingLines.some(
       (shippingLine) =>
         shippingLine.shippingMethod?.fulfillmentHandlerCode ===
-        goedgepicktHandler.code
+        goedgepicktHandler.code,
     );
     if (!hasGoedgepicktHandler) {
       Logger.info(
         `Order ${order.code} does not have Goedgepickt set as handler. Not syncing this order.`,
-        loggerCtx
+        loggerCtx,
       );
       return;
     }
     await this.createOrder(ctx, order);
     Logger.info(
       `Order ${order.code} for channel ${ctx.channel.token} synced to GoedGepickt`,
-      loggerCtx
+      loggerCtx,
     );
   }
 

@@ -1,19 +1,19 @@
 import { PluginCommonModule, VendurePlugin } from '@vendure/core';
-import { PLUGIN_INIT_OPTIONS } from './constants';
 import { DefaultSubscriptionStrategy, SubscriptionStrategy } from './';
-import { orderLineCustomFields } from './api/vendure-config/custom-fields';
-import { stripeSubscriptionHandler } from './api/vendure-config/stripe-subscription.handler';
-import { hasStripeSubscriptionProductsPaymentChecker } from './api/vendure-config/has-stripe-subscription-products-payment-checker';
-import { SubscriptionOrderItemCalculation } from './api/subscription-order-item-calculation';
-import { StripeSubscriptionService } from './api/stripe-subscription.service';
+import { adminApiSchemaExtensions } from './api/admin-graphql';
+import { shopApiSchemaExtensions } from './api/shop-graphql';
 import { StripeSubscriptionController } from './api/stripe-subscription.controller';
 import {
   StripeSubscriptionAdminApiResolver,
   StripeSubscriptionCommonResolver,
   StripeSubscriptionShopApiResolver,
 } from './api/stripe-subscription.resolver';
-import { shopApiSchemaExtensions } from './api/shop-graphql';
-import { adminApiSchemaExtensions } from './api/admin-graphql';
+import { StripeSubscriptionService } from './api/stripe-subscription.service';
+import { SubscriptionOrderItemCalculation } from './api/subscription-order-item-calculation';
+import { orderLineCustomFields } from './api/vendure-config/custom-fields';
+import { hasStripeSubscriptionProductsPaymentChecker } from './api/vendure-config/has-stripe-subscription-products-payment-checker';
+import { stripeSubscriptionHandler } from './api/vendure-config/stripe-subscription.handler';
+import { PLUGIN_INIT_OPTIONS } from './constants';
 
 export interface StripeSubscriptionPluginOptions {
   vendureHost: string;
@@ -66,8 +66,8 @@ export class StripeSubscriptionPlugin {
   };
 
   static init(options: StripeSubscriptionPluginOptions) {
-    this.options = {
-      ...this.options,
+    StripeSubscriptionPlugin.options = {
+      ...StripeSubscriptionPlugin.options,
       ...options,
     };
     return StripeSubscriptionPlugin;

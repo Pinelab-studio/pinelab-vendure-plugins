@@ -29,7 +29,10 @@ import {
 } from '@vendure/testing';
 import { TestServer } from '@vendure/testing/lib/test-server';
 import { getSuperadminContext } from '@vendure/testing/lib/utils/get-superadmin-context';
-import { beforeAll, describe, expect, it, vi, beforeEach } from 'vitest';
+import gql from 'graphql-tag';
+import { firstValueFrom } from 'rxjs';
+import { filter, take, toArray } from 'rxjs/operators';
+import { beforeAll, describe, expect, it } from 'vitest';
 import { LanguageCode } from '../../test/src/generated/admin-graphql';
 import { AddPaymentToOrder } from '../../test/src/generated/shop-graphql';
 import { initialData } from '../../test/src/initial-data';
@@ -50,19 +53,21 @@ import {
   WalletAdjustment,
 } from '../src/api/generated/graphql';
 import { storeCreditPaymentHandler } from '../src/config/payment-method-handler';
+import { GiftCardsCreatedEvent } from '../src/events/gift-cards-created.event';
+import { createWalletsForCustomers } from '../src/services/exported-helpers';
 import { StoreCreditPlugin } from '../src/store-credit.plugin';
 import {
   ADJUST_BALANCE_FOR_WALLET,
   buildRandomAmounts,
   CANCEL_ORDER,
-  channel2Input,
-  channel3Input,
-  channel4Input,
   CREATE_CHANNEL,
   CREATE_PAYMENT_METHOD,
   CREATE_PRODUCT,
   CREATE_PRODUCT_VARIANTS,
   CREATE_WALLET,
+  channel2Input,
+  channel3Input,
+  channel4Input,
   GET_CUSTOMER_WITH_WALLETS,
   GET_WALLET_BY_CODE,
   GET_WALLET_WITH_ADJUSTMENTS,
@@ -71,11 +76,6 @@ import {
   sum,
   WalletAdjustmentSubscriber,
 } from './helpers';
-import gql from 'graphql-tag';
-import { createWalletsForCustomers } from '../src/services/exported-helpers';
-import { GiftCardsCreatedEvent } from '../src/events/gift-cards-created.event';
-import { firstValueFrom } from 'rxjs';
-import { filter, take, toArray } from 'rxjs/operators';
 
 let server: TestServer;
 let adminClient: SimpleGraphQLClient;
@@ -92,7 +92,7 @@ beforeAll(async () => {
     },
     plugins: [
       StoreCreditPlugin.init({
-        createGiftCardWallet: async (ctx, injector, order, orderLine) => {
+        createGiftCardWallet: async (ctx, injector, _order, orderLine) => {
           const entityHydrator = injector.get(EntityHydrator);
           await entityHydrator.hydrate(ctx, orderLine, {
             relations: ['productVariant'],
@@ -195,10 +195,10 @@ describe('Wallets and Adjustments', () => {
     });
     expect(customer).toBeDefined();
     expect(customer).not.toBeNull();
-    expect(customer!.wallets).toBeDefined();
-    expect(customer!.wallets.totalItems).toBeGreaterThanOrEqual(1);
-    expect(customer!.wallets.items.length).toBeGreaterThanOrEqual(1);
-    const wallet = customer!.wallets.items[0];
+    expect(customer?.wallets).toBeDefined();
+    expect(customer?.wallets.totalItems).toBeGreaterThanOrEqual(1);
+    expect(customer?.wallets.items.length).toBeGreaterThanOrEqual(1);
+    const wallet = customer?.wallets.items[0];
     expect(wallet.id).toBeDefined();
     expect(wallet.name).toBe('My Wallet');
   });
@@ -218,7 +218,7 @@ describe('Wallets and Adjustments', () => {
     expect(wallet.adjustments.items.length).toBe(1);
     expect(wallet.adjustments.items[0].amount).toBe(100);
     expect(wallet.adjustments.items[0].description).toBe(
-      'Adjusted by superadmin'
+      'Adjusted by superadmin',
     );
     expect(wallet.adjustments.items[0].mutatedBy.id).toBe('T_1');
   });
@@ -246,7 +246,7 @@ describe('Wallets and Adjustments', () => {
       GET_WALLET_WITH_ADJUSTMENTS,
       {
         id: 1,
-      }
+      },
     );
     expect(walletBefore.balance).toBe(30);
     expect(walletBefore.adjustments.items.length).toBe(2);
@@ -260,15 +260,15 @@ describe('Wallets and Adjustments', () => {
           amount: MAGIC_NUMBER,
           description: 'This should fail',
         },
-      })
+      }),
     ).rejects.toThrow(
-      'Update Failed: You passed the forbidden Magic Number 3131746989'
+      'Update Failed: You passed the forbidden Magic Number 3131746989',
     );
     const { wallet: walletAfter } = await adminClient.query(
       GET_WALLET_WITH_ADJUSTMENTS,
       {
         id: 1,
-      }
+      },
     );
     expect(walletAfter.balance).toBe(30);
     expect(walletAfter.adjustments.items.length).toBe(2);
@@ -294,7 +294,7 @@ describe('Wallets and Adjustments', () => {
     });
 
     const adjustments = [...wallet.adjustments.items].sort(
-      (a, b) => +new Date(a.createdAt) - +new Date(b.createdAt)
+      (a, b) => +new Date(a.createdAt) - +new Date(b.createdAt),
     );
 
     expect(adjustments.length).toBeGreaterThanOrEqual(N);
@@ -349,7 +349,7 @@ describe('Order with store credit payment', () => {
   it('Prepares an order for payment', async () => {
     await shopClient.asUserWithCredentials(
       'hayden.zieme12@hotmail.com',
-      'test'
+      'test',
     );
     const order = await addItem(shopClient, 'T_1', 1);
     const transitionRes = await proceedToArrangingPayment(shopClient, 1, {
@@ -369,7 +369,7 @@ describe('Order with store credit payment', () => {
   it('Should partially pay for order with store-credit using amount input', async () => {
     const { wallet: walletBefore } = await adminClient.query(
       GET_WALLET_WITH_ADJUSTMENTS,
-      { id: 1 }
+      { id: 1 },
     );
     const { addPaymentToOrder } = await shopClient.query(AddPaymentToOrder, {
       input: {
@@ -383,7 +383,7 @@ describe('Order with store credit payment', () => {
     expect(order.state).toBe('ArrangingPayment');
     const { wallet: walletAfter } = await adminClient.query(
       GET_WALLET_WITH_ADJUSTMENTS,
-      { id: 1 }
+      { id: 1 },
     );
     expect(walletAfter.balance).toBe(walletBefore.balance - 100_000);
     const lastAdjustment =
@@ -395,7 +395,7 @@ describe('Order with store credit payment', () => {
   it('Should pay outstanding amount for order without specifying amount', async () => {
     const { wallet: walletBefore } = await adminClient.query(
       GET_WALLET_WITH_ADJUSTMENTS,
-      { id: 1 }
+      { id: 1 },
     );
     const { addPaymentToOrder: order } = await shopClient.query(
       AddPaymentToOrder,
@@ -404,14 +404,14 @@ describe('Order with store credit payment', () => {
           method: 'store-credit',
           metadata: { walletId: 1 },
         },
-      }
+      },
     );
     expect(order?.errorCode).toBeUndefined();
     expect(order.id).toBeDefined();
     expect(order.state).toBe('PaymentSettled');
     const { wallet: walletAfter } = await adminClient.query(
       GET_WALLET_WITH_ADJUSTMENTS,
-      { id: 1 }
+      { id: 1 },
     );
     const leftToPay = order.totalWithTax - 100_000; // already paid in previous test
     expect(walletAfter.balance).toBeLessThan(walletBefore.balance);
@@ -432,12 +432,12 @@ describe('Order with store credit payment', () => {
           customerId: 1,
           name: 'My Other Wallet',
         },
-      }
+      },
     );
 
     await shopClient.asUserWithCredentials(
       'hayden.zieme12@hotmail.com',
-      'test'
+      'test',
     );
 
     await addItem(shopClient, 'T_1', 1);
@@ -523,11 +523,11 @@ describe('Channel awareness', () => {
             walletId: String(walletForChannel3.id).replace('T_', ''),
           }, // wallet from channel 3, while we are in channel 2
         },
-      }
+      },
     );
     expect(err?.errorCode).toBe('PAYMENT_DECLINED_ERROR');
     expect(err?.paymentErrorMessage).toBe(
-      'Wallet with id 4 is not assigned to the current channel'
+      'Wallet with id 4 is not assigned to the current channel',
     );
   });
 
@@ -545,7 +545,7 @@ describe('Channel awareness', () => {
     adminClient.setChannelToken(channel2Input.token);
     const { wallet: walletAfter } = await adminClient.query(
       GET_WALLET_WITH_ADJUSTMENTS,
-      { id: String(walletForChannel2.id).replace('T_', '') }
+      { id: String(walletForChannel2.id).replace('T_', '') },
     );
     expect(walletAfter.balance).toBeLessThan(1000000);
   });
@@ -559,7 +559,7 @@ describe('Channel awareness', () => {
           method: 'store-credit',
           metadata: { walletId: walletForChannel3.id }, // wallet from channel 3, while we are in channel 4
         },
-      }
+      },
     );
     expect(err?.errorCode).toBe('PAYMENT_DECLINED_ERROR');
   });
@@ -590,7 +590,7 @@ describe('Refunding Order', () => {
     shopClient.setChannelToken(E2E_DEFAULT_CHANNEL_TOKEN);
     await shopClient.asUserWithCredentials(
       'hayden.zieme12@hotmail.com',
-      'test'
+      'test',
     );
     let activeOrder = await getActiveOrder(shopClient);
     while (activeOrder) {
@@ -601,11 +601,13 @@ describe('Refunding Order', () => {
     }
     await shopClient.asUserWithCredentials(
       'hayden.zieme12@hotmail.com',
-      'test'
+      'test',
     );
     const order = await createSettledOrder(shopClient, 1);
     orderToRefund = order;
-    paymentToRefund = order.payments?.[0]!;
+    const payment = order.payments?.[0];
+    if (!payment) throw new Error('Order payment not found');
+    paymentToRefund = payment;
     expect(order.id).toBeDefined();
     expect(order.state).toBe('PaymentSettled');
     expect(order.payments?.length).toBe(1);
@@ -626,9 +628,9 @@ describe('Refunding Order', () => {
           reason: 'Product Damaged',
           walletId: walletWithEuroCurrency.id,
         },
-      })
+      }),
     ).rejects.toThrow(
-      "Wallet currency 'EUR' does not match order currency 'USD'. Can not refund payment to this wallet."
+      "Wallet currency 'EUR' does not match order currency 'USD'. Can not refund payment to this wallet.",
     );
   });
 
@@ -644,16 +646,16 @@ describe('Refunding Order', () => {
           reason: 'Product Damaged',
           walletId: refundWallet.id,
         },
-      })
+      }),
     ).rejects.toThrow(
-      'Refund amount 492239 is greater than payment amount 492140'
+      'Refund amount 492239 is greater than payment amount 492140',
     );
   });
 
   it('Should refund payment to store credit', async () => {
     const { wallet: walletBefore } = await adminClient.query(
       GET_WALLET_WITH_ADJUSTMENTS,
-      { id: refundWallet.id }
+      { id: refundWallet.id },
     );
     expect(walletBefore.balance).toBe(0);
     const { refundPaymentToStoreCredit: adjustment } = await adminClient.query<
@@ -670,17 +672,17 @@ describe('Refunding Order', () => {
     expect(adjustment.id).toBeDefined();
     expect(adjustment.amount).toBe(492140);
     expect(adjustment.description).toBe(
-      `Refund for order ${orderToRefund.code}: Product Damaged`
+      `Refund for order ${orderToRefund.code}: Product Damaged`,
     );
     const { wallet: walletAfter } = await adminClient.query(
       GET_WALLET_WITH_ADJUSTMENTS,
-      { id: refundWallet.id }
+      { id: refundWallet.id },
     );
     expect(walletAfter.balance).toBe(492140);
     expect(walletAfter.adjustments.items.length).toBe(1);
     expect(walletAfter.adjustments.items[0].amount).toBe(492140);
     expect(walletAfter.adjustments.items[0].description).toContain(
-      `Refund for order ${orderToRefund.code}: Product Damaged`
+      `Refund for order ${orderToRefund.code}: Product Damaged`,
     );
   });
 
@@ -714,7 +716,7 @@ describe('Refunding Order', () => {
           }
         }
       `,
-      { id: orderToRefund.id }
+      { id: orderToRefund.id },
     );
     const payment = order.payments.find((p) => p.id === paymentToRefund.id);
     const refund = payment?.refunds?.[0];
@@ -731,7 +733,7 @@ describe('Refunding Order', () => {
       transactionId: "Refunded to wallet 'My new wallet' (6)",
     });
     expect(order.history.items[order.history.items.length - 1].data.note).toBe(
-      `Refunded 492140 for order ${orderToRefund.code}: Product Damaged`
+      `Refunded 492140 for order ${orderToRefund.code}: Product Damaged`,
     );
   });
 
@@ -767,7 +769,7 @@ describe('Refunding Order', () => {
           shipping: 0,
           adjustment: 0,
         },
-      }
+      },
     );
     expect(result.refundOrder).toMatchObject({
       errorCode: 'REFUND_AMOUNT_ERROR',
@@ -788,7 +790,7 @@ describe('Exported helpers', () => {
       },
       'superadmin',
       undefined,
-      2
+      2,
     );
     expect(wallets.length).toBe(5);
     wallets.forEach((wallet) => {
@@ -860,7 +862,7 @@ describe('Gift Card Payment', () => {
   it('Prepares an order for payment', async () => {
     await shopClient.asUserWithCredentials(
       'hayden.zieme12@hotmail.com',
-      'test'
+      'test',
     );
     const order = await addItem(shopClient, 'T_1', 1);
     const transitionRes = await proceedToArrangingPayment(shopClient, 1, {
@@ -880,7 +882,7 @@ describe('Gift Card Payment', () => {
   it('Should partially pay for order with gift card', async () => {
     const { wallet: walletBefore } = await adminClient.query(
       GET_WALLET_WITH_ADJUSTMENTS,
-      { id: 12 }
+      { id: 12 },
     );
     const { addPaymentToOrder } = await shopClient.query(AddPaymentToOrder, {
       input: {
@@ -894,7 +896,7 @@ describe('Gift Card Payment', () => {
     expect(order.state).toBe('ArrangingPayment');
     const { wallet: walletAfter } = await adminClient.query(
       GET_WALLET_WITH_ADJUSTMENTS,
-      { id: 12 }
+      { id: 12 },
     );
     expect(walletAfter.balance).toBe(walletBefore.balance - 100_000);
     const lastAdjustment =
@@ -906,7 +908,7 @@ describe('Gift Card Payment', () => {
   it('Should pay outstanding amount for order using a gift card wallet without specifying amount', async () => {
     const { wallet: walletBefore } = await adminClient.query(
       GET_WALLET_WITH_ADJUSTMENTS,
-      { id: 12 }
+      { id: 12 },
     );
     const { addPaymentToOrder: order } = await shopClient.query(
       AddPaymentToOrder,
@@ -915,14 +917,14 @@ describe('Gift Card Payment', () => {
           method: 'store-credit',
           metadata: { giftCardCode: '7K9P2W1Z8N' },
         },
-      }
+      },
     );
     expect((order as any)?.errorCode).toBeUndefined();
     expect(order.id).toBeDefined();
     expect(order.state).toBe('PaymentSettled');
     const { wallet: walletAfter } = await adminClient.query(
       GET_WALLET_WITH_ADJUSTMENTS,
-      { id: 12 }
+      { id: 12 },
     );
     const leftToPay = order.totalWithTax - 100_000; // already paid in previous test
     expect(walletAfter.balance).toBeLessThan(walletBefore.balance);
@@ -938,7 +940,7 @@ describe('Gift Card Payment', () => {
   it('Should fail to pay with a gift card with the wrong code', async () => {
     await shopClient.asUserWithCredentials(
       'hayden.zieme12@hotmail.com',
-      'test'
+      'test',
     );
 
     await addItem(shopClient, 'T_1', 1);
@@ -961,7 +963,7 @@ describe('Gift Card Payment', () => {
       },
     });
     expect((addPaymentToOrder as any)?.errorCode).toBe(
-      'PAYMENT_DECLINED_ERROR'
+      'PAYMENT_DECLINED_ERROR',
     );
     await adminClient.query(CANCEL_ORDER, { id: 8 });
   });
@@ -979,7 +981,7 @@ describe('Gift Card Payment', () => {
 
     await shopClient.asUserWithCredentials(
       'hayden.zieme12@hotmail.com',
-      'test'
+      'test',
     );
 
     await addItem(shopClient, 'T_1', 1);
@@ -1002,7 +1004,7 @@ describe('Gift Card Payment', () => {
       },
     });
     expect((addPaymentToOrder as any)?.errorCode).toBe(
-      'PAYMENT_DECLINED_ERROR'
+      'PAYMENT_DECLINED_ERROR',
     );
     await adminClient.query(CANCEL_ORDER, { id: 9 });
   });
@@ -1040,7 +1042,7 @@ describe('Auto-creation on OrderPlacedEvent', () => {
             stockOnHand: 100,
           },
         ],
-      }
+      },
     );
 
     expect(createProductVariants.length).toBe(1);
@@ -1051,11 +1053,11 @@ describe('Auto-creation on OrderPlacedEvent', () => {
     const eventBus = server.app.get(EventBus);
 
     const eventsPromise = firstValueFrom(
-      eventBus.ofType(GiftCardsCreatedEvent).pipe(take(1), toArray())
+      eventBus.ofType(GiftCardsCreatedEvent).pipe(take(1), toArray()),
     );
     await shopClient.asUserWithCredentials(
       'hayden.zieme12@hotmail.com',
-      'test'
+      'test',
     );
 
     await createSettledOrder(shopClient, 1, true, [
@@ -1082,17 +1084,17 @@ describe('Auto-creation on OrderPlacedEvent', () => {
     expect(history.items[history.items.length - 3].data.note).toBe(
       `Gift card wallet ${events[0].wallets[0].code} created with balance ${
         events[0].wallets[0].balance / 100
-      } for product with id 2`
+      } for product with id 2`,
     );
     expect(history.items[history.items.length - 2].data.note).toBe(
       `Gift card wallet ${events[0].wallets[1].code} created with balance ${
         events[0].wallets[1].balance / 100
-      } for product with id 2`
+      } for product with id 2`,
     );
     expect(history.items[history.items.length - 1].data.note).toBe(
       `Gift card wallet ${events[0].wallets[2].code} created with balance ${
         events[0].wallets[2].balance / 100
-      } for product with id 2`
+      } for product with id 2`,
     );
   });
 
@@ -1106,7 +1108,7 @@ describe('Auto-creation on OrderPlacedEvent', () => {
 
     await shopClient.asUserWithCredentials(
       'hayden.zieme12@hotmail.com',
-      'test'
+      'test',
     );
 
     await createSettledOrder(shopClient, 1, true, [
@@ -1125,15 +1127,15 @@ describe('Auto-creation on OrderPlacedEvent', () => {
   it('Should save giftCardCodes to the order line custom fields', async () => {
     const eventBus = server.app.get(EventBus);
     const eventsPromise = firstValueFrom(
-      eventBus.ofType(GiftCardsCreatedEvent).pipe(take(1), toArray())
+      eventBus.ofType(GiftCardsCreatedEvent).pipe(take(1), toArray()),
     );
 
     await shopClient.asUserWithCredentials(
       'hayden.zieme12@hotmail.com',
-      'test'
+      'test',
     );
 
-    const order = await createSettledOrder(shopClient, 1, true, [
+    const _order = await createSettledOrder(shopClient, 1, true, [
       {
         id: 'T_5',
         quantity: 2,
@@ -1150,12 +1152,12 @@ describe('Auto-creation on OrderPlacedEvent', () => {
     const lines = await orderLineRepo.find();
 
     const giftCardLine = lines.find(
-      (l) => l.customFields?.giftCardCodes?.length === 2
+      (l) => l.customFields?.giftCardCodes?.length === 2,
     );
     expect(giftCardLine).toBeDefined();
-    expect(giftCardLine!.customFields.giftCardCodes).toHaveLength(2);
-    expect(giftCardLine!.customFields.giftCardCodes![0]).toMatch(
-      /^8pZ2nL9qX5mB/
+    expect(giftCardLine?.customFields.giftCardCodes).toHaveLength(2);
+    expect(giftCardLine?.customFields.giftCardCodes?.[0]).toMatch(
+      /^8pZ2nL9qX5mB/,
     );
   });
 
@@ -1167,14 +1169,14 @@ describe('Auto-creation on OrderPlacedEvent', () => {
       eventBus.ofType(GiftCardsCreatedEvent).pipe(
         filter((event) => event.wallets.length > 0),
         take(1),
-        toArray()
-      )
+        toArray(),
+      ),
     );
 
     // Customer 1 purchases a gift card product
     await shopClient.asUserWithCredentials(
       'hayden.zieme12@hotmail.com',
-      'test'
+      'test',
     );
     await createSettledOrder(shopClient, 1, true, [
       {
@@ -1213,7 +1215,7 @@ describe('Auto-creation on OrderPlacedEvent', () => {
           firstName: 'Gift',
           lastName: 'Receiver',
         },
-      }
+      },
     );
     expect(setCustomerForOrder?.errorCode).toBeUndefined();
 
@@ -1232,7 +1234,7 @@ describe('Auto-creation on OrderPlacedEvent', () => {
 
     const { wallet: walletBefore } = await adminClient.query(
       GET_WALLET_WITH_ADJUSTMENTS,
-      { id: giftCardWallet.id }
+      { id: giftCardWallet.id },
     );
 
     const { addPaymentToOrder } = await shopClient.query(AddPaymentToOrder, {
@@ -1248,7 +1250,7 @@ describe('Auto-creation on OrderPlacedEvent', () => {
 
     const { wallet: walletAfter } = await adminClient.query(
       GET_WALLET_WITH_ADJUSTMENTS,
-      { id: giftCardWallet.id }
+      { id: giftCardWallet.id },
     );
     expect(walletAfter.balance).toBe(walletBefore.balance - 50);
   });
@@ -1278,7 +1280,7 @@ describe('Auto-creation on OrderPlacedEvent', () => {
 
     await shopClient.asUserWithCredentials(
       'hayden.zieme12@hotmail.com',
-      'test'
+      'test',
     );
     const order = await addItem(shopClient, 'T_1', 1);
     const transitionRes = await proceedToArrangingPayment(shopClient, 1, {
@@ -1320,12 +1322,12 @@ describe('Refunding Order using gift card wallet', () => {
       eventBus.ofType(GiftCardsCreatedEvent).pipe(
         filter((event) => event.wallets.length > 0),
         take(1),
-        toArray()
-      )
+        toArray(),
+      ),
     );
     await shopClient.asUserWithCredentials(
       'hayden.zieme12@hotmail.com',
-      'test'
+      'test',
     );
 
     await createSettledOrder(shopClient, 1, true, [
@@ -1347,7 +1349,7 @@ describe('Refunding Order using gift card wallet', () => {
     shopClient.setChannelToken(E2E_DEFAULT_CHANNEL_TOKEN);
     await shopClient.asUserWithCredentials(
       'hayden.zieme12@hotmail.com',
-      'test'
+      'test',
     );
     let activeOrder = await getActiveOrder(shopClient);
     while (activeOrder) {
@@ -1358,11 +1360,13 @@ describe('Refunding Order using gift card wallet', () => {
     }
     await shopClient.asUserWithCredentials(
       'hayden.zieme12@hotmail.com',
-      'test'
+      'test',
     );
     const order = await createSettledOrder(shopClient, 1);
     orderToRefund = order;
-    paymentToRefund = order.payments?.[0]!;
+    const payment = order.payments?.[0];
+    if (!payment) throw new Error('Order payment not found');
+    paymentToRefund = payment;
     expect(order.id).toBeDefined();
     expect(order.state).toBe('PaymentSettled');
     expect(order.payments?.length).toBe(1);
@@ -1383,9 +1387,9 @@ describe('Refunding Order using gift card wallet', () => {
           reason: 'Product Damaged',
           walletId: walletWithEuroCurrency.id,
         },
-      })
+      }),
     ).rejects.toThrow(
-      "Wallet currency 'EUR' does not match order currency 'USD'. Can not refund payment to this wallet."
+      "Wallet currency 'EUR' does not match order currency 'USD'. Can not refund payment to this wallet.",
     );
   });
 
@@ -1401,16 +1405,16 @@ describe('Refunding Order using gift card wallet', () => {
           reason: 'Product Damaged',
           walletId: refundWallet.id,
         },
-      })
+      }),
     ).rejects.toThrow(
-      'Refund amount 492239 is greater than payment amount 492140'
+      'Refund amount 492239 is greater than payment amount 492140',
     );
   });
 
   it('Should refund payment to gift card wallet', async () => {
     const { wallet: walletBefore } = await adminClient.query(
       GET_WALLET_WITH_ADJUSTMENTS,
-      { id: refundWallet.id }
+      { id: refundWallet.id },
     );
     expect(walletBefore.balance).toBe(100);
     const { refundPaymentToStoreCredit: adjustment } = await adminClient.query<
@@ -1427,17 +1431,17 @@ describe('Refunding Order using gift card wallet', () => {
     expect(adjustment.id).toBeDefined();
     expect(adjustment.amount).toBe(492140);
     expect(adjustment.description).toBe(
-      `Refund for order ${orderToRefund.code}: Product Damaged`
+      `Refund for order ${orderToRefund.code}: Product Damaged`,
     );
     const { wallet: walletAfter } = await adminClient.query(
       GET_WALLET_WITH_ADJUSTMENTS,
-      { id: refundWallet.id }
+      { id: refundWallet.id },
     );
     expect(walletAfter.balance).toBe(492140 + walletBefore.balance);
     expect(walletAfter.adjustments.items.length).toBe(2);
     expect(walletAfter.adjustments.items[1].amount).toBe(492140);
     expect(walletAfter.adjustments.items[1].description).toContain(
-      `Refund for order ${orderToRefund.code}: Product Damaged`
+      `Refund for order ${orderToRefund.code}: Product Damaged`,
     );
   });
 
@@ -1468,7 +1472,7 @@ describe('Refunding Order using gift card wallet', () => {
           }
         }
       `,
-      { id: orderToRefund.id }
+      { id: orderToRefund.id },
     );
     const payment = order.payments.find((p) => p.id === paymentToRefund.id);
     const refund = payment?.refunds?.[0];
@@ -1485,7 +1489,7 @@ describe('Refunding Order using gift card wallet', () => {
       transactionId: `Refunded to wallet '${refundWallet.name}' (${refundWallet.id})`,
     });
     expect(order.history.items[order.history.items.length - 1].data.note).toBe(
-      `Refunded 492140 for order ${orderToRefund.code}: Product Damaged`
+      `Refunded 492140 for order ${orderToRefund.code}: Product Damaged`,
     );
   });
 
@@ -1521,7 +1525,7 @@ describe('Refunding Order using gift card wallet', () => {
           shipping: 0,
           adjustment: 0,
         },
-      }
+      },
     );
     expect(result.refundOrder).toMatchObject({
       errorCode: 'REFUND_AMOUNT_ERROR',
@@ -1569,7 +1573,7 @@ describe('Gift Card Wallet Channel awareness', () => {
             stockOnHand: 100,
           },
         ],
-      }
+      },
     );
 
     expect(createProductVariants.length).toBe(1);
@@ -1608,13 +1612,13 @@ describe('Gift Card Wallet Channel awareness', () => {
 
     // create wallets in channels and adjust balance
     walletForChannel5 = await createGiftCardWalletForChannel(
-      'channel-5-for-gift-code'
+      'channel-5-for-gift-code',
     );
     walletForChannel6 = await createGiftCardWalletForChannel(
-      'channel-6-for-gift-code'
+      'channel-6-for-gift-code',
     );
     walletForChannel7 = await createGiftCardWalletForChannel(
-      'channel-7-for-gift-code'
+      'channel-7-for-gift-code',
     );
 
     // Create active orders for both channels, otherwise an NO_ACTIVE_ORDER_ERROR will be thrown.
@@ -1642,14 +1646,14 @@ describe('Gift Card Wallet Channel awareness', () => {
             walletId: String(walletForChannel6.id).replace('T_', ''),
           }, // wallet from channel 6, while we are in channel 6
         },
-      }
+      },
     );
     expect(err?.errorCode).toBe('PAYMENT_DECLINED_ERROR');
     expect(err?.paymentErrorMessage).toBe(
       `Wallet with id ${String(walletForChannel6.id).replace(
         'T_',
-        ''
-      )} is not assigned to the current channel`
+        '',
+      )} is not assigned to the current channel`,
     );
   });
 
@@ -1667,7 +1671,7 @@ describe('Gift Card Wallet Channel awareness', () => {
     adminClient.setChannelToken('channel-5-for-gift-code');
     const { wallet: walletAfter } = await adminClient.query(
       GET_WALLET_WITH_ADJUSTMENTS,
-      { id: String(walletForChannel5.id).replace('T_', '') }
+      { id: String(walletForChannel5.id).replace('T_', '') },
     );
     expect(walletAfter.balance).toBeLessThan(1000000);
   });
@@ -1681,7 +1685,7 @@ describe('Gift Card Wallet Channel awareness', () => {
           method: 'store-credit',
           metadata: { walletId: walletForChannel6.id }, // wallet from channel 6, while we are in channel 7
         },
-      }
+      },
     );
     expect(err?.errorCode).toBe('PAYMENT_DECLINED_ERROR');
   });
@@ -1691,7 +1695,7 @@ describe('Gift Card Wallet Channel awareness', () => {
  * Creates a wallet for a given channel and adjusts the balance to 1000000.
  */
 async function createWalletForChannel(
-  setChannelToken: string
+  setChannelToken: string,
 ): Promise<Wallet> {
   adminClient.setChannelToken(setChannelToken);
   const { createWallet: wallet } = await adminClient.query<
@@ -1717,15 +1721,15 @@ async function createWalletForChannel(
 }
 
 async function createGiftCardWalletForChannel(
-  setChannelToken: string
+  setChannelToken: string,
 ): Promise<Wallet> {
   const eventBus = server.app.get(EventBus);
   const eventsPromise = firstValueFrom(
     eventBus.ofType(GiftCardsCreatedEvent).pipe(
       filter((event) => event.wallets.length > 0),
       take(1),
-      toArray()
-    )
+      toArray(),
+    ),
   );
 
   shopClient.setChannelToken(setChannelToken);

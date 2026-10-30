@@ -1,11 +1,9 @@
-import { Order } from '@vendure/core';
 import { OrderAddress } from '@vendure/common/lib/generated-types';
+import { Order } from '@vendure/core';
 import {
   MyParcelError,
   MyParcelShipmentStrategy,
-  MyparcelRecipient,
   MyparcelShipment,
-  MyparcelShipmentOptions,
 } from './types';
 
 export class MyParcalDefaultShipmentStrategy
@@ -22,14 +20,14 @@ export class MyParcalDefaultShipmentStrategy
     return [houseNr, suffix];
   }
 
-  getOptions(address: OrderAddress, order: Order, customsContent: string) {
+  getOptions(_address: OrderAddress, order: Order, _customsContent: string) {
     return {
       package_type: 1, // Parcel
       label_description: order.code,
     };
   }
 
-  getRecipient(address: OrderAddress, order: Order, customsContent: string) {
+  getRecipient(address: OrderAddress, order: Order, _customsContent: string) {
     const [nr, nrSuffix] = this.getHousenumber(address.streetLine2!);
 
     return {

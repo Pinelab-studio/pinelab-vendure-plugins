@@ -1,3 +1,4 @@
+import { createReadStream, ReadStream } from 'node:fs';
 import { Inject, Injectable } from '@nestjs/common';
 import { ModuleRef } from '@nestjs/core';
 import { SortOrder } from '@vendure/common/lib/generated-shop-types';
@@ -13,23 +14,22 @@ import {
   TransactionalConnection,
   UserInputError,
 } from '@vendure/core';
-import { createReadStream, ReadStream } from 'fs';
 import Handlebars from 'handlebars';
+import puppeteer, { Browser } from 'puppeteer';
 import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
-import { PDFTemplatePluginOptions } from '../order-pdfs-plugin';
 import {
   MutationCreatePdfTemplateArgs,
   MutationUpdatePdfTemplateArgs,
   PdfTemplateListOptions,
 } from '../generated/graphql';
+import { PDFTemplatePluginOptions } from '../order-pdfs-plugin';
 import {
   createTempFile,
   safeRemoveFile,
-  zipFiles,
   ZippableFile,
+  zipFiles,
 } from './file.util';
 import { PDFTemplateEntity } from './pdf-template.entity';
-import puppeteer, { Browser } from 'puppeteer';
 
 @Injectable()
 export class OrderPDFsService {
@@ -39,7 +39,7 @@ export class OrderPDFsService {
     private readonly listQueryBuilder: ListQueryBuilder,
     private moduleRef: ModuleRef,
     @Inject(PLUGIN_INIT_OPTIONS)
-    private options: PDFTemplatePluginOptions
+    private options: PDFTemplatePluginOptions,
   ) {
     Handlebars.registerHelper('formatMoney', (amount?: number) => {
       if (amount == null) {
@@ -51,7 +51,7 @@ export class OrderPDFsService {
 
   async updateTemplate(
     ctx: RequestContext,
-    input: MutationUpdatePdfTemplateArgs['input']
+    input: MutationUpdatePdfTemplateArgs['input'],
   ): Promise<PDFTemplateEntity> {
     const repository = this.connection.getRepository(ctx, PDFTemplateEntity);
     const existing = await repository.findOneOrFail({
@@ -72,7 +72,7 @@ export class OrderPDFsService {
 
   async getTemplatesList(
     ctx: RequestContext,
-    options?: PdfTemplateListOptions
+    options?: PdfTemplateListOptions,
   ): Promise<PaginatedList<PDFTemplateEntity>> {
     const qb = this.listQueryBuilder.build(PDFTemplateEntity, options, {
       ctx,
@@ -84,7 +84,7 @@ export class OrderPDFsService {
 
   async createPDFTemplate(
     ctx: RequestContext,
-    input: MutationCreatePdfTemplateArgs['input']
+    input: MutationCreatePdfTemplateArgs['input'],
   ): Promise<PDFTemplateEntity> {
     const repository = this.connection.getRepository(ctx, PDFTemplateEntity);
     const existing = await repository.findOne({
@@ -92,7 +92,7 @@ export class OrderPDFsService {
     });
     if (existing) {
       throw new UserInputError(
-        `A PDF template with name '${input.name}' already exists`
+        `A PDF template with name '${input.name}' already exists`,
       );
     }
     const result = await repository.save({
@@ -109,7 +109,7 @@ export class OrderPDFsService {
 
   async deletePDFTemplate(
     ctx: RequestContext,
-    id: ID
+    id: ID,
   ): Promise<PDFTemplateEntity[]> {
     const repository = this.connection.getRepository(ctx, PDFTemplateEntity);
     const existing = await repository.findOneOrFail({
@@ -131,7 +131,7 @@ export class OrderPDFsService {
 
   async findTemplate(
     ctx: RequestContext,
-    id: ID
+    id: ID,
   ): Promise<PDFTemplateEntity | undefined | null> {
     const repository = this.connection.getRepository(ctx, PDFTemplateEntity);
     return await repository.findOne({
@@ -146,7 +146,7 @@ export class OrderPDFsService {
     ctx: RequestContext,
     templateId?: ID,
     templateString?: string,
-    _order?: Order
+    _order?: Order,
   ): Promise<ReadStream> {
     let order = _order;
     if (!order) {
@@ -154,7 +154,7 @@ export class OrderPDFsService {
     }
     if (!templateString && !templateId) {
       throw new UserInputError(
-        `Need a template ID or template string to render PDF`
+        `Need a template ID or template string to render PDF`,
       );
     }
     if (!templateString) {
@@ -173,7 +173,7 @@ export class OrderPDFsService {
   async downloadMultiplePDFs(
     ctx: RequestContext,
     templateId: ID,
-    orders: Order[]
+    orders: Order[],
   ) {
     // This is currently done in main thread, so a max of 10 orders is allowed
     if (orders.length > 10) {
@@ -192,13 +192,13 @@ export class OrderPDFsService {
         return await this.generatePDF(
           ctx,
           template.templateString,
-          hydratedOrder
+          hydratedOrder,
         );
-      })
+      }),
     );
     const zippableFiles: ZippableFile[] = pdfData.map((pdf) => ({
       path: pdf.tempFilePath,
-      name: pdf.orderCode + '.pdf',
+      name: `${pdf.orderCode}.pdf`,
     }));
     const zipFile = await zipFiles(zippableFiles);
     const stream = createReadStream(zipFile);
@@ -212,12 +212,12 @@ export class OrderPDFsService {
   async generatePDF(
     ctx: RequestContext,
     templateString: string,
-    order: Order
+    order: Order,
   ): Promise<{ tempFilePath: string; orderCode: string }> {
-    const data = await this.options.loadDataFn!(
+    const data = await this.options.loadDataFn?.(
       ctx,
       new Injector(this.moduleRef),
-      order
+      order,
     );
     const tmpFilePath = await createTempFile('.pdf');
     let browser: Browser | undefined;
@@ -244,7 +244,7 @@ export class OrderPDFsService {
       // Warning, because this will be retried, or is returned to the user
       Logger.warn(
         `Failed to generate invoice: ${JSON.stringify((e as Error)?.message)}`,
-        loggerCtx
+        loggerCtx,
       );
       throw e;
     } finally {
@@ -253,7 +253,7 @@ export class OrderPDFsService {
         browser.close().catch((e: Error) => {
           Logger.error(
             `Failed to close puppeteer browser: ${e?.message}`,
-            loggerCtx
+            loggerCtx,
           );
         });
       }
@@ -272,7 +272,7 @@ export class OrderPDFsService {
           },
           sort: { createdAt: SortOrder.DESC },
         },
-        []
+        [],
       )
     )?.items?.[0]?.id;
     // Refetch needed for relations to work

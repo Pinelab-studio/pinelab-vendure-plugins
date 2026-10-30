@@ -1,16 +1,16 @@
+import path from 'node:path';
 import {
-  mergeConfig,
   DefaultLogger,
-  LogLevel,
   DefaultSearchPlugin,
+  LogLevel,
+  mergeConfig,
   VendureConfig,
 } from '@vendure/core';
 import { DashboardPlugin } from '@vendure/dashboard/plugin';
 import { testConfig } from '@vendure/testing';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
-import path from 'path';
-import { OrderExportPlugin } from '../src/order-export.plugin';
 import { DefaultExportStrategy } from '../src/api/export-strategy';
+import { OrderExportPlugin } from '../src/order-export.plugin';
 
 require('dotenv').config();
 

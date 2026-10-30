@@ -1,13 +1,13 @@
 import {
-  PaymentMethodHandler,
   CreatePaymentResult,
-  SettlePaymentResult,
-  LanguageCode,
   ID,
+  LanguageCode,
+  PaymentMethodHandler,
+  SettlePaymentResult,
   UserInputError,
 } from '@vendure/core';
-import { WalletService } from '../services/wallet.service';
 import { asError } from 'catch-unknown';
+import { WalletService } from '../services/wallet.service';
 
 let walletService: WalletService;
 
@@ -27,23 +27,23 @@ export const storeCreditPaymentHandler = new PaymentMethodHandler({
     ctx,
     order,
     amount,
-    args,
-    metadata
+    _args,
+    metadata,
   ): Promise<CreatePaymentResult> => {
     if (!metadata.walletId && !metadata.giftCardCode) {
       throw new Error(
-        'Wallet ID or Gift Card Code is required as input metadata'
+        'Wallet ID or Gift Card Code is required as input metadata',
       );
     }
     const metadataAmount = metadata.amount
-      ? parseInt(metadata.amount as string)
+      ? parseInt(metadata.amount as string, 10)
       : amount;
-    if (isNaN(metadataAmount)) {
+    if (Number.isNaN(metadataAmount)) {
       throw new UserInputError('Invalid number in metadata.amount');
     }
     if (metadataAmount > amount) {
       throw new UserInputError(
-        `You can not pay more than the order total of ${amount}`
+        `You can not pay more than the order total of ${amount}`,
       );
     }
     amount = metadataAmount ?? amount;
@@ -53,7 +53,7 @@ export const storeCreditPaymentHandler = new PaymentMethodHandler({
         order,
         amount,
         // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-        metadata
+        metadata,
       );
       return {
         amount,

@@ -1,5 +1,6 @@
 require('dotenv').config();
 
+import path from 'node:path';
 import {
   AutoIncrementIdStrategy,
   DefaultLogger,
@@ -8,11 +9,10 @@ import {
   mergeConfig,
   VendureConfig,
 } from '@vendure/core';
-import { testConfig } from '@vendure/testing';
 import { DashboardPlugin } from '@vendure/dashboard/plugin';
-import path from 'path';
-import { LimitedProductsPlugin } from '../src';
+import { testConfig } from '@vendure/testing';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
+import { LimitedProductsPlugin } from '../src';
 
 export const config: VendureConfig = mergeConfig(testConfig, {
   logger: new DefaultLogger({ level: LogLevel.Debug }),

@@ -1,6 +1,6 @@
 import { Injector, RequestContext, Type, VendureEvent } from '@vendure/core';
-import { Notifier } from './notifier';
 import { AlertMessage } from '../types';
+import { Notifier } from './notifier';
 
 /**
  * Builder for an alert rule that reacts to Vendure {@linkcode EventBus} events.
@@ -32,7 +32,7 @@ export class EventAlert<E extends VendureEvent = never> {
   eventNotifyFn?: (
     ctx: RequestContext | undefined,
     injector: Injector,
-    event: E
+    event: E,
   ) => string | AlertMessage | Promise<string | AlertMessage>;
 
   /**
@@ -72,8 +72,8 @@ export class EventAlert<E extends VendureEvent = never> {
     fn: (
       ctx: RequestContext | undefined,
       injector: Injector,
-      event: E
-    ) => string | AlertMessage | Promise<string | AlertMessage>
+      event: E,
+    ) => string | AlertMessage | Promise<string | AlertMessage>,
   ): this {
     this.eventNotifyFn = fn;
     return this;

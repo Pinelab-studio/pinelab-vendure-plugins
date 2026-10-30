@@ -6,8 +6,8 @@ import {
   RequestContext,
   ShippingEligibilityChecker,
 } from '@vendure/core';
-import { isEligibleForCountry } from './shipping-util';
 import { ShippingExtensionsPlugin } from '../../shipping-extensions.plugin';
+import { isEligibleForCountry } from './shipping-util';
 
 let injector: Injector;
 
@@ -82,7 +82,7 @@ export const facetAndCountryChecker = new ShippingEligibilityChecker({
     const isEligibleByCountry = isEligibleForCountry(
       order,
       countries,
-      excludeCountries
+      excludeCountries,
     );
     if (isEligibleByCountry === false) {
       return false;
@@ -103,7 +103,7 @@ export const facetAndCountryChecker = new ShippingEligibilityChecker({
         ctx,
         injector,
         order,
-        method
+        method,
       );
     if (additionalIsEligible === false) {
       return false;

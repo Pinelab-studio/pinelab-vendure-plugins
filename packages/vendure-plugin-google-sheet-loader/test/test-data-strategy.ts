@@ -1,4 +1,4 @@
-import { RequestContext, Injector } from '@vendure/core';
+import { Injector, RequestContext } from '@vendure/core';
 import { GoogleSheetDataStrategy, SheetContent } from '../src';
 
 const HEADERS = {
@@ -18,7 +18,7 @@ export class TestDataStrategy implements GoogleSheetDataStrategy {
     };
   }
 
-  validateSheetData(ctx: RequestContext, sheets: SheetContent[]) {
+  validateSheetData(_ctx: RequestContext, sheets: SheetContent[]) {
     if (sheets.length !== 1) {
       return 'Only one sheet named "Prijzen" is expected.';
     }
@@ -31,7 +31,7 @@ export class TestDataStrategy implements GoogleSheetDataStrategy {
         headerErrors.push(
           `Expected '${headerName}' for column ${index + 1}, but got '${
             headerRow[index]
-          }'.`
+          }'.`,
         );
       }
     }
@@ -42,9 +42,9 @@ export class TestDataStrategy implements GoogleSheetDataStrategy {
   }
 
   async handleSheetData(
-    ctx: RequestContext,
-    injector: Injector,
-    sheets: SheetContent[]
+    _ctx: RequestContext,
+    _injector: Injector,
+    sheets: SheetContent[],
   ): Promise<string> {
     return `Successfully processed ${sheets[0].data.length} rows`;
   }

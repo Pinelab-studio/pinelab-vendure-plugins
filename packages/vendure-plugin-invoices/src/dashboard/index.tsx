@@ -1,6 +1,6 @@
 import { defineDashboardExtension } from '@vendure/dashboard';
-import { invoiceListRoute } from './components/InvoiceListPage';
 import { invoiceConfigRoute } from './components/InvoiceConfigPage';
+import { invoiceListRoute } from './components/InvoiceListPage';
 import { OrderInvoicesBlock } from './components/OrderInvoicesBlock';
 import { RegenerateInvoiceButton } from './components/RegenerateInvoiceButton';
 

@@ -11,8 +11,8 @@ import {
   registerInitializer,
   SimpleGraphQLClient,
   SqljsInitializer,
-  testConfig,
   TestServer,
+  testConfig,
 } from '@vendure/testing';
 import { gql } from 'graphql-tag';
 import { beforeAll, expect, it } from 'vitest';
@@ -46,14 +46,14 @@ beforeAll(async () => {
         },
         webhookSecret: '1234',
         productSync: {
-          getAdditionalVariantFields: (ctx, variant) => ({
+          getAdditionalVariantFields: (_ctx, variant) => ({
             ean: variant.sku,
           }),
           saveAdditionalVariantData: async (
-            ctx,
-            injector,
+            _ctx,
+            _injector,
             qlsProduct,
-            variant
+            variant,
           ) => {
             additionalVariantData.push({
               sku: qlsProduct.sku,
@@ -62,7 +62,7 @@ beforeAll(async () => {
           },
         },
         orderSync: {
-          addAdditionalOrderItems: async (ctx, injector, order) => {
+          addAdditionalOrderItems: async (_ctx, _injector, _order) => {
             return [
               {
                 name: 'Additional free gift',
@@ -96,7 +96,6 @@ beforeAll(async () => {
 
 import { beforeEach, vi } from 'vitest';
 import { getAllVariants } from '../../test/src/admin-utils';
-import getFilesInAdminUiFolder from '../../test/src/compile-admin-ui.util';
 import { createSettledOrder } from '../../test/src/shop-utils';
 import { waitFor } from '../../test/src/test-helpers';
 import { createMockResponse } from './util';
@@ -141,7 +140,7 @@ async function getOrderTrackingCustomFields(orderCode: string): Promise<{
         }
       }
     `,
-    { code: orderCode }
+    { code: orderCode },
   );
   return orders.items[0]?.customFields;
 }
@@ -151,8 +150,8 @@ it('Should start successfully', async () => {
 });
 
 it('Runs full sync', async () => {
-  let createdProducts: FulfillmentProduct[] = [];
-  let updatedProducts: FulfillmentProduct[] = [];
+  const createdProducts: FulfillmentProduct[] = [];
+  const updatedProducts: FulfillmentProduct[] = [];
   vi.stubGlobal(
     'fetch',
     vi.fn((url: string, init: any = {}) => {
@@ -200,7 +199,7 @@ it('Runs full sync', async () => {
       }
       // Non-QLS requests (e.g. the GraphQL test client) go to the real server
       return realFetch(url, init);
-    })
+    }),
   );
   await adminClient.asSuperAdmin();
   await adminClient.query(gql`
@@ -210,10 +209,10 @@ it('Runs full sync', async () => {
   `);
   await waitFor(() => createdProducts.length > 0 && updatedProducts.length > 0);
   expect(createdProducts[0]).toEqual(
-    '{"name":"Laptop 13 inch 8GB","sku":"L2201308","ean":"L2201308"}'
+    '{"name":"Laptop 13 inch 8GB","sku":"L2201308","ean":"L2201308"}',
   );
   expect(updatedProducts[0]).toEqual(
-    '{"sku":"L2201508","name":"Laptop 15 inch 8GB","ean":"L2201508"}'
+    '{"sku":"L2201508","name":"Laptop 15 inch 8GB","ean":"L2201508"}',
   );
   const variants = await getAllVariants(adminClient);
   // This is the variant that should have received stock from QLS
@@ -226,7 +225,7 @@ it('Throws forbidden for invalid secret when updating stock via webhook', async 
     `http://localhost:3050/qls/webhook/${E2E_DEFAULT_CHANNEL_TOKEN}?secret=not-valid-secret`,
     {
       method: 'POST',
-    }
+    },
   );
   expect(res.status).toBe(403);
 });
@@ -243,7 +242,7 @@ it('Updates stock and saves additional data via webhook', async () => {
   // Get initial stock before webhook
   const variantsBefore = await getAllVariants(adminClient);
   const productBefore = variantsBefore.find(
-    (variant) => variant.sku === 'L2201308'
+    (variant) => variant.sku === 'L2201308',
   );
   const initialStock = productBefore?.stockOnHand ?? 0;
 
@@ -260,7 +259,7 @@ it('Updates stock and saves additional data via webhook', async () => {
         amount_reserved: 0,
         amount_total: 12,
       }),
-    }
+    },
   );
   expect(res.status).toBe(201);
   await waitFor(() => events.length > 0);
@@ -288,7 +287,7 @@ it('Does not update stock when stock sync is disabled', async () => {
         sku: 'L2201308',
         amount_available: 1234,
       }),
-    }
+    },
   );
   expect(res.status).toBe(201);
   const variants = await getAllVariants(adminClient);
@@ -299,9 +298,9 @@ it('Does not update stock when stock sync is disabled', async () => {
 it('Pushes order to QLS', async () => {
   // Test excluded product as well
   QlsPlugin.options.productSync.excludeVariantFromSync = (
-    ctx,
-    injector,
-    variant
+    _ctx,
+    _injector,
+    variant,
   ) => {
     if (variant.sku === 'L2201516') {
       return true;
@@ -310,9 +309,9 @@ it('Pushes order to QLS', async () => {
   };
   // Add additional order fields
   QlsPlugin.options.orderSync.pushAdditionalOrderFields = (
-    ctx,
-    injector,
-    order
+    _ctx,
+    _injector,
+    _order,
   ) => {
     return {
       delivery_options: [{ tag: 'dhl-germany-national' }],
@@ -320,10 +319,10 @@ it('Pushes order to QLS', async () => {
   };
   const pulledOrders: Array<{ orderCode: string; qlsId: string }> = [];
   QlsPlugin.options.orderSync.pullAdditionalOrderFields = (
-    ctx,
-    injector,
+    _ctx,
+    _injector,
     order,
-    qlsOrder
+    qlsOrder,
   ) => {
     pulledOrders.push({ orderCode: order.code, qlsId: qlsOrder.id });
   };
@@ -340,14 +339,14 @@ it('Pushes order to QLS', async () => {
       }
       // Non-QLS requests (e.g. the GraphQL test client) go to the real server
       return realFetch(url, init);
-    })
+    }),
   );
   const variants = await getAllVariants(adminClient);
   const L2201516 = variants.find((variant) => variant.sku === 'L2201516');
   const L2201508 = variants.find((variant) => variant.sku === 'L2201508');
   await createSettledOrder(shopClient, 1, true, [
-    { id: L2201508!.id, quantity: 1 },
-    { id: L2201516!.id, quantity: 1 }, // Should be excluded
+    { id: L2201508?.id, quantity: 1 },
+    { id: L2201516?.id, quantity: 1 }, // Should be excluded
   ]);
   await waitFor(() => createdOrders.length > 0);
   expect(JSON.parse(createdOrders[0])).toEqual({
@@ -420,7 +419,7 @@ it('Emits QlsOrderFailedEvent when order push fails', async () => {
         },
         text: async () => JSON.stringify(errorResponse),
       };
-    })
+    }),
   );
   await createSettledOrder(shopClient, 1, true, [{ id: '1', quantity: 1 }]);
   await waitFor(() => events.length > 0);

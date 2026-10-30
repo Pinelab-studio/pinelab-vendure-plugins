@@ -7,13 +7,13 @@ import {
   ShippingMethod,
   VendurePlugin,
 } from '@vendure/core';
-import { weightAndCountryChecker } from './config/shipping/weight-and-country-checker';
-import { OrderAddressToGeolocationConversionStrategy } from './strategies/order-address-to-geolocation-strategy';
-import { PLUGIN_OPTIONS } from './constants';
-import { distanceBasedShippingCalculator } from './config/shipping/distance-based-shipping-calculator';
 import { orderInCountryPromotionCondition } from './config/order-in-country-promotion-condition';
-import { flatRateItemBasedShippingCalculator } from './config/shipping/flat-rate-item-based-shipping-calculator';
+import { distanceBasedShippingCalculator } from './config/shipping/distance-based-shipping-calculator';
 import { facetAndCountryChecker } from './config/shipping/facet-and-country-checker';
+import { flatRateItemBasedShippingCalculator } from './config/shipping/flat-rate-item-based-shipping-calculator';
+import { weightAndCountryChecker } from './config/shipping/weight-and-country-checker';
+import { PLUGIN_OPTIONS } from './constants';
+import { OrderAddressToGeolocationConversionStrategy } from './strategies/order-address-to-geolocation-strategy';
 
 export interface ShippingExtensionsOptions {
   /**
@@ -36,7 +36,7 @@ export interface ShippingExtensionsOptions {
   weightCalculationFunction?: (
     ctx: RequestContext,
     order: Order,
-    injector: Injector
+    injector: Injector,
   ) => Promise<number>;
 
   /**
@@ -54,7 +54,7 @@ export interface ShippingExtensionsOptions {
     ctx: RequestContext,
     injector: Injector,
     order: Order,
-    method: ShippingMethod
+    method: ShippingMethod,
   ) => Promise<boolean> | boolean;
   /**
    * You can optionally apply a surcharge to the "Flat Rate. Tax based on items in cart" shipping calculator.
@@ -65,7 +65,7 @@ export interface ShippingExtensionsOptions {
     ctx: RequestContext,
     injector: Injector,
     order: Order,
-    method: ShippingMethod
+    method: ShippingMethod,
   ) => Promise<number> | number;
 }
 
@@ -80,14 +80,14 @@ export interface ShippingExtensionsOptions {
   configuration: (config) => {
     config.shippingOptions.shippingEligibilityCheckers.push(
       weightAndCountryChecker,
-      facetAndCountryChecker
+      facetAndCountryChecker,
     );
     config.shippingOptions.shippingCalculators.push(
       distanceBasedShippingCalculator,
-      flatRateItemBasedShippingCalculator
+      flatRateItemBasedShippingCalculator,
     );
     config.promotionOptions.promotionConditions.push(
-      orderInCountryPromotionCondition
+      orderInCountryPromotionCondition,
     );
     config.customFields.Product.push({
       name: 'weight',
@@ -131,12 +131,12 @@ export class ShippingExtensionsPlugin {
   static options: ShippingExtensionsOptions;
 
   static init(
-    options: ShippingExtensionsOptions
+    options: ShippingExtensionsOptions,
   ): typeof ShippingExtensionsPlugin {
     if (!options.weightUnit) {
       options.weightUnit = 'grams';
     }
-    this.options = options;
+    ShippingExtensionsPlugin.options = options;
     return ShippingExtensionsPlugin;
   }
 }

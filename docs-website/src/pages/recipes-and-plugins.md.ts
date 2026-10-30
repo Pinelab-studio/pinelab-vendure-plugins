@@ -1,5 +1,5 @@
-import type { APIRoute } from 'astro';
 import { getCollection } from 'astro:content';
+import type { APIRoute } from 'astro';
 import { markdownLabel, repository } from '../utils/engineering-docs';
 
 /** Publish a discovery index linking to canonical recipe and plugin README files. */
@@ -7,12 +7,12 @@ export const GET: APIRoute = async () => {
   const entries = (
     await getCollection(
       'docs',
-      ({ data }) => data.engineeringPath?.startsWith('docs/recipes/') ?? false
+      ({ data }) => data.engineeringPath?.startsWith('docs/recipes/') ?? false,
     )
   ).sort((a, b) => a.data.title.localeCompare(b.data.title));
   if (!entries.length)
     throw new Error(
-      'Cannot publish recipes-and-plugins.md: no source documents.'
+      'Cannot publish recipes-and-plugins.md: no source documents.',
     );
   const items = entries.map(({ data }) => {
     if (!data.description?.trim())
@@ -32,14 +32,14 @@ export const GET: APIRoute = async () => {
         data.description ?? ''
       )
         .trim()
-        .replace(/\s+/g, ' ')}`
+        .replace(/\s+/g, ' ')}`,
   );
   return new Response(
     `# Recipes and plugins\n\nWhen implementing a feature, check for similar prior work or an existing plugin. Follow the relevant GitHub Markdown links before writing code; prefer an existing plugin when it fits.\n\n## Recipes\n\n${items.join(
-      '\n'
+      '\n',
     )}\n\n## Plugins\n\n${pluginItems.join('\n')}\n`,
     {
       headers: { 'Content-Type': 'text/markdown; charset=utf-8' },
-    }
+    },
   );
 };

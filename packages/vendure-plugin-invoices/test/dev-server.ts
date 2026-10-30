@@ -1,24 +1,24 @@
-import { initialData } from '../../test/src/initial-data';
-import {
-  createTestEnvironment,
-  registerInitializer,
-  SqljsInitializer,
-} from '@vendure/testing';
 import {
   JobQueueService,
   RequestContextService,
   VendureConfig,
 } from '@vendure/core';
-import { testPaymentMethod } from '../../test/src/test-payment-method';
+import {
+  createTestEnvironment,
+  registerInitializer,
+  SqljsInitializer,
+} from '@vendure/testing';
 import { addShippingMethod } from '../../test/src/admin-utils';
-import { InvoiceService } from '../src';
+import { initialData } from '../../test/src/initial-data';
 import { createSettledOrder } from '../../test/src/shop-utils';
+import { testPaymentMethod } from '../../test/src/test-payment-method';
+import { InvoiceService } from '../src';
 import { config } from './vendure-config';
 
 (async () => {
   registerInitializer('sqljs', new SqljsInitializer('__data__'));
   const { server, adminClient, shopClient } = createTestEnvironment(
-    config as Required<VendureConfig>
+    config as Required<VendureConfig>,
   );
   await server.init({
     initialData: {
@@ -69,7 +69,7 @@ import { config } from './vendure-config';
           postalCode: '736 XX',
           countryCode: 'NL',
         },
-      }
+      },
     );
   }
   console.log(`Created ${orders} orders`);

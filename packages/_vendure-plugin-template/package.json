@@ -26,7 +26,7 @@
     "start": "nodemon --watch src --exec ts-node test/dev-server.ts",
     "generate": "graphql-codegen",
     "test": "vitest run --bail 1",
-    "lint": "eslint ."
+    "lint": "biome check ."
   },
   "dependencies": {
     "catch-unknown": "^2.0.0"

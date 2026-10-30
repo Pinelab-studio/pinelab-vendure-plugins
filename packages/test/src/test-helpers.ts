@@ -9,7 +9,7 @@
 export async function waitFor<T>(
   conditionFn: () => Promise<T | undefined> | T | undefined,
   interval = 100,
-  timeout = 10000
+  timeout = 10000,
 ) {
   const startTime = Date.now();
   let result: T | undefined;

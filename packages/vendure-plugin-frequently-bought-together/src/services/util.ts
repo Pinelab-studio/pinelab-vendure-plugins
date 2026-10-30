@@ -7,7 +7,7 @@ import { Support } from '../types';
  */
 export function getRelatedProductsPerProduct(
   itemSets: Itemset<ID>[],
-  maxRelatedProducts: number
+  maxRelatedProducts: number,
 ): Map<ID, Support[]> {
   // Sort lowest to highest support
   itemSets.sort((a, b) => b.support - a.support);

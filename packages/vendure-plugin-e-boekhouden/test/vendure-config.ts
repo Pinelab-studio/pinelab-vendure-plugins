@@ -1,18 +1,17 @@
 require('dotenv').config();
 
+import path from 'node:path';
 import {
   DefaultLogger,
   DefaultSearchPlugin,
-  InitialData,
   LogLevel,
   mergeConfig,
   VendureConfig,
 } from '@vendure/core';
-import { testConfig } from '@vendure/testing';
 import { DashboardPlugin } from '@vendure/dashboard/plugin';
-import path from 'path';
-import { EBoekhoudenPlugin } from '../src';
+import { testConfig } from '@vendure/testing';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
+import { EBoekhoudenPlugin } from '../src';
 
 export const config: VendureConfig = mergeConfig(testConfig, {
   logger: new DefaultLogger({ level: LogLevel.Debug }),
@@ -25,7 +24,7 @@ export const config: VendureConfig = mergeConfig(testConfig, {
   },
   plugins: [
     EBoekhoudenPlugin.init({
-      getTaxCode: (ctx, order, taxRate) => {
+      getTaxCode: (_ctx, _order, _taxRate) => {
         // Just testing
         return 'HOOG_VERK_21';
       },

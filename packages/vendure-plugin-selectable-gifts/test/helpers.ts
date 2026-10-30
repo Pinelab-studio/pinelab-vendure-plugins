@@ -1,6 +1,6 @@
+import { CreatePromotionInput } from '@vendure/common/lib/generated-types';
 import { ProductVariant, Promotion } from '@vendure/core';
 import { SimpleGraphQLClient } from '@vendure/testing';
-import { CreatePromotionInput } from '@vendure/common/lib/generated-types';
 import { gql } from 'graphql-tag';
 
 const orderFragment = gql`
@@ -143,7 +143,7 @@ export async function createPromotion(
   adminClient: SimpleGraphQLClient,
   promotionName: string,
   variantsAsGifts: string[],
-  conditions: CreatePromotionInput['conditions']
+  conditions: CreatePromotionInput['conditions'],
 ): Promise<Promotion> {
   const input = {
     input: {
@@ -189,13 +189,13 @@ export async function createPromotion(
         }
       }
     `,
-    input
+    input,
   );
   return createPromotion;
 }
 
 export async function getEligibleGifts(
-  shopClient: SimpleGraphQLClient
+  shopClient: SimpleGraphQLClient,
 ): Promise<ProductVariant[]> {
   const { eligibleGifts } = await shopClient.query(ELIGIBLE_GIFTS);
   return eligibleGifts;

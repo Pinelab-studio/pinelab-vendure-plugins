@@ -1,21 +1,21 @@
 import { ErrorResult, Order } from '@vendure/core';
 import { SimpleGraphQLClient } from '@vendure/testing';
 import {
-  SetBillingAddress,
   AddItemToOrder,
   AddPaymentToOrder,
   AddPaymentToOrderMutation,
   ApplyCouponCode,
+  GetActiveOrder,
+  GetActiveOrderQuery,
   OrderFieldsFragment,
+  SetBillingAddress,
+  SetBillingAddressMutationVariables,
   SetShippingAddress,
   SetShippingAddressMutationVariables,
   SetShippingMethod,
   TransitionToState,
   TransitionToStateMutation,
   TransitionToStateMutationVariables,
-  SetBillingAddressMutationVariables,
-  GetActiveOrder,
-  GetActiveOrderQuery,
 } from './generated/shop-graphql';
 import { testPaymentMethod } from './test-payment-method';
 
@@ -26,7 +26,7 @@ export async function setAddressAndShipping(
   shopClient: SimpleGraphQLClient,
   shippingMethodId: string | number,
   shippingAddress?: SetShippingAddressMutationVariables,
-  billingAddress?: SetBillingAddressMutationVariables
+  billingAddress?: SetBillingAddressMutationVariables,
 ): Promise<void> {
   const finalShippingAddress = shippingAddress ?? {
     input: {
@@ -54,13 +54,13 @@ export async function proceedToArrangingPayment(
   shopClient: SimpleGraphQLClient,
   shippingMethodId: string | number,
   shippingAddress: SetShippingAddressMutationVariables,
-  billingAddress?: SetBillingAddressMutationVariables
+  billingAddress?: SetBillingAddressMutationVariables,
 ): Promise<TransitionToStateMutation['transitionOrderToState']> {
   await setAddressAndShipping(
     shopClient,
     shippingMethodId,
     shippingAddress,
-    billingAddress
+    billingAddress,
   );
   const result = await shopClient.query<
     TransitionToStateMutation,
@@ -74,7 +74,7 @@ export async function proceedToArrangingPayment(
  */
 export async function addPaymentToOrder(
   shopClient: SimpleGraphQLClient,
-  code: string
+  code: string,
 ): Promise<AddPaymentToOrderMutation['addPaymentToOrder']> {
   const { addPaymentToOrder } = await shopClient.query(AddPaymentToOrder, {
     input: {
@@ -93,7 +93,7 @@ export async function addPaymentToOrder(
 export async function addItem(
   shopClient: SimpleGraphQLClient,
   variantId: string,
-  quantity: number
+  quantity: number,
 ): Promise<Order> {
   const { addItemToOrder } = await shopClient.query(AddItemToOrder, {
     productVariantId: variantId,
@@ -103,7 +103,7 @@ export async function addItem(
 }
 
 export async function getActiveOrder(
-  shopClient: SimpleGraphQLClient
+  shopClient: SimpleGraphQLClient,
 ): Promise<GetActiveOrderQuery['activeOrder'] | undefined> {
   const { activeOrder } = await shopClient.query(GetActiveOrder);
   return activeOrder;
@@ -111,7 +111,7 @@ export async function getActiveOrder(
 
 export async function applyCouponCode(
   shopClient: SimpleGraphQLClient,
-  couponCode: string
+  couponCode: string,
 ): Promise<OrderFieldsFragment> {
   const { applyCouponCode } = await shopClient.query(ApplyCouponCode, {
     couponCode,
@@ -137,12 +137,12 @@ export async function createSettledOrder(
   ],
   billingAddress?: SetBillingAddressMutationVariables,
   shippingAddress?: SetShippingAddressMutationVariables,
-  paymentMethodCode: string = testPaymentMethod.code
+  paymentMethodCode: string = testPaymentMethod.code,
 ): Promise<SettledOrder> {
   if (authorizeFirst) {
     await shopClient.asUserWithCredentials(
       'hayden.zieme12@hotmail.com',
-      'test'
+      'test',
     );
   }
   for (const v of variants) {
@@ -165,7 +165,7 @@ export async function createSettledOrder(
     shopClient,
     shippingMethodId,
     orderShippingAddress,
-    billingAddress
+    billingAddress,
   );
   if ((res as ErrorResult)?.errorCode) {
     console.error(JSON.stringify(res));
@@ -174,7 +174,7 @@ export async function createSettledOrder(
   const order = await addPaymentToOrder(shopClient, paymentMethodCode);
   if ((order as ErrorResult).errorCode) {
     throw new Error(
-      `Failed to create settled order: ${(order as ErrorResult).message}`
+      `Failed to create settled order: ${(order as ErrorResult).message}`,
     );
   }
   return order as SettledOrder;

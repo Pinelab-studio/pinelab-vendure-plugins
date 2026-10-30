@@ -1,5 +1,5 @@
-import { api, DropdownMenuItem } from '@vendure/dashboard';
 import { useMutation } from '@tanstack/react-query';
+import { api, DropdownMenuItem } from '@vendure/dashboard';
 import { RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 

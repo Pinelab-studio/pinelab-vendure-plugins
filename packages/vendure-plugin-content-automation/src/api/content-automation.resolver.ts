@@ -18,7 +18,7 @@ export class ContentAutomationResolver {
   @Allow(Permission.ReadCatalog)
   async contentAutomationUpdates(
     @Ctx() ctx: RequestContext,
-    @Args('options') options?: ListQueryOptions<ContentAutomationUpdate>
+    @Args('options') options?: ListQueryOptions<ContentAutomationUpdate>,
   ): Promise<PaginatedList<ContentAutomationUpdate>> {
     return this.service.findUpdates(ctx, options);
   }

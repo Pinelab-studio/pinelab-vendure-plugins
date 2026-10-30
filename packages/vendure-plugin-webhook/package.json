@@ -1,6 +1,6 @@
 {
   "name": "@pinelab/vendure-plugin-webhook",
-  "version": "1.8.0",
+  "version": "1.9.0",
   "description": "Call webhooks based on configured events from Vendure",
   "author": "Martijn van de Brug <martijn@pinelab.studio>",
   "homepage": "https://plugins.pinelab.studio/",
@@ -18,10 +18,10 @@
     "CHANGELOG.md"
   ],
   "scripts": {
-    "build": "yarn graphql-codegen && rimraf dist && tsc && copyfiles -u 1 'src/ui/**/*' dist/",
+    "build": "yarn graphql-codegen && rimraf dist && tsc",
     "start": "yarn ts-node test/dev-server.ts",
     "test": "vitest run",
-    "lint": "echo 'No linting configured'"
+    "lint": "biome check ."
   },
   "gitHead": "476f36da3aafea41fbf21c70774a30306f1d238f"
 }

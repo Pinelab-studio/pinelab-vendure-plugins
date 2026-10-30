@@ -1,7 +1,7 @@
+import fs from 'node:fs/promises';
+import { Controller, Get, Headers, Res } from '@nestjs/common';
 import { PluginCommonModule, VendurePlugin } from '@vendure/core';
-import { Body, Controller, Get, Headers, Res } from '@nestjs/common';
 import { Response } from 'express';
-import fs from 'fs/promises';
 import Handlebars from 'handlebars';
 
 interface CommonResult {
@@ -36,13 +36,13 @@ export class CheckoutController {
   // Returns the Accept Blue Hosted tokenization form
   @Get('checkout')
   async checkout(
-    @Headers('X-signature') signature: string | undefined,
-    @Res() res: Response
+    @Headers('X-signature') _signature: string | undefined,
+    @Res() res: Response,
   ): Promise<void> {
     // Load HTML file
     const html = await fs.readFile(
       `${__dirname}/hosted-tokenization.html`,
-      'utf8'
+      'utf8',
     );
     // Replace variables with handlebars
     const renderedHtml = Handlebars.compile(html)({
@@ -55,8 +55,8 @@ export class CheckoutController {
   // Returns a test google Pay form
   @Get('google-pay')
   async googlePay(
-    @Headers('X-signature') signature: string | undefined,
-    @Res() res: Response
+    @Headers('X-signature') _signature: string | undefined,
+    @Res() res: Response,
   ): Promise<void> {
     // Load HTML file
     const html = await fs.readFile(`${__dirname}/google-pay.html`, 'utf8');

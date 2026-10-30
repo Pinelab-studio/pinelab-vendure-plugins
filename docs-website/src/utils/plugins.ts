@@ -14,7 +14,7 @@ export async function getContributors() {
   for (let page = 1; ; page++) {
     const response = await fetch(
       `https://api.github.com/repos/Pinelab-studio/pinelab-vendure-plugins/contributors?per_page=100&page=${page}`,
-      { signal: AbortSignal.timeout(30_000) }
+      { signal: AbortSignal.timeout(30_000) },
     );
     if (!response.ok) {
       throw new Error(`Unable to fetch contributors (${response.status})`);
@@ -30,14 +30,14 @@ export async function getPlugins() {
   const snapshot = JSON.parse(
     await readFile(
       new URL('../../plugin-downloads.json', import.meta.url),
-      'utf8'
-    )
+      'utf8',
+    ),
   ) as { downloads: Record<string, number> };
   const directories = await readdir(packages, { withFileTypes: true });
   const plugins = await Promise.all(
     directories
       .filter(
-        (directory) => directory.isDirectory() && !excluded.has(directory.name)
+        (directory) => directory.isDirectory() && !excluded.has(directory.name),
       )
       .map(async (directory) => {
         const base = new URL(`${directory.name}/`, packages);
@@ -53,13 +53,13 @@ export async function getPlugins() {
         };
         const sourceFiles = await readdir(new URL('src/', base));
         const pluginFile = sourceFiles.find((file) =>
-          file.endsWith('.plugin.ts')
+          file.endsWith('.plugin.ts'),
         );
         const pluginSource = pluginFile
           ? await readFile(new URL(`src/${pluginFile}`, base), 'utf8')
           : '';
         const compatibility = pluginSource.match(
-          /compatibility:\s*['"]([^'"]+)['"]/
+          /compatibility:\s*['"]([^'"]+)['"]/,
         )?.[1];
         const title = readme.split('\n')[0].replace(/^#\s*/, '').trim();
         return {
@@ -72,10 +72,10 @@ export async function getPlugins() {
           readme: readme.replace(/^.*Official documentation.*$/gm, ''),
           changelog,
         };
-      })
+      }),
   );
   return plugins.sort(
     (a, b) =>
-      b.monthlyDownloads - a.monthlyDownloads || a.title.localeCompare(b.title)
+      b.monthlyDownloads - a.monthlyDownloads || a.title.localeCompare(b.title),
   );
 }

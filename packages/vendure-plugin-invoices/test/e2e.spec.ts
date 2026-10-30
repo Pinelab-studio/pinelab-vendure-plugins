@@ -1,3 +1,4 @@
+import { promises as fs } from 'node:fs';
 import {
   assertFound,
   DefaultLogger,
@@ -19,12 +20,13 @@ import {
 } from '@vendure/testing';
 import { TestServer } from '@vendure/testing/lib/test-server';
 import { getSuperadminContext } from '@vendure/testing/lib/utils/get-superadmin-context';
+import gql from 'graphql-tag';
 import fetch from 'node-fetch';
-import { promises as fs } from 'fs';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { addShippingMethod, cancelOrder } from '../../test/src/admin-utils';
 import { initialData } from '../../test/src/initial-data';
 import { createSettledOrder } from '../../test/src/shop-utils';
+import { waitFor } from '../../test/src/test-helpers';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
 import {
   defaultTemplate,
@@ -35,8 +37,6 @@ import {
 } from '../src';
 import { InvoiceCreatedEvent } from '../src/services/invoice-created-event';
 import { MockAccountingStrategy } from './mock-accounting-strategy';
-import gql from 'graphql-tag';
-import { waitFor } from '../../test/src/test-helpers';
 
 const invoiceFragment = gql`
   fragment invoiceFields on Invoice {
@@ -114,7 +114,7 @@ let events: InvoiceCreatedEvent[] = [];
 
 // Accounting strategy
 const mockAccountingStrategy = new MockAccountingStrategy(
-  'e2e-default-channel'
+  'e2e-default-channel',
 );
 const mockAccountingStrategySpy = {
   init: vi.spyOn(mockAccountingStrategy, 'init'),
@@ -180,11 +180,11 @@ it('Should start successfully', async () => {
 it('Initialized accounting export strategies', async () => {
   // Has been called at least once. During test DB init its called twice, after that once
   expect(
-    mockAccountingStrategySpy.init.mock.calls.length
+    mockAccountingStrategySpy.init.mock.calls.length,
   ).toBeGreaterThanOrEqual(1);
 });
 
-describe('Generate with credit invoicing enabled', function () {
+describe('Generate with credit invoicing enabled', () => {
   it('Upserts config', async () => {
     await adminClient.asSuperAdmin();
     const result = await adminClient.query<
@@ -225,7 +225,7 @@ describe('Generate with credit invoicing enabled', function () {
     expect(latestInvoice.invoiceNumber).toBe(10001);
     expect(latestInvoice.isCreditInvoice).toBe(false);
     expect(latestInvoice.downloadUrl).toContain(
-      `/invoices/e2e-default-channel/${order.code}/10001?email=hayden.zieme12%40hotmail.com`
+      `/invoices/e2e-default-channel/${order.code}/10001?email=hayden.zieme12%40hotmail.com`,
     );
   });
 
@@ -271,7 +271,7 @@ describe('Generate with credit invoicing enabled', function () {
         shippingWithTax: 0,
       });
     order = await assertFound(
-      server.app.get(OrderService).findOne(ctx, orderId)
+      server.app.get(OrderService).findOne(ctx, orderId),
     );
     expect(order.total).toBe(1234);
     expect(order.totalWithTax).toBe(1480);
@@ -289,7 +289,7 @@ describe('Generate with credit invoicing enabled', function () {
       }
     });
     expect(invoice.accountingReference?.errorMessage).toContain(
-      'has changed compared to the invoice'
+      'has changed compared to the invoice',
     );
   });
 
@@ -301,7 +301,7 @@ describe('Generate with credit invoicing enabled', function () {
     expect(latestInvoice.invoiceNumber).toBe(10003); // credit invoice is #2
     expect(latestInvoice.isCreditInvoice).toBe(false);
     expect(latestInvoice.downloadUrl).toContain(
-      `/invoices/e2e-default-channel/${order.code}/10003?email=hayden.zieme12%40hotmail.com`
+      `/invoices/e2e-default-channel/${order.code}/10003?email=hayden.zieme12%40hotmail.com`,
     );
   });
 
@@ -317,10 +317,10 @@ describe('Generate with credit invoicing enabled', function () {
     expect(newInvoice.isCreditInvoice).toBe(false);
     // Credit invoice should have the reversed totals of the previous invoice
     expect(creditInvoice.orderTotals.total).toBe(
-      -previousInvoice.orderTotals.total
+      -previousInvoice.orderTotals.total,
     );
     expect(creditInvoice.orderTotals.totalWithTax).toBe(
-      -previousInvoice.orderTotals.totalWithTax
+      -previousInvoice.orderTotals.totalWithTax,
     );
     // New invoice should have the modified totals
     expect(newInvoice.orderTotals.total).toBe(1234);
@@ -368,7 +368,7 @@ describe('Generate with credit invoicing enabled', function () {
         exportInvoiceToAccountingPlatform(invoiceNumber: 10002)
       }
     `);
-    const [ctx, invoice, isCreditInvoiceFor] = await waitFor(() => {
+    const [_ctx, invoice, isCreditInvoiceFor] = await waitFor(() => {
       return mockAccountingStrategySpy.exportCreditInvoice.mock.calls[1];
     });
     expect(exportInvoiceToAccountingPlatform).toBe(true);
@@ -392,10 +392,10 @@ describe('Generate with credit invoicing enabled', function () {
   });
 });
 
-describe('Download invoices', function () {
+describe('Download invoices', () => {
   it('Downloads first invoice when no invoice number is specified', async () => {
     const res = await fetch(
-      `http://localhost:3106/invoices/e2e-default-channel/${order.code}?email=hayden.zieme12%40hotmail.com`
+      `http://localhost:3106/invoices/e2e-default-channel/${order.code}?email=hayden.zieme12%40hotmail.com`,
     );
     expect(res.status).toBe(200);
     expect(res.headers.get('Content-type')).toBe('application/pdf');
@@ -404,7 +404,7 @@ describe('Download invoices', function () {
 
   it('Downloads a pdf via URL with invoice number', async () => {
     const res = await fetch(
-      `http://localhost:3106/invoices/e2e-default-channel/${order.code}/10001?email=hayden.zieme12%40hotmail.com`
+      `http://localhost:3106/invoices/e2e-default-channel/${order.code}/10001?email=hayden.zieme12%40hotmail.com`,
     );
     expect(res.status).toBe(200);
     expect(res.headers.get('Content-type')).toBe('application/pdf');
@@ -413,14 +413,14 @@ describe('Download invoices', function () {
 
   it('Download fails for invalid email', async () => {
     const res = await fetch(
-      `http://localhost:3106/invoices/e2e-default-channel/${order.code}?email=malicious@gmail.com`
+      `http://localhost:3106/invoices/e2e-default-channel/${order.code}?email=malicious@gmail.com`,
     );
     expect(res.status).toBe(403);
   });
 
   it('Download fails for invalid channel', async () => {
     const res = await fetch(
-      `http://localhost:3106/invoices/wrong-channel/${order.code}?email=hayden.zieme12%40hotmail.com`
+      `http://localhost:3106/invoices/wrong-channel/${order.code}?email=hayden.zieme12%40hotmail.com`,
     );
     expect(res.status).toBe(403);
     const json = await res.json();
@@ -433,7 +433,7 @@ describe('Download invoices', function () {
       {
         method: 'POST',
         body: JSON.stringify({ template: defaultTemplate }),
-      }
+      },
     );
     expect(res.status).toBe(201);
   });
@@ -444,7 +444,7 @@ describe('Download invoices', function () {
       {
         method: 'POST',
         body: JSON.stringify({ template: defaultTemplate }),
-      }
+      },
     );
     expect(res.status).toBe(403);
   });
@@ -459,16 +459,16 @@ describe('Download invoices', function () {
     });
     expect(invoice).toBeDefined();
     // Delete the invoice file from disk
-    await fs.unlink(invoice!.storageReference);
+    await fs.unlink(invoice?.storageReference);
     // Attempt to download - should return 403 instead of crashing the server
     const res = await fetch(
-      `http://localhost:3106/invoices/e2e-default-channel/${order.code}/10001?email=hayden.zieme12%40hotmail.com`
+      `http://localhost:3106/invoices/e2e-default-channel/${order.code}/10001?email=hayden.zieme12%40hotmail.com`,
     );
     expect(res.status).toBe(403);
   });
 });
 
-describe('Generate without credit invoicing', function () {
+describe('Generate without credit invoicing', () => {
   it('Resets events', async () => {
     events = [];
   });
@@ -503,7 +503,7 @@ describe('Generate without credit invoicing', function () {
     expect(latestInvoice.invoiceNumber).toBe(10005);
     expect(latestInvoice.isCreditInvoice).toBe(false);
     expect(latestInvoice.downloadUrl).toContain(
-      `/invoices/e2e-default-channel/${order.code}/10005?email=hayden.zieme12%40hotmail.com`
+      `/invoices/e2e-default-channel/${order.code}/10005?email=hayden.zieme12%40hotmail.com`,
     );
   });
 
@@ -522,7 +522,7 @@ describe('Generate without credit invoicing', function () {
     expect(latestInvoice.invoiceNumber).toBe(10006);
     expect(latestInvoice.isCreditInvoice).toBe(false);
     expect(latestInvoice.downloadUrl).toContain(
-      `/invoices/e2e-default-channel/${order.code}/10006?email=hayden.zieme12%40hotmail.com`
+      `/invoices/e2e-default-channel/${order.code}/10006?email=hayden.zieme12%40hotmail.com`,
     );
   });
 
@@ -534,7 +534,7 @@ describe('Generate without credit invoicing', function () {
   });
 });
 
-describe('Concurrent invoice generation', function () {
+describe('Concurrent invoice generation', () => {
   let concurrentOrder1: any;
   let concurrentOrder2: any;
 
@@ -557,12 +557,12 @@ describe('Concurrent invoice generation', function () {
     expect(result1.createInvoice.invoiceNumber).toBeDefined();
     expect(result2.createInvoice.invoiceNumber).toBeDefined();
     expect(result1.createInvoice.invoiceNumber).not.toBe(
-      result2.createInvoice.invoiceNumber
+      result2.createInvoice.invoiceNumber,
     );
   }, 30000);
 });
 
-describe('Puppeteer launch options', function () {
+describe('Puppeteer launch options', () => {
   it('Uses PUPPETEER_EXECUTABLE_PATH when set', async () => {
     process.env.PUPPETEER_EXECUTABLE_PATH = '/tmp/fake-chrome-for-test';
     try {
@@ -571,7 +571,7 @@ describe('Puppeteer launch options', function () {
         {
           method: 'POST',
           body: JSON.stringify({ template: defaultTemplate }),
-        }
+        },
       );
       // Puppeteer should fail because the binary at that path doesn't exist,
       // proving the env var was forwarded to puppeteer.launch().
@@ -588,7 +588,7 @@ describe('Puppeteer launch options', function () {
       {
         method: 'POST',
         body: JSON.stringify({ template: defaultTemplate }),
-      }
+      },
     );
     // Falls back to bundled Chrome and succeeds
     expect(res.status).toBe(201);

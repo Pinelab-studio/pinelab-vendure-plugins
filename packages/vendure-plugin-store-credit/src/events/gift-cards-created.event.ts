@@ -1,4 +1,4 @@
-import { VendureEvent, RequestContext, Order } from '@vendure/core';
+import { Order, RequestContext, VendureEvent } from '@vendure/core';
 import { Wallet } from '../entities/wallet.entity';
 
 /**
@@ -10,7 +10,7 @@ export class GiftCardsCreatedEvent extends VendureEvent {
   constructor(
     public readonly ctx: RequestContext,
     public readonly wallets: Wallet[],
-    public readonly order: Order
+    public readonly order: Order,
   ) {
     super();
   }

@@ -1,18 +1,17 @@
-import {
-  createTestEnvironment,
-  registerInitializer,
-  SqljsInitializer,
-  testConfig,
-} from '@vendure/testing';
+import path from 'node:path';
+import { AssetServerPlugin } from '@vendure/asset-server-plugin';
 import {
   DefaultLogger,
   DefaultSearchPlugin,
   LogLevel,
   mergeConfig,
 } from '@vendure/core';
-import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
-import { AssetServerPlugin } from '@vendure/asset-server-plugin';
-import path from 'path';
+import {
+  createTestEnvironment,
+  registerInitializer,
+  SqljsInitializer,
+  testConfig,
+} from '@vendure/testing';
 import { initialData } from '../../test/src/initial-data';
 import { PaymentExtensionsPlugin } from '../src/payment-extensions-plugin';
 
@@ -29,10 +28,6 @@ require('dotenv').config();
       }),
       PaymentExtensionsPlugin,
       DefaultSearchPlugin,
-      AdminUiPlugin.init({
-        port: 3002,
-        route: 'admin',
-      }),
     ],
     apiOptions: {
       shopApiPlayground: true,

@@ -1,4 +1,3 @@
-'use strict';
 Object.defineProperty(exports, '__esModule', { value: true });
 exports.testPaymentMethod = void 0;
 const core_1 = require('@vendure/core');
@@ -8,7 +7,7 @@ exports.testPaymentMethod = new core_1.PaymentMethodHandler({
     { languageCode: core_1.LanguageCode.en, value: 'Test Payment Method' },
   ],
   args: {},
-  createPayment: (ctx, order, amount, args, metadata) => {
+  createPayment: (_ctx, _order, amount, _args, metadata) => {
     return {
       amount,
       state: 'Settled',

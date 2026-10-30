@@ -1,5 +1,5 @@
-import { PluginCommonModule, VendurePlugin } from '@vendure/core';
 import { Body, Controller, Get, Headers, Res } from '@nestjs/common';
+import { PluginCommonModule, VendurePlugin } from '@vendure/core';
 import { Response } from 'express';
 import { intent } from '../dev-server';
 
@@ -10,9 +10,9 @@ import { intent } from '../dev-server';
 export class CheckoutController {
   @Get('checkout')
   async webhook(
-    @Headers('stripe-signature') signature: string | undefined,
+    @Headers('stripe-signature') _signature: string | undefined,
     @Res() res: Response,
-    @Body() body: any
+    @Body() _body: any,
   ): Promise<void> {
     const confirmMethod =
       intent.intentType === 'SetupIntent' ? 'confirmSetup' : 'confirmPayment';

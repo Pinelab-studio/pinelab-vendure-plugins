@@ -1,7 +1,9 @@
-import { describe, it, expect } from 'vitest';
-import { isEligibleForCountry } from './shipping-util';
-import { getHighestTaxRateOfOrder } from './shipping-util';
-import { Order, RequestContext, Injector } from '@vendure/core';
+import { Injector, Order, RequestContext } from '@vendure/core';
+import { describe, expect, it } from 'vitest';
+import {
+  getHighestTaxRateOfOrder,
+  isEligibleForCountry,
+} from './shipping-util';
 
 describe('isEligibleForCountry', () => {
   it('Is eligible if the order country is in the list and excludeCountries is false', () => {

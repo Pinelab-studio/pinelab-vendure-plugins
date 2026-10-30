@@ -14,7 +14,7 @@ defineDashboardExtension({
         const { data } = useUtmParameters(context.entity?.id as string);
         return (
           data?.order?.utmParameters.some(
-            (param) => param.attributedValue != null
+            (param) => param.attributedValue != null,
           ) ?? false
         );
       },

@@ -1,9 +1,9 @@
 import { DataTableBulkActionItem } from '@vendure/dashboard';
+import { PrinterIcon } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { PrinterIcon } from 'lucide-react';
-import { TemplateSelectionDialog } from './TemplateSelectionDialog';
 import { downloadOrderPdfs } from '../utils';
+import { TemplateSelectionDialog } from './TemplateSelectionDialog';
 
 /**
  * Bulk action for downloading PDFs for multiple selected orders,

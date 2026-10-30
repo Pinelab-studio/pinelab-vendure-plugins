@@ -1,17 +1,17 @@
 import {
+  LanguageCode,
   PluginCommonModule,
   Type,
   VendurePlugin,
-  LanguageCode,
 } from '@vendure/core';
-import { WalletAdjustment } from './entities/wallet-adjustment.entity';
-import { Wallet } from './entities/wallet.entity';
-import { WalletService } from './services/wallet.service';
+import { AdminResolver } from './api/admin.resolver';
 import { adminApiExtensions, commonApiExtension } from './api/api-extensions';
 import { CommonResolver } from './api/common.resolver';
-import { AdminResolver } from './api/admin.resolver';
 import { storeCreditPaymentHandler } from './config/payment-method-handler';
 import { STORE_CREDIT_PLUGIN_OPTIONS } from './constants';
+import { Wallet } from './entities/wallet.entity';
+import { WalletAdjustment } from './entities/wallet-adjustment.entity';
+import { WalletService } from './services/wallet.service';
 import { StoreCreditPluginOptions } from './types';
 
 @VendurePlugin({
@@ -55,7 +55,7 @@ export class StoreCreditPlugin {
   static options: StoreCreditPluginOptions;
 
   static init(options: StoreCreditPluginOptions): Type<StoreCreditPlugin> {
-    this.options = options;
+    StoreCreditPlugin.options = options;
     return StoreCreditPlugin;
   }
 }

@@ -8,32 +8,32 @@ import {
   Resolver,
 } from '@nestjs/graphql';
 import {
+  DeletionResponse,
+  DeletionResult,
+} from '@vendure/common/lib/generated-types';
+import {
   Allow,
   Ctx,
   Permission,
   RequestContext,
   Transaction,
 } from '@vendure/core';
-import {
-  DeletionResponse,
-  DeletionResult,
-} from '@vendure/common/lib/generated-types';
+import { PLUGIN_INIT_OPTIONS } from '../constants';
+import { ContentEntry } from '../entities/content-entry.entity';
 import { ContentEntryService } from '../services/content-entry.service';
+import { SimpleCmsPluginOptions, TypeDefinition } from '../types';
+import { deriveDisplayName } from './derive-display-name';
+import { flattenEntry } from './flatten-entry';
 import {
   AdminContentEntry,
   MutationCreateContentEntryArgs,
-  MutationUpdateContentEntryArgs,
   MutationDeleteContentEntryArgs,
+  MutationUpdateContentEntryArgs,
   QueryContentEntriesArgs,
   QueryContentEntryArgs,
   SimpleCmsContentType,
   SimpleCmsField,
 } from './generated/graphql';
-import { PLUGIN_INIT_OPTIONS } from '../constants';
-import { SimpleCmsPluginOptions, TypeDefinition } from '../types';
-import { flattenEntry } from './flatten-entry';
-import { deriveDisplayName } from './derive-display-name';
-import { ContentEntry } from '../entities/content-entry.entity';
 
 /**
  * Maps a top-level field definition (primitive | struct | relation)
@@ -87,7 +87,7 @@ export class AdminResolver {
   constructor(
     private readonly contentEntryService: ContentEntryService,
     @Inject(PLUGIN_INIT_OPTIONS)
-    private readonly options: SimpleCmsPluginOptions
+    private readonly options: SimpleCmsPluginOptions,
   ) {}
 
   /** Creates a new content entry and returns the flattened admin representation. */
@@ -96,7 +96,7 @@ export class AdminResolver {
   @Allow(Permission.CreateCatalog)
   async createContentEntry(
     @Ctx() ctx: RequestContext,
-    @Args() args: MutationCreateContentEntryArgs
+    @Args() args: MutationCreateContentEntryArgs,
   ) {
     const entry = await this.contentEntryService.create(ctx, args.input);
     return flattenEntry(ctx, entry, this.options);
@@ -108,12 +108,12 @@ export class AdminResolver {
   @Allow(Permission.UpdateCatalog)
   async updateContentEntry(
     @Ctx() ctx: RequestContext,
-    @Args() args: MutationUpdateContentEntryArgs
+    @Args() args: MutationUpdateContentEntryArgs,
   ) {
     const entry = await this.contentEntryService.update(
       ctx,
       args.id,
-      args.input
+      args.input,
     );
     return flattenEntry(ctx, entry, this.options);
   }
@@ -124,7 +124,7 @@ export class AdminResolver {
   @Allow(Permission.DeleteCatalog)
   async deleteContentEntry(
     @Ctx() ctx: RequestContext,
-    @Args() args: MutationDeleteContentEntryArgs
+    @Args() args: MutationDeleteContentEntryArgs,
   ): Promise<DeletionResponse> {
     await this.contentEntryService.delete(ctx, args.id);
     return { result: DeletionResult.DELETED };
@@ -134,11 +134,11 @@ export class AdminResolver {
   @Query()
   async contentEntries(
     @Ctx() ctx: RequestContext,
-    @Args() args: QueryContentEntriesArgs
+    @Args() args: QueryContentEntriesArgs,
   ) {
     const result = await this.contentEntryService.findAll(
       ctx,
-      args.options ?? undefined
+      args.options ?? undefined,
     );
     return {
       items: result.items.map((e) => flattenEntry(ctx, e, this.options)),
@@ -150,7 +150,7 @@ export class AdminResolver {
   @Query()
   async contentEntry(
     @Ctx() ctx: RequestContext,
-    @Args() args: QueryContentEntryArgs
+    @Args() args: QueryContentEntryArgs,
   ) {
     const entry = await this.contentEntryService.findOne(ctx, args.id);
     return entry ? flattenEntry(ctx, entry, this.options) : undefined;
@@ -170,7 +170,7 @@ export class AdminResolver {
         displayName: def.displayName,
         allowMultiple: def.allowMultiple,
         fields: def.fields.map(mapField),
-      })
+      }),
     );
   }
 
@@ -181,7 +181,7 @@ export class AdminResolver {
   @Query()
   @Allow(Permission.ReadCatalog)
   simpleCmsContentType(
-    @Args() args: { code: string }
+    @Args() args: { code: string },
   ): SimpleCmsContentType | null {
     const def = this.options.contentTypes?.[args.code];
     if (!def) return null;
@@ -198,7 +198,7 @@ export class AdminResolver {
   @Resolver('AdminContentEntry')
   displayName(
     @Ctx() ctx: RequestContext,
-    @Parent() entry: AdminContentEntry & ContentEntry
+    @Parent() entry: AdminContentEntry & ContentEntry,
   ): string | null {
     const def = this.options.contentTypes?.[entry.contentTypeCode];
     return deriveDisplayName(entry, def, ctx.languageCode);

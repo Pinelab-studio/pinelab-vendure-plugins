@@ -1,9 +1,9 @@
+import { join, resolve } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { vendureDashboardPlugin } from '@vendure/dashboard/vite';
-import { join, resolve } from 'path';
-import { pathToFileURL } from 'url';
 import { defineConfig } from 'vite';
 
-const monorepoRoot = resolve(__dirname, '../..');
+const _monorepoRoot = resolve(__dirname, '../..');
 
 export default defineConfig({
   base: '/dashboard',

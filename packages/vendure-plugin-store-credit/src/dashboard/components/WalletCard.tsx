@@ -1,32 +1,29 @@
+import { Trans } from '@lingui/react/macro';
 import { Button, useLocalFormat } from '@vendure/dashboard';
-import { Wallet } from '../../api/generated/graphql';
+import { TriangleAlert } from 'lucide-react';
 import React, { useState } from 'react';
+import { twMerge } from 'tailwind-merge';
+import { Alert, AlertDescription } from '@/vdb/components/ui/alert.js';
+import { Wallet } from '../../api/generated/graphql';
+import { useWalletAdjustmentList } from './use-wallet-adjustment';
 import WalletAdjustmentCard from './WalletAdjustmentCard';
 import { WalletAdjustmentDialog } from './WalletAdjustmentDialog';
-import { useWalletAdjustmentList } from './use-wallet-adjustment';
-import { Trans } from '@lingui/react/macro';
-import { TriangleAlert } from 'lucide-react';
-import { Alert, AlertDescription } from '@/vdb/components/ui/alert.js';
-import { twMerge } from 'tailwind-merge';
 
 interface WalletCardProps {
   wallet: Wallet;
   isCollapsed: boolean;
 }
 
-const WalletCard: React.FC<WalletCardProps> = ({
-  wallet,
-  isCollapsed: isCollapsed,
-}) => {
+const WalletCard: React.FC<WalletCardProps> = ({ wallet, isCollapsed }) => {
   const [isEditing, setIsEditing] = useState(false);
   const { formatCurrency } = useLocalFormat();
   const { adjustments, hasNextPage, fetchNextPage, error } =
     useWalletAdjustmentList({ walletId: wallet.id, pageSize: 10 });
   return (
-    <div className="flex flex-col overflow-hidden border border-border rounded-md text-sm">
-      <div className="p-4 border-b border-border">
-        <div className="flex justify-between items-center">
-          <h2 className="m-0 text-sm font-semibold">{wallet.name}</h2>
+    <div className="flex flex-col overflow-hidden rounded-md border border-border text-sm">
+      <div className="border-border border-b p-4">
+        <div className="flex items-center justify-between">
+          <h2 className="m-0 font-semibold text-sm">{wallet.name}</h2>
           {!isCollapsed && (
             <WalletAdjustmentDialog
               open={isEditing}
@@ -48,7 +45,7 @@ const WalletCard: React.FC<WalletCardProps> = ({
             </WalletAdjustmentDialog>
           )}
         </div>
-        <div className="mt-2 text-lg font-semibold">
+        <div className="mt-2 font-semibold text-lg">
           {formatCurrency(wallet.balance, wallet.currencyCode)}
         </div>
         {isCollapsed && (
@@ -85,11 +82,11 @@ const WalletCard: React.FC<WalletCardProps> = ({
 
       <div
         className={twMerge(
-          'overflow-y-auto p-4 min-h-30', // Base styles
-          !isCollapsed ? 'max-h-50' : ''
+          'min-h-30 overflow-y-auto p-4', // Base styles
+          !isCollapsed ? 'max-h-50' : '',
         )}
       >
-        <p className="text-xs font-medium uppercase mb-3 text-muted-foreground">
+        <p className="mb-3 font-medium text-muted-foreground text-xs uppercase">
           Activity Log
         </p>
         {adjustments.length > 0 ? (
@@ -102,7 +99,7 @@ const WalletCard: React.FC<WalletCardProps> = ({
           ))
         ) : (
           <div className="flex flex-col items-center justify-center py-6 text-muted-foreground text-sm">
-            <span className="text-2xl mb-2">∅</span>
+            <span className="mb-2 text-2xl">∅</span>
             <p className="m-0 text-center">
               No transactions found for this wallet.
             </p>
@@ -113,7 +110,7 @@ const WalletCard: React.FC<WalletCardProps> = ({
             type="button"
             variant="outline"
             onClick={() => fetchNextPage()}
-            className="w-full mt-4 flex items-center justify-center py-2 text-sm font-medium text-gray-600 dark:text-slate-400 bg-transparent hover:bg-gray-50 dark:hover:bg-slate-800/50 border border-gray-200 dark:border-slate-700 rounded-md transition-all active:scale-[0.98]"
+            className="mt-4 flex w-full items-center justify-center rounded-md border border-gray-200 bg-transparent py-2 font-medium text-gray-600 text-sm transition-all hover:bg-gray-50 active:scale-[0.98] dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-800/50"
           >
             <Trans>Load more</Trans>
           </Button>

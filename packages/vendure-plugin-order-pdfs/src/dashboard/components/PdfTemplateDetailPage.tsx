@@ -14,10 +14,10 @@ import {
   Textarea,
   useDetailPage,
 } from '@vendure/dashboard';
-import { graphql } from '@/gql';
-import { toast } from 'sonner';
 import { useState } from 'react';
-import { getAuthHeaders, getServerBaseUrl, downloadBlob } from '../utils';
+import { toast } from 'sonner';
+import { graphql } from '@/gql';
+import { downloadBlob, getAuthHeaders, getServerBaseUrl } from '../utils';
 
 export const pdfTemplateDetailDocument = graphql(`
   query PdfTemplateDetail($id: ID!) {
@@ -81,7 +81,7 @@ function PdfTemplateDetailPageComponent({ route }: { route: any }) {
       toast.success(
         creatingNewEntity
           ? 'Successfully created PDF template'
-          : 'Successfully updated PDF template'
+          : 'Successfully updated PDF template',
       );
     },
     onError: (err: unknown) => {
@@ -89,7 +89,7 @@ function PdfTemplateDetailPageComponent({ route }: { route: any }) {
         creatingNewEntity
           ? 'Failed to create PDF template'
           : 'Failed to update PDF template',
-        { description: err instanceof Error ? err.message : 'Unknown error' }
+        { description: err instanceof Error ? err.message : 'Unknown error' },
       );
     },
   });
@@ -119,7 +119,7 @@ function PdfTemplateDetailPageComponent({ route }: { route: any }) {
   return (
     <Page pageId={pageId} form={form} submitHandler={submitHandler}>
       <PageTitle>
-        {creatingNewEntity ? 'New PDF template' : entity?.name ?? ''}
+        {creatingNewEntity ? 'New PDF template' : (entity?.name ?? '')}
       </PageTitle>
       <PageActionBar>
         <ActionBarItem itemId="preview-button">

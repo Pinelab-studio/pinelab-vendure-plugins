@@ -1,8 +1,8 @@
-import { it, expect, beforeEach, afterAll } from 'vitest';
-import { RemoteAssetDownloader } from './remote-asset-downloader';
-import fs from 'fs';
-import path from 'path';
+import fs from 'node:fs';
+import path from 'node:path';
 import nock from 'nock';
+import { afterAll, beforeEach, expect, it } from 'vitest';
+import { RemoteAssetDownloader } from './remote-asset-downloader';
 
 const TEST_DIR = path.join('./dist/public/');
 const CACHE_DIR = path.join('./dist/.cache/');
@@ -38,7 +38,7 @@ it('Downloads new asset', async () => {
   expect(result).toBe('/assets/123_test-image.webp');
   expect(scope.isDone()).toBe(true);
   expect(
-    fs.existsSync(path.join(TEST_DIR, 'assets', '123_test-image.webp'))
+    fs.existsSync(path.join(TEST_DIR, 'assets', '123_test-image.webp')),
   ).toBe(true);
   // Also expect to be in cache folder
   expect(fs.existsSync(path.join(CACHE_DIR, '123_test-image.webp'))).toBe(true);

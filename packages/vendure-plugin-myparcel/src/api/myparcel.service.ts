@@ -1,7 +1,9 @@
 import { Inject, Injectable, OnApplicationBootstrap } from '@nestjs/common';
+import { OrderAddress } from '@vendure/common/lib/generated-types';
 import {
   Channel,
   EntityHydrator,
+  Fulfillment,
   FulfillmentService,
   FulfillmentState,
   LanguageCode,
@@ -12,10 +14,7 @@ import {
   TransactionalConnection,
   UserInputError,
 } from '@vendure/core';
-import { OrderAddress } from '@vendure/common/lib/generated-types';
-
 import axios from 'axios';
-import { Fulfillment } from '@vendure/core';
 import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
 import {
   MyparcelDropOffPoint,
@@ -23,8 +22,8 @@ import {
 } from '../generated/graphql';
 import {
   CustomsItem,
-  MyparcelConfig,
   MyParcelError,
+  MyparcelConfig,
   MyparcelShipment,
 } from './types';
 
@@ -37,7 +36,7 @@ export class MyparcelService implements OnApplicationBootstrap {
     private connection: TransactionalConnection,
     // private channelService: ChannelService,
     @Inject(PLUGIN_INIT_OPTIONS) private config: MyparcelConfig,
-    private hydrator: EntityHydrator
+    private hydrator: EntityHydrator,
   ) {}
 
   async onApplicationBootstrap(): Promise<void> {
@@ -55,12 +54,12 @@ export class MyparcelService implements OnApplicationBootstrap {
       this.setWebhooksForAllChannels(ctx)
         .then(() => Logger.info(`Initialized MyParcel plugin`, loggerCtx))
         .catch((err) =>
-          Logger.error(`Failed to initialized MyParcel plugin`, loggerCtx, err)
+          Logger.error(`Failed to initialized MyParcel plugin`, loggerCtx, err),
         );
     } else {
       Logger.info(
         `Initialized MyParcel plugin without syncing webhook to MyParcel`,
-        loggerCtx
+        loggerCtx,
       );
     }
   }
@@ -80,28 +79,31 @@ export class MyparcelService implements OnApplicationBootstrap {
           ],
         })
           .then(() =>
-            Logger.info(`Set webhook for ${channelId} to ${webhook}`, loggerCtx)
+            Logger.info(
+              `Set webhook for ${channelId} to ${webhook}`,
+              loggerCtx,
+            ),
           )
           .catch((error: Error) =>
             Logger.error(
               `Failed to set webhook for ${channelId}`,
               loggerCtx,
-              error.stack
-            )
+              error.stack,
+            ),
           );
-      })
+      }),
     );
   }
 
   async getDropOffPoints(
     ctx: RequestContext,
-    input: MyparcelDropOffPointInput
+    input: MyparcelDropOffPointInput,
   ): Promise<MyparcelDropOffPoint[]> {
     const config = await this.getConfig(ctx);
-    if (!config || !config?.apiKey) {
+    if (!config?.apiKey) {
       Logger.info(
         `MyParcel is not enabled for channel ${ctx.channel.token}, can not fetch dropoff points`,
-        loggerCtx
+        loggerCtx,
       );
       return [];
     }
@@ -120,11 +122,11 @@ export class MyparcelService implements OnApplicationBootstrap {
     let results = res.data.drop_off_points || [];
     // FIXME because of myparcel bug: also returns other carriers
     if (input.carrierId) {
-      results = results.filter((r: any) => r.carrier_id == input.carrierId);
+      results = results.filter((r: any) => r.carrier_id === input.carrierId);
     }
     Logger.debug(
       `Fetched ${results.length} drop off points from MyParcel for channel ${ctx.channel.token}`,
-      loggerCtx
+      loggerCtx,
     );
     return results.slice(0, 10);
   }
@@ -146,8 +148,8 @@ export class MyparcelService implements OnApplicationBootstrap {
    * MyParcel API key matches the given key.
    */
   async getConfigByKey(
-    ctx: RequestContext,
-    apiKey: string
+    _ctx: RequestContext,
+    apiKey: string,
   ): Promise<MyparcelChannelConfig> {
     const channels = await this.connection.rawConnection
       .getRepository(Channel)
@@ -155,7 +157,7 @@ export class MyparcelService implements OnApplicationBootstrap {
     const channel = channels.find(
       (c) =>
         c.customFields.myparcelEnabled &&
-        c.customFields.myparcelApiKey === apiKey
+        c.customFields.myparcelApiKey === apiKey,
     );
     if (!channel) {
       throw new MyParcelError(`No config found for apiKey ${apiKey}`);
@@ -166,13 +168,13 @@ export class MyparcelService implements OnApplicationBootstrap {
   /**
    * All channels that have MyParcel enabled with an API key set.
    */
-  async getAllConfigs(ctx: RequestContext): Promise<MyparcelChannelConfig[]> {
+  async getAllConfigs(_ctx: RequestContext): Promise<MyparcelChannelConfig[]> {
     const channels = await this.connection.rawConnection
       .getRepository(Channel)
       .find();
     return channels
       .filter(
-        (c) => c.customFields.myparcelEnabled && c.customFields.myparcelApiKey
+        (c) => c.customFields.myparcelEnabled && c.customFields.myparcelApiKey,
       )
       .map((c) => ({
         channelId: c.id as string,
@@ -182,12 +184,12 @@ export class MyparcelService implements OnApplicationBootstrap {
 
   async updateStatus(
     ctx: RequestContext,
-    channelId: string,
+    _channelId: string,
     shipmentId: string,
-    status: number
+    status: number,
   ): Promise<void> {
     const fulfillmentReference = this.getFulfillmentReference(shipmentId);
-    const channel = await this.connection
+    const _channel = await this.connection
       .getRepository(ctx, Channel)
       .findOneOrFail({ where: { id: ctx.channelId } });
     const fulfillment = await this.connection
@@ -196,31 +198,31 @@ export class MyparcelService implements OnApplicationBootstrap {
     if (!fulfillment) {
       return Logger.warn(
         `No fulfillment found with method ${fulfillmentReference} for channel with id ${ctx.channelId}`,
-        loggerCtx
+        loggerCtx,
       );
     }
     const fulfillmentStatus = myparcelStatusses[status];
     if (!fulfillmentStatus) {
       return Logger.info(
         `No fulfillmentStatus found for myparcelStatus ${status}, not updating fulfillment ${shipmentId}`,
-        loggerCtx
+        loggerCtx,
       );
     }
     await this.fulfillmentService.transitionToState(
       ctx,
       fulfillment.id,
-      fulfillmentStatus
+      fulfillmentStatus,
     );
     Logger.info(
       `Updated fulfillment ${fulfillmentReference} to ${fulfillmentStatus}`,
-      loggerCtx
+      loggerCtx,
     );
   }
 
   async createShipments(
     ctx: RequestContext,
     orders: Order[],
-    customsContent: string
+    customsContent: string,
   ): Promise<string> {
     const config = await this.getConfig(ctx);
     if (!config) {
@@ -230,8 +232,8 @@ export class MyparcelService implements OnApplicationBootstrap {
       orders.map((order) =>
         this.hydrator.hydrate(ctx, order, {
           relations: ['customer', 'lines.productVariant.product'],
-        })
-      )
+        }),
+      ),
     );
     const shipments = this.toShipment(orders, customsContent);
     const res = await this.request('shipments', 'POST', config.apiKey, {
@@ -249,23 +251,23 @@ export class MyparcelService implements OnApplicationBootstrap {
       const shipment = this.config.shipmentStrategy.getShipment(
         address,
         order,
-        customsContent
+        customsContent,
       );
 
       if (customsContent) {
         // Set customs information
         const items = order.lines.map((line) =>
-          this.getCustomsItem(line, order.currencyCode)
+          this.getCustomsItem(line, order.currencyCode),
         );
         const totalWeight = items.reduce(
           (acc, curr) => curr.weight * curr.amount + acc,
-          0
+          0,
         );
         shipment.physical_properties = {
           weight: totalWeight,
         };
         shipment.customs_declaration = {
-          contents: parseInt(customsContent),
+          contents: parseInt(customsContent, 10),
           invoice: order.code,
           weight: totalWeight,
           items,
@@ -278,14 +280,14 @@ export class MyparcelService implements OnApplicationBootstrap {
   private getCustomsItem(line: OrderLine, currencyCode: string): CustomsItem {
     if (!this.config.getCustomsInformationFn) {
       throw new UserInputError(
-        `No "getCustomsInformationFn" configured. Can not create customs information`
+        `No "getCustomsInformationFn" configured. Can not create customs information`,
       );
     }
     const { classification, countryCodeOfOrigin, weightInGrams } =
       this.config.getCustomsInformationFn(line);
     const name =
       line.productVariant.product.translations.find(
-        (t) => t.languageCode === LanguageCode.en
+        (t) => t.languageCode === LanguageCode.en,
       )?.name || line.productVariant.product.translations[0].name;
     return {
       description: name,
@@ -308,7 +310,7 @@ export class MyparcelService implements OnApplicationBootstrap {
     path: 'shipments' | 'webhook_subscriptions' | 'drop_off_points' | string,
     method: 'GET' | 'POST',
     apiKey: string,
-    body?: unknown
+    body?: unknown,
   ): Promise<MyparcelResponse> {
     const shipmentContentType =
       'application/vnd.shipment+json;version=1.1;charset=utf-8';
@@ -331,7 +333,7 @@ export class MyparcelService implements OnApplicationBootstrap {
           },
           {
             headers,
-          }
+          },
         );
         return res.data;
       } else {
@@ -387,7 +389,7 @@ export interface MyparcelStatusChangeEvent {
         status: number;
         barcode: string;
         shipment_reference_identifier: string;
-      }
+      },
     ];
   };
 }

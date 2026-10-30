@@ -4,7 +4,7 @@ import { AttributionModel, AttributionResult } from '../types';
 export class LinearAttribution implements AttributionModel {
   name = 'Linear Attribution';
   calculateAttribution(
-    utmParameters: UtmOrderParameter[]
+    utmParameters: UtmOrderParameter[],
   ): AttributionResult[] {
     if (utmParameters.length === 0) {
       return [];

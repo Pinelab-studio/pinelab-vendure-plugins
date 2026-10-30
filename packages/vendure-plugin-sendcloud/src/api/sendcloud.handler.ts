@@ -10,7 +10,7 @@ export const sendcloudHandler = new FulfillmentHandler({
     },
   ],
   args: {},
-  createFulfillment: async (ctx, orders, orderItems, args) => {
+  createFulfillment: async (_ctx, orders, _orderItems, _args) => {
     const orderCodes = orders.map((o) => o.code);
     Logger.info(`Fulfilled orders ${orderCodes.join(',')}`, loggerCtx);
     return {

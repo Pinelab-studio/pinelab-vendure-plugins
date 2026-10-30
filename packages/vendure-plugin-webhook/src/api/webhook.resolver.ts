@@ -40,7 +40,7 @@ export class WebhookResolver {
   @Allow(webhookPermission.Permission)
   async setWebhooks(
     @Ctx() ctx: RequestContext,
-    @Args('webhooks') webhooks: WebhookInput[]
+    @Args('webhooks') webhooks: WebhookInput[],
   ): Promise<Webhook[]> {
     const currentWebhooks = await this.webhookService.getAllWebhooks(ctx);
     const newWebhooks = webhooks.filter(
@@ -49,18 +49,18 @@ export class WebhookResolver {
           (w) =>
             w.channelAgnostic &&
             w.event === webhook.event &&
-            w.url === webhook.url
-        )
+            w.url === webhook.url,
+        ),
     );
     // Check if any of the new webhooks are being set as channel-agnostic
     const hasChannelAgnosticWebhook = newWebhooks.some(
-      (webhook) => webhook.channelAgnostic === true
+      (webhook) => webhook.channelAgnostic === true,
     );
     if (hasChannelAgnosticWebhook) {
       // Check if the current user has the "CreateChannel" permission
       const channelPermissions = ctx.session?.user?.channelPermissions || [];
       const hasPermission = channelPermissions.some((perm) =>
-        perm.permissions?.includes(Permission.CreateChannel)
+        perm.permissions?.includes(Permission.CreateChannel),
       );
       if (!hasPermission) {
         throw new ForbiddenError();
@@ -100,15 +100,15 @@ export class WebhookRequestTransformerResolver {
    */
   @ResolveField()
   async requestTransformer(
-    @Ctx() ctx: RequestContext,
-    @Parent() webhook: WebhookEntity
+    @Ctx() _ctx: RequestContext,
+    @Parent() webhook: WebhookEntity,
   ): Promise<WebhookRequestTransformer | undefined> {
     if (!webhook.transformerName) {
       return;
     }
     const transformers = this.webhookService.getAvailableTransformers();
     const transformer = transformers.find(
-      (t) => t.name === webhook.transformerName
+      (t) => t.name === webhook.transformerName,
     );
     if (!transformer) {
       return;
@@ -118,12 +118,12 @@ export class WebhookRequestTransformerResolver {
 }
 
 export function mapToGraphqlTransformer(
-  transformer: RequestTransformer<any>
+  transformer: RequestTransformer<any>,
 ): WebhookRequestTransformer {
   return {
     name: transformer.name,
     supportedEvents: transformer.supportedEvents.map(
-      (event: any) => event.name
+      (event: any) => event.name,
     ),
   };
 }

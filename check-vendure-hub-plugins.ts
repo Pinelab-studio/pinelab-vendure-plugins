@@ -1,7 +1,7 @@
+import { readdir, readFile } from 'node:fs/promises';
+import path from 'node:path';
 import { SimpleGraphQLClient, testConfig } from '@vendure/testing';
-import { readdir, readFile } from 'fs/promises';
 import gql from 'graphql-tag';
-import path from 'path';
 
 /**
  * This script compares local plugins with the content on the Vendure Hub (https://hub.vendure.io/admin/)
@@ -23,21 +23,21 @@ const client = new SimpleGraphQLClient(testConfig, hubUrl);
 
   const pluginsToBeCreated = localPackageNames.filter(
     (localName) =>
-      !plugins.some((plugin) => plugin.customFields.packageName === localName)
+      !plugins.some((plugin) => plugin.customFields.packageName === localName),
   );
   const pluginsToBeDeleted = plugins
     .filter(
-      (plugin) => !localPackageNames.includes(plugin.customFields.packageName)
+      (plugin) => !localPackageNames.includes(plugin.customFields.packageName),
     )
     .map((plugin) => plugin.customFields.packageName);
 
   console.log(
     '\x1b[32mPlugins to be created on Hub: \n ',
-    pluginsToBeCreated.join('\n  ')
+    pluginsToBeCreated.join('\n  '),
   );
   console.log(
     '\x1b[31mPlugins to be deleted from Hub: \n ',
-    pluginsToBeDeleted.join('\n  ')
+    pluginsToBeDeleted.join('\n  '),
   );
 })();
 
@@ -78,13 +78,13 @@ async function getLocalPackageNames(): Promise<string[]> {
       const packageJsonFilePath = path.join(
         packageDir,
         pluginDir.name,
-        'package.json'
+        'package.json',
       );
       const packageJson = JSON.parse(
-        await readFile(packageJsonFilePath, 'utf8')
+        await readFile(packageJsonFilePath, 'utf8'),
       );
       return packageJson.name;
-    })
+    }),
   );
 }
 

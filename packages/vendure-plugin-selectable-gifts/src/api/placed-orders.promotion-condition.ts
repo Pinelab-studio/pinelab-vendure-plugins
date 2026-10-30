@@ -1,9 +1,9 @@
 import {
   Injector,
   LanguageCode,
+  Order,
   PromotionCondition,
   TransactionalConnection,
-  Order,
 } from '@vendure/core';
 
 let injector: Injector;

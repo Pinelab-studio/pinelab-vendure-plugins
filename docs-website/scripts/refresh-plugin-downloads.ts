@@ -5,7 +5,7 @@ import { getPlugins } from '../src/utils/plugins.ts';
 /** Refresh npm popularity separately from builds, preserving the snapshot on API errors. */
 async function refreshPluginDownloads() {
   const plugins = (await getPlugins()).sort((a, b) =>
-    a.name.localeCompare(b.name)
+    a.name.localeCompare(b.name),
   );
   const downloads: Record<string, number> = {};
   for (const [index, plugin] of plugins.entries()) {
@@ -13,13 +13,13 @@ async function refreshPluginDownloads() {
     if (index > 0) await setTimeout(1_500);
     const response = await fetch(
       `https://api.npmjs.org/downloads/point/last-month/${encodeURIComponent(
-        plugin.name
+        plugin.name,
       )}`,
-      { signal: AbortSignal.timeout(30_000) }
+      { signal: AbortSignal.timeout(30_000) },
     );
     if (!response.ok) {
       throw new Error(
-        `Unable to fetch npm downloads for ${plugin.name} (${response.status}). Existing snapshot unchanged.`
+        `Unable to fetch npm downloads for ${plugin.name} (${response.status}). Existing snapshot unchanged.`,
       );
     }
     const data = (await response.json()) as { downloads?: number };
@@ -29,7 +29,7 @@ async function refreshPluginDownloads() {
       data.downloads < 0
     ) {
       throw new Error(
-        `Invalid npm download count for ${plugin.name}. Existing snapshot unchanged.`
+        `Invalid npm download count for ${plugin.name}. Existing snapshot unchanged.`,
       );
     }
     downloads[plugin.name] = data.downloads;
@@ -37,11 +37,11 @@ async function refreshPluginDownloads() {
   }
   await writeFile(
     new URL('../plugin-downloads.json', import.meta.url),
-    JSON.stringify(
+    `${JSON.stringify(
       { updatedAt: new Date().toISOString(), period: 'last-month', downloads },
       null,
-      2
-    ) + '\n'
+      2,
+    )}\n`,
   );
   console.log(`Updated download counts for ${plugins.length} plugins.`);
 }

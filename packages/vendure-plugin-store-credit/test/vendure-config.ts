@@ -1,16 +1,15 @@
-import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
+import path from 'node:path';
 import {
-  mergeConfig,
   DefaultLogger,
-  LogLevel,
   DefaultSearchPlugin,
+  LogLevel,
+  mergeConfig,
   VendureConfig,
 } from '@vendure/core';
 import { DashboardPlugin } from '@vendure/dashboard/plugin';
-import { storeCreditPaymentHandler, StoreCreditPlugin } from '../src';
 import { testConfig } from '@vendure/testing';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
-import path from 'path';
+import { StoreCreditPlugin, storeCreditPaymentHandler } from '../src';
 
 export const config: VendureConfig = mergeConfig(testConfig, {
   logger: new DefaultLogger({ level: LogLevel.Debug }),
@@ -31,14 +30,10 @@ export const config: VendureConfig = mergeConfig(testConfig, {
     StoreCreditPlugin.init({
       createGiftCardWallet: async () => ({
         price: 1000,
-        cardCode: 'GIFT-DEMO-' + Date.now(),
+        cardCode: `GIFT-DEMO-${Date.now()}`,
       }),
     }),
     DefaultSearchPlugin,
-    AdminUiPlugin.init({
-      port: 3002,
-      route: 'admin',
-    }),
     DashboardPlugin.init({
       // The route should correspond to the `base` setting
       // in the vite.config.mts file

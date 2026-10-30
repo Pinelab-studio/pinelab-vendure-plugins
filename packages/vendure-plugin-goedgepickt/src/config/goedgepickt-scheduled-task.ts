@@ -24,7 +24,7 @@ export const goedgepicktSyncStockTask = new ScheduledTask({
       await service.pullAllStocklevels(channel.token).catch((err) => {
         Logger.error(
           `Failed to pull stock levels for channel ${channel.id}: ${err.message}`,
-          loggerCtx
+          loggerCtx,
         );
       });
       syncedChannels++;
@@ -50,7 +50,7 @@ export const goedgepicktPushProductsTask = new ScheduledTask({
       await service.pushAllProductsToGoedgepickt(channel.token).catch((err) => {
         Logger.error(
           `Failed to push products for channel ${channel.id}: ${err.message}`,
-          loggerCtx
+          loggerCtx,
         );
       });
       pushedChannels++;

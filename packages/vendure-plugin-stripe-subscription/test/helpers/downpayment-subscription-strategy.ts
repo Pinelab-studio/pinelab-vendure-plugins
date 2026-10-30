@@ -1,10 +1,4 @@
-import {
-  RequestContext,
-  OrderLine,
-  Injector,
-  ProductVariant,
-  Order,
-} from '@vendure/core';
+import { Injector, Order, ProductVariant, RequestContext } from '@vendure/core';
 import { Subscription, SubscriptionStrategy } from '../../src';
 
 /**
@@ -15,45 +9,45 @@ import { Subscription, SubscriptionStrategy } from '../../src';
 export class DownPaymentSubscriptionStrategy implements SubscriptionStrategy {
   durationInMonths = 12;
 
-  isSubscription(ctx: RequestContext, variant: ProductVariant): boolean {
+  isSubscription(_ctx: RequestContext, _variant: ProductVariant): boolean {
     // This example treats all products as subscriptions
     return true;
   }
 
   defineSubscription(
-    ctx: RequestContext,
-    injector: Injector,
+    _ctx: RequestContext,
+    _injector: Injector,
     productVariant: ProductVariant,
-    order: Order,
+    _order: Order,
     orderLineCustomFields: { [key: string]: any },
-    quantity: number
+    _quantity: number,
   ): Subscription[] {
     return this.getSubscriptionsForVariant(
       productVariant,
       orderLineCustomFields.subscriptionDownpayment,
-      this.durationInMonths
+      this.durationInMonths,
     );
   }
 
   previewSubscription(
-    ctx: RequestContext,
-    injector: Injector,
+    _ctx: RequestContext,
+    _injector: Injector,
     productVariant: ProductVariant,
     customInputs: {
       subscriptionDownpayment: number;
-    }
+    },
   ): Subscription[] {
     return this.getSubscriptionsForVariant(
       productVariant,
       customInputs.subscriptionDownpayment,
-      this.durationInMonths
+      this.durationInMonths,
     );
   }
 
   private getSubscriptionsForVariant(
     productVariant: ProductVariant,
     downpayment: number,
-    durationInMonths: number
+    durationInMonths: number,
   ): Subscription[] {
     const discountPerMonth = downpayment / durationInMonths;
     const subscriptions: Subscription[] = [];

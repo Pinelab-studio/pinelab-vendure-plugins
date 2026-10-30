@@ -1,15 +1,13 @@
-import { PluginCommonModule, Type, VendurePlugin } from '@vendure/core';
-import path from 'path';
-import { AdminUiExtension } from '@vendure/ui-devkit/compiler';
+import { PluginCommonModule, type Type, VendurePlugin } from '@vendure/core';
+import gql from 'graphql-tag';
+import type { ExportStrategy } from './api/export-strategy';
 import {
   OrderExportController,
   OrderExportResolver,
   orderExportPermission,
 } from './api/order-export.controller';
-import { DefaultExportStrategy } from './index';
-import { ExportStrategy } from './api/export-strategy';
 import { PLUGIN_INIT_OPTIONS } from './constants';
-import gql from 'graphql-tag';
+import { DefaultExportStrategy } from './index';
 
 export interface ExportPluginConfig {
   exportStrategies: ExportStrategy[];
@@ -47,6 +45,6 @@ export class OrderExportPlugin {
       config.exportStrategies.push(new DefaultExportStrategy());
     }
     OrderExportPlugin.config = config;
-    return this;
+    return OrderExportPlugin;
   }
 }

@@ -1,11 +1,11 @@
-import { AlertMessage } from '../../types';
-import { Notifier } from '../notifier';
 import {
   EmailDetails,
   EmailSender,
   EmailTransportOptions,
   NodemailerEmailSender,
 } from '@vendure/email-plugin';
+import { AlertMessage } from '../../types';
+import { Notifier } from '../notifier';
 
 export interface EmailNotifierConfig {
   /** Unique name; used as job-data discriminator and in logs */

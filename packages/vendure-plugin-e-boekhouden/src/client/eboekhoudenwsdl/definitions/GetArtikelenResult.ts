@@ -1,5 +1,5 @@
-import { ErrorMsg } from './ErrorMsg';
 import { Artikelen } from './Artikelen';
+import { ErrorMsg } from './ErrorMsg';
 
 /**
  * GetArtikelenResult

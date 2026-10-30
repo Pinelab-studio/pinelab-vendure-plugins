@@ -1,9 +1,9 @@
+import { VendureConfig } from '@vendure/core';
 import {
   createTestEnvironment,
   registerInitializer,
   SqljsInitializer,
 } from '@vendure/testing';
-import { VendureConfig } from '@vendure/core';
 import gql from 'graphql-tag';
 import { initialData } from '../../test/src/initial-data';
 import { config } from './vendure-config';
@@ -18,7 +18,7 @@ import { config } from './vendure-config';
   };
 
   const { server, adminClient } = createTestEnvironment(
-    config as Required<VendureConfig>
+    config as Required<VendureConfig>,
   );
   await server.init({
     initialData,
@@ -53,7 +53,7 @@ import { config } from './vendure-config';
         ],
         customFields: { showOnProductDetail: true },
       },
-    }
+    },
   );
   console.log('Seeded "Material" facet with showOnProductDetail: true');
 })();

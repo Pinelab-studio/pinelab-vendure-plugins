@@ -24,7 +24,7 @@
     "test": "vitest run --bail 1",
     "start": "yarn ts-node test/dev-server.ts",
     "generate": "graphql-codegen",
-    "lint": "echo 'No linting configured'"
+    "lint": "biome check ."
   },
   "dependencies": {
     "date-fns": "2.29.3",

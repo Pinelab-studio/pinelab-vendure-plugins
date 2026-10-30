@@ -1,9 +1,9 @@
 import { PluginCommonModule, Type, VendurePlugin } from '@vendure/core';
-import { GOOGLE_SHEET_PLUGIN_OPTIONS } from './constants';
-import { GoogleSheetLoaderPluginOptions } from './types';
 import { adminApiExtention } from './api/api-extensions';
 import { GoogleSheetDataLoaderResolver } from './api/google-sheet-data-loader.resolver';
+import { GOOGLE_SHEET_PLUGIN_OPTIONS } from './constants';
 import { GoogleSheetService } from './services/google-sheet.service';
+import { GoogleSheetLoaderPluginOptions } from './types';
 
 @VendurePlugin({
   imports: [PluginCommonModule],
@@ -25,9 +25,9 @@ export class GoogleSheetLoaderPlugin {
   static options: GoogleSheetLoaderPluginOptions;
 
   static init(
-    options: GoogleSheetLoaderPluginOptions
+    options: GoogleSheetLoaderPluginOptions,
   ): Type<GoogleSheetLoaderPlugin> {
-    this.options = options;
+    GoogleSheetLoaderPlugin.options = options;
     return GoogleSheetLoaderPlugin;
   }
 }

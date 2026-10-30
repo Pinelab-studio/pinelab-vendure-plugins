@@ -1,20 +1,19 @@
 import {
-  createTestEnvironment,
-  registerInitializer,
-  SqljsInitializer,
-  testConfig,
-} from '@vendure/testing';
-import {
   DefaultLogger,
   DefaultSearchPlugin,
   LogLevel,
   mergeConfig,
 } from '@vendure/core';
+import {
+  createTestEnvironment,
+  registerInitializer,
+  SqljsInitializer,
+  testConfig,
+} from '@vendure/testing';
 import { initialData } from '../../test/src/initial-data';
-import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
-import path from 'path';
 import { MultiServerDbSessionCachePlugin } from '../src/plugin';
+
 (async () => {
   registerInitializer('sqljs', new SqljsInitializer('__data__'));
   const config = mergeConfig(testConfig, {
@@ -26,14 +25,7 @@ import { MultiServerDbSessionCachePlugin } from '../src/plugin';
     paymentOptions: {
       paymentMethodHandlers: [testPaymentMethod],
     },
-    plugins: [
-      DefaultSearchPlugin,
-      MultiServerDbSessionCachePlugin,
-      AdminUiPlugin.init({
-        port: 3002,
-        route: 'admin',
-      }),
-    ],
+    plugins: [DefaultSearchPlugin, MultiServerDbSessionCachePlugin],
   });
   const { server, shopClient } = createTestEnvironment(config);
   await server.init({

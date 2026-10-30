@@ -13,15 +13,15 @@ import {
   adminSchemaExtensions,
   shopSchemaExtensions,
 } from './api/api-extensions';
+import { InvoiceController } from './api/invoice.controller';
 import { InvoiceAdminResolver } from './api/invoice-admin.resolver';
 import {
   InvoiceCommonResolver,
   invoicePermission,
 } from './api/invoice-common.resolver';
-import { InvoiceController } from './api/invoice.controller';
 import { loggerCtx, PLUGIN_INIT_OPTIONS } from './constants';
-import { InvoiceConfigEntity } from './entities/invoice-config.entity';
 import { InvoiceEntity } from './entities/invoice.entity';
+import { InvoiceConfigEntity } from './entities/invoice-config.entity';
 import { AccountingService } from './services/accounting.service';
 import { InvoiceService } from './services/invoice.service';
 import { AccountingExportStrategy } from './strategies/accounting/accounting-export-strategy';
@@ -104,7 +104,7 @@ export class InvoicePlugin implements OnModuleInit {
         await strategy.init(new Injector(this.moduleRef));
         Logger.info(
           `Initialized accounting export strategy: ${strategy.constructor.name}`,
-          loggerCtx
+          loggerCtx,
         );
       }
     }
@@ -113,7 +113,7 @@ export class InvoicePlugin implements OnModuleInit {
       await InvoicePlugin.config.storageStrategy.init();
       Logger.info(
         `Initialized storage strategy: ${InvoicePlugin.config.storageStrategy.constructor.name}`,
-        loggerCtx
+        loggerCtx,
       );
     }
   }
@@ -125,6 +125,6 @@ export class InvoicePlugin implements OnModuleInit {
       loadDataFn: config.loadDataFn || defaultLoadDataFn,
       startInvoiceNumber: config.startInvoiceNumber || 10000,
     };
-    return this;
+    return InvoicePlugin;
   }
 }

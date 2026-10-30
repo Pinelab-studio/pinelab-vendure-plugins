@@ -1,4 +1,3 @@
-import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
 import {
   DefaultLogger,
   DefaultSearchPlugin,
@@ -47,10 +46,6 @@ import { TEMPLATEPlugin } from '../src';
         sampleOption: true,
       }),
       DefaultSearchPlugin,
-      AdminUiPlugin.init({
-        port: 3002,
-        route: 'admin',
-      }),
     ],
   });
   const { server, shopClient, adminClient } = createTestEnvironment(config);

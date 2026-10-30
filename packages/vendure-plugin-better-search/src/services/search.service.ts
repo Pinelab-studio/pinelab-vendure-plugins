@@ -28,13 +28,12 @@ export class SearchService {
 
   constructor(
     private indexService: IndexService,
-    @Inject(BETTER_SEARCH_PLUGIN_OPTIONS)
-    private options: BetterSearchConfig
+    @Inject(BETTER_SEARCH_PLUGIN_OPTIONS) _options: BetterSearchConfig,
   ) {}
 
   async search(
     ctx: RequestContext,
-    input: BetterSearchInput
+    input: BetterSearchInput,
   ): Promise<BetterSearchResultList> {
     if (input.term.length < 2) {
       // No search if term is too short
@@ -48,7 +47,7 @@ export class SearchService {
     const skip = input.skip ?? 0;
     const take = input.take ?? 10;
     const allResults = index.search(
-      input.term
+      input.term,
     ) as unknown as BetterSearchResult[]; // Not sure why this is needed, but all fields are tested in e2e
     const results = allResults.slice(skip, skip + take);
     return {
@@ -63,7 +62,7 @@ export class SearchService {
    * but fetches a new one from DB in the background.
    */
   private async getIndex(
-    ctx: RequestContext
+    ctx: RequestContext,
   ): Promise<MiniSearch<BetterSearchResult>> {
     const cacheKey = `${ctx.channel.id}-${ctx.languageCode}`;
     let cachedIndex = this.cachedIndices.get(cacheKey);
@@ -73,7 +72,7 @@ export class SearchService {
       if (!index) {
         await this.indexService.triggerReindex(ctx);
         throw Error(
-          `No index was created for channel '${ctx.channel.id}' and language '${ctx.languageCode}'`
+          `No index was created for channel '${ctx.channel.id}' and language '${ctx.languageCode}'`,
         );
       }
       cachedIndex = {
@@ -105,7 +104,7 @@ export class SearchService {
             `Failed to fetch new index for '${cacheKey}': ${
               asError(err).message
             }`,
-            loggerCtx
+            loggerCtx,
           );
         });
     }

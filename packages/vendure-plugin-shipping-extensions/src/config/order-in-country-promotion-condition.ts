@@ -46,7 +46,7 @@ export const orderInCountryPromotionCondition = new PromotionCondition({
       ],
     }));
   },
-  check(ctx, order, args) {
+  check(_ctx, order, args) {
     if (!order.shippingAddress?.countryCode) {
       return false;
     }

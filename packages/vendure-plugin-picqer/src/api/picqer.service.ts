@@ -1,3 +1,4 @@
+import util from 'node:util';
 import { Inject, Injectable, OnApplicationBootstrap } from '@nestjs/common';
 import {
   OrderAddress,
@@ -37,7 +38,6 @@ import {
 } from '@vendure/core';
 import { StockAdjustment } from '@vendure/core/dist/entity/stock-movement/stock-adjustment.entity';
 import currency from 'currency.js';
-import util from 'util';
 import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
 import { PicqerOptions } from '../picqer.plugin';
 import { PicqerClient, PicqerClientInput } from './picqer.client';
@@ -99,7 +99,7 @@ export class PicqerService implements OnApplicationBootstrap {
     private channelService: ChannelService,
     private orderService: OrderService,
     private stockLocationService: StockLocationService,
-    private stockLevelService: StockLevelService
+    private stockLevelService: StockLevelService,
   ) {}
 
   async onApplicationBootstrap() {
@@ -114,18 +114,18 @@ export class PicqerService implements OnApplicationBootstrap {
             (e: any) => {
               throw Error(
                 `Failed to push variants to Picqer (variants: ${data.variantIds?.join(
-                  ','
+                  ',',
                   // eslint-disable-next-line  @typescript-eslint/no-unsafe-member-access
-                )}): ${e?.message}`
+                )}): ${e?.message}`,
               );
-            }
+            },
           );
         } else if (data.action === 'pull-stock-levels') {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           await this.handlePullStockLevelsJob(ctx).catch((e: any) => {
             throw Error(
               // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-              `Failed to pull stock levels from  Picqer: ${e?.message}`
+              `Failed to pull stock levels from  Picqer: ${e?.message}`,
             );
           });
         } else if (data.action === 'push-order') {
@@ -134,14 +134,14 @@ export class PicqerService implements OnApplicationBootstrap {
           await this.handlePushOrderJob(ctx, data.orderId).catch((e: any) => {
             throw Error(
               // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-              `Failed to push order ${order?.code} (${data.orderId}) to Picqer: ${e?.message}`
+              `Failed to push order ${order?.code} (${data.orderId}) to Picqer: ${e?.message}`,
             );
           });
         } else {
           Logger.error(
             // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
             `Invalid job action: ${(data as any).action}`,
-            loggerCtx
+            loggerCtx,
           );
         }
         Logger.info(`Successfully handled job '${data.action}'`, loggerCtx);
@@ -165,21 +165,21 @@ export class PicqerService implements OnApplicationBootstrap {
             (this.options.shouldSyncOnProductVariantCustomFields ?? []).some(
               (customFieldName) =>
                 // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-                v.customFields ? v.customFields[customFieldName] : false
-            )
+                v.customFields ? v.customFields[customFieldName] : false,
+            ),
         );
         if (!shouldUpdate) {
           Logger.info(
             `No relevant changes to variants ${JSON.stringify(
-              entities.map((v) => v.sku)
+              entities.map((v) => v.sku),
             )}, not pushing to Picqer`,
-            loggerCtx
+            loggerCtx,
           );
           return;
         }
         await this.addPushVariantsJob(
           ctx,
-          entities.map((v) => v.id)
+          entities.map((v) => v.id),
         );
       });
     // Listen for Order placed events
@@ -202,8 +202,8 @@ export class PicqerService implements OnApplicationBootstrap {
         Logger.error(
           // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
           `Failed to register webhooks for channel ${ctx.channel.token}: ${e?.message}`,
-          loggerCtx
-        )
+          loggerCtx,
+        ),
       );
     });
     // Register webhooks on app start
@@ -213,8 +213,8 @@ export class PicqerService implements OnApplicationBootstrap {
         Logger.error(
           // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
           `Failed to register webhooks for channel ${ctx.channel.token}: ${e?.message}`,
-          loggerCtx
-        )
+          loggerCtx,
+        ),
       );
     }
   }
@@ -227,7 +227,7 @@ export class PicqerService implements OnApplicationBootstrap {
    */
   async registerWebhooks(
     ctx: RequestContext,
-    config: PicqerChannelConfig
+    config: PicqerChannelConfig,
   ): Promise<void> {
     const hookUrl = `${this.options.vendureHost}/picqer/hooks/${ctx.channel.token}`;
     const client = await this.getClient(ctx, config);
@@ -245,7 +245,7 @@ export class PicqerService implements OnApplicationBootstrap {
       const webhookName = `Vendure ${client.webhookSecret.slice(0, 4)}`;
       let hook = webhooks.find(
         (h) =>
-          h.event === hookEvent && h.address === hookUrl && h.active === true
+          h.event === hookEvent && h.address === hookUrl && h.active === true,
       );
       if (hook && hook.name !== webhookName) {
         // A hook exists, but the name is different, that means the secret changed. We need to create a new hook
@@ -263,13 +263,13 @@ export class PicqerService implements OnApplicationBootstrap {
         });
         Logger.info(
           `Registered hook (id: ${webhook.idhook}) for event ${hookEvent} and url ${hookUrl}`,
-          loggerCtx
+          loggerCtx,
         );
       }
     }
     Logger.info(
       `Registered webhooks for channel ${ctx.channel.token}`,
-      loggerCtx
+      loggerCtx,
     );
   }
 
@@ -288,7 +288,7 @@ export class PicqerService implements OnApplicationBootstrap {
     if (!client) {
       Logger.error(
         `No client found for channel ${input.channelToken}`,
-        loggerCtx
+        loggerCtx,
       );
       return;
     }
@@ -296,7 +296,7 @@ export class PicqerService implements OnApplicationBootstrap {
     if (!client.isSignatureValid(input.rawBody, input.signature)) {
       Logger.error(
         `Invalid signature for incoming webhook ${input.body.event} channel ${input.channelToken}`,
-        loggerCtx
+        loggerCtx,
       );
       throw new ForbiddenError();
     }
@@ -315,7 +315,7 @@ export class PicqerService implements OnApplicationBootstrap {
         } for incoming webhook for channel ${
           input.channelToken
         }. Not handling this webhook...`,
-        loggerCtx
+        loggerCtx,
       );
       return;
     }
@@ -368,7 +368,7 @@ export class PicqerService implements OnApplicationBootstrap {
         action: 'pull-stock-levels',
         ctx: ctx.serialize(),
       },
-      { retries: 10 }
+      { retries: 10 },
     );
     Logger.info(`Added 'pull-stock-levels' job to queue`, loggerCtx);
   }
@@ -384,7 +384,7 @@ export class PicqerService implements OnApplicationBootstrap {
     if (!order) {
       Logger.warn(
         `No order found for code ${data.reference}. Not processing this hook any further`,
-        loggerCtx
+        loggerCtx,
       );
       return;
     }
@@ -404,7 +404,7 @@ export class PicqerService implements OnApplicationBootstrap {
             (result as ErrorResult).message
           }. Ensure the order process is configured with "checkFulfillmentStates: false"`,
           loggerCtx,
-          util.inspect(result)
+          util.inspect(result),
         );
         return;
       }
@@ -425,33 +425,33 @@ export class PicqerService implements OnApplicationBootstrap {
           // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
           `Failed to transition order ${order.code}: ${e}`,
           loggerCtx,
-          util.inspect(e)
+          util.inspect(e),
         );
         return;
       }
     }
     Logger.info(
       `Not handling incoming status '${data.status}' because order ${order.code} is already '${order.state}'`,
-      loggerCtx
+      loggerCtx,
     );
   }
 
   async transitionToState(
     ctx: RequestContext,
     order: Order,
-    state: 'Shipped' | 'Delivered'
+    state: 'Shipped' | 'Delivered',
   ) {
     const result = await this.orderService.transitionToState(
       ctx,
       order.id,
-      state
+      state,
     );
     const errorResult = result as OrderStateTransitionError;
     if (errorResult.errorCode) {
       Logger.error(
         `Failed to transition order ${order.code} to ${state}: ${errorResult.message}`,
         loggerCtx,
-        util.inspect(errorResult)
+        util.inspect(errorResult),
       );
       // eslint-disable-next-line @typescript-eslint/only-throw-error
       throw errorResult;
@@ -463,7 +463,7 @@ export class PicqerService implements OnApplicationBootstrap {
    */
   async addPushVariantsJob(
     ctx: RequestContext,
-    variantIds: ID[]
+    variantIds: ID[],
   ): Promise<void> {
     await this.jobQueue.add(
       {
@@ -471,11 +471,11 @@ export class PicqerService implements OnApplicationBootstrap {
         ctx: ctx.serialize(),
         variantIds,
       },
-      { retries: 10 }
+      { retries: 10 },
     );
     Logger.info(
       `Added job to the 'push-variants' queue for ${variantIds.length} variants for channel ${ctx.channel.token}`,
-      loggerCtx
+      loggerCtx,
     );
   }
 
@@ -490,19 +490,19 @@ export class PicqerService implements OnApplicationBootstrap {
           ctx: ctx.serialize(),
           orderId: order.id,
         },
-        { retries: 10 }
+        { retries: 10 },
       )
       .catch((e) => {
         Logger.error(
           // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
           `Failed to add job to 'push-order' queue for order ${order.code}: ${e?.message}`,
-          loggerCtx
+          loggerCtx,
         );
         throw e;
       });
     Logger.info(
       `Added job to the 'push-order' queue for order ${order.code}`,
-      loggerCtx
+      loggerCtx,
     );
   }
 
@@ -522,7 +522,7 @@ export class PicqerService implements OnApplicationBootstrap {
         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         `Failed to sync warehouses with Picqer: ${e?.message}`,
         loggerCtx,
-        util.inspect(e)
+        util.inspect(e),
       );
     });
     const picqerProducts = await client.getAllActiveProducts();
@@ -565,7 +565,7 @@ export class PicqerService implements OnApplicationBootstrap {
         syncedFromPicqer.push(created.id);
         Logger.info(
           `Created new stock location '${stockLocationName}'`,
-          loggerCtx
+          loggerCtx,
         );
       }
     }
@@ -573,7 +573,7 @@ export class PicqerService implements OnApplicationBootstrap {
     const locations = await this.stockLocationService.findAll(ctx);
     // Delete locations that are not Picqer based
     const locationsToDelete = locations.items.filter(
-      (l) => !syncedFromPicqer.includes(l.id)
+      (l) => !syncedFromPicqer.includes(l.id),
     );
     for (const location of locationsToDelete) {
       const res = await this.stockLocationService.delete(ctx, {
@@ -585,7 +585,7 @@ export class PicqerService implements OnApplicationBootstrap {
       } else {
         Logger.error(
           `Failed to delete stock location ${location.name}: ${res.message}`,
-          loggerCtx
+          loggerCtx,
         );
       }
     }
@@ -598,7 +598,7 @@ export class PicqerService implements OnApplicationBootstrap {
    */
   async getStockLocation(
     ctx: RequestContext,
-    picqerLocationId: number
+    picqerLocationId: number,
   ): Promise<StockLocation | undefined> {
     // Picqer location ID's are also used as the ID of the Vendure stock location
     // return await this.stockLocationService.findOne(ctx, picqerLocationId);
@@ -611,7 +611,7 @@ export class PicqerService implements OnApplicationBootstrap {
     if (items.length > 1) {
       Logger.error(
         `Found multiple locations with name "Picqer ${picqerLocationId}", there should be only one! Using location with ID ${location.id}`,
-        loggerCtx
+        loggerCtx,
       );
     }
     return location;
@@ -622,47 +622,37 @@ export class PicqerService implements OnApplicationBootstrap {
    */
   async updateStockBySkus(
     ctx: RequestContext,
-    picqerProducts: ProductData[]
+    picqerProducts: ProductData[],
   ): Promise<void> {
     const vendureVariants = await this.findAllVariantsBySku(
       ctx,
-      picqerProducts.map((p) => p.productcode)
+      picqerProducts.map((p) => p.productcode),
     );
     const stockAdjustments: StockAdjustment[] = [];
     // Loop over variants to determine new stock level per variant and update in DB
     await Promise.all(
       vendureVariants.map(async (variant) => {
         const picqerProduct = picqerProducts.find(
-          (p) => p.productcode === variant.sku
+          (p) => p.productcode === variant.sku,
         );
         if (!picqerProduct) {
           // Should never happen, because we only fetch variants that were given in the Picqer products payload
           Logger.error(
             `No Picqer product found for variant ${variant.sku}`,
-            loggerCtx
+            loggerCtx,
           );
           return;
         }
         if (picqerProduct.unlimitedstock) {
           Logger.info(
             `Not updating stock of variant '${variant.sku}', because it has unlimited stock in Picqer`,
-            loggerCtx
+            loggerCtx,
           );
           return;
         }
         // Fields from picqer that should be added to the variant
-        let additionalVariantFields = {};
-        try {
-          additionalVariantFields =
-            this.options.pullPicqerProductFields?.(picqerProduct) || {};
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        } catch (e: any) {
-          Logger.error(
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-            `Failed to get additional fields from the configured pullFieldsFromPicqer function: ${e?.message}`,
-            loggerCtx
-          );
-        }
+        const additionalVariantFields =
+          this.getAdditionalVariantFields(picqerProduct);
         // Update the actual variant in Vendure, with raw connection for better performance
         await this.connection
           .getRepository(ctx, ProductVariant)
@@ -672,17 +662,17 @@ export class PicqerService implements OnApplicationBootstrap {
           if (!picqerStock.idwarehouse) {
             Logger.error(
               `Can not update stock for picqer warehouse without id`,
-              loggerCtx
+              loggerCtx,
             );
             continue;
           }
           const location = await this.getStockLocation(
             ctx,
-            picqerStock.idwarehouse
+            picqerStock.idwarehouse,
           );
           if (!location) {
             Logger.info(
-              `Not updating stock of warehouse ${picqerStock.idwarehouse}, because it doesn't exist in Vendure. You might need to re-sync stock levels and locations if this is an active warehouse.`
+              `Not updating stock of warehouse ${picqerStock.idwarehouse}, because it doesn't exist in Vendure. You might need to re-sync stock levels and locations if this is an active warehouse.`,
             );
             continue;
           }
@@ -690,7 +680,7 @@ export class PicqerService implements OnApplicationBootstrap {
             await this.stockLevelService.getStockLevel(
               ctx,
               variant.id,
-              location.id
+              location.id,
             );
           const allocated = picqerStock.reservedallocations ?? 0;
           const newStockOnHand = allocated + picqerStock.freestock;
@@ -705,22 +695,22 @@ export class PicqerService implements OnApplicationBootstrap {
             new StockAdjustment({
               quantity: delta,
               productVariant: { id: variant.id },
-            })
+            }),
           );
         }
-      })
+      }),
     );
     if (!stockAdjustments.length) {
       Logger.warn(
         `No stock levels updated. This means none of the products in Picqer exist in Vendure yet.`,
-        loggerCtx
+        loggerCtx,
       );
       return;
     }
     await this.eventBus.publish(new StockMovementEvent(ctx, stockAdjustments));
     Logger.info(
       `Updated stock levels of ${stockAdjustments.length} variants`,
-      loggerCtx
+      loggerCtx,
     );
   }
 
@@ -747,17 +737,17 @@ export class PicqerService implements OnApplicationBootstrap {
     if (!order) {
       Logger.error(
         `Order with id ${orderId} not found, ignoring this order...`,
-        loggerCtx
+        loggerCtx,
       );
       return;
     }
     const hasPicqerHandler = order.shippingLines.some(
-      (s) => s.shippingMethod?.fulfillmentHandlerCode === picqerHandler.code
+      (s) => s.shippingMethod?.fulfillmentHandlerCode === picqerHandler.code,
     );
     if (!hasPicqerHandler) {
       Logger.info(
         `Order ${order.code} doesn't have the Picqer handler set in shipping lines, ignoring this order...`,
-        loggerCtx
+        loggerCtx,
       );
       return;
     }
@@ -771,14 +761,14 @@ export class PicqerService implements OnApplicationBootstrap {
   async pushOrderToPicqer(
     ctx: RequestContext,
     order: Order,
-    picqerClient: PicqerClient
+    picqerClient: PicqerClient,
   ): Promise<void> {
     if (!order.customer) {
       throw Error(
-        `Cannot push order '${order.code}' to picqer without an order.customer`
+        `Cannot push order '${order.code}' to picqer without an order.customer`,
       );
     }
-    let picqerCustomer: CustomerData | undefined = undefined;
+    let picqerCustomer: CustomerData | undefined;
     if (order.customer.user) {
       // This means customer is registered, not a guest
       const name =
@@ -787,7 +777,7 @@ export class PicqerService implements OnApplicationBootstrap {
         `${order.customer.firstName} ${order.customer.lastName}`;
       picqerCustomer = await picqerClient.getOrCreateMinimalCustomer(
         order.customer.emailAddress,
-        name
+        name,
       );
     }
     const vatGroups = await picqerClient.getVatGroups();
@@ -795,17 +785,17 @@ export class PicqerService implements OnApplicationBootstrap {
     const productInputs: OrderProductInput[] = [];
     for (const line of order.lines) {
       const vatGroup = vatGroups.find(
-        (vg) => vg.percentage === line.productVariant.taxRateApplied.value
+        (vg) => vg.percentage === line.productVariant.taxRateApplied.value,
       );
       if (!vatGroup) {
         throw Error(
-          `Can not find vat group ${line.productVariant.taxRateApplied.value}% for variant ${line.productVariant.sku}. Can not create order in Picqer`
+          `Can not find vat group ${line.productVariant.taxRateApplied.value}% for variant ${line.productVariant.sku}. Can not create order in Picqer`,
         );
       }
       const picqerProduct = await picqerClient.createOrUpdateProduct(
         line.productVariant.sku,
         this.mapToProductInput(ctx, line.productVariant, vatGroup.idvatgroup),
-        false // Do not update VAT group of product, but instead override it in the order
+        false, // Do not update VAT group of product, but instead override it in the order
       );
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       const additionalOrderLineFields =
@@ -821,7 +811,7 @@ export class PicqerService implements OnApplicationBootstrap {
     let orderInput = this.mapToOrderInput(
       order,
       productInputs,
-      picqerCustomer?.idcustomer
+      picqerCustomer?.idcustomer,
     );
     if (this.options.pushPicqerOrderFields) {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
@@ -833,14 +823,14 @@ export class PicqerService implements OnApplicationBootstrap {
       };
       Logger.info(
         `Added custom order fields to order '${order.code}'`,
-        loggerCtx
+        loggerCtx,
       );
     }
     const createdOrder = await picqerClient.createOrder(orderInput);
     await picqerClient.processOrder(createdOrder.idorder);
     Logger.info(
       `Created order "${order.code}" in status "processing" in Picqer with id ${createdOrder.idorder}`,
-      loggerCtx
+      loggerCtx,
     );
   }
 
@@ -850,7 +840,7 @@ export class PicqerService implements OnApplicationBootstrap {
    */
   async findAllVariantsBySku(
     ctx: RequestContext,
-    skus: string[]
+    skus: string[],
   ): Promise<Pick<ProductVariant, 'id' | 'sku'>[]> {
     let skip = 0;
     const take = 1000;
@@ -884,7 +874,7 @@ export class PicqerService implements OnApplicationBootstrap {
    */
   async handlePushVariantsJob(
     userCtx: RequestContext,
-    variantIds: ID[]
+    variantIds: ID[],
   ): Promise<void> {
     const ctx = this.createDefaultLanguageContext(userCtx);
     const client = await this.getClient(ctx);
@@ -896,12 +886,12 @@ export class PicqerService implements OnApplicationBootstrap {
     await Promise.all(
       variants.map(async (variant) => {
         const vatGroup = vatGroups.find(
-          (vg) => vg.percentage === variant.taxRateApplied.value
+          (vg) => vg.percentage === variant.taxRateApplied.value,
         );
         if (!vatGroup) {
           Logger.error(
             `Could not find vatGroup for taxRate ${variant.taxRateApplied.value} for variant ${variant.sku}. Not pushing this variant to Picqer`,
-            loggerCtx
+            loggerCtx,
           );
           return;
         }
@@ -912,11 +902,11 @@ export class PicqerService implements OnApplicationBootstrap {
           const productInput = this.mapToProductInput(
             ctx,
             variant,
-            vatGroup.idvatgroup
+            vatGroup.idvatgroup,
           );
           const picqerProduct = await client.createOrUpdateProduct(
             variant.sku,
-            productInput
+            productInput,
           );
           // Update images
           const shouldUpdateImages = !picqerProduct.images?.length;
@@ -925,23 +915,23 @@ export class PicqerService implements OnApplicationBootstrap {
           }
           const featuredImage = await this.getFeaturedImageAsBase64(
             ctx,
-            variant
+            variant,
           );
           if (featuredImage) {
             await client.addImage(picqerProduct.idproduct, featuredImage);
             Logger.info(
               `Added image for variant ${variant.sku} in Picqer for channel ${ctx.channel.token}`,
-              loggerCtx
+              loggerCtx,
             );
           }
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } catch (e: any) {
           throw new Error(
             //eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-            `Error pushing variant ${variant.sku} to Picqer: ${e?.message}`
+            `Error pushing variant ${variant.sku} to Picqer: ${e?.message}`,
           );
         }
-      })
+      }),
     );
   }
 
@@ -963,15 +953,15 @@ export class PicqerService implements OnApplicationBootstrap {
    */
   async getClient(
     ctx: RequestContext,
-    config?: PicqerChannelConfig
+    config?: PicqerChannelConfig,
   ): Promise<PicqerClient | undefined> {
     if (!config) {
       config = (await this.getConfig(ctx)) ?? undefined;
     }
-    if (!config || !config.enabled) {
+    if (!config?.enabled) {
       Logger.info(
         `Picqer is not enabled for channel ${ctx.channel.token}`,
-        loggerCtx
+        loggerCtx,
       );
       return;
     }
@@ -983,7 +973,7 @@ export class PicqerService implements OnApplicationBootstrap {
     ) {
       Logger.warn(
         `Picqer config is incomplete for channel ${ctx.channel.token}`,
-        loggerCtx
+        loggerCtx,
       );
       return;
     }
@@ -996,7 +986,7 @@ export class PicqerService implements OnApplicationBootstrap {
    */
   async getFeaturedImageAsBase64(
     ctx: RequestContext,
-    variant: ProductVariant
+    variant: ProductVariant,
   ): Promise<string | undefined> {
     let asset = await this.assetService.getFeaturedAsset(ctx, variant);
     if (!asset?.preview && this.options.fallBackToProductFeaturedAsset) {
@@ -1012,19 +1002,19 @@ export class PicqerService implements OnApplicationBootstrap {
     }
     const image = asset.preview;
     const hasAllowedExtension = ['png', 'jpg', 'jpeg'].some((extension) =>
-      image.endsWith(extension)
+      image.endsWith(extension),
     );
     if (!hasAllowedExtension) {
       // Only png, jpg and jpeg are supported by Picqer
       Logger.info(
         `featured asset for variant ${variant.sku} is not a png or jpeg, skipping`,
-        loggerCtx
+        loggerCtx,
       );
       return;
     }
     const buffer =
       await this.configService.assetOptions.assetStorageStrategy.readFileToBuffer(
-        image
+        image,
       );
     return buffer.toString('base64');
   }
@@ -1151,7 +1141,7 @@ export class PicqerService implements OnApplicationBootstrap {
   mapToProductInput(
     ctx: RequestContext,
     variant: ProductVariant,
-    vatGroupId: number
+    vatGroupId: number,
   ): ProductInput {
     const additionalFields =
       this.options.pushProductVariantFields?.(variant) || {};
@@ -1160,14 +1150,14 @@ export class PicqerService implements OnApplicationBootstrap {
     }
     let name: string =
       variant.translations?.find(
-        (t) => t.languageCode === ctx.channel.defaultLanguageCode
+        (t) => t.languageCode === ctx.channel.defaultLanguageCode,
       )?.name ??
       variant.name ??
       variant.translations?.[0]?.name;
     if (!name) {
       Logger.info(
         `Variant ${variant.sku} has no name, using SKU as name for Picqer product`,
-        loggerCtx
+        loggerCtx,
       );
       name = variant.sku;
     }
@@ -1184,11 +1174,11 @@ export class PicqerService implements OnApplicationBootstrap {
   mapToOrderInput(
     order: Order,
     products: OrderProductInput[],
-    customerId?: number
+    customerId?: number,
   ): OrderInput {
     if (!order.customer) {
       throw Error(
-        `Cannot map order '${order.code}' to Picqer order without order.customer`
+        `Cannot map order '${order.code}' to Picqer order without order.customer`,
       );
     }
     const shippingAddress = order.shippingAddress;
@@ -1239,6 +1229,19 @@ export class PicqerService implements OnApplicationBootstrap {
       .trim();
   }
 
+  /** Reads configured extra fields without aborting stock synchronization on failure. */
+  private getAdditionalVariantFields(product: ProductData) {
+    try {
+      return this.options.pullPicqerProductFields?.(product) || {};
+    } catch (e: any) {
+      Logger.error(
+        `Failed to get additional fields from the configured pullFieldsFromPicqer function: ${e?.message}`,
+        loggerCtx,
+      );
+      return {};
+    }
+  }
+
   /**
    * Get name and contactname for given address
    * returns [name, contactname]
@@ -1247,10 +1250,10 @@ export class PicqerService implements OnApplicationBootstrap {
    * Otherwise, use the full name as name and no explicit contact name
    */
   private getAddressName(
-    address?: Pick<OrderAddress, 'company' | 'fullName'>
+    address?: Pick<OrderAddress, 'company' | 'fullName'>,
   ): [string | undefined, string | undefined] {
-    let name;
-    let contactname;
+    let name: string | undefined;
+    let contactname: string | undefined;
     if (address?.company?.trim()) {
       name = address.company;
       contactname = address.fullName;

@@ -10,7 +10,7 @@ export class SearchShopResolver {
   @Query()
   async betterSearch(
     @Ctx() ctx: RequestContext,
-    @Args() args: { input: BetterSearchInput }
+    @Args() args: { input: BetterSearchInput },
   ): Promise<BetterSearchResultList> {
     return this.searchService.search(ctx, args.input);
   }

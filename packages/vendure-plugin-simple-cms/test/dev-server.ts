@@ -1,13 +1,13 @@
+import { VendureConfig } from '@vendure/core';
 import {
-  SqljsInitializer,
   createTestEnvironment,
   registerInitializer,
+  SqljsInitializer,
 } from '@vendure/testing';
-import { initialData } from '../../test/src/initial-data';
 import dotenv from 'dotenv';
-import { config } from './vendure-config';
-import { VendureConfig } from '@vendure/core';
 import gql from 'graphql-tag';
+import { initialData } from '../../test/src/initial-data';
+import { config } from './vendure-config';
 
 const CREATE_CONTENT_ENTRY = gql`
   mutation CreateContentEntry($input: ContentEntryInput!) {
@@ -35,7 +35,7 @@ const CREATE_CONTENT_ENTRY = gql`
   };
 
   const { server, adminClient } = createTestEnvironment(
-    config as Required<VendureConfig>
+    config as Required<VendureConfig>,
   );
   await server.init({
     initialData: {
@@ -97,6 +97,6 @@ const CREATE_CONTENT_ENTRY = gql`
 
   // eslint-disable-next-line no-console
   console.log(
-    'Vendure dev server started with 1 FeaturedProduct and 2 Banners'
+    'Vendure dev server started with 1 FeaturedProduct and 2 Banners',
   );
 })();

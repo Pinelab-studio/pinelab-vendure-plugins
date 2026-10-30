@@ -24,7 +24,7 @@
     "build:dashboard": "vite build --config ./vite.config.mts",
     "dev:dashboard": "vite --clearScreen false",
     "test": "vitest run --bail 1",
-    "lint": "eslint ."
+    "lint": "biome check ."
   },
   "dependencies": {
     "catch-unknown": "^2.0.0"

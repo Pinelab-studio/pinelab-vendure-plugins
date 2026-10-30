@@ -6,16 +6,16 @@ import {
   Type,
   VendurePlugin,
 } from '@vendure/core';
+import { rawBodyMiddleware } from '../../util/src/raw-body.middleware';
+import { DefaultSubscriptionStrategy } from '../../util/src/subscription/default-subscription-strategy';
 import { SubscriptionStrategy } from '../../util/src/subscription/subscription-strategy';
-import { AcceptBlueService } from './service/accept-blue-service';
-import { acceptBluePaymentHandler } from './service/accept-blue-handler';
-import { PLUGIN_INIT_OPTIONS } from './constants';
-import { adminApiExtensions, shopApiExtensions } from './api/api-extensions';
+import { AcceptBlueAdminResolver } from './api/accept-blue-admin-resolver';
 import { AcceptBlueCommonResolver } from './api/accept-blue-common-resolvers';
 import { AcceptBlueController } from './api/accept-blue-controller';
-import { DefaultSubscriptionStrategy } from '../../util/src/subscription/default-subscription-strategy';
-import { rawBodyMiddleware } from '../../util/src/raw-body.middleware';
-import { AcceptBlueAdminResolver } from './api/accept-blue-admin-resolver';
+import { adminApiExtensions, shopApiExtensions } from './api/api-extensions';
+import { PLUGIN_INIT_OPTIONS } from './constants';
+import { acceptBluePaymentHandler } from './service/accept-blue-handler';
+import { AcceptBlueService } from './service/accept-blue-service';
 import { SubscriptionOrderItemCalculation } from './service/subscription-order-item-calculation';
 import { AdditionalChargeInput } from './types';
 
@@ -39,7 +39,7 @@ interface AcceptBluePluginOptionsInput {
   additionalChargeInput?: (
     ctx: RequestContext,
     injector: Injector,
-    order: Order
+    order: Order,
   ) =>
     | Promise<AdditionalChargeInput | undefined>
     | AdditionalChargeInput
@@ -105,7 +105,7 @@ export class AcceptBluePlugin {
     if (vendureHost.endsWith('/')) {
       vendureHost = vendureHost.slice(0, vendureHost.length - 1);
     }
-    this.options = {
+    AcceptBluePlugin.options = {
       ...options,
       subscriptionStrategy:
         options.subscriptionStrategy ?? new DefaultSubscriptionStrategy(),

@@ -1,7 +1,7 @@
 import { AddressLookupInput } from '../generated/graphql';
 
 export function validateDutchPostalCode(
-  input: AddressLookupInput
+  input: AddressLookupInput,
 ): true | string {
   if (!input.postalCode) {
     return 'Postal code is required for lookup';

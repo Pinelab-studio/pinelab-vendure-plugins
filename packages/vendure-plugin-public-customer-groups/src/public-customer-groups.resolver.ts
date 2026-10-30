@@ -1,11 +1,11 @@
 import { Parent, ResolveField, Resolver } from '@nestjs/graphql';
 import {
   Ctx,
-  RequestContext,
   Customer,
-  CustomerService,
   CustomerGroup,
+  CustomerService,
   PaginatedList,
+  RequestContext,
 } from '@vendure/core';
 
 @Resolver()
@@ -16,11 +16,11 @@ export class PublicCustomerGroupsResolver {
   @Resolver('Customer')
   async customerGroups(
     @Ctx() ctx: RequestContext,
-    @Parent() customer: Customer
+    @Parent() customer: Customer,
   ): Promise<CustomerGroup[]> {
     const customerGroups = await this.customerService.getCustomerGroups(
       ctx,
-      customer.id
+      customer.id,
     );
     return customerGroups.filter((group) => !!group.customFields.isPublic);
   }
@@ -31,8 +31,8 @@ export class PublicCustomerGroupsResolver {
   @ResolveField('customers')
   @Resolver('CustomerGroup')
   async customers(
-    @Ctx() ctx: RequestContext,
-    @Parent() _: CustomerGroup
+    @Ctx() _ctx: RequestContext,
+    @Parent() _: CustomerGroup,
   ): Promise<PaginatedList<Customer>> {
     return { items: [], totalItems: 0 };
   }

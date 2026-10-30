@@ -69,7 +69,7 @@ describe('PostNLLookupStrategy', () => {
 
       expect(mockFetch).toHaveBeenCalledWith(
         'https://api.postnl.nl/v2/address/benelux?countryIso=nl&houseNumber=1&postalCode=1234AB',
-        expect.any(Object)
+        expect.any(Object),
       );
       expect(result).toHaveLength(1);
       expect(result[0]).toMatchObject({
@@ -107,7 +107,7 @@ describe('PostNLLookupStrategy', () => {
       });
       expect(mockFetch).toHaveBeenCalledWith(
         'https://api.postnl.nl/v2/address/benelux?countryIso=be&houseNumber=1&postalCode=1000',
-        expect.any(Object)
+        expect.any(Object),
       );
       expect(result).toHaveLength(2);
     });
@@ -134,7 +134,7 @@ describe('PostNLLookupStrategy', () => {
       });
       expect(mockFetch).toHaveBeenCalledWith(
         'https://api.postnl.nl/v2/address/benelux?countryIso=be&houseNumber=1&postalCode=1000&streetName=Rue Specific',
-        expect.any(Object)
+        expect.any(Object),
       );
       expect(result).toHaveLength(1);
       expect(result[0]).toMatchObject({
@@ -156,7 +156,7 @@ describe('PostNLLookupStrategy', () => {
           countryCode: 'NL',
           postalCode: '1234AB',
           houseNumber: '1',
-        })
+        }),
       ).rejects.toThrow('PostNL API returned status 400: Bad Request');
     });
   });

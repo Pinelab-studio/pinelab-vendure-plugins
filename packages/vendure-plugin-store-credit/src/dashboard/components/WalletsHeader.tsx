@@ -4,7 +4,7 @@ import { CreateWalletDialog } from './CreateWalletDialog';
 
 const CustomerWalletsHeader = () => {
   return (
-    <div className="flex items-center justify-between w-full">
+    <div className="flex w-full items-center justify-between">
       <h1 className="font-semibold">Store Credit Wallets</h1>
       <CreateWalletDialog>
         <Button type="button" size="sm">

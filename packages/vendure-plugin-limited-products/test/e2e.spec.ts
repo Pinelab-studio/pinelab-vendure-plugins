@@ -1,10 +1,8 @@
 import {
   AutoIncrementIdStrategy,
   DefaultLogger,
-  idsAreEqual,
   LogLevel,
   mergeConfig,
-  Order,
 } from '@vendure/core';
 import {
   createTestEnvironment,
@@ -14,13 +12,13 @@ import {
   testConfig,
 } from '@vendure/testing';
 import { TestServer } from '@vendure/testing/lib/test-server';
-import { initialData } from '../../test/src/initial-data';
 import gql from 'graphql-tag';
-import { LimitedProductsPlugin } from '../src/limited-products.plugin';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { initialData } from '../../test/src/initial-data';
 import { addItem } from '../../test/src/shop-utils';
-import { expect, describe, beforeAll, afterAll, it } from 'vitest';
-import { ChannelAwareIntValue } from '../src/types';
-describe('Limit variants per order plugin', function () {
+import { LimitedProductsPlugin } from '../src/limited-products.plugin';
+
+describe('Limit variants per order plugin', () => {
   let server: TestServer;
   let adminClient: SimpleGraphQLClient;
   let shopClient: SimpleGraphQLClient;
@@ -84,7 +82,7 @@ describe('Limit variants per order plugin', function () {
       {
         maxPerOrder: [JSON.stringify({ value: 6, channelId: '1' })],
         onlyAllowPer: [JSON.stringify({ value: 2, channelId: '1' })],
-      }
+      },
     );
     expect(product.customFields.maxPerOrder).toEqual([
       JSON.stringify({ value: 6, channelId: '1' }),
@@ -114,7 +112,7 @@ describe('Limit variants per order plugin', function () {
 
   it("Can't add 1 more to cart, because only multiples of 2 are allowed", async () => {
     await expect(addItem(shopClient, '1', 1)).rejects.toThrow(
-      "You are only allowed to order a multiple of 2 item 'Laptop 13 inch 8GB'"
+      "You are only allowed to order a multiple of 2 item 'Laptop 13 inch 8GB'",
     );
   });
 
@@ -136,10 +134,10 @@ describe('Limit variants per order plugin', function () {
           }
         }
       `,
-      { quantity: 3 }
+      { quantity: 3 },
     );
     await expect(promise).rejects.toThrow(
-      "You are only allowed to order a multiple of 2 item 'Laptop 13 inch 8GB'"
+      "You are only allowed to order a multiple of 2 item 'Laptop 13 inch 8GB'",
     );
   });
 
@@ -156,7 +154,7 @@ describe('Limit variants per order plugin', function () {
           }
         }
       `,
-      { quantity: 2 }
+      { quantity: 2 },
     );
     expect(order.lines[0].quantity).toBe(2);
   });
@@ -174,10 +172,10 @@ describe('Limit variants per order plugin', function () {
           }
         }
       `,
-      { quantity: 7 }
+      { quantity: 7 },
     );
     await expect(promise).rejects.toThrow(
-      "You are only allowed to order max 6 of item 'Laptop 13 inch 8GB'"
+      "You are only allowed to order max 6 of item 'Laptop 13 inch 8GB'",
     );
   });
 

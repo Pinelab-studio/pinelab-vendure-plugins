@@ -68,12 +68,12 @@ export class PopularityScoresPlugin {
   static config: PopularityScoresPluginConfig;
 
   static init(
-    config: PopularityScoresPluginConfig
+    config: PopularityScoresPluginConfig,
   ): Type<PopularityScoresPlugin> {
-    this.config = config;
-    if (!this.config?.chunkSize) {
-      this.config.chunkSize = 100;
+    PopularityScoresPlugin.config = config;
+    if (!PopularityScoresPlugin.config?.chunkSize) {
+      PopularityScoresPlugin.config.chunkSize = 100;
     }
-    return this;
+    return PopularityScoresPlugin;
   }
 }

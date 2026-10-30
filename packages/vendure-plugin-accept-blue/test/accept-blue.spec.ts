@@ -10,18 +10,17 @@ import {
   Order,
   OrderLine,
 } from '@vendure/core';
-// @ts-ignore
-import nock from 'nock';
-
 import {
   createTestEnvironment,
   E2E_DEFAULT_CHANNEL_TOKEN,
   registerInitializer,
   SimpleGraphQLClient,
   SqljsInitializer,
-  testConfig,
   TestServer,
+  testConfig,
 } from '@vendure/testing';
+// @ts-expect-error
+import nock from 'nock';
 import { DataSource } from 'typeorm';
 import { afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { SetShippingAddress } from '../../test/src/generated/shop-graphql';
@@ -57,6 +56,7 @@ import {
   ELIGIBLE_PAYMENT_METHODS,
   GET_CUSTOMER_WITH_ID,
   GET_HISTORY_ENTRIES,
+  GET_ORDER_AS_ADMIN,
   GET_ORDER_BY_CODE,
   GET_SURCHARGES,
   GET_USER_SAVED_PAYMENT_METHOD,
@@ -65,12 +65,11 @@ import {
   REFUND_TRANSACTION,
   SET_SHIPPING_METHOD,
   SHOP_CREATE_CARD_PAYMENT_METHOD,
+  SHOP_CREATE_CHECK_PAYMENT_METHOD,
   TRANSITION_ORDER_TO,
   UPDATE_CARD_PAYMENT_METHOD,
   UPDATE_CHECK_PAYMENT_METHOD,
   UPDATE_SUBSCRIPTION,
-  SHOP_CREATE_CHECK_PAYMENT_METHOD,
-  GET_ORDER_AS_ADMIN,
 } from './helpers/graphql-helpers';
 import {
   checkChargeResult,
@@ -98,7 +97,7 @@ let placedOrder: Order | undefined;
  * Lets a test alter the recurring part of the subscription that the default strategy defines
  */
 let recurringOverride: (
-  recurring: Subscription['recurring']
+  recurring: Subscription['recurring'],
 ) => Partial<Subscription['recurring']> = () => ({});
 
 class OverridableSubscriptionStrategy extends DefaultSubscriptionStrategy {
@@ -116,7 +115,7 @@ class OverridableSubscriptionStrategy extends DefaultSubscriptionStrategy {
   }
 }
 
-let testingNonceToken = {
+const testingNonceToken = {
   source: 'nonce-1234567',
   expiry_year: 2025,
   expiry_month: 1,
@@ -132,7 +131,7 @@ beforeAll(async () => {
         vendureHost: 'https://my-vendure-backend.io',
         sendReceiptEmail: false,
         subscriptionStrategy: new OverridableSubscriptionStrategy(),
-        additionalChargeInput: async (ctx, injector, order) => {
+        additionalChargeInput: async (_ctx, _injector, _order) => {
           return {
             amount_details: {
               surcharge: 1, // Just a sample, to make sure additional input is passed to AB
@@ -232,7 +231,7 @@ it('Creates Accept Blue payment method', async () => {
           { languageCode: LanguageCode.en, name: 'Accept Blue Payment Method' },
         ],
       },
-    }
+    },
   ));
   await waitFor(() => receivedWebhookCreation === true);
   expect(acceptBluePaymentMethod.id).toBeDefined();
@@ -242,7 +241,7 @@ it('Creates Accept Blue payment method', async () => {
 describe('Shop API', () => {
   it('Returns enabled accept blue payment methods', async () => {
     const { eligibleAcceptBluePaymentMethods } = await shopClient.query(
-      ELIGIBLE_AC_PAYMENT_METHODS
+      ELIGIBLE_AC_PAYMENT_METHODS,
     );
     expect(eligibleAcceptBluePaymentMethods).toEqual(
       expect.arrayContaining([
@@ -253,13 +252,13 @@ describe('Shop API', () => {
         expect.objectContaining({ name: 'Discover' }),
         expect.objectContaining({ name: 'GooglePay' }),
         expect.objectContaining({ name: 'ApplePay' }),
-      ])
+      ]),
     );
     eligibleAcceptBluePaymentMethods.forEach((method: any) => {
       expect(method.tokenizationKey).toBe('tokenization mock');
       expect(method.googlePayMerchantId).toBe('googlePayMerchantId mock');
       expect(method.googlePayGatewayMerchantId).toBe(
-        'googlePayGatewayMerchantId mock'
+        'googlePayGatewayMerchantId mock',
       );
     });
   });
@@ -291,7 +290,7 @@ describe('Shop API', () => {
   it('Previews subscriptions for variant', async () => {
     const { previewAcceptBlueSubscriptions } = await shopClient.query(
       PREVIEW_SUBSCRIPTIONS_FOR_VARIANT,
-      { productVariantId: 'T_1' }
+      { productVariantId: 'T_1' },
     );
     expect(previewAcceptBlueSubscriptions?.length).toBeGreaterThan(0);
     expect(previewAcceptBlueSubscriptions[0]?.variantId).toBe('T_1');
@@ -300,7 +299,7 @@ describe('Shop API', () => {
   it('Previews subscriptions for product', async () => {
     const { previewAcceptBlueSubscriptionsForProduct } = await shopClient.query(
       PREVIEW_SUBSCRIPTIONS_FOR_PRODUCT,
-      { productId: 'T_1' }
+      { productId: 'T_1' },
     );
     expect(previewAcceptBlueSubscriptionsForProduct?.length).toBeGreaterThan(0);
   });
@@ -308,12 +307,12 @@ describe('Shop API', () => {
   it('Gets saved payment methods for logged in customer', async () => {
     nockInstance
       .get(
-        `/customers/${haydenZiemeCustomerDetails.id}/payment-methods?limit=100`
+        `/customers/${haydenZiemeCustomerDetails.id}/payment-methods?limit=100`,
       )
       .reply(200, haydenSavedPaymentMethods);
     await shopClient.asUserWithCredentials(
       'hayden.zieme12@hotmail.com',
-      'test'
+      'test',
     );
     // Set mock customerId on Vendure customer for this test
     await server.app
@@ -323,13 +322,13 @@ describe('Shop API', () => {
         { id: 1 },
         {
           customFields: { acceptBlueCustomerId: haydenZiemeCustomerDetails.id },
-        }
+        },
       );
     const {
       activeCustomer: { savedAcceptBluePaymentMethods },
     } = await shopClient.query(GET_USER_SAVED_PAYMENT_METHOD);
     expect(savedAcceptBluePaymentMethods?.length).toBe(
-      haydenSavedPaymentMethods.length
+      haydenSavedPaymentMethods.length,
     );
   });
 
@@ -337,7 +336,7 @@ describe('Shop API', () => {
     //no network call made here so using nock is not necessary
     await shopClient.asAnonymousUser();
     const { activeCustomer } = await shopClient.query(
-      GET_USER_SAVED_PAYMENT_METHOD
+      GET_USER_SAVED_PAYMENT_METHOD,
     );
     expect(activeCustomer?.savedAcceptBluePaymentMethods).toBeUndefined();
   });
@@ -350,14 +349,14 @@ describe('Payment with Saved Payment Method', () => {
     await shopClient.asAnonymousUser();
     await shopClient.asUserWithCredentials(
       'hayden.zieme12@hotmail.com',
-      'test'
+      'test',
     );
     const { addItemToOrder: order } = await shopClient.query(
       ADD_ITEM_TO_ORDER,
       {
         productVariantId: '3',
         quantity: 1,
-      }
+      },
     );
     await shopClient.query(SetShippingAddress, {
       input: {
@@ -375,16 +374,16 @@ describe('Payment with Saved Payment Method', () => {
 
   it('Returns eligible payment methods with acceptBlue fields', async () => {
     const { eligiblePaymentMethods } = await shopClient.query(
-      ELIGIBLE_PAYMENT_METHODS
+      ELIGIBLE_PAYMENT_METHODS,
     );
     expect(eligiblePaymentMethods.length).toBe(1);
     const method = eligiblePaymentMethods[0];
     expect(method.acceptBlueHostedTokenizationKey).toBe('tokenization mock');
     expect(method.acceptBlueGooglePayMerchantId).toBe(
-      'googlePayMerchantId mock'
+      'googlePayMerchantId mock',
     );
     expect(method.acceptBlueGooglePayGatewayMerchantId).toBe(
-      'googlePayGatewayMerchantId mock'
+      'googlePayGatewayMerchantId mock',
     );
   });
 
@@ -392,7 +391,7 @@ describe('Payment with Saved Payment Method', () => {
     // get customer
     nockInstance
       .get(
-        `/customers?active=true&customer_number=hayden.zieme12%40hotmail.com`
+        `/customers?active=true&customer_number=hayden.zieme12%40hotmail.com`,
       )
       .times(2)
       .reply(200, [haydenZiemeCustomerDetails]);
@@ -429,7 +428,7 @@ describe('Payment with Saved Payment Method', () => {
           method: acceptBluePaymentMethod.code,
           metadata: { paymentMethodId: testPaymentMethod.id },
         },
-      }
+      },
     );
     expect(deletionRequest.isDone()).toBe(true); // Should have called delete recurring schedule
     // Payment declined should keep order in ArrangingPayment
@@ -464,7 +463,7 @@ describe('Payment with Saved Payment Method', () => {
         (body) => {
           recurringRequests.push(body);
           return true;
-        }
+        },
       )
       .reply(201, createMockRecurringScheduleResult({ id: 6014 }));
     //createCharge
@@ -494,12 +493,12 @@ describe('Payment with Saved Payment Method', () => {
           method: acceptBluePaymentMethod.code,
           metadata: { paymentMethodId: testPaymentMethod.id },
         },
-      }
+      },
     );
     placedOrder = order;
-    subscriptionIds = order.lines
-      .map((l: any) => l.customFields.acceptBlueSubscriptionIds)
-      .flat();
+    subscriptionIds = order.lines.flatMap(
+      (l: any) => l.customFields.acceptBlueSubscriptionIds,
+    );
     expect(order.state).toBe('PaymentSettled');
     expect(recurringRequests.length).toBe(1);
     expect(recurringRequests[0].amount).toBe(9);
@@ -513,7 +512,7 @@ describe('Payment with Saved Payment Method', () => {
       GET_ORDER_AS_ADMIN,
       {
         id: placedOrder?.id,
-      }
+      },
     );
     expect(settledOrder.payments?.length).toBe(2);
     settledOrder.payments.forEach((p: any) => {
@@ -552,14 +551,14 @@ describe('Payment with Credit Card Payment Method', () => {
     await shopClient.asAnonymousUser();
     await shopClient.asUserWithCredentials(
       'hayden.zieme12@hotmail.com',
-      'test'
+      'test',
     );
     const { addItemToOrder: order } = await shopClient.query(
       ADD_ITEM_TO_ORDER,
       {
         productVariantId: '1',
         quantity: 1,
-      }
+      },
     );
     // has subscription on orderline
     expect(order.lines[0].acceptBlueSubscriptions?.[0]?.variantId).toBe('T_1');
@@ -581,7 +580,7 @@ describe('Payment with Credit Card Payment Method', () => {
     nockInstance
       .persist()
       .get(
-        `/customers/${haydenZiemeCustomerDetails.id}/payment-methods?limit=100`
+        `/customers/${haydenZiemeCustomerDetails.id}/payment-methods?limit=100`,
       )
       .reply(200, haydenSavedPaymentMethods);
     //createRecurringSchedule
@@ -613,11 +612,11 @@ describe('Payment with Credit Card Payment Method', () => {
           method: acceptBluePaymentMethod.code,
           metadata,
         },
-      }
+      },
     );
-    createdSubscriptionIds = order.lines
-      .map((l: any) => l.customFields.acceptBlueSubscriptionIds)
-      .flat();
+    createdSubscriptionIds = order.lines.flatMap(
+      (l: any) => l.customFields.acceptBlueSubscriptionIds,
+    );
     expect(order.state).toBe('PaymentSettled');
   });
 
@@ -632,14 +631,14 @@ describe('Payment with Check Payment Method', () => {
     await shopClient.asAnonymousUser();
     await shopClient.asUserWithCredentials(
       'hayden.zieme12@hotmail.com',
-      'test'
+      'test',
     );
     const { addItemToOrder: order } = await shopClient.query(
       ADD_ITEM_TO_ORDER,
       {
         productVariantId: '3',
         quantity: 1,
-      }
+      },
     );
     // has subscription on orderline
     expect(order.lines[0].acceptBlueSubscriptions?.[0]?.variantId).toBe('T_3');
@@ -659,7 +658,7 @@ describe('Payment with Check Payment Method', () => {
     nockInstance
       .persist()
       .get(
-        `/customers/${haydenZiemeCustomerDetails.id}/payment-methods?limit=100`
+        `/customers/${haydenZiemeCustomerDetails.id}/payment-methods?limit=100`,
       )
       .reply(200, haydenSavedPaymentMethods);
     //createRecurringSchedule
@@ -694,11 +693,11 @@ describe('Payment with Check Payment Method', () => {
           method: acceptBluePaymentMethod.code,
           metadata,
         },
-      }
+      },
     );
-    createdSubscriptionIds = order.lines
-      .map((l: any) => l.customFields.acceptBlueSubscriptionIds)
-      .flat();
+    createdSubscriptionIds = order.lines.flatMap(
+      (l: any) => l.customFields.acceptBlueSubscriptionIds,
+    );
     expect(order.state).toBe('PaymentSettled');
   });
 
@@ -714,14 +713,14 @@ describe('Payment with Google Pay', () => {
     await shopClient.asAnonymousUser();
     await shopClient.asUserWithCredentials(
       'hayden.zieme12@hotmail.com',
-      'test'
+      'test',
     );
     const { addItemToOrder: order } = await shopClient.query(
       ADD_ITEM_TO_ORDER,
       {
         productVariantId: '3',
         quantity: 1,
-      }
+      },
     );
     await shopClient.query(SET_SHIPPING_METHOD, {
       id: [1],
@@ -730,7 +729,7 @@ describe('Payment with Google Pay', () => {
       TRANSITION_ORDER_TO,
       {
         state: 'ArrangingPayment',
-      }
+      },
     );
     // has subscription on orderline
     expect(order.lines[0].acceptBlueSubscriptions?.[0]?.variantId).toBe('T_3');
@@ -764,7 +763,7 @@ describe('Payment with Google Pay', () => {
         (req) => {
           createPaymentMethodRequest = req;
           return true;
-        }
+        },
       )
       .reply(200, {
         id: 6789,
@@ -786,11 +785,11 @@ describe('Payment with Google Pay', () => {
             token: 'encrypted',
           },
         },
-      }
+      },
     );
-    createdSubscriptionIds = order.lines
-      .map((l: any) => l.customFields.acceptBlueSubscriptionIds)
-      .flat();
+    createdSubscriptionIds = order.lines.flatMap(
+      (l: any) => l.customFields.acceptBlueSubscriptionIds,
+    );
     expect(order.state).toBe('PaymentSettled');
     expect(chargeRequest.amount).toBe(15.8);
     expect(chargeRequest.source).toBe('googlepay');
@@ -813,9 +812,9 @@ describe('Transactions', () => {
       .ofType(AcceptBlueTransactionEvent)
       .subscribe((event) => events.push(event));
     // Get latest created subscription
-    const subscriptionId = placedOrder?.lines
-      .map((l: any) => l.customFields.acceptBlueSubscriptionIds)
-      .flat()?.[0];
+    const subscriptionId = placedOrder?.lines.flatMap(
+      (l: any) => l.customFields.acceptBlueSubscriptionIds,
+    )?.[0];
     const mockWebhook = createMockWebhook({ scheduleId: subscriptionId });
     const signature = createSignature('just-a-test-secret', mockWebhook);
     const result = await shopClient.fetch(
@@ -826,14 +825,14 @@ describe('Transactions', () => {
         headers: {
           'x-signature': signature,
         },
-      }
+      },
     );
     expect(result.status).toBe(201);
     expect(events.length).toBe(1);
     orderLineWithSubscription = events[0].orderLine;
     const orderLine = events[0].orderLine;
     expect((orderLine.customFields as any).acceptBlueSubscriptionIds).toContain(
-      subscriptionId
+      subscriptionId,
     );
     expect(orderLine.order.code).toBe(placedOrder?.code);
     expect(orderLine.order.customer?.emailAddress).toBeDefined();
@@ -857,7 +856,7 @@ describe('Transactions', () => {
         headers: {
           'x-signature': signature,
         },
-      }
+      },
     );
     expect(result.status).toBe(201);
     expect(events.length).toBe(1);
@@ -888,7 +887,7 @@ describe('Payment method management', () => {
   it('Prepares a customer for payment method management', async () => {
     await shopClient.asUserWithCredentials(
       'hayden.zieme12@hotmail.com',
-      'test'
+      'test',
     );
     // Set mock customerId on Vendure customer for this test
     await server.app
@@ -898,7 +897,7 @@ describe('Payment method management', () => {
         { id: 1 },
         {
           customFields: { acceptBlueCustomerId: haydenZiemeCustomerDetails.id },
-        }
+        },
       );
   });
 
@@ -931,7 +930,7 @@ describe('Payment method management', () => {
           expiry_month: 5,
           expiry_year: 2040,
         },
-      }
+      },
     );
     expect(updateAcceptBlueCardPaymentMethod).toEqual({
       id: 14969,
@@ -961,7 +960,7 @@ describe('Payment method management', () => {
       },
     });
     await expect(updateRequest).rejects.toThrowError(
-      "Payment method '14969' is not a card payment method"
+      "Payment method '14969' is not a card payment method",
     );
   });
 
@@ -984,7 +983,7 @@ describe('Payment method management', () => {
       },
     });
     await expect(updateRequest).rejects.toThrowError(
-      'You are not currently authorized to perform this action'
+      'You are not currently authorized to perform this action',
     );
   });
 
@@ -1001,7 +1000,7 @@ describe('Payment method management', () => {
       },
     });
     await expect(updateRequest).rejects.toThrowError(
-      'You are not currently authorized to perform this action'
+      'You are not currently authorized to perform this action',
     );
   });
 
@@ -1035,7 +1034,7 @@ describe('Payment method management', () => {
           expiry_month: 5,
           expiry_year: 2040,
         },
-      }
+      },
     );
     expect(updateAcceptBlueCardPaymentMethod).toEqual({
       id: 14969,
@@ -1060,7 +1059,7 @@ describe('Payment method management', () => {
       },
     });
     await expect(updateRequest).rejects.toThrowError(
-      'You are not currently authorized to perform this action'
+      'You are not currently authorized to perform this action',
     );
   });
 
@@ -1090,7 +1089,7 @@ describe('Payment method management', () => {
           account_type: 'savings',
           sec_code: 'PPD',
         },
-      }
+      },
     );
     expect(updateAcceptBlueCheckPaymentMethod).toEqual({
       id: 14969,
@@ -1113,7 +1112,7 @@ describe('Payment method management', () => {
       },
     });
     await expect(updateRequest).rejects.toThrowError(
-      'You are not currently authorized to perform this action'
+      'You are not currently authorized to perform this action',
     );
   });
 
@@ -1123,14 +1122,14 @@ describe('Payment method management', () => {
       id: 14969,
     });
     await expect(deleteRequest).rejects.toThrowError(
-      'You are not currently authorized to perform this action'
+      'You are not currently authorized to perform this action',
     );
   });
 
   it('Fails to delete payment method when it is used in active recurring transactions', async () => {
     await shopClient.asUserWithCredentials(
       'hayden.zieme12@hotmail.com',
-      'test'
+      'test',
     );
     // Mock the get payment method call to verify it exists
     nockInstance.get('/payment-methods/14969').reply(200, {
@@ -1151,7 +1150,7 @@ describe('Payment method management', () => {
       });
     } catch (e: any) {
       expect(e.response.errors[0].message).toBe(
-        'This payment method cannot be deleted since it is used in active recurring transactions'
+        'This payment method cannot be deleted since it is used in active recurring transactions',
       );
     }
   });
@@ -1177,7 +1176,7 @@ describe('Payment method management', () => {
   it('Creates card payment method as logged in customer', async () => {
     await shopClient.asUserWithCredentials(
       'hayden.zieme12@hotmail.com',
-      'test'
+      'test',
     );
     const creationDate = new Date();
     // Mock the create payment method call
@@ -1200,7 +1199,7 @@ describe('Payment method management', () => {
           avs_address: 'Test Street',
           avs_zip: '12345',
         },
-      }
+      },
     );
     expect(createAcceptBlueCardPaymentMethod).toEqual(
       expect.objectContaining({
@@ -1208,7 +1207,7 @@ describe('Payment method management', () => {
         created_at: creationDate.toISOString(),
         expiry_month: 12,
         expiry_year: 2025,
-      })
+      }),
     );
   });
 
@@ -1233,7 +1232,7 @@ describe('Payment method management', () => {
           expiry_year: 2026,
         },
         customerId: haydenZiemeCustomerDetails.vendureId,
-      }
+      },
     );
     expect(createAcceptBlueCardPaymentMethod).toEqual(
       expect.objectContaining({
@@ -1241,7 +1240,7 @@ describe('Payment method management', () => {
         created_at: creationDate.toISOString(),
         expiry_month: 6,
         expiry_year: 2026,
-      })
+      }),
     );
   });
 
@@ -1258,14 +1257,14 @@ describe('Payment method management', () => {
       },
     });
     await expect(createRequest).rejects.toThrowError(
-      'You are not currently authorized to perform this action'
+      'You are not currently authorized to perform this action',
     );
   });
 
   it('Creates check payment method as logged in customer', async () => {
     await shopClient.asUserWithCredentials(
       haydenZiemeCustomerDetails.email,
-      'test'
+      'test',
     );
     const creationDate = new Date();
     // Mock the create payment method call
@@ -1291,7 +1290,7 @@ describe('Payment method management', () => {
           sec_code: 'WEB',
           name: 'Test Check',
         },
-      }
+      },
     );
 
     expect(createAcceptBlueCheckPaymentMethod).toEqual(
@@ -1304,7 +1303,7 @@ describe('Payment method management', () => {
         routing_number: '123456789',
         sec_code: 'WEB',
         last4: '5678',
-      })
+      }),
     );
   });
 
@@ -1321,7 +1320,7 @@ describe('Payment method management', () => {
     });
 
     await expect(createRequest).rejects.toThrow(
-      'You are not currently authorized to perform this action'
+      'You are not currently authorized to perform this action',
     );
   });
 
@@ -1346,11 +1345,11 @@ describe('Payment method management', () => {
         createMockRecurringScheduleResult({
           id: scheduleId,
           payment_method_id: 456789,
-        })
+        }),
       );
     await shopClient.asUserWithCredentials(
       'hayden.zieme12@hotmail.com',
-      'test'
+      'test',
     );
     const { updateAcceptBlueSubscription } = await shopClient.query<
       any,
@@ -1365,7 +1364,7 @@ describe('Payment method management', () => {
       expect.objectContaining({
         id: `T_${scheduleId}`,
         paymentMethodId: 456789,
-      })
+      }),
     );
   });
 
@@ -1380,7 +1379,7 @@ describe('Payment method management', () => {
     });
     await shopClient.asUserWithCredentials(
       'hayden.zieme12@hotmail.com',
-      'test'
+      'test',
     );
     const updateRequest = shopClient.query<
       any,
@@ -1392,7 +1391,7 @@ describe('Payment method management', () => {
       },
     });
     await expect(updateRequest).rejects.toThrowError(
-      'You are not currently authorized to perform this action'
+      'You are not currently authorized to perform this action',
     );
   });
 
@@ -1404,11 +1403,11 @@ describe('Payment method management', () => {
       createMockRecurringScheduleResult({
         id: scheduleId,
         customer_id: 999999, // Different customer ID, not Hayden
-      })
+      }),
     );
     await shopClient.asUserWithCredentials(
       'hayden.zieme12@hotmail.com',
-      'test'
+      'test',
     );
     const updateRequest = shopClient.query<
       any,
@@ -1419,7 +1418,7 @@ describe('Payment method management', () => {
       },
     });
     await expect(updateRequest).rejects.toThrowError(
-      'You are not currently authorized to perform this action'
+      'You are not currently authorized to perform this action',
     );
   });
 });
@@ -1447,7 +1446,7 @@ describe('Admin API', () => {
         transactionId: 123,
         amount: 4567,
         cvv2: '999',
-      }
+      },
     );
     expect(refundRequest.reference_number).toBe(123);
     expect(refundRequest.amount).toBe(45.67);
@@ -1458,7 +1457,7 @@ describe('Admin API', () => {
     expect(refundAcceptBlueTransaction.errorMessage).toBe('Some error message');
     expect(refundAcceptBlueTransaction.errorCode).toBe('E100');
     expect(refundAcceptBlueTransaction.errorDetails).toBe(
-      '{"detail":"An error detail object"}'
+      '{"detail":"An error detail object"}',
     ); // Should be stringified
   });
 
@@ -1481,7 +1480,7 @@ describe('Admin API', () => {
     nockInstance
       .persist()
       .get(
-        `/customers/${haydenZiemeCustomerDetails.id}/payment-methods?limit=100`
+        `/customers/${haydenZiemeCustomerDetails.id}/payment-methods?limit=100`,
       )
       .reply(200, haydenSavedPaymentMethods);
     await adminClient.asSuperAdmin();
@@ -1503,7 +1502,7 @@ describe('Admin API', () => {
       },
     });
     await expect(updateRequest).rejects.toThrowError(
-      'You are not currently authorized to perform this action'
+      'You are not currently authorized to perform this action',
     );
   });
 
@@ -1540,7 +1539,7 @@ describe('Admin API', () => {
           receiptEmail: 'newCustomer@pinelab.studio',
           paymentMethodId: 123456,
         },
-      }
+      },
     );
     expect(updateRequest).toEqual({
       active: false,
@@ -1560,7 +1559,7 @@ describe('Admin API', () => {
       id: placedOrder?.id,
     });
     const entry = order.history.items.find(
-      (entry: any) => entry.type === 'ORDER_NOTE'
+      (entry: any) => entry.type === 'ORDER_NOTE',
     );
     expect(entry?.data.note).toContain('Subscription updated:');
   });
@@ -1586,7 +1585,7 @@ describe('Number of billing cycles left on recurring schedule', () => {
     nockInstance
       .persist()
       .get(
-        `/customers/${haydenZiemeCustomerDetails.id}/payment-methods?limit=100`
+        `/customers/${haydenZiemeCustomerDetails.id}/payment-methods?limit=100`,
       )
       .reply(200, haydenSavedPaymentMethods);
     const scheduleRequests: any[] = [];
@@ -1597,7 +1596,7 @@ describe('Number of billing cycles left on recurring schedule', () => {
         (body) => {
           scheduleRequests.push(body);
           return true;
-        }
+        },
       )
       .reply(201, createMockRecurringScheduleResult({}));
     nockInstance
@@ -1607,7 +1606,7 @@ describe('Number of billing cycles left on recurring schedule', () => {
     await shopClient.asAnonymousUser();
     await shopClient.asUserWithCredentials(
       'hayden.zieme12@hotmail.com',
-      'test'
+      'test',
     );
     await shopClient.query(ADD_ITEM_TO_ORDER, {
       productVariantId: '3',
@@ -1626,7 +1625,7 @@ describe('Number of billing cycles left on recurring schedule', () => {
     };
     const { addPaymentToOrder: order } = await shopClient.query(
       ADD_PAYMENT_TO_ORDER,
-      { input: { method: acceptBluePaymentMethod.code, metadata } }
+      { input: { method: acceptBluePaymentMethod.code, metadata } },
     );
     expect(order.state).toBe('PaymentSettled');
     return scheduleRequests;
@@ -1646,7 +1645,7 @@ describe('Number of billing cycles left on recurring schedule', () => {
       expected = getNrOfBillingCyclesLeft(
         recurring.startDate,
         endDate,
-        'monthly'
+        'monthly',
       );
       return { endDate };
     };
@@ -1663,7 +1662,7 @@ describe('Number of billing cycles left on recurring schedule', () => {
       calculated = getNrOfBillingCyclesLeft(
         recurring.startDate,
         endDate,
-        'monthly'
+        'monthly',
       );
       return { endDate, numLeft: 99 };
     };
@@ -1680,7 +1679,7 @@ describe('Number of billing cycles left on recurring schedule', () => {
       expected = getNrOfBillingCyclesLeft(
         recurring.startDate,
         endDate,
-        'monthly'
+        'monthly',
       );
       return { endDate, numLeft: 0 };
     };

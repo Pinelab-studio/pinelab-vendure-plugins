@@ -7,7 +7,8 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
 
 const Confirm = require('prompt-confirm');
-import { spawn } from 'child_process';
+
+import { spawn } from 'node:child_process';
 
 export interface DBConfig {
   username: string;
@@ -22,11 +23,11 @@ export interface DBConfig {
 export async function exportDbToFile(
   config: DBConfig,
   exportFile = `/tmp/db_export.sql`,
-  requiresPrompt = true
+  requiresPrompt = true,
 ): Promise<string> {
   if (requiresPrompt) {
     const promptCommand = new Confirm(
-      `Downloading database ${config.databaseName} (${config.host}) to "${exportFile}". Proceed?`
+      `Downloading database ${config.databaseName} (${config.host}) to "${exportFile}". Proceed?`,
     );
     const accept = await promptCommand.run();
     if (!accept) {
@@ -34,7 +35,7 @@ export async function exportDbToFile(
     }
   }
   await execute(
-    `mysqldump -v --set-gtid-purged=OFF --column-statistics=0 -u ${config.username} -h ${config.host} --password='${config.password}' ${config.databaseName} > ${exportFile}`
+    `mysqldump -v --set-gtid-purged=OFF --column-statistics=0 -u ${config.username} -h ${config.host} --password='${config.password}' ${config.databaseName} > ${exportFile}`,
   );
   return exportFile;
 }
@@ -45,11 +46,11 @@ export async function exportDbToFile(
 export async function insertIntoDb(
   config: DBConfig,
   sqlFile: string,
-  requiresPrompt = true
+  requiresPrompt = true,
 ): Promise<void> {
   if (requiresPrompt) {
     const promptCommand = new Confirm(
-      `Inserting "${sqlFile}" into database ${config.databaseName} (${config.host}). Proceed?`
+      `Inserting "${sqlFile}" into database ${config.databaseName} (${config.host}). Proceed?`,
     );
     const accept = await promptCommand.run();
     if (!accept) {
@@ -57,7 +58,7 @@ export async function insertIntoDb(
     }
   }
   await execute(
-    `mysql --verbose -u ${config.username} -h ${config.host} --password='${config.password}' ${config.databaseName} < ${sqlFile}`
+    `mysql --verbose -u ${config.username} -h ${config.host} --password='${config.password}' ${config.databaseName} < ${sqlFile}`,
   );
 }
 
@@ -68,12 +69,12 @@ export async function insertIntoDb(
 async function execute(command: string): Promise<void> {
   return new Promise((resolve, reject) => {
     const proc = spawn(command, [], { stdio: 'inherit', shell: true });
-    proc.on('error', function (error) {
+    proc.on('error', (error) => {
       reject(new Error(error.message));
     });
-    proc.on('exit', function (code) {
+    proc.on('exit', (code) => {
       if (code !== 0) {
-        reject(new Error('exited with code ' + code));
+        reject(new Error(`exited with code ${code}`));
       } else {
         resolve();
       }

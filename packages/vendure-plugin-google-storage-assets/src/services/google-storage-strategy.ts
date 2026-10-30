@@ -1,12 +1,13 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
-import { AssetStorageStrategy } from '@vendure/core';
+
+import * as fs from 'node:fs';
+import { Stream } from 'node:stream';
 import { Storage } from '@google-cloud/storage';
+import { AssetStorageStrategy } from '@vendure/core';
 import { Request } from 'express';
-import { Stream } from 'stream';
 import * as tmp from 'tmp';
-import * as fs from 'fs';
 import { GoogleStorageAssetsPlugin } from '../google-storage-assets-plugin';
 
 export class GoogleStorageStrategy implements AssetStorageStrategy {
@@ -19,7 +20,7 @@ export class GoogleStorageStrategy implements AssetStorageStrategy {
     const config = GoogleStorageAssetsPlugin?.config;
     if (!config) {
       throw new Error(
-        'GoogleStorageAssetsPlugin.config is not set. Did you include the "GoogleStorageAssetsPlugin" in your Vendure config?'
+        'GoogleStorageAssetsPlugin.config is not set. Did you include the "GoogleStorageAssetsPlugin" in your Vendure config?',
       );
     }
     this.bucketName = config.bucketName;
@@ -37,8 +38,8 @@ export class GoogleStorageStrategy implements AssetStorageStrategy {
       (request as any)?.vendureRequestContext?._apiType;
     if (this.useAssetServerForAdminUi && apiType === 'admin') {
       // go via assetServer if admin
-      return `${request!.protocol}://${request!.get(
-        'host'
+      return `${request?.protocol}://${request?.get(
+        'host',
       )}/assets/${identifier}`;
     }
     return `${this.urlPrefix}/${this.bucketName}/${identifier}`;
@@ -89,7 +90,7 @@ export class GoogleStorageStrategy implements AssetStorageStrategy {
   }
 
   streamToPromise(stream: Stream): Promise<void> {
-    return new Promise(function (resolve, reject) {
+    return new Promise((resolve, reject) => {
       stream.on('end', resolve);
       stream.on('finish', resolve);
       stream.on('close', resolve);

@@ -1,11 +1,11 @@
 import {
-  LanguageCode,
-  PromotionCondition,
-  RequestContext,
-  Order,
-  OrderLine,
   ID,
   idsAreEqual,
+  LanguageCode,
+  Order,
+  OrderLine,
+  PromotionCondition,
+  RequestContext,
 } from '@vendure/core';
 
 /**
@@ -44,7 +44,7 @@ export const buyMinMaxOfTheSpecifiedProductsCondition = new PromotionCondition({
       label: [{ languageCode: LanguageCode.en, value: 'Product variants' }],
     },
   },
-  check(ctx: RequestContext, order: Order, args) {
+  check(_ctx: RequestContext, order: Order, args) {
     if (!order.lines?.length) {
       return false;
     }

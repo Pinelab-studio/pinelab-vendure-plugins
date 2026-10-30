@@ -52,7 +52,7 @@ export class GoogleAuthStrategy
 
   async authenticate(
     ctx: RequestContext,
-    { credentialJWT }: GoogleAuthData
+    { credentialJWT }: GoogleAuthData,
   ): Promise<User | false> {
     // Here is the logic that uses the token provided by the storefront and uses it
     // to find the user data from Google.
@@ -62,23 +62,22 @@ export class GoogleAuthStrategy
         audience: this.clientId,
       });
       const payload = ticket.getPayload();
-      if (!payload || !payload.email) {
+      if (!payload?.email) {
         return false;
       }
       const email = payload.email;
       // Login is unauthenticated, so do not use AdministratorService.findAll(),
       // which filters administrators by the active user's role visibility.
-      const admins = await this.connection!.getRepository(
-        ctx,
-        Administrator
-      ).find({
-        where: { emailAddress: email, deletedAt: IsNull() },
-        relations: ['user', 'user.authenticationMethods'],
-      });
+      const admins = await this.connection
+        ?.getRepository(ctx, Administrator)
+        .find({
+          where: { emailAddress: email, deletedAt: IsNull() },
+          relations: ['user', 'user.authenticationMethods'],
+        });
       if (admins.length > 1) {
         Logger.error(
           `Multiple admins for '${email}' found. Only one should exist. Unable to login`,
-          loggerCtx
+          loggerCtx,
         );
         return false;
       }
@@ -86,7 +85,7 @@ export class GoogleAuthStrategy
         // No admins exist for this email address, not logging in
         Logger.warn(
           `Attempted login from user that is not an administrator`,
-          loggerCtx
+          loggerCtx,
         );
         return false;
       }
@@ -95,7 +94,7 @@ export class GoogleAuthStrategy
       let user = admin.user;
       // Check if GoogleAuth already enabled, otherwise enable it for this admin
       const hasGoogleAuth = user.authenticationMethods.find(
-        (m) => (m as ExternalAuthenticationMethod).strategy === this.name
+        (m) => (m as ExternalAuthenticationMethod).strategy === this.name,
       );
       if (!hasGoogleAuth) {
         user = await this.addGoogleAuthMethod(ctx, user, email);
@@ -107,12 +106,12 @@ export class GoogleAuthStrategy
         Logger.error(
           `Error authenticating with Google login: ${error.message}`,
           loggerCtx,
-          error.stack
+          error.stack,
         );
       } else {
         Logger.error(
           `Unknown error authenticating with Google login: ${String(error)}`,
-          loggerCtx
+          loggerCtx,
         );
       }
       return false;
@@ -125,18 +124,17 @@ export class GoogleAuthStrategy
   private async addGoogleAuthMethod(
     ctx: RequestContext,
     user: User,
-    externalIdentifier: string
+    externalIdentifier: string,
   ): Promise<User> {
-    const googleAuthMethod = await this.connection!.getRepository(
-      ctx,
-      ExternalAuthenticationMethod
-    ).save(
-      new ExternalAuthenticationMethod({
-        externalIdentifier,
-        strategy: this.name,
-      })
-    );
+    const googleAuthMethod = await this.connection
+      ?.getRepository(ctx, ExternalAuthenticationMethod)
+      .save(
+        new ExternalAuthenticationMethod({
+          externalIdentifier,
+          strategy: this.name,
+        }),
+      );
     user.authenticationMethods.push(googleAuthMethod);
-    return await this.connection!.getRepository(ctx, User).save(user);
+    return await this.connection?.getRepository(ctx, User).save(user);
   }
 }

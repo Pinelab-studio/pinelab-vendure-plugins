@@ -22,7 +22,7 @@
     "serve": "nodemon --watch \"src/**\" --ext \"ts,json\" --exec \"ts-node test/dev-server.ts\"",
     "build": "rimraf dist && tsc",
     "test": "vitest run",
-    "lint": "echo 'No linting configured'"
+    "lint": "biome check ."
   },
   "gitHead": "476f36da3aafea41fbf21c70774a30306f1d238f"
 }

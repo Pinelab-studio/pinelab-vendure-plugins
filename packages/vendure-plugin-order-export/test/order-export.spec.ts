@@ -1,3 +1,4 @@
+import { DefaultLogger, LogLevel, mergeConfig } from '@vendure/core';
 import {
   createTestEnvironment,
   registerInitializer,
@@ -5,17 +6,15 @@ import {
   SqljsInitializer,
   testConfig,
 } from '@vendure/testing';
-import { initialData } from '../../test/src/initial-data';
-import { DefaultLogger, LogLevel, mergeConfig } from '@vendure/core';
 import { TestServer } from '@vendure/testing/lib/test-server';
-import { testPaymentMethod } from '../../test/src/test-payment-method';
-import { createSettledOrder } from '../../test/src/shop-utils';
 import gql from 'graphql-tag';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { initialData } from '../../test/src/initial-data';
+import { createSettledOrder } from '../../test/src/shop-utils';
+import { testPaymentMethod } from '../../test/src/test-payment-method';
 import { OrderExportPlugin } from '../src';
 
-import { expect, describe, beforeAll, afterAll, it } from 'vitest';
-
-describe('Order export plugin', function () {
+describe('Order export plugin', () => {
   let server: TestServer;
   let adminClient: SimpleGraphQLClient;
   let shopClient: SimpleGraphQLClient;
@@ -68,7 +67,7 @@ describe('Order export plugin', function () {
         query availableOrderExportStrategies {
           availableOrderExportStrategies
         }
-      `
+      `,
     );
     await expect(result.availableOrderExportStrategies.length).toBe(1);
   });
@@ -80,7 +79,7 @@ describe('Order export plugin', function () {
     tomorrow.setDate(tomorrow.getDate() + 1);
     await adminClient.asSuperAdmin();
     const res = await adminClient.fetch(
-      `http://localhost:3105/export-orders/export/example-export?startDate=${yesterday.toISOString()}&endDate=${tomorrow.toISOString()}`
+      `http://localhost:3105/export-orders/export/example-export?startDate=${yesterday.toISOString()}&endDate=${tomorrow.toISOString()}`,
     );
     expect(res.status).toBe(200);
     expect(res.headers.get('Content-type')).toContain('text/csv');

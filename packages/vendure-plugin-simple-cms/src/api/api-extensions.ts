@@ -17,7 +17,7 @@ export function toGraphQLTypeName(contentTypeKey: string): string {
  * Query is extended with typed accessors.
  */
 export function shopApiExtensions(
-  options: SimpleCmsPluginOptions
+  options: SimpleCmsPluginOptions,
 ): DocumentNode {
   return gql(generateShopSchema(options));
 }

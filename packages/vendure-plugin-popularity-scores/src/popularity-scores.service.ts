@@ -1,4 +1,4 @@
-import { Injectable, OnModuleInit, Inject } from '@nestjs/common';
+import { Inject, Injectable, OnModuleInit } from '@nestjs/common';
 import {
   ChannelService,
   Collection,
@@ -13,7 +13,7 @@ import {
   SerializedRequestContext,
   TransactionalConnection,
 } from '@vendure/core';
-import { PLUGIN_INIT_OPTIONS, loggerCtx } from './constants';
+import { loggerCtx, PLUGIN_INIT_OPTIONS } from './constants';
 import { PopularityScoresPluginConfig } from './popularity-scores.plugin';
 import { sliceArray } from './utils';
 
@@ -32,8 +32,8 @@ export class PopularityScoresService implements OnModuleInit {
     private connection: TransactionalConnection,
     private jobQueueService: JobQueueService,
     private channelService: ChannelService,
-    private collectionService: CollectionService,
-    @Inject(PLUGIN_INIT_OPTIONS) private config: PopularityScoresPluginConfig
+    _collectionService: CollectionService,
+    @Inject(PLUGIN_INIT_OPTIONS) private config: PopularityScoresPluginConfig,
   ) {}
   async onModuleInit() {
     this.jobQueue = await this.jobQueueService.createQueue({
@@ -41,12 +41,12 @@ export class PopularityScoresService implements OnModuleInit {
       process: async (job) => {
         await this.setProductPopularity(
           RequestContext.deserialize(job.data.ctx),
-          job.data.channelToken
+          job.data.channelToken,
         ).catch((e) => {
           Logger.warn(
             //eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
             `Failed to handle popularity calculation job: ${e?.message}`,
-            loggerCtx
+            loggerCtx,
           );
           throw e;
         });
@@ -56,7 +56,7 @@ export class PopularityScoresService implements OnModuleInit {
 
   async setProductPopularity(
     ctx: RequestContext,
-    channelToken: string
+    channelToken: string,
   ): Promise<void> {
     Logger.info(`Started calculating popularity scores`, loggerCtx);
     const channel = await this.channelService.getChannelFromToken(channelToken);
@@ -92,7 +92,7 @@ export class PopularityScoresService implements OnModuleInit {
       Logger.warn(
         `No orders found for channel ${channel.code}, 
         not calculating popularity scores`,
-        loggerCtx
+        loggerCtx,
       );
       return;
     }
@@ -108,7 +108,7 @@ export class PopularityScoresService implements OnModuleInit {
             popularityScore: Math.round((gols.count / maxCount) * maxValue),
           },
         };
-      })
+      }),
     );
     await this.assignScoreValuesToCollections(ctx);
     Logger.info(`Finished calculating popularity scores`, loggerCtx);
@@ -133,11 +133,11 @@ export class PopularityScoresService implements OnModuleInit {
       return;
     }
     const channelCollectionsTree = await collectionTreeRepo.findDescendantsTree(
-      channelRootCollection
+      channelRootCollection,
     );
     const allCollections: Collection[] = [];
     const traverseDepthFirstAndUpdateScore = async (
-      node: Collection
+      node: Collection,
     ): Promise<number> => {
       node.customFields.popularityScore = 0;
       if (node?.children?.length) {
@@ -161,14 +161,14 @@ export class PopularityScoresService implements OnModuleInit {
           customFields: {
             popularityScore: updateCollection.customFields.popularityScore,
           },
-        }
+        },
       );
     }
   }
 
   private async getSummedProductScoreCalculation(
     ctx: RequestContext,
-    collection: Collection
+    collection: Collection,
   ): Promise<number> {
     const collectionsRepo = this.connection.getRepository(ctx, Collection);
     const productsRepo = this.connection.getRepository(ctx, Product);
@@ -191,14 +191,14 @@ export class PopularityScoresService implements OnModuleInit {
       let score = 0;
       const chunkedProductIds = sliceArray(
         uniqueProductIds,
-        this.config.chunkSize ?? 100
+        this.config.chunkSize ?? 100,
       );
       for (const uniqueProductIdsSlice of chunkedProductIds) {
         //eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         const summedProductsValue = await productsRepo
           .createQueryBuilder('product')
           .select(
-            'SUM(product.customFields.popularityScore) AS productScoreSum'
+            'SUM(product.customFields.popularityScore) AS productScoreSum',
           )
           .andWhere('product.id IN (:...ids)', { ids: uniqueProductIdsSlice })
           .getRawOne();
@@ -214,7 +214,7 @@ export class PopularityScoresService implements OnModuleInit {
   addScoreCalculatingJobToQueue(channelToken: string, ctx: RequestContext) {
     return this.jobQueue.add(
       { channelToken, ctx: ctx.serialize() },
-      { retries: 5 }
+      { retries: 5 },
     );
   }
 }

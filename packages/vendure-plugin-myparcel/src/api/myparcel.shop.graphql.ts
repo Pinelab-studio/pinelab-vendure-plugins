@@ -1,11 +1,11 @@
 import { Args, Query, Resolver } from '@nestjs/graphql';
 import { Ctx, RequestContext } from '@vendure/core';
-import { MyparcelService } from './myparcel.service';
+import gql from 'graphql-tag';
 import {
   MyparcelDropOffPoint,
   MyparcelDropOffPointInput,
 } from '../generated/graphql';
-import gql from 'graphql-tag';
+import { MyparcelService } from './myparcel.service';
 
 export const shopSchema = gql`
   type MyparcelDropOffPoint {
@@ -45,7 +45,7 @@ export class MyParcelShopResolver {
   @Query()
   async myparcelDropOffPoints(
     @Ctx() ctx: RequestContext,
-    @Args('input') input: MyparcelDropOffPointInput
+    @Args('input') input: MyparcelDropOffPointInput,
   ): Promise<MyparcelDropOffPoint[]> {
     return this.service.getDropOffPoints(ctx, input);
   }

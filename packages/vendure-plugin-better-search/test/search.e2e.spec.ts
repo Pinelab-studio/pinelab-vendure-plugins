@@ -1,33 +1,21 @@
-import {
-  DefaultLogger,
-  LogLevel,
-  mergeConfig,
-  OrderService,
-  RequestContext,
-  RequestContextService,
-} from '@vendure/core';
+import { DefaultLogger, LogLevel, mergeConfig } from '@vendure/core';
 import {
   createTestEnvironment,
   registerInitializer,
   SimpleGraphQLClient,
   SqljsInitializer,
-  testConfig,
   TestServer,
+  testConfig,
 } from '@vendure/testing';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { initialData } from '../../test/src/initial-data';
-import { addItem } from '../../test/src/shop-utils';
-import { waitFor } from '../../test/src/test-helpers';
-import {
-  BetterSearchPlugin,
-  BetterSearchResult,
-  defaultSearchConfig,
-} from '../src';
 import gql from 'graphql-tag';
+import { afterAll, beforeAll, expect, it } from 'vitest';
+import { initialData } from '../../test/src/initial-data';
+import { waitFor } from '../../test/src/test-helpers';
+import { BetterSearchPlugin, BetterSearchResult } from '../src';
 import { searchConfig } from './search-config';
 
 let server: TestServer;
-let adminClient: SimpleGraphQLClient;
+let _adminClient: SimpleGraphQLClient;
 let shopClient: SimpleGraphQLClient;
 
 beforeAll(async () => {
@@ -37,7 +25,7 @@ beforeAll(async () => {
     plugins: [BetterSearchPlugin.init(searchConfig)],
   });
 
-  ({ server, adminClient, shopClient } = createTestEnvironment(config));
+  ({ server, _adminClient, shopClient } = createTestEnvironment(config));
   await server.init({
     initialData,
     productsCsvPath: './test/search-products.csv',
@@ -66,7 +54,7 @@ it('Returns all fields for exact match', async () => {
       if (result.betterSearch.items.length > 0) {
         return result;
       }
-    } catch (error) {
+    } catch (_error) {
       return undefined;
     }
   });
@@ -98,15 +86,15 @@ it('Finds by facet value name', async () => {
   expect(totalItems).toBe(6);
   expect(items.length).toBe(6);
   expect(
-    items.find((item: BetterSearchResult) => item.productName === 'Yoga Mat')
+    items.find((item: BetterSearchResult) => item.productName === 'Yoga Mat'),
   ).toBeDefined();
   expect(
-    items.find((item: BetterSearchResult) => item.productName === 'Dumbbells')
+    items.find((item: BetterSearchResult) => item.productName === 'Dumbbells'),
   ).toBeDefined();
   expect(
     items.find(
-      (item: BetterSearchResult) => item.productName === 'Running Shoes'
-    )
+      (item: BetterSearchResult) => item.productName === 'Running Shoes',
+    ),
   ).toBeDefined(); // Has 'black' as variant
 });
 

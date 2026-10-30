@@ -1,10 +1,9 @@
 import { PluginCommonModule, Type, VendurePlugin } from '@vendure/core';
-
-import { ADDRESS_LOOKUP_PLUGIN_OPTIONS } from './constants';
-import { PluginInitOptions } from './types';
-import { AddressLookupService } from './services/address-lookup.service';
 import { AddressLookupResolver } from './api/address-lookup.resolver';
 import { shopApiExtensions } from './api/api-extensions';
+import { ADDRESS_LOOKUP_PLUGIN_OPTIONS } from './constants';
+import { AddressLookupService } from './services/address-lookup.service';
+import { PluginInitOptions } from './types';
 
 @VendurePlugin({
   imports: [PluginCommonModule],
@@ -28,7 +27,7 @@ export class AddressLookupPlugin {
   static options: PluginInitOptions;
 
   static init(options: PluginInitOptions): Type<AddressLookupPlugin> {
-    this.options = options;
+    AddressLookupPlugin.options = options;
     return AddressLookupPlugin;
   }
 }

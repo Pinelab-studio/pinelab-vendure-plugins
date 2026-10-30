@@ -1,6 +1,8 @@
 import * as tmp from 'tmp';
+
 import AdmZip = require('adm-zip');
-import fs from 'fs/promises';
+
+import fs from 'node:fs/promises';
 import { Logger } from '@vendure/core';
 import { loggerCtx } from '../constants';
 
@@ -11,7 +13,7 @@ export interface ZippableFile {
 
 export async function createTempFile(postfix: string): Promise<string> {
   return await new Promise((resolve, reject) => {
-    tmp.file({ postfix }, (err, path, fd, cleanupCallback) => {
+    tmp.file({ postfix }, (err, path, _fd, _cleanupCallback) => {
       if (err) {
         reject(err);
       } else {
@@ -25,7 +27,7 @@ export async function createTempFile(postfix: string): Promise<string> {
  * Try to remove file without throwing an error
  */
 export function safeRemoveFile(filePath: string): void {
-  fs.unlink(filePath).catch((e) => {
+  fs.unlink(filePath).catch((_e) => {
     Logger.warn(`Failed to delete file ${filePath}`, loggerCtx);
   });
 }

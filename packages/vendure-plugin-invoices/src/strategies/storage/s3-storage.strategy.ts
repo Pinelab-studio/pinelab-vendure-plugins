@@ -1,13 +1,13 @@
+import { createReadStream, ReadStream } from 'node:fs';
+import { readFile, writeFile } from 'node:fs/promises';
 import { Logger } from '@vendure/core';
-import { readFile, writeFile } from 'fs/promises';
 import { InvoiceEntity } from '../../entities/invoice.entity';
 import {
+  createTempFile,
   safeRemove,
   ZippableFile,
-  createTempFile,
   zipFiles,
 } from '../../util/file.util';
-import { createReadStream, ReadStream } from 'fs';
 import { RemoteStorageStrategy } from './storage-strategy';
 
 export interface Config {
@@ -46,13 +46,13 @@ export class S3StorageStrategy implements RemoteStorageStrategy {
         `Could not find the "aws-sdk" package. Make sure it is installed`,
         S3StorageStrategy.name,
         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-        JSON.stringify(e.stack)
+        JSON.stringify(e.stack),
       );
     }
   }
 
   getPublicUrl(invoice: InvoiceEntity): string {
-    return this.s3!.getSignedUrl('getObject', {
+    return this.s3?.getSignedUrl('getObject', {
       Key: invoice.storageReference,
       Bucket: this.bucket,
       Expires: this.expiresInSeconds,
@@ -63,20 +63,22 @@ export class S3StorageStrategy implements RemoteStorageStrategy {
     tmpFile: string,
     invoiceNumber: number,
     channelToken: string,
-    isCreditInvoice: boolean
+    isCreditInvoice: boolean,
   ): Promise<string> {
     let filename = `${invoiceNumber}.pdf`;
     if (isCreditInvoice) {
       filename = `${invoiceNumber}-credit.pdf`;
     }
     const Key: string = `invoices/${channelToken}/${filename}`;
-    await this.s3!.upload({
-      Bucket: this.bucket,
-      Key,
-      Body: await readFile(tmpFile),
-      ContentType: 'application/pdf',
-      ContentDisposition: 'inline',
-    }).promise();
+    await this.s3
+      ?.upload({
+        Bucket: this.bucket,
+        Key,
+        Body: await readFile(tmpFile),
+        ContentType: 'application/pdf',
+        ContentDisposition: 'inline',
+      })
+      .promise();
     safeRemove(tmpFile);
     return Key;
   }
@@ -86,23 +88,25 @@ export class S3StorageStrategy implements RemoteStorageStrategy {
       invoices.map(async (invoice) => {
         const tmpFile = await createTempFile('.pdf');
         try {
-          const object = await this.s3!.getObject({
-            Bucket: this.bucket,
-            Key: invoice.storageReference,
-          }).promise();
+          const object = await this.s3
+            ?.getObject({
+              Bucket: this.bucket,
+              Key: invoice.storageReference,
+            })
+            .promise();
           // eslint-disable-next-line @typescript-eslint/no-base-to-string
           await writeFile(tmpFile, object.Body?.toString() as string);
         } catch {
           safeRemove(tmpFile);
           throw new Error(
-            `Invoice file not found in S3 at key: ${invoice.storageReference}`
+            `Invoice file not found in S3 at key: ${invoice.storageReference}`,
           );
         }
         return {
           path: tmpFile,
-          name: invoice.invoiceNumber + '.pdf',
+          name: `${invoice.invoiceNumber}.pdf`,
         };
-      })
+      }),
     );
     const zipFile = await zipFiles(files);
     for (const file of files) {

@@ -12,7 +12,7 @@ export interface GoedgepicktPluginConfig {
    */
   determineOrderStatus?: (
     ctx: RequestContext,
-    order: VendureOrder
+    order: VendureOrder,
   ) => Promise<OrderStatus> | OrderStatus;
 }
 

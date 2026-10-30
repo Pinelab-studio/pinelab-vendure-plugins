@@ -10,8 +10,8 @@ import {
   RequestContext,
 } from '@vendure/core';
 import { ContentCheckResult } from '../entities/content-check-result.entity';
-import { ContentCheckResultService } from '../services/content-check-result.service';
 import { ContentCheckService } from '../services/content-check.service';
+import { ContentCheckResultService } from '../services/content-check-result.service';
 import {
   groupContentCheckResultsByEntity,
   truncate,
@@ -36,7 +36,7 @@ export class ContentHealthResolver {
     private checkService: ContentCheckService,
     private productService: ProductService,
     private collectionService: CollectionService,
-    private configService: ConfigService
+    private configService: ConfigService,
   ) {}
 
   @Query()
@@ -44,14 +44,14 @@ export class ContentHealthResolver {
   async contentCheckResults(
     @Ctx() ctx: RequestContext,
     @Args('entityType') entityType: string,
-    @Args('entityId') entityId: string
+    @Args('entityId') entityId: string,
   ) {
     const internalEntityType = fromGraphQlEntityType(entityType);
     const decodedEntityId = this.decodeEntityId(internalEntityType, entityId);
     const results = await this.resultService.findResultsFor(
       ctx,
       internalEntityType,
-      decodedEntityId
+      decodedEntityId,
     );
     return results.map((r) => this.toGraphQlResult(r));
   }
@@ -60,7 +60,7 @@ export class ContentHealthResolver {
   @Allow(Permission.ReadCatalog, Permission.ReadProduct)
   async contentCheckOverview(
     @Ctx() ctx: RequestContext,
-    @Args('options') options?: ContentCheckOverviewListOptionsArg
+    @Args('options') options?: ContentCheckOverviewListOptionsArg,
   ) {
     const rawResults = await this.resultService.findOverview(ctx);
     const groups = groupContentCheckResultsByEntity(rawResults);
@@ -83,7 +83,7 @@ export class ContentHealthResolver {
         ctx,
         group.entityType,
         group.entityId,
-        group.label
+        group.label,
       );
       if (name === undefined) {
         // The entity was deleted since the last check; omit it rather than
@@ -94,7 +94,7 @@ export class ContentHealthResolver {
       const entityType = toGraphQlEntityType(group.entityType);
       const encodedEntityId = this.encodeEntityId(
         group.entityType,
-        group.entityId
+        group.entityId,
       );
       items.push({
         id: `${entityType}:${encodedEntityId}`,
@@ -116,7 +116,7 @@ export class ContentHealthResolver {
     const filtered = applyOverviewFilter(
       items,
       options?.filter,
-      options?.filterOperator
+      options?.filterOperator,
     );
     const sorted = applyOverviewSort(filtered, options?.sort);
     return paginateOverview(sorted, options?.skip, options?.take);
@@ -134,13 +134,13 @@ export class ContentHealthResolver {
   @Allow(Permission.UpdateProduct)
   async runContentCheckForProduct(
     @Ctx() ctx: RequestContext,
-    @Args('productId') productId: ID
+    @Args('productId') productId: ID,
   ) {
     await this.checkService.checkProductInCurrentChannel(ctx, productId);
     const results = await this.resultService.findResultsFor(
       ctx,
       'product',
-      productId
+      productId,
     );
     return results.map((r) => this.toGraphQlResult(r));
   }
@@ -149,13 +149,13 @@ export class ContentHealthResolver {
   @Allow(Permission.UpdateCollection)
   async runContentCheckForCollection(
     @Ctx() ctx: RequestContext,
-    @Args('collectionId') collectionId: ID
+    @Args('collectionId') collectionId: ID,
   ) {
     await this.checkService.checkCollectionInCurrentChannel(ctx, collectionId);
     const results = await this.resultService.findResultsFor(
       ctx,
       'collection',
-      collectionId
+      collectionId,
     );
     return results.map((r) => this.toGraphQlResult(r));
   }
@@ -179,7 +179,7 @@ export class ContentHealthResolver {
     ctx: RequestContext,
     entityType: string,
     entityId: ID,
-    storedLabel: string | undefined
+    storedLabel: string | undefined,
   ): Promise<string | undefined> {
     if (!isCoreEntityType(entityType)) {
       const trimmedLabel = storedLabel?.trim();
@@ -266,7 +266,7 @@ export class ContentHealthResolver {
   private entityUrl(
     entityType: string,
     encodedEntityId: string,
-    storedUrl: string | undefined
+    storedUrl: string | undefined,
   ): string | null {
     if (entityType === 'product') {
       return `/products/${encodedEntityId}`;

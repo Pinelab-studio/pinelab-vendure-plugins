@@ -1,5 +1,5 @@
-import type { ComponentProps } from 'astro/types';
 import { Icon } from '@astrojs/starlight/components';
+import type { ComponentProps } from 'astro/types';
 
 type PluginVisual = {
   icon: ComponentProps<typeof Icon>['name'];

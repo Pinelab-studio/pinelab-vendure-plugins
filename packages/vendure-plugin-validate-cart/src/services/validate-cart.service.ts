@@ -25,14 +25,14 @@ export class ValidateCartService {
     private readonly activeOrderService: ActiveOrderService,
     private readonly entityHydrator: EntityHydrator,
     private readonly orderService: OrderService,
-    readonly moduleRef: ModuleRef
+    readonly moduleRef: ModuleRef,
   ) {
     this.injector = new Injector(this.moduleRef);
   }
 
   async validateActiveOrder(
     ctx: RequestContext,
-    relations: RelationPaths<Order>
+    relations: RelationPaths<Order>,
   ): Promise<{ errors: ActiveOrderValidationError[]; order: Order }> {
     const start = Date.now();
     const activeOrder = await this.activeOrderService.getActiveOrder(ctx, {});
@@ -50,7 +50,7 @@ export class ValidateCartService {
       result = await validationStrategy.validate(
         ctx,
         activeOrder,
-        this.injector
+        this.injector,
       );
     }
     const duration = Date.now() - start;
@@ -64,12 +64,12 @@ export class ValidateCartService {
     // `total`, `totalWithTax` and `subTotal` can be resolved regardless of the
     // relations requested by the client.
     const orderRelations = Array.from(
-      new Set<string>([...(relations ?? []), 'lines', 'surcharges'])
+      new Set<string>([...(relations ?? []), 'lines', 'surcharges']),
     ) as RelationPaths<Order>;
     const order = await this.orderService.findOne(
       ctx,
       activeOrder.id,
-      orderRelations
+      orderRelations,
     );
     if (!order) {
       throw new UserInputError('No active order found');

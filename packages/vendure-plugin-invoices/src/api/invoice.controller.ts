@@ -1,17 +1,15 @@
-import { InvoiceService } from '../services/invoice.service';
 import {
+  BadRequestException,
+  Body,
   Controller,
+  ForbiddenException,
   Get,
   Param,
   Post,
   Query,
   Req,
   Res,
-  Body,
-  BadRequestException,
-  ForbiddenException,
 } from '@nestjs/common';
-import { Request, Response } from 'express';
 import {
   Allow,
   ChannelService,
@@ -20,14 +18,16 @@ import {
   RequestContext,
   UserInputError,
 } from '@vendure/core';
+import { Request, Response } from 'express';
 import { loggerCtx } from '../constants';
+import { InvoiceService } from '../services/invoice.service';
 import { invoicePermission } from './invoice-common.resolver';
 
 @Controller('invoices')
 export class InvoiceController {
   constructor(
     private invoiceService: InvoiceService,
-    private channelService: ChannelService
+    private channelService: ChannelService,
   ) {}
 
   @Allow(invoicePermission.Permission)
@@ -36,7 +36,7 @@ export class InvoiceController {
     @Ctx() ctx: RequestContext,
     @Query('nrs') numbers: string,
     @Req() req: Request,
-    @Res() res: Response
+    @Res() res: Response,
   ) {
     if (!ctx.channelId) {
       throw Error(`Channel id is needed to download invoices`);
@@ -45,7 +45,7 @@ export class InvoiceController {
     const stream = await this.invoiceService.downloadMultiple(
       ctx,
       numbers.split(','),
-      res
+      res,
     );
     // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
     Logger.info(`Invoices ${numbers} downloaded from ${ip}`, loggerCtx);
@@ -58,18 +58,18 @@ export class InvoiceController {
     @Ctx() ctx: RequestContext,
     @Res() res: Response,
     @Body() body: { template: string },
-    @Param('orderCode') orderCode?: string
+    @Param('orderCode') orderCode?: string,
   ) {
     if (!ctx.channel?.token) {
       throw new BadRequestException('No channel set for request');
     }
-    if (!body?.template || !body?.template.trim()) {
+    if (!body?.template?.trim()) {
       throw new BadRequestException('No template given');
     }
     const stream = await this.invoiceService.previewInvoiceWithTemplate(
       ctx,
       body.template,
-      orderCode
+      orderCode,
     );
     res.set({
       'Content-Type': 'application/pdf',
@@ -86,25 +86,24 @@ export class InvoiceController {
     @Param('invoiceNumber') invoiceNumber: string | number | undefined,
     @Query('email') encodedCustomerEmail: string,
     @Req() req: Request,
-    @Res() res: Response
+    @Res() res: Response,
   ) {
     const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
     if (!channelToken || !orderCode || !encodedCustomerEmail) {
       Logger.warn(
         // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
         `Invalid invoice download attempt from ${ip} for ${req.path}`,
-        loggerCtx
+        loggerCtx,
       );
       throw new BadRequestException();
     }
     try {
       const customerEmail = decodeURIComponent(encodedCustomerEmail);
-      const channel = await this.channelService.getChannelFromToken(
-        channelToken
-      );
+      const channel =
+        await this.channelService.getChannelFromToken(channelToken);
       if (channel.token !== channelToken) {
         throw new UserInputError(
-          `No channel found with token '${channelToken}'`
+          `No channel found with token '${channelToken}'`,
         );
       }
       const ctx = new RequestContext({
@@ -121,7 +120,7 @@ export class InvoiceController {
       });
       Logger.info(
         `Invoice downloaded from ${JSON.stringify(ip)} for ${req.path}`,
-        loggerCtx
+        loggerCtx,
       );
       if (
         typeof streamOrRedirect === 'string' ||
@@ -139,10 +138,10 @@ export class InvoiceController {
           req.path
           // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         }: ${error.message}`,
-        loggerCtx
+        loggerCtx,
       );
       throw new ForbiddenException(
-        'This invoice does not exist or you are not authorized to download it'
+        'This invoice does not exist or you are not authorized to download it',
       );
     }
   }

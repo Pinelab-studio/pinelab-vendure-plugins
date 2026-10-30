@@ -38,8 +38,8 @@
 /* Shared Starlight theme and Aspire-inspired styling. */
 :root:root {
   color-scheme: dark;
-  --sl-font: 'Ubuntu', sans-serif;
-  --sl-font-mono: 'Ubuntu Mono', 'SFMono-Regular', Consolas, monospace;
+  --sl-font: "Ubuntu", sans-serif;
+  --sl-font-mono: "Ubuntu Mono", "SFMono-Regular", Consolas, monospace;
   --sl-text-body: 1.125rem;
   --sl-text-body-sm: 1rem;
   --sl-line-height: 1.7;
@@ -74,7 +74,8 @@
 /* A faint glow and softer grid on detail pages. */
 body:has(.sidebar-pane) {
   background-color: var(--page);
-  background-image: radial-gradient(
+  background-image:
+    radial-gradient(
       ellipse at 50% 24rem,
       color-mix(in srgb, var(--glow) 30%, transparent),
       transparent 45rem
@@ -88,21 +89,24 @@ body:has(.sidebar-pane) {
       color-mix(in srgb, var(--grid) 50%, transparent) 1px,
       transparent 1px
     );
-  background-size: auto, 5rem 5rem, 5rem 5rem;
+  background-size:
+    auto,
+    5rem 5rem,
+    5rem 5rem;
 }
 
 /* Restrict the decorative background to splash pages. */
-[data-has-hero][data-has-sidebar='false'],
+[data-has-hero][data-has-sidebar="false"],
 body:has(.hero):not(:has(.sidebar-pane)) {
   background-color: var(--page);
-  background-image: radial-gradient(
-      ellipse at 50% 24rem,
-      var(--glow),
-      transparent 45rem
-    ),
+  background-image:
+    radial-gradient(ellipse at 50% 24rem, var(--glow), transparent 45rem),
     linear-gradient(var(--grid) 1px, transparent 1px),
     linear-gradient(90deg, var(--grid) 1px, transparent 1px);
-  background-size: auto, 5rem 5rem, 5rem 5rem;
+  background-size:
+    auto,
+    5rem 5rem,
+    5rem 5rem;
 }
 
 .hero {
@@ -124,7 +128,7 @@ body:has(.hero):not(:has(.sidebar-pane)) {
   max-width: 44ch;
 }
 
-.hero > img[alt='Vendure conference'] {
+.hero > img[alt="Vendure conference"] {
   display: block;
   width: 100%;
   aspect-ratio: 1 / 1;
@@ -137,7 +141,9 @@ body:has(.hero):not(:has(.sidebar-pane)) {
   border-radius: 0.65rem;
   font-weight: 700;
   padding: 0.85rem 1.4rem;
-  transition: background-color 160ms ease, box-shadow 160ms ease;
+  transition:
+    background-color 160ms ease,
+    box-shadow 160ms ease;
 }
 
 .sl-link-button.primary {
@@ -216,7 +222,7 @@ body:has(.hero):not(:has(.sidebar-pane)) {
 }
 
 .plugin-card h3 a::after {
-  content: '';
+  content: "";
   position: absolute;
   inset: 0;
 }

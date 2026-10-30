@@ -13,7 +13,7 @@ export class QlsShopResolver {
   @Query()
   async qlsServicePoints(
     @Ctx() ctx: RequestContext,
-    @Args('input') input: QlsServicePointSearchInput
+    @Args('input') input: QlsServicePointSearchInput,
   ): Promise<QlsServicePoint[]> {
     return await this.qlsOrderService.getServicePoints(ctx, input);
   }

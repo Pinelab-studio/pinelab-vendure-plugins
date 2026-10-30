@@ -1,16 +1,11 @@
 import {
-  api,
   Badge,
-  BulkActionComponent,
   DashboardRouteDefinition,
-  DataTableBulkActionItem,
   DetailPageButton,
   ListPage,
 } from '@vendure/dashboard';
-
-import { graphql } from '@/gql';
-import { toast } from 'sonner';
 import { DownloadIcon, ExternalLinkIcon } from 'lucide-react';
+import { graphql } from '@/gql';
 import { DownloadInvoicesBulkAction } from './DownloadInvoicesBulkAction';
 
 const invoiceListQuery = graphql(`
@@ -35,7 +30,7 @@ const invoiceListQuery = graphql(`
   }
 `);
 
-const exportToAccountingDocument = graphql(`
+const _exportToAccountingDocument = graphql(`
   mutation ExportInvoiceToAccountingPlatform($invoiceNumber: Int!) {
     exportInvoiceToAccountingPlatform(invoiceNumber: $invoiceNumber)
   }

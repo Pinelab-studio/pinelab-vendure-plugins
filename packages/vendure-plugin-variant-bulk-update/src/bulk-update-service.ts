@@ -1,3 +1,5 @@
+import { Inject, Injectable, OnApplicationBootstrap } from '@nestjs/common';
+import { UpdateProductVariantInput } from '@vendure/common/lib/generated-types';
 import {
   EventBus,
   ID,
@@ -8,15 +10,12 @@ import {
   ProductVariant,
   ProductVariantEvent,
   ProductVariantPrice,
-  ProductVariantService,
   RequestContext,
   TransactionalConnection,
 } from '@vendure/core';
-import { Inject, Injectable, OnApplicationBootstrap } from '@nestjs/common';
+import { In } from 'typeorm';
 import { loggerCtx } from './constants';
 import type { BulkUpdateOptions } from './variant-bulk-update.plugin';
-import { In } from 'typeorm';
-import { UpdateProductVariantInput } from '@vendure/common/lib/generated-types';
 
 type ProductWithCustomFields = Product & {
   customFields?: Record<string, any>;
@@ -31,7 +30,7 @@ export class BulkUpdateService implements OnApplicationBootstrap {
   constructor(
     private eventBus: EventBus,
     private connection: TransactionalConnection,
-    @Inject(PLUGIN_INIT_OPTIONS) private options: BulkUpdateOptions
+    @Inject(PLUGIN_INIT_OPTIONS) private options: BulkUpdateOptions,
   ) {}
 
   async onApplicationBootstrap(): Promise<void> {
@@ -47,11 +46,11 @@ export class BulkUpdateService implements OnApplicationBootstrap {
           await this.updatePriceOfVariants(
             ctx,
             product,
-            product.customFields.price
+            product.customFields.price,
           ).catch((e) => {
             Logger.error(
               `Error updating prices of variants for product '${product.id}': ${e?.message}`,
-              loggerCtx
+              loggerCtx,
             );
           });
           await this.clearProductBulkPrice(ctx, product);
@@ -60,13 +59,13 @@ export class BulkUpdateService implements OnApplicationBootstrap {
         const shouldUpdateCustomFields =
           this.options.bulkUpdateCustomFields.find(
             (customFieldName) =>
-              product.customFields?.[customFieldName] !== undefined
+              product.customFields?.[customFieldName] !== undefined,
           );
         if (shouldUpdateCustomFields) {
           await this.updateCustomFieldsOfVariants(ctx, product).catch((e) => {
             Logger.error(
               `Error updating custom fields of variants for product '${product.id}': ${e?.message}`,
-              loggerCtx
+              loggerCtx,
             );
           });
         }
@@ -79,7 +78,7 @@ export class BulkUpdateService implements OnApplicationBootstrap {
   async updatePriceOfVariants(
     ctx: RequestContext,
     product: ProductWithCustomFields,
-    price: number
+    price: number,
   ): Promise<void> {
     const variants = await this.getAllVariantsForProduct(ctx, product.id);
     const variantIds = variants.map((v) => v.id);
@@ -96,10 +95,10 @@ export class BulkUpdateService implements OnApplicationBootstrap {
       .execute();
     Logger.info(
       `Updated prices of ${res.affected} variants of product ${product.id} to ${product.customFields?.price}`,
-      loggerCtx
+      loggerCtx,
     );
     await this.eventBus.publish(
-      new ProductVariantEvent(ctx, variants, 'updated')
+      new ProductVariantEvent(ctx, variants, 'updated'),
     );
   }
 
@@ -109,7 +108,7 @@ export class BulkUpdateService implements OnApplicationBootstrap {
    */
   private async clearProductBulkPrice(
     ctx: RequestContext,
-    product: ProductWithCustomFields
+    product: ProductWithCustomFields,
   ): Promise<void> {
     await this.connection
       .getRepository(ctx, Product)
@@ -130,7 +129,7 @@ export class BulkUpdateService implements OnApplicationBootstrap {
    */
   async updateCustomFieldsOfVariants(
     ctx: RequestContext,
-    updatedProduct: ProductWithCustomFields
+    updatedProduct: ProductWithCustomFields,
   ): Promise<void> {
     // First construct the custom fields update object for each configured field
     const customFields: Record<string, any> = {};
@@ -143,7 +142,7 @@ export class BulkUpdateService implements OnApplicationBootstrap {
     // Then we update all variants with the given custom field values
     const variants = await this.getAllVariantsForProduct(
       ctx,
-      updatedProduct.id
+      updatedProduct.id,
     );
     const variantIds = variants.map((v) => v.id);
     const res = await this.connection
@@ -158,22 +157,22 @@ export class BulkUpdateService implements OnApplicationBootstrap {
       .execute();
     Logger.info(
       `Updated custom fields '${this.options.bulkUpdateCustomFields.join(
-        ','
+        ',',
       )}' of ${res.affected} variants of product ${updatedProduct.id}`,
-      loggerCtx
+      loggerCtx,
     );
     const inputs: UpdateProductVariantInput[] = variants.map((v) => ({
       id: v.id,
       customFields,
     }));
     await this.eventBus.publish(
-      new ProductVariantEvent(ctx, variants, 'updated', inputs)
+      new ProductVariantEvent(ctx, variants, 'updated', inputs),
     );
   }
 
   private getAllVariantsForProduct(
     ctx: RequestContext,
-    productId: ID
+    productId: ID,
   ): Promise<ProductVariant[]> {
     return this.connection
       .getRepository(ctx, ProductVariant)

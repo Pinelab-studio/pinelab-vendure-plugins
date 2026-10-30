@@ -24,7 +24,7 @@
     "build:dashboard": "vite build --config ./vite.config.mts",
     "dev:dashboard": "vite --clearScreen false",
     "test": "vitest run",
-    "lint": "echo 'No linting configured'"
+    "lint": "biome check ."
   },
   "dependencies": {
     "axios": "^1.20.0"

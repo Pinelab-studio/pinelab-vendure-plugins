@@ -1,29 +1,29 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { OrderAddress } from '@vendure/common/lib/generated-types';
 import { Logger, RequestContext } from '@vendure/core';
+import { asError } from 'catch-unknown';
 import { ADDRESS_LOOKUP_PLUGIN_OPTIONS, loggerCtx } from '../constants';
+import { AddressLookupInput } from '../generated/graphql';
 import {
   InvalidAddressLookupInputError,
   NoAddressLookupStrategyFoundError,
   PluginInitOptions,
 } from '../types';
-import { AddressLookupInput } from '../generated/graphql';
-import { asError } from 'catch-unknown';
 
 @Injectable()
 export class AddressLookupService {
   constructor(
-    @Inject(ADDRESS_LOOKUP_PLUGIN_OPTIONS) private options: PluginInitOptions
+    @Inject(ADDRESS_LOOKUP_PLUGIN_OPTIONS) private options: PluginInitOptions,
   ) {}
 
   async lookupAddress(
     ctx: RequestContext,
-    input: AddressLookupInput
+    input: AddressLookupInput,
   ): Promise<OrderAddress[]> {
     // Find strategy that supports the country code in case insensitive manner
     const countryCode = input.countryCode.toLowerCase();
     const lookupStrategy = this.options.lookupStrategies.find((s) =>
-      s.supportedCountryCodes.map((c) => c.toLowerCase()).includes(countryCode)
+      s.supportedCountryCodes.map((c) => c.toLowerCase()).includes(countryCode),
     );
     if (!lookupStrategy) {
       // No lookup strategy found for 'countryCode'
@@ -40,7 +40,7 @@ export class AddressLookupService {
       const error = asError(e);
       Logger.error(
         `Error looking up address via ${lookupStrategy.constructor.name}: ${error.message}`,
-        loggerCtx
+        loggerCtx,
       );
       throw error;
     });

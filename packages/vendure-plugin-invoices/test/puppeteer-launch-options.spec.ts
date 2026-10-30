@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, afterEach } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import { buildLaunchOptions } from '../src/util/puppeteer.util';
 
 describe('Puppeteer launch options', () => {

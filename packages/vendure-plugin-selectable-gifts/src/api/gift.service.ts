@@ -4,7 +4,6 @@ import {
   ID,
   Order,
   OrderService,
-  Product,
   ProductService,
   ProductVariant,
   ProductVariantService,
@@ -23,7 +22,7 @@ export class GiftService {
     private orderService: OrderService,
     private variantService: ProductVariantService,
     private productService: ProductService,
-    private stockLevelService: StockLevelService
+    private stockLevelService: StockLevelService,
   ) {}
 
   /**
@@ -31,14 +30,14 @@ export class GiftService {
    */
   async getEligibleGiftsForOrder(
     ctx: RequestContext,
-    orderId: ID
+    orderId: ID,
   ): Promise<ProductVariant[]> {
     const appliedPromotions =
       await this.promotionService.getActivePromotionsOnOrder(ctx, orderId);
     const freeGiftPromotions = appliedPromotions.filter((promotion) =>
       promotion.actions.some(
-        (action) => action.code === freeGiftPromotionAction.code
-      )
+        (action) => action.code === freeGiftPromotionAction.code,
+      ),
     );
     if (!freeGiftPromotions.length) {
       return [];
@@ -51,7 +50,7 @@ export class GiftService {
     const productIds = [...new Set(variants.map((v) => v.productId))];
     const products = await this.productService.findByIds(ctx, productIds);
     const enabledProductIds = new Set(
-      products.filter((p) => p.enabled).map((p) => p.id)
+      products.filter((p) => p.enabled).map((p) => p.id),
     );
     const variantsWithStock: ProductVariant[] = [];
     await Promise.all(
@@ -64,7 +63,7 @@ export class GiftService {
           // Only return variants which are enabled, whose product is enabled and which have stock
           variantsWithStock.push(variant);
         }
-      })
+      }),
     );
     return variantsWithStock;
   }
@@ -75,12 +74,12 @@ export class GiftService {
   async addGiftToOrder(
     ctx: RequestContext,
     orderId: ID,
-    productVariantId: ID
+    productVariantId: ID,
   ): Promise<Order> {
     const eligibleGifts = await this.getEligibleGiftsForOrder(ctx, orderId);
     if (!eligibleGifts.find((gift) => gift.id === productVariantId)) {
       throw new UserInputError(
-        `Variant ${productVariantId} is not eligible as gift for this order`
+        `Variant ${productVariantId} is not eligible as gift for this order`,
       );
     }
     const order = await this.orderService.findOne(ctx, orderId, [
@@ -92,7 +91,7 @@ export class GiftService {
     }
     // Remove previously selected gifts if any
     const giftLine = order.lines.find(
-      (line) => (line.customFields as any)?.isSelectedAsGift
+      (line) => (line.customFields as any)?.isSelectedAsGift,
     );
     if (giftLine) {
       await this.orderService.adjustOrderLine(ctx, orderId, giftLine.id, 0, {
@@ -119,7 +118,7 @@ export class GiftService {
     const allVariantIds: ID[] = [];
     actions.forEach(async (action) => {
       const variantsArg = action.args.find(
-        (arg) => arg.name === 'variants'
+        (arg) => arg.name === 'variants',
       )?.value;
       if (!variantsArg) {
         return [];
@@ -142,7 +141,7 @@ export class GiftService {
 
   private async hasStock(
     ctx: RequestContext,
-    variant: ProductVariant
+    variant: ProductVariant,
   ): Promise<boolean> {
     const { stockAllocated, stockOnHand } =
       await this.stockLevelService.getAvailableStock(ctx, variant.id);

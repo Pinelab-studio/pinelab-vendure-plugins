@@ -21,7 +21,7 @@
     "start": "yarn ts-node test/dev-server.ts",
     "build": "rimraf dist && tsc",
     "test": "vitest run",
-    "lint": "eslint ."
+    "lint": "biome check ."
   },
   "gitHead": "476f36da3aafea41fbf21c70774a30306f1d238f"
 }

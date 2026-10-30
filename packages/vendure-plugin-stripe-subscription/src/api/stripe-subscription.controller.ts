@@ -1,15 +1,15 @@
-import { Body, Controller, Headers, Inject, Post, Req } from '@nestjs/common';
+import { Controller, Inject, Post, Req } from '@nestjs/common';
 import { Logger, OrderService } from '@vendure/core';
 import { Request } from 'express';
+import Stripe from 'stripe';
 import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
 import { StripeSubscriptionPluginOptions } from '../stripe-subscription.plugin';
 import { StripeSubscriptionService } from './stripe-subscription.service';
+import { IncomingStripeWebhook } from './types/stripe.common';
 import {
   StripePaymentIntent,
   StripeSetupIntent,
 } from './types/stripe-payment-intent';
-import { IncomingStripeWebhook } from './types/stripe.common';
-import Stripe from 'stripe';
 
 export type RequestWithRawBody = Request & { rawBody: any };
 
@@ -18,8 +18,7 @@ export class StripeSubscriptionController {
   constructor(
     private stripeSubscriptionService: StripeSubscriptionService,
     private orderService: OrderService,
-    @Inject(PLUGIN_INIT_OPTIONS)
-    private options: StripeSubscriptionPluginOptions
+    @Inject(PLUGIN_INIT_OPTIONS) _options: StripeSubscriptionPluginOptions,
   ) {}
 
   @Post('webhook')
@@ -37,7 +36,7 @@ export class StripeSubscriptionController {
     if (!StripeSubscriptionService.webhookEvents.includes(body.type as any)) {
       Logger.info(
         `Received incoming '${body.type}' webhook, not processing this event.`,
-        loggerCtx
+        loggerCtx,
       );
       return;
     }
@@ -45,13 +44,13 @@ export class StripeSubscriptionController {
       // For some reason we get a webhook without metadata first, we ignore it
       return Logger.info(
         `Incoming webhook is missing metadata.orderCode/channelToken, ignoring. We should receive another one with metadata...`,
-        loggerCtx
+        loggerCtx,
       );
     }
     try {
       const ctx = await this.stripeSubscriptionService.createContext(
         channelToken,
-        request
+        request,
       );
       const order = await this.orderService.findOneByCode(ctx, orderCode);
       if (!order) {
@@ -64,7 +63,7 @@ export class StripeSubscriptionController {
         await this.stripeSubscriptionService.handleIntentSucceeded(
           ctx,
           body.data.object as StripePaymentIntent & StripeSetupIntent,
-          order
+          order,
         );
       } else if (
         body.type === 'invoice.payment_failed' ||
@@ -74,7 +73,7 @@ export class StripeSubscriptionController {
         await this.stripeSubscriptionService.handleInvoicePaymentFailed(
           ctx,
           invoiceObject.id,
-          order
+          order,
         );
       }
       Logger.info(`Successfully handled webhook ${body.type}`, loggerCtx);
@@ -85,7 +84,7 @@ export class StripeSubscriptionController {
           (error as Error)?.message
         }`,
         loggerCtx,
-        (error as Error)?.stack
+        (error as Error)?.stack,
       );
       throw error;
     }

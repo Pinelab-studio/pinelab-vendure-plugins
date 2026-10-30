@@ -1,11 +1,4 @@
-import {
-  DefaultLogger,
-  ID,
-  LogLevel,
-  mergeConfig,
-  Order,
-  OrderLine,
-} from '@vendure/core';
+import { ID, mergeConfig, Order, OrderLine } from '@vendure/core';
 import {
   createTestEnvironment,
   registerInitializer,
@@ -13,20 +6,19 @@ import {
   testConfig,
 } from '@vendure/testing';
 import { TestServer } from '@vendure/testing/lib/test-server';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, expect, it } from 'vitest';
+import { getOrder } from '../../test/src/admin-utils';
+import { SetShippingMethod } from '../../test/src/generated/shop-graphql';
 import { initialData } from '../../test/src/initial-data';
 import {
   addItem,
   createSettledOrder,
   getActiveOrder,
 } from '../../test/src/shop-utils';
+import { waitFor } from '../../test/src/test-helpers';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
 import { ModifyCustomerOrdersPlugin } from '../src';
 import { convertToDraftMutation, TRANSITION_ORDER_TO } from './test-helper';
-import { setAddressAndShipping } from '../../test/src/shop-utils';
-import { SetShippingMethod } from '../../test/src/generated/shop-graphql';
-import { getOrder } from '../../test/src/admin-utils';
-import { waitFor } from '../../test/src/test-helpers';
 
 let server: TestServer;
 let adminClient: any;
@@ -72,31 +64,31 @@ it('Should start successfully', async () => {
 it('Should change active order to draft order', async () => {
   await shopClient.asUserWithCredentials('hayden.zieme12@hotmail.com', 'test');
   const testActiveOrder = await addItem(shopClient, 'T_1', 1);
-  const res = await shopClient.query(SetShippingMethod, {
+  const _res = await shopClient.query(SetShippingMethod, {
     ids: ['T_1'],
   });
   const { convertOrderToDraft: draftOrder } = await adminClient.query(
     convertToDraftMutation,
     {
       id: testActiveOrder.id,
-    }
+    },
   );
   convertedOrder = draftOrder;
   const activeOrder = await addItem(shopClient, 'T_1', 1);
   expect(draftOrder.state).toBe('Draft');
   expect(draftOrder.lines.length).toBe(testActiveOrder.lines.length);
-  for (let line of testActiveOrder.lines) {
+  for (const line of testActiveOrder.lines) {
     expect(
       draftOrder.lines.some(
-        (l: OrderLine) => l.productVariant.id == line.productVariant.id
-      )
+        (l: OrderLine) => l.productVariant.id === line.productVariant.id,
+      ),
     ).toBe(true);
   }
   expect(draftOrder.shippingAddress.fullName).toBe(
-    testActiveOrder.shippingAddress.fullName
+    testActiveOrder.shippingAddress.fullName,
   );
   expect(draftOrder.customer.emailAddress).toBe(
-    testActiveOrder.customer?.emailAddress
+    testActiveOrder.customer?.emailAddress,
   );
   expect(draftOrder.code).not.toBe(activeOrder.code);
   expect(draftOrder.active).toBe(false);
@@ -110,7 +102,7 @@ it('Should not change non active order to draft order', async () => {
     });
   } catch (e) {
     expect((e as any).response.errors[0].message).toBe(
-      'Only active orders can be changed to a draft order'
+      'Only active orders can be changed to a draft order',
     );
   }
 });
@@ -130,7 +122,7 @@ it('Assigned the draft order to customer as active order', async () => {
     {
       id: convertedOrder.id,
       state: 'ArrangingPayment',
-    }
+    },
   );
   // Get active order as hayden
   await shopClient.asUserWithCredentials('hayden.zieme12@hotmail.com', 'test');
@@ -152,7 +144,7 @@ it('Assigned the draft order to customer as active order', async () => {
 it('Transitioned previous active order to draft', async () => {
   const draftOrder = await waitForDraftTransition(
     adminClient,
-    newActiveOrder?.id
+    newActiveOrder?.id,
   );
   expect(draftOrder?.active).toBe(false);
   expect(draftOrder?.state).toBe('Draft');
@@ -162,7 +154,7 @@ async function waitForDraftTransition(
   client: any,
   orderId: ID,
   maxRetries = 50,
-  delayMs = 100
+  delayMs = 100,
 ) {
   for (let i = 0; i < maxRetries; i++) {
     const order = await getOrder(client, orderId);

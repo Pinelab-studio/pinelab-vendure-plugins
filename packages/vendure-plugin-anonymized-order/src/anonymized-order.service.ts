@@ -1,27 +1,27 @@
-import { Injectable, Inject } from '@nestjs/common';
-import { PLUGIN_INIT_OPTIONS } from './constants';
-import { AnonymizeOrderPluginOptions } from './types';
+import { Inject, Injectable } from '@nestjs/common';
 import {
   ForbiddenError,
   Order,
   OrderService,
   RequestContext,
 } from '@vendure/core';
+import { PLUGIN_INIT_OPTIONS } from './constants';
+import { AnonymizeOrderPluginOptions } from './types';
 
 @Injectable()
 export class AnonymizeOrderService {
   constructor(
     @Inject(PLUGIN_INIT_OPTIONS)
     private readonly options: AnonymizeOrderPluginOptions,
-    private readonly orderService: OrderService
+    private readonly orderService: OrderService,
   ) {}
 
   async getAnonymizedOrder(
     ctx: RequestContext,
     orderCode: string,
-    emailAddress: string
+    emailAddress: string,
   ): Promise<Order> {
-    let order = await this.orderService.findOneByCode(ctx, orderCode);
+    const order = await this.orderService.findOneByCode(ctx, orderCode);
     if (order && order.customer?.emailAddress === emailAddress) {
       if (this.options?.anonymizeOrderFn) {
         this.options.anonymizeOrderFn(order);

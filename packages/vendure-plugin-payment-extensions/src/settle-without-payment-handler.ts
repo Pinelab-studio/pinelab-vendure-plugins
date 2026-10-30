@@ -14,7 +14,7 @@ export const settleWithoutPaymentHandler = new PaymentMethodHandler({
   args: {},
   createPayment: (_, order, amount, __, metadata) => {
     Logger.info(
-      `'${order.code}' settled without payment for customer '${order.customer?.emailAddress}'`
+      `'${order.code}' settled without payment for customer '${order.customer?.emailAddress}'`,
     );
     return {
       amount,

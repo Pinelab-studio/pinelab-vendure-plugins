@@ -1,10 +1,4 @@
-import {
-  CachedSession,
-  DefaultLogger,
-  ID,
-  LogLevel,
-  mergeConfig,
-} from '@vendure/core';
+import { DefaultLogger, ID, LogLevel, mergeConfig } from '@vendure/core';
 import {
   createTestEnvironment,
   registerInitializer,
@@ -13,16 +7,16 @@ import {
   testConfig,
 } from '@vendure/testing';
 import { TestServer } from '@vendure/testing/lib/test-server';
-import { DataSource } from 'typeorm';
-import { initialData } from '../../test/src/initial-data';
-import { expect, describe, beforeAll, afterAll, it, vi, test } from 'vitest';
-import { MultiServerDbSessionCachePlugin } from '../src/plugin';
 import { gql } from 'graphql-tag';
+import { DataSource } from 'typeorm';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { initialData } from '../../test/src/initial-data';
+import { MultiServerDbSessionCachePlugin } from '../src/plugin';
 import { SessionCache } from '../src/session-cache';
 
-describe('Multi-Server Db Session Cache Plugin', function () {
+describe('Multi-Server Db Session Cache Plugin', () => {
   let server: TestServer;
-  let adminClient: SimpleGraphQLClient;
+  let _adminClient: SimpleGraphQLClient;
   let shopClient: SimpleGraphQLClient;
   let serverStarted = false;
   let activeUserId: ID;
@@ -33,7 +27,7 @@ describe('Multi-Server Db Session Cache Plugin', function () {
       logger: new DefaultLogger({ level: LogLevel.Debug }),
       plugins: [MultiServerDbSessionCachePlugin],
     });
-    ({ server, adminClient, shopClient } = createTestEnvironment(config));
+    ({ server, _adminClient, shopClient } = createTestEnvironment(config));
     await server.init({
       initialData,
       productsCsvPath: '../test/src/products-import.csv',
@@ -49,7 +43,7 @@ describe('Multi-Server Db Session Cache Plugin', function () {
   it('Should add item to order', async () => {
     await shopClient.asUserWithCredentials(
       'hayden.zieme12@hotmail.com',
-      'test'
+      'test',
     );
     const { addItemToOrder } = await shopClient.query(
       gql`
@@ -76,11 +70,11 @@ describe('Multi-Server Db Session Cache Plugin', function () {
       {
         productVariantId: 'T_1',
         quantity: 1,
-      }
+      },
     );
     expect(addItemToOrder.id).toBeDefined();
     expect(addItemToOrder.customer.emailAddress).toEqual(
-      'hayden.zieme12@hotmail.com'
+      'hayden.zieme12@hotmail.com',
     );
     activeUserId = addItemToOrder.customer.user.id;
   });

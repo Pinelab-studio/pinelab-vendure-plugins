@@ -1,6 +1,6 @@
 import { Collection, Product } from '@vendure/core';
-import { BetterSearchConfig } from './types';
 import { BetterSearchResult } from './';
+import { BetterSearchConfig } from './types';
 
 type IndexedFields = BetterSearchResult & {
   variantNames: string[];
@@ -25,19 +25,19 @@ export const defaultSearchConfig: BetterSearchConfig<IndexedFields> = {
  */
 function mapToDefaultSearchDocument(
   product: Product,
-  collectionForThisProduct: Collection[]
+  collectionForThisProduct: Collection[],
 ): IndexedFields {
   const highestPrice = Math.max(...product.variants.map((v) => v.price));
   const highestPriceWithTax = Math.max(
-    ...product.variants.map((v) => v.priceWithTax)
+    ...product.variants.map((v) => v.priceWithTax),
   );
   const lowestPrice = Math.min(...product.variants.map((v) => v.price));
   const lowestPriceWithTax = Math.min(
-    ...product.variants.map((v) => v.priceWithTax)
+    ...product.variants.map((v) => v.priceWithTax),
   );
 
   const variantFacetValueIds = product.variants.flatMap((v) =>
-    v.facetValues.map((fv) => fv.id)
+    v.facetValues.map((fv) => fv.id),
   );
   const productFacetValueIds = product.facetValues.map((fv) => fv.id);
   return {

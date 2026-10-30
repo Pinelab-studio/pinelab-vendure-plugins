@@ -6,7 +6,7 @@ import { ContentCheckMessage } from '../types';
  */
 export function checkSitemapInclusion(
   resolvedUrl: string,
-  sitemapUrls: Set<string>
+  sitemapUrls: Set<string>,
 ): ContentCheckMessage[] {
   if (sitemapUrls.has(resolvedUrl)) {
     return [];

@@ -22,12 +22,12 @@ export const freeGiftPromotionAction = new PromotionItemAction({
       ui: { component: 'product-selector-form-input' },
     },
   },
-  init(injector) {},
-  async execute(ctx, orderLine, args, state) {
+  init(_injector) {},
+  async execute(ctx, orderLine, _args, _state) {
     if ((orderLine.customFields as any).isSelectedAsGift) {
       Logger.verbose(
         `Discounting 1 ${orderLine.productVariant.name} (order line ${orderLine.id}) because it's selected as gift`,
-        loggerCtx
+        loggerCtx,
       );
       const unitPrice = ctx.channel.pricesIncludeTax
         ? orderLine.unitPriceWithTax

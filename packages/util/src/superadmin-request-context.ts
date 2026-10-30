@@ -1,15 +1,15 @@
 import {
-  Injector,
   Channel,
+  ConfigService,
+  Injector,
   RequestContext,
   TransactionalConnection,
   User,
-  ConfigService,
 } from '@vendure/core';
 
 export async function getSuperadminContextInChannel(
   injector: Injector,
-  channel: Channel
+  channel: Channel,
 ): Promise<RequestContext> {
   const connection = injector.get(TransactionalConnection);
   const configService = injector.get(ConfigService);

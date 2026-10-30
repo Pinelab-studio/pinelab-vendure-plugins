@@ -23,7 +23,7 @@ export class StripeClient extends Stripe {
   constructor(
     public webhookSecret: string,
     apiKey: string,
-    config: Stripe.StripeConfig
+    config: Stripe.StripeConfig,
   ) {
     super(apiKey, config);
   }
@@ -46,7 +46,7 @@ export class StripeClient extends Stripe {
    */
   validateWebhookSignature(
     payload: Buffer,
-    signature: string | undefined
+    signature: string | undefined,
   ): void {
     if (!signature) {
       throw Error(`Can not validate webhook signature without a signature!`);

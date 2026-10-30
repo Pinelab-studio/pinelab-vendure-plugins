@@ -1,7 +1,6 @@
 import {
   CachedSession,
   Injector,
-  InternalServerError,
   Logger,
   SessionCacheStrategy,
 } from '@vendure/core';
@@ -23,7 +22,7 @@ export class MultiServerDbSessionCacheStrategy implements SessionCacheStrategy {
       // Getting a cached session should not propagate the error to the client
       Logger.error(
         'MultiServerDbSessionCache repository not initialized',
-        loggerCtx
+        loggerCtx,
       );
       return;
     }
@@ -37,7 +36,7 @@ export class MultiServerDbSessionCacheStrategy implements SessionCacheStrategy {
     if (!this.sessionRepository) {
       Logger.error(
         'MultiServerDbSessionCache repository not initialized',
-        loggerCtx
+        loggerCtx,
       );
       return;
     }
@@ -58,7 +57,7 @@ export class MultiServerDbSessionCacheStrategy implements SessionCacheStrategy {
     if (!this.sessionRepository) {
       Logger.error(
         'MultiServerDbSessionCache repository not initialized',
-        loggerCtx
+        loggerCtx,
       );
       return;
     }

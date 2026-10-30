@@ -1,12 +1,9 @@
 import {
   DefaultLogger,
   DefaultSearchPlugin,
-  FacetValue,
-  FacetValueChecker,
   ID,
   LogLevel,
   mergeConfig,
-  OrderService,
   ProductService,
   ProductVariantService,
   RequestContext,
@@ -103,7 +100,7 @@ it('Should start successfully', async () => {
   await expect(serverStarted).toBe(true);
 });
 
-describe('Shipping by weight and country eligibility checker', function () {
+describe('Shipping by weight and country eligibility checker', () => {
   it('Creates shipping method 1 for NL and BE, with weight between 0 and 100 ', async () => {
     await adminClient.asSuperAdmin();
     const res = await createShippingMethodForCountriesAndWeight(adminClient, {
@@ -151,7 +148,7 @@ describe('Shipping by weight and country eligibility checker', function () {
 
   it('Is not eligible for quantity 123, because of the custom strategy', async () => {
     ShippingExtensionsPlugin.options.additionalShippingEligibilityCheck =
-      async (ctx, injector, order) => {
+      async (_ctx, _injector, order) => {
         // Dummy config that blocks eligibility for orders with totalQuantity 123
         // This way we can test the "is eligible" strategy by creating an order with 123 quantity
         if (order.totalQuantity === 123) {
@@ -165,7 +162,7 @@ describe('Shipping by weight and country eligibility checker', function () {
     ]);
     // Throws an error, because there is no shipping method added
     await expect(createSettledOrderPromise).rejects.toThrow(
-      'ORDER_STATE_TRANSITION_ERROR'
+      'ORDER_STATE_TRANSITION_ERROR',
     );
     ShippingExtensionsPlugin.options.additionalShippingEligibilityCheck =
       undefined; // Reset
@@ -226,7 +223,7 @@ describe('Shipping by weight and country eligibility checker', function () {
 
   it('Is NOT eligible for method 2 with country NL', async () => {
     await expect(createSettledOrder(shopClient, 2)).rejects.toThrow(
-      'ORDER_STATE_TRANSITION_ERROR'
+      'ORDER_STATE_TRANSITION_ERROR',
     );
   });
 
@@ -236,10 +233,10 @@ describe('Shipping by weight and country eligibility checker', function () {
       .update(ctx, { id: 1, customFields: { weight: 200 } });
     expect((product.customFields as any).weight).toBe(200);
     await expect(createSettledOrder(shopClient, 1)).rejects.toThrow(
-      'ORDER_STATE_TRANSITION_ERROR'
+      'ORDER_STATE_TRANSITION_ERROR',
     );
     await expect(createSettledOrder(shopClient, 2)).rejects.toThrow(
-      'ORDER_STATE_TRANSITION_ERROR'
+      'ORDER_STATE_TRANSITION_ERROR',
     );
   });
 
@@ -256,15 +253,15 @@ describe('Shipping by weight and country eligibility checker', function () {
     expect((productVariants[0].customFields as any).weight).toBe(200);
 
     await expect(createSettledOrder(shopClient, 1)).rejects.toThrow(
-      'ORDER_STATE_TRANSITION_ERROR'
+      'ORDER_STATE_TRANSITION_ERROR',
     );
     await expect(createSettledOrder(shopClient, 2)).rejects.toThrow(
-      'ORDER_STATE_TRANSITION_ERROR'
+      'ORDER_STATE_TRANSITION_ERROR',
     );
   });
 });
 
-describe('Distance based shipping calculator', function () {
+describe('Distance based shipping calculator', () => {
   it('Should calculate distance based Shipping Price', async () => {
     const shippingAddressPostalCode = 'SW1W 0NY';
     const shippingAddressGeoLocation: GeoLocation = {
@@ -302,14 +299,14 @@ describe('Distance based shipping calculator', function () {
       };
     const shippingDistance = getDistanceBetweenPointsInKMs(
       storeGeoLocation,
-      shippingAddressGeoLocation
+      shippingAddressGeoLocation,
     );
     const expectedPrice = roundMoney(
-      priceBasedShippingMethodArgs.pricePerKm * shippingDistance
+      priceBasedShippingMethodArgs.pricePerKm * shippingDistance,
     );
     const distanceBasedShippingMethod = await createDistanceBasedShippingMethod(
       adminClient,
-      priceBasedShippingMethodArgs
+      priceBasedShippingMethodArgs,
     );
     expect(distanceBasedShippingMethod.id).toBeDefined();
     const order: any = await createSettledOrder(
@@ -321,13 +318,13 @@ describe('Distance based shipping calculator', function () {
         { id: 'T_2', quantity: 2 },
       ],
       undefined,
-      { input: shippingAdress }
+      { input: shippingAdress },
     );
     expect(order.shipping).toBe(expectedPrice);
   });
 });
 
-describe('Country based Promotion condition', function () {
+describe('Country based Promotion condition', () => {
   it('Creates promotion hat gives free shipping for orders in NL', async () => {
     const promotion = await createPromotion(adminClient, {
       input: {
@@ -391,14 +388,14 @@ describe('Country based Promotion condition', function () {
           countryCode: 'BE',
           streetLine1: 'Brussels Street',
         },
-      }
+      },
     );
     expect(order.state).toBe('PaymentSettled');
     expect(order.shipping).toBe(111);
   });
 });
 
-describe('Shipping by facet and country eligibility checker', function () {
+describe('Shipping by facet and country eligibility checker', () => {
   let shippingMethodId: ID;
 
   it('Creates shipping method for NL and facet "limited" ', async () => {
@@ -424,7 +421,7 @@ describe('Shipping by facet and country eligibility checker', function () {
 
   it('Is not eligible for quantity 123, because of the custom strategy', async () => {
     ShippingExtensionsPlugin.options.additionalShippingEligibilityCheck =
-      async (ctx, injector, order) => {
+      async (_ctx, _injector, order) => {
         // Dummy config that blocks eligibility for orders with totalQuantity 123
         // This way we can test the "is eligible" strategy by creating an order with 123 quantity
         if (order.totalQuantity === 123) {
@@ -437,11 +434,11 @@ describe('Shipping by facet and country eligibility checker', function () {
       shopClient,
       shippingMethodId,
       true,
-      [{ id: 'T_4', quantity: 123 }]
+      [{ id: 'T_4', quantity: 123 }],
     );
     // Throws an error, because there is no shipping method added
     await expect(createSettledOrderPromise).rejects.toThrow(
-      'ORDER_STATE_TRANSITION_ERROR'
+      'ORDER_STATE_TRANSITION_ERROR',
     );
     ShippingExtensionsPlugin.options.additionalShippingEligibilityCheck =
       undefined; // Reset
@@ -453,15 +450,15 @@ describe('Shipping by facet and country eligibility checker', function () {
       shopClient,
       shippingMethodId,
       true,
-      [{ id: 'T_1', quantity: 1 }]
+      [{ id: 'T_1', quantity: 1 }],
     );
     await expect(createSettledOrderPromise).rejects.toThrow(
-      'ORDER_STATE_TRANSITION_ERROR'
+      'ORDER_STATE_TRANSITION_ERROR',
     );
   });
 });
 
-describe('Flat Rate, tax by items in cart shipping calculator', function () {
+describe('Flat Rate, tax by items in cart shipping calculator', () => {
   let shippingMethodId: ID;
 
   it('Creates flat rate shipping method', async () => {

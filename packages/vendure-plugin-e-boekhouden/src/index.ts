@@ -1,3 +1,3 @@
-export * from './e-boekhouden.plugin';
-export * from './custom-fields';
 export { recalculateTaxFromTotalIncVAT } from './api/e-boekhouden.adapter';
+export * from './custom-fields';
+export * from './e-boekhouden.plugin';

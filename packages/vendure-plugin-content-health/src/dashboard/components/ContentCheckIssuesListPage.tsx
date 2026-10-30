@@ -1,3 +1,5 @@
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { AnyRoute, Link } from '@tanstack/react-router';
 import {
   api,
   Badge,
@@ -7,8 +9,6 @@ import {
   ListPage,
   PageActionBarRight,
 } from '@vendure/dashboard';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { AnyRoute, Link } from '@tanstack/react-router';
 import {
   AlertTriangleIcon,
   ExternalLinkIcon,
@@ -32,7 +32,7 @@ import {
  */
 function issueDetailHref(entityType: string, entityId: string): string {
   return `/content-health/issues/${encodeURIComponent(
-    entityType
+    entityType,
   )}/${encodeURIComponent(entityId)}`;
 }
 
@@ -49,7 +49,7 @@ function ContentCheckIssuesListPage({ route }: { route: AnyRoute }) {
           result.entitiesChecked === 1 ? 'entity' : 'entities'
         } checked across ${result.channelsScanned} ${
           result.channelsScanned === 1 ? 'channel' : 'channels'
-        }.`
+        }.`,
       );
       await queryClient.invalidateQueries({
         queryKey: ['content-health-overview'],
@@ -102,7 +102,7 @@ function ContentCheckIssuesListPage({ route }: { route: AnyRoute }) {
             <DetailPageButton
               href={issueDetailHref(
                 row.original.entityType,
-                row.original.entityId
+                row.original.entityId,
               )}
               label={row.original.name}
             />
@@ -120,7 +120,7 @@ function ContentCheckIssuesListPage({ route }: { route: AnyRoute }) {
           header: 'Status',
           meta: { dependencies: ['hasWarning', 'errorCount', 'warningCount'] },
           cell: ({ row }) => (
-            <div className="flex gap-1 flex-wrap">
+            <div className="flex flex-wrap gap-1">
               {row.original.hasError && (
                 <Badge variant="destructive">
                   {row.original.errorCount} error
@@ -144,7 +144,7 @@ function ContentCheckIssuesListPage({ route }: { route: AnyRoute }) {
           header: 'Preview',
           cell: ({ row }) => (
             <span
-              className="block max-w-md truncate text-sm text-muted-foreground"
+              className="block max-w-md truncate text-muted-foreground text-sm"
               title={row.original.preview ?? undefined}
             >
               {row.original.preview ?? '—'}
@@ -176,7 +176,7 @@ function ContentCheckIssuesListPage({ route }: { route: AnyRoute }) {
               return null;
             }
             const label = `Go to ${entityTypeLabel(
-              row.original.entityType
+              row.original.entityType,
             ).toLowerCase()}`;
             return (
               <Button
@@ -217,7 +217,7 @@ function ContentCheckIssuesListPage({ route }: { route: AnyRoute }) {
           onClick={() => runFullScanMutation.mutate()}
         >
           <RefreshCwIcon
-            className={`h-4 w-4 mr-2 ${
+            className={`mr-2 h-4 w-4 ${
               runFullScanMutation.isPending ? 'animate-spin' : ''
             }`}
           />

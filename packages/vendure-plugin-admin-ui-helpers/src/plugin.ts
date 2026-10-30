@@ -1,4 +1,4 @@
-import { PluginCommonModule, Type, VendurePlugin } from '@vendure/core';
+import { PluginCommonModule, VendurePlugin } from '@vendure/core';
 
 @VendurePlugin({
   imports: [PluginCommonModule],

@@ -11,7 +11,7 @@ export class AddressLookupResolver {
   @Query()
   async lookupAddress(
     @Ctx() ctx: RequestContext,
-    @Args() args: QueryLookupAddressArgs
+    @Args() args: QueryLookupAddressArgs,
   ): Promise<OrderAddress[]> {
     if (!ctx.session?.activeOrderId) {
       // Prevent abuse, so only allow calls with an active order

@@ -1,2 +1,2 @@
 /** CloseSessionResponse */
-export interface CloseSessionResponse {}
+export type CloseSessionResponse = {};

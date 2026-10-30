@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import {
+  getEntitiesForMonth,
   getMonthName,
   groupEntitiesPerMonth,
   mapToSeries,
-  getEntitiesForMonth,
 } from './metric-util';
 
 describe('getMonthName()', () => {
@@ -70,7 +70,7 @@ describe('splitEntitiesInMonths()', () => {
       testEntities,
       'orderPlacedAt',
       from,
-      to
+      to,
     );
 
     // Should have 4 months (Jan, Feb, Mar, Apr, May)
@@ -78,19 +78,19 @@ describe('splitEntitiesInMonths()', () => {
 
     // Check entity count per month
     expect(
-      result.find((m) => m.monthNr === 0 && m.year === 2023)?.entities.length
+      result.find((m) => m.monthNr === 0 && m.year === 2023)?.entities.length,
     ).toBe(1);
     expect(
-      result.find((m) => m.monthNr === 1 && m.year === 2023)?.entities.length
+      result.find((m) => m.monthNr === 1 && m.year === 2023)?.entities.length,
     ).toBe(1);
     expect(
-      result.find((m) => m.monthNr === 2 && m.year === 2023)?.entities.length
+      result.find((m) => m.monthNr === 2 && m.year === 2023)?.entities.length,
     ).toBe(1);
     expect(
-      result.find((m) => m.monthNr === 3 && m.year === 2023)?.entities.length
+      result.find((m) => m.monthNr === 3 && m.year === 2023)?.entities.length,
     ).toBe(1);
     expect(
-      result.find((m) => m.monthNr === 4 && m.year === 2023)?.entities.length
+      result.find((m) => m.monthNr === 4 && m.year === 2023)?.entities.length,
     ).toBe(0);
   });
 
@@ -103,20 +103,20 @@ describe('splitEntitiesInMonths()', () => {
 
     // November and December should be empty
     expect(
-      result.find((m) => m.monthNr === 10 && m.year === 2022)?.entities.length
+      result.find((m) => m.monthNr === 10 && m.year === 2022)?.entities.length,
     ).toBe(0);
     expect(
-      result.find((m) => m.monthNr === 11 && m.year === 2022)?.entities.length
+      result.find((m) => m.monthNr === 11 && m.year === 2022)?.entities.length,
     ).toBe(0);
 
     // January should have 1 entity
     expect(
-      result.find((m) => m.monthNr === 0 && m.year === 2023)?.entities.length
+      result.find((m) => m.monthNr === 0 && m.year === 2023)?.entities.length,
     ).toBe(1);
 
     // February should have 1 entity
     expect(
-      result.find((m) => m.monthNr === 1 && m.year === 2023)?.entities.length
+      result.find((m) => m.monthNr === 1 && m.year === 2023)?.entities.length,
     ).toBe(2);
   });
 
