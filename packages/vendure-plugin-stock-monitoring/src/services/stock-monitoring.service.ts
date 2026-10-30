@@ -4,9 +4,11 @@ import {
   OnApplicationBootstrap,
   OnModuleInit,
 } from '@nestjs/common';
+import { GlobalFlag } from '@vendure/common/lib/generated-types';
 import {
   CacheService,
   EventBus,
+  GlobalSettingsService,
   ID,
   JobQueue,
   JobQueueService,
@@ -31,7 +33,8 @@ type StockMonitoringJobData = {
    * The amount with which the stock was decreased. E.g. 3 means stock was decreased by 3.
    * This decrement already happened by the time this job is created.
    *
-   * Decrement could be caused by adjustments, sales, or allocations.
+   * Decrement could be caused by adjustments or allocations.
+   * Sales don't change saleable stock: they lower stockOnHand and stockAllocated by the same amount.
    */
   saleableStockDecrement: number;
 };
@@ -50,7 +53,8 @@ export class StockMonitoringService
     private readonly variantService: ProductVariantService,
     private readonly cacheService: CacheService,
     private readonly stockLevelService: StockLevelService,
-    private readonly eventBus: EventBus
+    private readonly eventBus: EventBus,
+    private readonly globalSettingsService: GlobalSettingsService
   ) {}
 
   async onModuleInit(): Promise<void> {
@@ -75,15 +79,13 @@ export class StockMonitoringService
           asError(e).stack
         );
       });
-      // Create jobs for stock movements that decrease saleable stock
+      // Create jobs for stock movements that decrease saleable stock.
+      // Sales (fulfillments) are skipped, because they don't change saleable stock.
       for (const movement of event.stockMovements) {
         let stockDecrement: number | undefined;
         // eslint-disable-next-line @typescript-eslint/no-unsafe-enum-comparison
         if (event.type === 'ALLOCATION') {
           stockDecrement = movement.quantity; // Allocation movements are positive, because they add to allocated stock
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-enum-comparison
-        } else if (event.type === 'SALE') {
-          stockDecrement = Math.abs(movement.quantity); // Sale movements are negative
           // eslint-disable-next-line @typescript-eslint/no-unsafe-enum-comparison
         } else if (event.type === 'ADJUSTMENT' && movement.quantity < 0) {
           stockDecrement = Math.abs(movement.quantity);
@@ -116,6 +118,10 @@ export class StockMonitoringService
     let variantIds = await this.cacheService.get<ID[]>(cacheKey);
     if (!variantIds) {
       // No cache hit, so we lookup what variants are below the threshold and cache the ids
+      // Only list variants whose stock Vendure tracks: TRUE, or INHERIT while tracking is on by default
+      const trackedFlags = (await this.tracksInventoryByDefault(ctx))
+        ? [GlobalFlag.TRUE, GlobalFlag.INHERIT]
+        : [GlobalFlag.TRUE];
       const result = await this.connection
         .getRepository(ctx, ProductVariant)
         .createQueryBuilder('pv')
@@ -132,8 +138,8 @@ export class StockMonitoringService
         .setParameters({ globalThreshold: this.options.globalThreshold })
         .where('pv.deletedAt IS NULL')
         .andWhere('pv.enabled = :enabled', { enabled: true })
-        // A double-quoted "FALSE" is a column identifier on Postgres, so bind it as a string param
-        .andWhere('pv.trackInventory != :noTrack', { noTrack: 'FALSE' })
+        // Bind the flags as string params: a double-quoted "TRUE" is a column identifier on Postgres
+        .andWhere('pv.trackInventory IN (:...trackedFlags)', { trackedFlags })
         .groupBy('pv.id')
         // Repeat the expressions instead of the SELECT aliases: Postgres rejects aliases in HAVING
         .having(
@@ -183,6 +189,10 @@ export class StockMonitoringService
       );
       return;
     }
+    if (!(await this.tracksInventory(ctx, variant))) {
+      // Stock of untracked variants doesn't change, so it can't drop below a threshold
+      return;
+    }
     const threshold =
       variant.customFields.stockMonitoringThreshold ??
       this.options.globalThreshold;
@@ -199,6 +209,33 @@ export class StockMonitoringService
         )
       );
     }
+  }
+
+  /**
+   * Whether Vendure tracks the inventory of this variant.
+   */
+  private async tracksInventory(
+    ctx: RequestContext,
+    variant: ProductVariant
+  ): Promise<boolean> {
+    if (variant.trackInventory === GlobalFlag.INHERIT) {
+      return this.tracksInventoryByDefault(ctx);
+    }
+    return variant.trackInventory === GlobalFlag.TRUE;
+  }
+
+  /**
+   * Whether Vendure tracks the inventory of variants set to `INHERIT`.
+   * Reads `GlobalSettings.trackInventory`. It is deprecated in favour of `Channel.trackInventory`,
+   * but Vendure's `StockMovementService` still uses it to decide whether stock levels change, so we use it too.
+   */
+  private async tracksInventoryByDefault(
+    ctx: RequestContext
+  ): Promise<boolean> {
+    const { trackInventory } = await this.globalSettingsService.getSettings(
+      ctx
+    );
+    return trackInventory;
   }
 
   private getCacheKey(ctx: RequestContext): string {
