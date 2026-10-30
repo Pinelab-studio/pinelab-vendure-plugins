@@ -1,3 +1,7 @@
+# 6.2.1 (2026-10-28)
+
+- The Invoices menu items under Sales and Settings are only shown to administrators with `AllowInvoicesPermission`, as in the Angular admin UI.
+
 # 6.2.0 (2026-07-21)
 
 - Migrated to React Dashboard

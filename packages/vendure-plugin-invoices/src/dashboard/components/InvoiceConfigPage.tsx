@@ -210,6 +210,7 @@ export const invoiceConfigRoute: DashboardRouteDefinition = {
     id: 'invoice-settings',
     url: '/invoice-settings',
     title: 'Invoices',
+    requiresPermission: 'AllowInvoicesPermission',
   },
   path: '/invoice-settings',
   loader: () => ({
