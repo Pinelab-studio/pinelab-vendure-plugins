@@ -9,9 +9,9 @@ import {
 import { adminApiExtensions, shopApiExtensions } from './api/api-extensions';
 import { FrequentlyBoughtTogetherAdminResolver } from './api/frequently-bought-together-admin.resolver';
 import { FrequentlyBoughtTogetherShopResolver } from './api/frequently-bought-together-shop.resolver';
+import { buildFrequentlyBoughtTogetherTask } from './config/frequently-bought-together-task';
 import { FREQUENTLY_BOUGHT_TOGETHER_PLUGIN_OPTIONS } from './constants';
 import { FrequentlyBoughtTogetherService } from './services/frequently-bought-together.service';
-import { buildFrequentlyBoughtTogetherTask } from './config/frequently-bought-together-task';
 import { PluginInitOptions } from './types';
 
 export type FrequentlyBoughtTogetherPluginOptions = Partial<PluginInitOptions>;
@@ -65,8 +65,8 @@ export type FrequentlyBoughtTogetherPluginOptions = Partial<PluginInitOptions>;
     // option only changes when it runs. Requires the `DefaultSchedulerPlugin`.
     config.schedulerOptions.tasks.push(
       buildFrequentlyBoughtTogetherTask(
-        FrequentlyBoughtTogetherPlugin.options.scheduledTask
-      )
+        FrequentlyBoughtTogetherPlugin.options.scheduledTask,
+      ),
     );
     return config;
   },
@@ -89,10 +89,10 @@ export class FrequentlyBoughtTogetherPlugin {
   };
 
   static init(
-    options?: FrequentlyBoughtTogetherPluginOptions
+    options?: FrequentlyBoughtTogetherPluginOptions,
   ): Type<FrequentlyBoughtTogetherPlugin> {
-    this.options = {
-      ...this.options,
+    FrequentlyBoughtTogetherPlugin.options = {
+      ...FrequentlyBoughtTogetherPlugin.options,
       ...options,
     };
     return FrequentlyBoughtTogetherPlugin;

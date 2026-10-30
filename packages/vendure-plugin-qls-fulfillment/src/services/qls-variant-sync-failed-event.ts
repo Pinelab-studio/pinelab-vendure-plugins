@@ -10,7 +10,7 @@ export class QlsVariantSyncFailedEvent extends VendureEvent {
     public variant: Partial<ProductVariant>,
     public failedAt: Date,
     /** The error that caused the sync to fail. */
-    public fullError: unknown
+    public fullError: unknown,
   ) {
     super();
   }

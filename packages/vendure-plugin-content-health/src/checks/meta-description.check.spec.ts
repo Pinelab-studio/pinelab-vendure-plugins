@@ -8,7 +8,7 @@ import {
 describe('checkMetaDescriptionLength', () => {
   it('warns when the description is below the valid range', () => {
     const messages = checkMetaDescriptionLength(
-      'a'.repeat(META_DESCRIPTION_MIN - 1)
+      'a'.repeat(META_DESCRIPTION_MIN - 1),
     );
     expect(messages).toHaveLength(1);
     expect(messages[0]).toMatchObject({
@@ -19,7 +19,7 @@ describe('checkMetaDescriptionLength', () => {
 
   it('does not warn at the minimum boundary (100)', () => {
     expect(
-      checkMetaDescriptionLength('a'.repeat(META_DESCRIPTION_MIN))
+      checkMetaDescriptionLength('a'.repeat(META_DESCRIPTION_MIN)),
     ).toEqual([]);
   });
 
@@ -29,13 +29,13 @@ describe('checkMetaDescriptionLength', () => {
 
   it('does not warn at the maximum boundary (160)', () => {
     expect(
-      checkMetaDescriptionLength('a'.repeat(META_DESCRIPTION_MAX))
+      checkMetaDescriptionLength('a'.repeat(META_DESCRIPTION_MAX)),
     ).toEqual([]);
   });
 
   it('warns when the description is above the valid range', () => {
     const messages = checkMetaDescriptionLength(
-      'a'.repeat(META_DESCRIPTION_MAX + 1)
+      'a'.repeat(META_DESCRIPTION_MAX + 1),
     );
     expect(messages).toHaveLength(1);
     expect(messages[0]).toMatchObject({

@@ -4,33 +4,32 @@ import {
   Collection,
   CurrencyCode,
   DefaultLogger,
+  isGraphQlErrorResult,
   LanguageCode,
   LogLevel,
+  mergeConfig,
   Product,
   Role,
   RoleService,
-  isGraphQlErrorResult,
-  mergeConfig,
 } from '@vendure/core';
 import {
   createTestEnvironment,
   registerInitializer,
-  SimpleGraphQLClient,
+  type SimpleGraphQLClient,
   SqljsInitializer,
   testConfig,
 } from '@vendure/testing';
-import { TestServer } from '@vendure/testing/lib/test-server';
-import { initialTestData } from './initial-test-data';
-import { testPaymentMethod } from '../../test/src/test-payment-method';
-import { PrimaryCollectionPlugin } from '../src/primary-collection-plugin';
+import type { TestServer } from '@vendure/testing/lib/test-server';
 import { getSuperadminContext } from '@vendure/testing/lib/utils/get-superadmin-context';
-import { expect, describe, beforeAll, afterAll, it } from 'vitest';
 import { gql } from 'graphql-tag';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { testPaymentMethod } from '../../test/src/test-payment-method';
 import { PrimaryCollectionHelperService } from '../src/api/primary-collections-helper.service';
-import getFilesInAdminUiFolder from '../../test/src/compile-admin-ui.util';
-import { ProductPrimaryCollection } from '../src/util/helpers';
+import { PrimaryCollectionPlugin } from '../src/primary-collection-plugin';
+import type { ProductPrimaryCollection } from '../src/util/helpers';
+import { initialTestData } from './initial-test-data';
 
-describe('Product Primary Collection', function () {
+describe('Product Primary Collection', () => {
   let server: TestServer;
   let adminClient: SimpleGraphQLClient;
   let shopClient: SimpleGraphQLClient;
@@ -151,7 +150,7 @@ describe('Product Primary Collection', function () {
             collectionId: 3,
           } as ProductPrimaryCollection,
         ]),
-      }
+      },
     );
     expect(product.name).toBe('Laptop');
     expect(product.id).toBe('1');
@@ -184,7 +183,7 @@ describe('Product Primary Collection', function () {
       primaryCollectionQuery,
       {
         productId: 3,
-      }
+      },
     );
     expect(product.primaryCollection).toBeNull();
     expect(anotherProduct.primaryCollection).toBeNull();
@@ -212,19 +211,19 @@ describe('Product Primary Collection', function () {
       primaryCollectionQuery,
       {
         productId: 1,
-      }
+      },
     );
     const { product: t2Product } = await shopClient.query(
       primaryCollectionQuery,
       {
         productId: 2,
-      }
+      },
     );
     const { product: t3Product } = await shopClient.query(
       primaryCollectionQuery,
       {
         productId: 3,
-      }
+      },
     );
     //Although Product(1),Laptop, belongs to the Collection Electronics, since Electronics is a private collection, we dont expect it to be it's Primary Collection
     expect(t1Product.primaryCollection.name).not.toBe('Electronics');
@@ -241,22 +240,12 @@ describe('Product Primary Collection', function () {
       primaryCollectionQuery,
       {
         productId: 1,
-      }
+      },
     );
     expect(t1ProductDetailInSecondChannel.primaryCollection.name).toBe(
-      'Hardware'
+      'Hardware',
     );
   });
-
-  if (process.env.TEST_ADMIN_UI) {
-    it('Should compile admin', async () => {
-      const files = await getFilesInAdminUiFolder(
-        __dirname,
-        PrimaryCollectionPlugin.ui
-      );
-      expect(files?.length).toBeGreaterThan(0);
-    }, 200000);
-  }
 
   afterAll(async () => {
     await server.destroy();

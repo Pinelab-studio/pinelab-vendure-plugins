@@ -14,15 +14,15 @@ import {
   Permission,
   RequestContext,
 } from '@vendure/core';
-import { PresetService } from '../services/preset-service';
 import { asError } from 'catch-unknown';
 import { loggerCtx } from '../constants';
+import { PresetService } from '../services/preset-service';
 
 @Resolver()
 export class GoogleStorageAssetResolver {
   constructor(
     private configService: ConfigService,
-    private presetService: PresetService
+    private presetService: PresetService,
   ) {}
 
   /**
@@ -35,7 +35,7 @@ export class GoogleStorageAssetResolver {
     if (assetOptions.assetStorageStrategy.toAbsoluteUrl) {
       return assetOptions.assetStorageStrategy.toAbsoluteUrl(
         ctx.req!,
-        `${asset.preview}_thumbnail.jpg`
+        `${asset.preview}_thumbnail.jpg`,
       );
     } else {
       return `${asset.preview}_thumbnail.jpg`;
@@ -46,7 +46,7 @@ export class GoogleStorageAssetResolver {
   @Resolver('Asset')
   presets(
     @Ctx() ctx: RequestContext,
-    @Parent() asset: Asset
+    @Parent() asset: Asset,
   ): Record<string, string> {
     try {
       return this.presetService.getPresetUrls(ctx, asset);
@@ -55,7 +55,7 @@ export class GoogleStorageAssetResolver {
         `Failed to get preset URL's from custom field for asset ${asset.id}: ${
           asError(error).message
         }`,
-        loggerCtx
+        loggerCtx,
       );
       return {};
     }
@@ -65,7 +65,7 @@ export class GoogleStorageAssetResolver {
   @Allow(Permission.UpdateAsset)
   async generateGoogleStorageAssetPresets(
     @Ctx() ctx: RequestContext,
-    @Args('force') force: boolean
+    @Args('force') force: boolean,
   ): Promise<boolean> {
     await this.presetService.createPresetJobsForAllAssets(ctx, force);
     return true;

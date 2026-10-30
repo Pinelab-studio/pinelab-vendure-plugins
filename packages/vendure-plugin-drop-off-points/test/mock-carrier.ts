@@ -9,8 +9,8 @@ export class MockCarrier implements DropOffPointCarrier {
   name = 'mock';
 
   async getDropOffPoints(
-    ctx: RequestContext,
-    input: ParcelDropOffPointSearchInput
+    _ctx: RequestContext,
+    input: ParcelDropOffPointSearchInput,
   ): Promise<DropOffPoint[]> {
     return [
       {

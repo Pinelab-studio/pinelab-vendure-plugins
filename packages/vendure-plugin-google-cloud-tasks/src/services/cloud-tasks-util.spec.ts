@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { expect, it } from 'vitest';
 import { truncateData } from './cloud-tasks-util';
 
 it('truncates too large data max 1 KB', () => {

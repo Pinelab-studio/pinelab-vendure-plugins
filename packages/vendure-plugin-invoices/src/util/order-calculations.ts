@@ -6,7 +6,7 @@ import { InvoiceOrderTotals } from '../generated-graphql-types';
  * E.g. When `totalWithTax: 100` is given, this will return `totalWithTax: -100`
  */
 export function reverseOrderTotals(
-  orderTotal: InvoiceOrderTotals
+  orderTotal: InvoiceOrderTotals,
 ): InvoiceOrderTotals {
   const reversedSummaries = orderTotal.taxSummaries.map((summary) => {
     return {

@@ -25,6 +25,6 @@
     "build": "rimraf dist && yarn graphql-codegen && tsc",
     "test": "vitest run",
     "generate": "graphql-codegen",
-    "lint": "echo 'No linting configured'"
+    "lint": "biome check ."
   }
 }

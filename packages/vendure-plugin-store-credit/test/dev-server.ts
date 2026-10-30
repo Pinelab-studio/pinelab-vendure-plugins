@@ -1,31 +1,25 @@
+import { LanguageCode, VendureConfig } from '@vendure/core';
 import {
-  SqljsInitializer,
   createTestEnvironment,
   registerInitializer,
+  SqljsInitializer,
 } from '@vendure/testing';
-import { initialData } from '../../test/src/initial-data';
 import dotenv from 'dotenv';
-import {
-  createWalletsForCustomers,
-  storeCreditPaymentHandler,
-  StoreCreditPlugin,
-} from '../src';
+import { AddPaymentToOrder } from '../../test/src/generated/shop-graphql';
+import { initialData } from '../../test/src/initial-data';
 import {
   addItem,
   createSettledOrder,
   proceedToArrangingPayment,
 } from '../../test/src/shop-utils';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
-import { config } from './vendure-config';
-import { VendureConfig } from '@vendure/core';
-import { AddPaymentToOrder } from '../../test/src/generated/shop-graphql';
+import { createWalletsForCustomers, storeCreditPaymentHandler } from '../src';
 import {
   ADJUST_BALANCE_FOR_WALLET,
   CREATE_PAYMENT_METHOD,
   GET_CUSTOMER_WITH_WALLETS,
 } from './helpers';
-import { LanguageCode } from '@vendure/core';
-import { ca } from 'date-fns/locale';
+import { config } from './vendure-config';
 
 // eslint-disable-next-line @typescript-eslint/no-floating-promises
 (async () => {
@@ -40,7 +34,7 @@ import { ca } from 'date-fns/locale';
     credentials: true,
   };
   const { server, shopClient, adminClient } = createTestEnvironment(
-    config as Required<VendureConfig>
+    config as Required<VendureConfig>,
   );
   await server.init({
     initialData: {
@@ -74,7 +68,7 @@ import { ca } from 'date-fns/locale';
       },
       'superadmin',
       undefined,
-      2
+      2,
     );
     console.log(`Created ${wallets.length} wallets`);
 
@@ -98,9 +92,9 @@ import { ca } from 'date-fns/locale';
     });
 
     // Pay for order with store credit
-    const user = await shopClient.asUserWithCredentials(
+    const _user = await shopClient.asUserWithCredentials(
       'hayden.zieme12@hotmail.com',
-      'test'
+      'test',
     );
     const order = await addItem(shopClient, 'T_1', 1);
     await proceedToArrangingPayment(shopClient, 1, {
@@ -121,7 +115,7 @@ import { ca } from 'date-fns/locale';
       },
     });
     console.log(
-      `Paid for order ${order.code} with store credit: ${addPaymentToOrder.state}`
+      `Paid for order ${order.code} with store credit: ${addPaymentToOrder.state}`,
     );
 
     // Create 12 adjustments for customer 1 / wallet 1
@@ -144,7 +138,7 @@ import { ca } from 'date-fns/locale';
     console.log(
       `Created 12 adjustments for wallet 1. Total items: ${
         wallet1?.adjustments?.totalItems ?? 'n/a'
-      }`
+      }`,
     );
   } catch (e) {
     console.error(e);

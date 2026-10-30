@@ -57,7 +57,7 @@ export class ContentCheckService implements OnApplicationBootstrap {
     private resultService: ContentCheckResultService,
     private moduleRef: ModuleRef,
     @Inject(PLUGIN_INIT_OPTIONS)
-    private options: ContentHealthPluginOptions
+    private options: ContentHealthPluginOptions,
   ) {}
 
   /**
@@ -78,7 +78,7 @@ export class ContentCheckService implements OnApplicationBootstrap {
             asError(e).message
           }`,
           loggerCtx,
-          asError(e).stack
+          asError(e).stack,
         );
       });
     });
@@ -92,7 +92,7 @@ export class ContentCheckService implements OnApplicationBootstrap {
             asError(e).message
           }`,
           loggerCtx,
-          asError(e).stack
+          asError(e).stack,
         );
       });
     });
@@ -124,7 +124,7 @@ export class ContentCheckService implements OnApplicationBootstrap {
         Logger.error(
           `Failed to scan channel '${channel.code}': ${asError(e).message}`,
           loggerCtx,
-          asError(e).stack
+          asError(e).stack,
         );
       }
     }
@@ -133,7 +133,7 @@ export class ContentCheckService implements OnApplicationBootstrap {
 
   private async scanChannel(
     channel: Channel,
-    sitemapCache: Map<string, SitemapFetchResult>
+    sitemapCache: Map<string, SitemapFetchResult>,
   ): Promise<number> {
     const ctx = this.createCtxForChannel(channel);
     const languages = this.getEnabledLanguages(channel);
@@ -174,7 +174,7 @@ export class ContentCheckService implements OnApplicationBootstrap {
       const entity = await this.reloadTranslated(
         langCtx,
         task.entityType,
-        task.entityId
+        task.entityId,
       );
       if (!entity) {
         return;
@@ -185,7 +185,7 @@ export class ContentCheckService implements OnApplicationBootstrap {
         entity,
         channel,
         task.languageCode,
-        sitemapCache
+        sitemapCache,
       );
       if (result) {
         findings.push(toFindingEntry(task.entityType, result));
@@ -195,7 +195,7 @@ export class ContentCheckService implements OnApplicationBootstrap {
     findings.push(...(await this.runAdditionalChecks(ctx, channel)));
 
     await this.eventBus.publish(
-      new ChannelContentScanCompletedEvent(ctx, channel, findings)
+      new ChannelContentScanCompletedEvent(ctx, channel, findings),
     );
     return tasks.length;
   }
@@ -217,7 +217,7 @@ export class ContentCheckService implements OnApplicationBootstrap {
    */
   private async runAdditionalChecks(
     ctx: RequestContext,
-    channel: Channel
+    channel: Channel,
   ): Promise<ChannelScanFindingEntry[]> {
     const additionalChecks = this.options.additionalChecks ?? [];
     if (additionalChecks.length === 0) {
@@ -234,7 +234,7 @@ export class ContentCheckService implements OnApplicationBootstrap {
             asError(e).message
           }`,
           loggerCtx,
-          asError(e).stack
+          asError(e).stack,
         );
       }
     }
@@ -290,7 +290,7 @@ export class ContentCheckService implements OnApplicationBootstrap {
             asError(e).message
           }`,
           loggerCtx,
-          asError(e).stack
+          asError(e).stack,
         );
       }
     }
@@ -333,7 +333,7 @@ export class ContentCheckService implements OnApplicationBootstrap {
         ctx,
         'collection',
         collectionId,
-        channel
+        channel,
       );
     }
   }
@@ -346,13 +346,13 @@ export class ContentCheckService implements OnApplicationBootstrap {
    */
   async checkProductInCurrentChannel(
     ctx: RequestContext,
-    productId: ID
+    productId: ID,
   ): Promise<void> {
     await this.checkSingleEntityInChannel(
       ctx,
       'product',
       productId,
-      ctx.channel
+      ctx.channel,
     );
   }
 
@@ -362,21 +362,21 @@ export class ContentCheckService implements OnApplicationBootstrap {
    */
   async checkCollectionInCurrentChannel(
     ctx: RequestContext,
-    collectionId: ID
+    collectionId: ID,
   ): Promise<void> {
     await this.checkSingleEntityInChannel(
       ctx,
       'collection',
       collectionId,
-      ctx.channel
+      ctx.channel,
     );
   }
 
   private async checkSingleEntityInChannel(
-    ctx: RequestContext,
+    _ctx: RequestContext,
     entityType: ContentCheckEntityType,
     entityId: ID,
-    channel: Channel
+    channel: Channel,
   ): Promise<void> {
     // Freshly created per call (not shared instance state), so a
     // single-entity check always sees the current sitemap rather than one
@@ -395,7 +395,7 @@ export class ContentCheckService implements OnApplicationBootstrap {
         entity,
         channel,
         languageCode,
-        sitemapCache
+        sitemapCache,
       );
     }
   }
@@ -403,7 +403,7 @@ export class ContentCheckService implements OnApplicationBootstrap {
   private async reloadTranslated(
     ctx: RequestContext,
     entityType: ContentCheckEntityType,
-    entityId: ID
+    entityId: ID,
   ): Promise<Product | Collection | undefined> {
     return entityType === 'product'
       ? this.productService.findOne(ctx, entityId)
@@ -422,7 +422,7 @@ export class ContentCheckService implements OnApplicationBootstrap {
     entity: Product | Collection,
     channel: Channel,
     languageCode: LanguageCode,
-    sitemapCache: Map<string, SitemapFetchResult> = new Map()
+    sitemapCache: Map<string, SitemapFetchResult> = new Map(),
   ): Promise<ContentCheckResult | undefined> {
     if (!(await this.isEligible(ctx, entity))) {
       return this.resultService.saveResult(ctx, {
@@ -486,8 +486,8 @@ export class ContentCheckService implements OnApplicationBootstrap {
             entityType,
             channel,
             resolvedUrl,
-            fetchResult.html
-          ))
+            fetchResult.html,
+          )),
         );
       }
       messages.push(
@@ -496,38 +496,20 @@ export class ContentCheckService implements OnApplicationBootstrap {
           channel,
           languageCode,
           resolvedUrl,
-          sitemapCache
-        ))
+          sitemapCache,
+        )),
       );
     }
 
-    if (entityType === 'product') {
-      for (const check of this.options.checks?.product ?? []) {
-        try {
-          const result = await check(ctx, {
-            product: entity as Product,
-            channel,
-            languageCode,
-          });
-          messages.push(...result);
-        } catch (e) {
-          messages.push(internalErrorMessage('configurable-check', e));
-        }
-      }
-    } else {
-      for (const check of this.options.checks?.collection ?? []) {
-        try {
-          const result = await check(ctx, {
-            collection: entity as Collection,
-            channel,
-            languageCode,
-          });
-          messages.push(...result);
-        } catch (e) {
-          messages.push(internalErrorMessage('configurable-check', e));
-        }
-      }
-    }
+    messages.push(
+      ...(await this.runConfigurableChecks(
+        ctx,
+        entityType,
+        entity,
+        channel,
+        languageCode,
+      )),
+    );
 
     return this.resultService.saveResult(ctx, {
       entityType,
@@ -540,11 +522,52 @@ export class ContentCheckService implements OnApplicationBootstrap {
     });
   }
 
+  /** Runs configured checks without allowing one failure to abort the pipeline. */
+  private async runConfigurableChecks(
+    ctx: RequestContext,
+    entityType: ContentCheckEntityType,
+    entity: Product | Collection,
+    channel: Channel,
+    languageCode: LanguageCode,
+  ): Promise<ContentCheckMessage[]> {
+    const messages: ContentCheckMessage[] = [];
+    if (entityType === 'product') {
+      for (const check of this.options.checks?.product ?? []) {
+        try {
+          messages.push(
+            ...(await check(ctx, {
+              product: entity as Product,
+              channel,
+              languageCode,
+            })),
+          );
+        } catch (e) {
+          messages.push(internalErrorMessage('configurable-check', e));
+        }
+      }
+    } else {
+      for (const check of this.options.checks?.collection ?? []) {
+        try {
+          messages.push(
+            ...(await check(ctx, {
+              collection: entity as Collection,
+              channel,
+              languageCode,
+            })),
+          );
+        } catch (e) {
+          messages.push(internalErrorMessage('configurable-check', e));
+        }
+      }
+    }
+    return messages;
+  }
+
   private async runPageChecks(
     entityType: ContentCheckEntityType,
     channel: Channel,
     pageUrl: string,
-    html: string
+    html: string,
   ): Promise<ContentCheckMessage[]> {
     const messages: ContentCheckMessage[] = [];
     try {
@@ -554,7 +577,7 @@ export class ContentCheckService implements OnApplicationBootstrap {
     }
     try {
       messages.push(
-        ...checkMetaDescriptionLength(extractMetaDescription(html))
+        ...checkMetaDescriptionLength(extractMetaDescription(html)),
       );
     } catch (e) {
       messages.push(internalErrorMessage('meta-description', e));
@@ -575,7 +598,7 @@ export class ContentCheckService implements OnApplicationBootstrap {
   private async runHreflangCheck(
     channel: Channel,
     pageUrl: string,
-    html: string
+    html: string,
   ): Promise<ContentCheckMessage[]> {
     const hreflangTags = extractHreflangTags(html);
     const enabledLanguageCodes = this.getEnabledLanguages(channel);
@@ -583,9 +606,9 @@ export class ContentCheckService implements OnApplicationBootstrap {
     const hrefsToFetch = new Set(
       hreflangTags
         .filter(
-          (t) => t.hreflang.toLowerCase() !== 'x-default' && t.href !== pageUrl
+          (t) => t.hreflang.toLowerCase() !== 'x-default' && t.href !== pageUrl,
         )
-        .map((t) => t.href)
+        .map((t) => t.href),
     );
     for (const href of hrefsToFetch) {
       const fetchResult = await this.pageFetcher.fetch(href, {
@@ -594,7 +617,7 @@ export class ContentCheckService implements OnApplicationBootstrap {
       });
       linkedPageTags.set(
         href,
-        fetchResult.ok ? extractHreflangTags(fetchResult.html) : undefined
+        fetchResult.ok ? extractHreflangTags(fetchResult.html) : undefined,
       );
     }
     return checkHreflang({
@@ -610,7 +633,7 @@ export class ContentCheckService implements OnApplicationBootstrap {
     channel: Channel,
     languageCode: LanguageCode,
     resolvedUrl: string,
-    sitemapCache: Map<string, SitemapFetchResult>
+    sitemapCache: Map<string, SitemapFetchResult>,
   ): Promise<ContentCheckMessage[]> {
     if (!this.options.getSitemapUrl) {
       return [];
@@ -631,7 +654,7 @@ export class ContentCheckService implements OnApplicationBootstrap {
     if (!result) {
       result = await this.sitemapFetcher.fetch(
         sitemapUrl,
-        this.options.requestTimeoutMs ?? 10000
+        this.options.requestTimeoutMs ?? 10000,
       );
       // Only a successful fetch is cached — caching a transient failure
       // would make one bad fetch poison the sitemap-inclusion check for
@@ -649,7 +672,7 @@ export class ContentCheckService implements OnApplicationBootstrap {
 
   private createCtxForChannel(
     channel: Channel,
-    languageCode?: LanguageCode
+    languageCode?: LanguageCode,
   ): RequestContext {
     return new RequestContext({
       apiType: 'admin',
@@ -675,7 +698,7 @@ export class ContentCheckService implements OnApplicationBootstrap {
    */
   private async isEligible(
     ctx: RequestContext,
-    entity: Product | Collection
+    entity: Product | Collection,
   ): Promise<boolean> {
     return (
       !this.options.shouldCheckEntity ||
@@ -703,7 +726,7 @@ export class ContentCheckService implements OnApplicationBootstrap {
   }
 
   private async findEligibleCollections(
-    ctx: RequestContext
+    ctx: RequestContext,
   ): Promise<Collection[]> {
     const collections: Collection[] = [];
     const take = 100;
@@ -736,7 +759,7 @@ function internalErrorMessage(source: string, e: unknown): ContentCheckMessage {
 
 function toFindingEntry(
   entityType: string,
-  result: ContentCheckResult
+  result: ContentCheckResult,
 ): ChannelScanFindingEntry {
   return {
     entityType,
@@ -756,7 +779,7 @@ function toFindingEntry(
 async function runWithConcurrency<T>(
   items: T[],
   concurrency: number,
-  task: (item: T) => Promise<void>
+  task: (item: T) => Promise<void>,
 ): Promise<void> {
   let index = 0;
   const workerCount = Math.max(1, Math.min(concurrency, items.length || 1));

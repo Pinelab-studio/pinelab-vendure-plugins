@@ -8,32 +8,32 @@ import { Subscription, SubscriptionStrategy } from './subscription-strategy';
  */
 export class DefaultSubscriptionStrategy implements SubscriptionStrategy {
   defineSubscription(
-    ctx: RequestContext,
-    injector: Injector,
+    _ctx: RequestContext,
+    _injector: Injector,
     productVariant: ProductVariant,
-    order: Order,
-    orderLineCustomFields: { [key: string]: any },
-    quantity: number
+    _order: Order,
+    _orderLineCustomFields: { [key: string]: any },
+    _quantity: number,
   ): Subscription {
     return this.getSubscriptionForVariant(productVariant);
   }
 
-  isSubscription(ctx: RequestContext, variant: ProductVariant): boolean {
+  isSubscription(_ctx: RequestContext, _variant: ProductVariant): boolean {
     // This example treats all products as subscriptions
     return true;
   }
 
   previewSubscription(
-    ctx: RequestContext,
-    injector: Injector,
+    _ctx: RequestContext,
+    _injector: Injector,
     productVariant: ProductVariant,
-    customInputs: any
+    _customInputs: any,
   ): Subscription {
     return this.getSubscriptionForVariant(productVariant);
   }
 
   private getSubscriptionForVariant(
-    productVariant: ProductVariant
+    productVariant: ProductVariant,
   ): Subscription {
     const price = productVariant.listPrice;
     return {

@@ -1,4 +1,4 @@
-import { RequestContext, Order, Injector } from '@vendure/core';
+import { Injector, Order, RequestContext } from '@vendure/core';
 import { InvoiceEntity } from '../../entities/invoice.entity';
 
 export interface ExternalReference {
@@ -32,7 +32,7 @@ export interface AccountingExportStrategy {
   exportInvoice(
     ctx: RequestContext,
     invoice: InvoiceEntity,
-    order: Order
+    order: Order,
   ): Promise<ExternalReference> | ExternalReference;
 
   /**
@@ -51,6 +51,6 @@ export interface AccountingExportStrategy {
      * The original invoice that the credit invoice is for.
      */
     isCreditInvoiceFor: InvoiceEntity,
-    order: Order
+    order: Order,
   ): Promise<ExternalReference> | ExternalReference;
 }

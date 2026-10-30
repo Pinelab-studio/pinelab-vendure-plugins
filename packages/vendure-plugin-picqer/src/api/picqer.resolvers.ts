@@ -2,15 +2,15 @@ import { Inject } from '@nestjs/common';
 import { Mutation, Resolver } from '@nestjs/graphql';
 import { Allow, Ctx, Logger, RequestContext } from '@vendure/core';
 import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
-import { PicqerOptions } from '../picqer.plugin';
 import { picqerPermission } from '../custom-fields';
+import { PicqerOptions } from '../picqer.plugin';
 import { PicqerService } from './picqer.service';
 
 @Resolver()
 export class PicqerResolver {
   constructor(
-    @Inject(PLUGIN_INIT_OPTIONS) private options: PicqerOptions,
-    private service: PicqerService
+    @Inject(PLUGIN_INIT_OPTIONS) _options: PicqerOptions,
+    private service: PicqerService,
   ) {}
 
   @Mutation()
@@ -23,7 +23,7 @@ export class PicqerResolver {
         Logger.error(
           `Failed to create jobs to pull stock levels from Picqer: ${e?.message}`,
           loggerCtx,
-          e?.stack
+          e?.stack,
         );
         allSucceeded = false;
       });
@@ -33,7 +33,7 @@ export class PicqerResolver {
         Logger.error(
           `Failed to create jobs to push products to Picqer: ${e?.message}`,
           loggerCtx,
-          e?.stack
+          e?.stack,
         );
         allSucceeded = false;
       });

@@ -30,8 +30,8 @@ export function RenderField({ field, name, control }: RenderFieldProps) {
   const asTopLevel = field as SimpleCmsFieldDto;
   if (asTopLevel.type === 'struct' && asTopLevel.fields?.length) {
     return (
-      <fieldset className="border rounded p-4 space-y-4">
-        <legend className="px-2 text-sm font-medium">{field.name}</legend>
+      <fieldset className="space-y-4 rounded border p-4">
+        <legend className="px-2 font-medium text-sm">{field.name}</legend>
         {asTopLevel.fields.map((sub) => (
           <RenderField
             key={sub.name}

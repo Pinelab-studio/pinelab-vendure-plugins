@@ -11,7 +11,7 @@ export class LimitFieldsResolver {
   @Resolver('Product')
   maxQuantityPerOrder(
     @Ctx() ctx: RequestContext,
-    @Parent() product: Product
+    @Parent() product: Product,
   ): number | undefined {
     return (
       getChannelAwareValue(ctx, product.customFields.maxPerOrder) || undefined
@@ -22,7 +22,7 @@ export class LimitFieldsResolver {
   @Resolver('Product')
   limitPurchasePerMultipleOf(
     @Ctx() ctx: RequestContext,
-    @Parent() product: Product
+    @Parent() product: Product,
   ): number | undefined {
     return (
       getChannelAwareValue(ctx, product.customFields.onlyAllowPer) || undefined

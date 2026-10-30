@@ -1,13 +1,5 @@
-import {
-  Allow,
-  Ctx,
-  Logger,
-  OrderService,
-  RequestContext,
-  PermissionDefinition,
-  Injector,
-} from '@vendure/core';
-import { ExportPluginConfig } from '..';
+import * as fs from 'node:fs';
+import { promises as promisedFs } from 'node:fs';
 import {
   ArgumentMetadata,
   Controller,
@@ -19,15 +11,23 @@ import {
   Res,
   UnprocessableEntityException,
 } from '@nestjs/common';
-import { Resolver, Query as GraphqlQuery } from '@nestjs/graphql';
-import { Response } from 'express';
-import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
-import * as fs from 'fs';
-import { promises as promisedFs } from 'fs';
 import { ModuleRef } from '@nestjs/core';
+import { Query as GraphqlQuery, Resolver } from '@nestjs/graphql';
+import {
+  Allow,
+  Ctx,
+  Injector,
+  Logger,
+  OrderService,
+  PermissionDefinition,
+  RequestContext,
+} from '@vendure/core';
+import { Response } from 'express';
+import { ExportPluginConfig } from '..';
+import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
 
 export class ParseDatePipe implements PipeTransform {
-  transform(value: any, metadata: ArgumentMetadata) {
+  transform(value: any, _metadata: ArgumentMetadata) {
     if (!value) {
       throw new UnprocessableEntityException(`Date is required`);
     }
@@ -44,7 +44,7 @@ export class OrderExportController {
   constructor(
     @Inject(PLUGIN_INIT_OPTIONS) private config: ExportPluginConfig,
     private orderService: OrderService,
-    private moduleRef: ModuleRef
+    private moduleRef: ModuleRef,
   ) {}
 
   @Allow(orderExportPermission.Permission)
@@ -54,24 +54,24 @@ export class OrderExportController {
     @Param('strategy') strategyName: string,
     @Query('startDate', new ParseDatePipe()) startDate: Date,
     @Query('endDate', new ParseDatePipe()) endDate: Date,
-    @Res() res: Response
+    @Res() res: Response,
   ) {
     if (!ctx.channelId) {
       throw Error(`Channel id is needed to export orders`);
     }
     const strategy = this.config.exportStrategies.find(
-      (strategy) => strategy.name === strategyName
+      (strategy) => strategy.name === strategyName,
     );
     if (!strategy) {
       throw new UnprocessableEntityException(
-        `No strategy named '${strategyName}' configured`
+        `No strategy named '${strategyName}' configured`,
       );
     }
     Logger.info(
       `Exporting orders for user ${
         ctx.activeUserId
       } from ${startDate.toDateString()} to ${endDate.toDateString()} with strategy ${strategyName}`,
-      loggerCtx
+      loggerCtx,
     );
     const filePath = await strategy.createExportFile({
       ctx,
@@ -97,7 +97,7 @@ export class OrderExportController {
 @Resolver()
 export class OrderExportResolver {
   constructor(
-    @Inject(PLUGIN_INIT_OPTIONS) private config: ExportPluginConfig
+    @Inject(PLUGIN_INIT_OPTIONS) private config: ExportPluginConfig,
   ) {}
 
   @Allow(orderExportPermission.Permission)

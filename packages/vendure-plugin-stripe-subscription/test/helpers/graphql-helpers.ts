@@ -1,7 +1,7 @@
-import { gql } from 'graphql-tag';
-import { SimpleGraphQLClient } from '@vendure/testing';
 import { ChannelService, RequestContext } from '@vendure/core';
+import { SimpleGraphQLClient } from '@vendure/testing';
 import { TestServer } from '@vendure/testing/lib/test-server';
+import { gql } from 'graphql-tag';
 
 export const ADD_ITEM_TO_ORDER = gql`
   mutation AddItemToOrder($productVariantId: ID!, $quantity: Int!) {
@@ -213,9 +213,9 @@ export function getOneMonthFromNow() {
 }
 
 export async function setShipping(
-  shopClient: SimpleGraphQLClient
+  shopClient: SimpleGraphQLClient,
 ): Promise<void> {
-  //@ts-ignore
+  //@ts-expect-error
   await shopClient.query(SET_SHIPPING_ADDRESS, {
     input: {
       fullName: 'name',
@@ -225,7 +225,7 @@ export async function setShipping(
       countryCode: 'AT',
     },
   });
-  //@ts-ignore
+  //@ts-expect-error
   await shopClient.query(SET_SHIPPING_METHOD, {
     id: [1],
   });

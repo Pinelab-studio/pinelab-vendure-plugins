@@ -1,3 +1,4 @@
+import { useQuery } from '@tanstack/react-query';
 import {
   api,
   DashboardBaseWidget,
@@ -8,7 +9,6 @@ import {
   TableRow,
 } from '@vendure/dashboard';
 import { graphql } from '@/gql';
-import { useQuery } from '@tanstack/react-query';
 
 const productVariantsWithLowStockDocument = graphql(`
   query ProductVariantsWithLowStock {
@@ -27,11 +27,11 @@ const productVariantsWithLowStockDocument = graphql(`
 `);
 
 function getAvailableStock(
-  stockLevels: { stockOnHand: number; stockAllocated: number }[]
+  stockLevels: { stockOnHand: number; stockAllocated: number }[],
 ): number {
   return stockLevels.reduce(
     (acc, val) => acc + val.stockOnHand - (val.stockAllocated ?? 0),
-    0
+    0,
   );
 }
 
@@ -55,11 +55,11 @@ export function LowStockWidget() {
     >
       {isLoading ? (
         <div className="animate-pulse space-y-2">
-          <div className="h-8 bg-muted rounded-md" />
-          <div className="h-8 bg-muted rounded-md" />
+          <div className="h-8 rounded-md bg-muted" />
+          <div className="h-8 rounded-md bg-muted" />
         </div>
       ) : variants.length === 0 ? (
-        <p className="text-sm text-muted-foreground">
+        <p className="text-muted-foreground text-sm">
           No variants below their stock threshold.
         </p>
       ) : (

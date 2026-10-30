@@ -1,3 +1,7 @@
+# 2.5.0 (2026-10-30)
+
+- Removed the legacy Angular Admin UI extension. Backend functionality is unchanged.
+
 # 2.4.0 (2026-08-05)
 
 - Upgraded to Vendure 3.6.3

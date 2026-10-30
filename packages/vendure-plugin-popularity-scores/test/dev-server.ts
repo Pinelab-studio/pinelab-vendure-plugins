@@ -1,4 +1,3 @@
-import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
 import {
   DefaultLogger,
   DefaultSearchPlugin,
@@ -11,10 +10,10 @@ import {
   SqljsInitializer,
   testConfig,
 } from '@vendure/testing';
+import { createSettledOrder } from '../../test/src/shop-utils';
+import { testPaymentMethod } from '../../test/src/test-payment-method';
 import { PopularityScoresPlugin } from '../src';
 import { initialTestData } from './initial-test-data';
-import { testPaymentMethod } from '../../test/src/test-payment-method';
-import { createSettledOrder } from '../../test/src/shop-utils';
 
 require('dotenv').config();
 
@@ -29,10 +28,6 @@ require('dotenv').config();
         collectionFieldUiTab: 'Scores',
       }),
       DefaultSearchPlugin,
-      AdminUiPlugin.init({
-        port: 3002,
-        route: 'admin',
-      }),
     ],
     paymentOptions: {
       paymentMethodHandlers: [testPaymentMethod],

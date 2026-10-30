@@ -4,8 +4,8 @@ import {
   Type,
   VendurePlugin,
 } from '@vendure/core';
-import { OrderCleanupService } from './service/order-cleanup.service';
 import { ORDER_CLEANUP_OPTIONS } from './constants';
+import { OrderCleanupService } from './service/order-cleanup.service';
 import { isCronDue, validateCron, validateTimezone } from './service/util';
 
 export interface OrderCleanupScheduleOptions {
@@ -71,7 +71,7 @@ export const DEFAULT_ORDER_CLEANUP_OPTIONS: NormalizedOrderCleanupPluginOptions 
  * Validate and apply defaults to the public plugin options.
  */
 export function normalizeOrderCleanupOptions(
-  options: OrderCleanupPluginOptions
+  options: OrderCleanupPluginOptions,
 ): NormalizedOrderCleanupPluginOptions {
   const normalized: NormalizedOrderCleanupPluginOptions = {
     ...DEFAULT_ORDER_CLEANUP_OPTIONS,
@@ -99,7 +99,7 @@ export function normalizeOrderCleanupOptions(
  * Create the Vendure scheduled task which directly performs order cleanup.
  */
 export function createOrderCleanupTask(
-  options: NormalizedOrderCleanupPluginOptions
+  options: NormalizedOrderCleanupPluginOptions,
 ): ScheduledTask {
   return new ScheduledTask({
     id: 'order-cleanup',
@@ -125,7 +125,7 @@ export function createOrderCleanupTask(
         .emptyStaleOrders(
           scheduledContext,
           params.olderThanDays,
-          params.batchSize
+          params.batchSize,
         );
       return {
         scheduleSkipped: false,
@@ -149,15 +149,12 @@ export function createOrderCleanupTask(
   ],
   configuration: (config) => {
     config.schedulerOptions.tasks.push(
-      createOrderCleanupTask(OrderCleanupPlugin.options)
+      createOrderCleanupTask(OrderCleanupPlugin.options),
     );
     return config;
   },
 })
 export class OrderCleanupPlugin {
-  private static options: NormalizedOrderCleanupPluginOptions =
-    DEFAULT_ORDER_CLEANUP_OPTIONS;
-
   static init(options: OrderCleanupPluginOptions): Type<OrderCleanupPlugin> {
     OrderCleanupPlugin.options = normalizeOrderCleanupOptions(options);
     return OrderCleanupPlugin;

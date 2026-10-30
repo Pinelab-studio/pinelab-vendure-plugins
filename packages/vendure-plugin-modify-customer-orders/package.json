@@ -24,7 +24,7 @@
     "build:dashboard": "vite build --config ./vite.config.mts",
     "dev:dashboard": "vite --clearScreen false",
     "test": "vitest run --bail 1",
-    "lint": "echo 'No linting configured'"
+    "lint": "biome check ."
   },
   "gitHead": "476f36da3aafea41fbf21c70774a30306f1d238f"
 }

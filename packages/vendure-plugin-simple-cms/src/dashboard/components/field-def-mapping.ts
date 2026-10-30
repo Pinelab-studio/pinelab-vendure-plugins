@@ -55,7 +55,7 @@ export interface MappedFieldDef {
  * Vendure's form-engine helpers.
  */
 export function mapSimpleCmsFieldToFieldDef(
-  f: SimpleCmsFieldDto | SimpleCmsStructSubFieldDto
+  f: SimpleCmsFieldDto | SimpleCmsStructSubFieldDto,
 ): MappedFieldDef {
   const required = !f.nullable;
   let type = f.type;
@@ -65,7 +65,7 @@ export function mapSimpleCmsFieldToFieldDef(
     type = 'datetime';
   }
 
-  if (f.type === 'text' && (!ui || !ui.component)) {
+  if (f.type === 'text' && !ui?.component) {
     ui = { ...(ui ?? {}), component: 'textarea-form-input' };
     type = 'string';
   }

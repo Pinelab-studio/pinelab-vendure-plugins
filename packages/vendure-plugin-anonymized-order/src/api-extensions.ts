@@ -1,6 +1,6 @@
 import { gql } from 'graphql-tag';
 
-const scalars = gql`
+const _scalars = gql`
   scalar Order
 `;
 export const anonymizeOrderShopSchema = gql`

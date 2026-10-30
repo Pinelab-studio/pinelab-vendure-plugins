@@ -12,8 +12,9 @@ describe('checkJsonLdTypes', () => {
       expect(
         messages.some(
           (m) =>
-            m.code === 'JSON_LD_MISSING_TYPE' && m.message.includes("'Product'")
-        )
+            m.code === 'JSON_LD_MISSING_TYPE' &&
+            m.message.includes("'Product'"),
+        ),
       ).toBe(true);
     });
 
@@ -24,7 +25,7 @@ describe('checkJsonLdTypes', () => {
         'Organization',
       ]);
       expect(messages.some((m) => m.message.includes('ProductGroup'))).toBe(
-        true
+        true,
       );
     });
 
@@ -35,7 +36,7 @@ describe('checkJsonLdTypes', () => {
         'Organization',
       ]);
       expect(messages.some((m) => m.message.includes('BreadcrumbList'))).toBe(
-        true
+        true,
       );
     });
 
@@ -47,8 +48,8 @@ describe('checkJsonLdTypes', () => {
       ]);
       expect(
         messages.some(
-          (m) => m.code === 'JSON_LD_MISSING_ORGANIZATION_OR_ONLINE_STORE'
-        )
+          (m) => m.code === 'JSON_LD_MISSING_ORGANIZATION_OR_ONLINE_STORE',
+        ),
       ).toBe(true);
     });
 

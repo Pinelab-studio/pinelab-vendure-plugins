@@ -26,7 +26,7 @@ export const mockOrderPlacedHandler: KlaviyoEventHandler<OrderPlacedEvent> = {
     order.lines.forEach((line) => {
       line.productVariant.product = translateDeep(
         line.productVariant.product,
-        ctx.languageCode
+        ctx.languageCode,
       );
     });
     if (!order.customer) {
@@ -46,7 +46,7 @@ export const mockOrderPlacedHandler: KlaviyoEventHandler<OrderPlacedEvent> = {
         phoneNumber: order.customer.phoneNumber,
         address: {},
       },
-      orderItems: <KlaviyoOrderItem[]>order.lines.map((line, index) => ({
+      orderItems: <KlaviyoOrderItem[]>order.lines.map((line, _index) => ({
         Brand: 'Test Brand',
         ProductURL: 'https://pinelab.studio/product/some-product',
         Categories: ['Some mock category'],

@@ -13,7 +13,7 @@ import {
 export function isEligibleForCountry(
   order: Order,
   countryCodes: string[],
-  excludeCountries: boolean
+  excludeCountries: boolean,
 ): boolean {
   const shippingCountry = order.shippingAddress.countryCode;
   const orderIsInSelectedCountry = shippingCountry
@@ -37,17 +37,19 @@ export function isEligibleForCountry(
 export async function getHighestTaxRateOfOrder(
   ctx: RequestContext,
   injector: Injector,
-  order: Order
+  order: Order,
 ): Promise<number> {
   let orderWithRelations = order;
   if (!order.surcharges || !order.lines) {
     orderWithRelations = await assertFound(
-      injector.get(OrderService).findOne(ctx, order.id, ['lines', 'surcharges'])
+      injector
+        .get(OrderService)
+        .findOne(ctx, order.id, ['lines', 'surcharges']),
     );
   }
   const lineTaxRates = orderWithRelations.lines.map((line) => line.taxRate);
   const surchargeTaxRates = orderWithRelations.surcharges.map(
-    (surcharge) => surcharge.taxRate
+    (surcharge) => surcharge.taxRate,
   );
   return Math.max(...lineTaxRates, ...surchargeTaxRates, 0);
 }

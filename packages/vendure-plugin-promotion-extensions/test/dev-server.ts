@@ -1,20 +1,18 @@
 import {
   DefaultLogger,
+  DefaultSearchPlugin,
   LogLevel,
   mergeConfig,
-  LanguageCode,
-  DefaultSearchPlugin,
 } from '@vendure/core';
 import {
-  SqljsInitializer,
   createTestEnvironment,
   registerInitializer,
+  SqljsInitializer,
   testConfig,
 } from '@vendure/testing';
 import dotenv from 'dotenv';
 import { initialData } from '../../test/src/initial-data';
 import { buyMinMaxOfTheSpecifiedProductsCondition } from '../src';
-import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
 
 // eslint-disable-next-line @typescript-eslint/no-floating-promises
 (async () => {
@@ -26,13 +24,7 @@ import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
       adminApiPlayground: {},
       shopApiPlayground: {},
     },
-    plugins: [
-      DefaultSearchPlugin,
-      AdminUiPlugin.init({
-        port: 3002,
-        route: 'admin',
-      }),
-    ],
+    plugins: [DefaultSearchPlugin],
     promotionOptions: {
       promotionConditions: [buyMinMaxOfTheSpecifiedProductsCondition],
     },

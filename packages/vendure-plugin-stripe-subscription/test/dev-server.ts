@@ -7,8 +7,8 @@ import {
 import { StripeSubscriptionIntent } from '../src/';
 import {
   ADD_ITEM_TO_ORDER,
-  CREATE_SHOP_PAYMENT_LINK,
   CREATE_PAYMENT_METHOD,
+  CREATE_SHOP_PAYMENT_LINK,
   setShipping,
 } from './helpers/graphql-helpers';
 import { config } from './vendure-config';
@@ -32,7 +32,7 @@ export let intent: StripeSubscriptionIntent;
   };
 
   const { server, shopClient, adminClient } = createTestEnvironment(
-    config as Required<VendureConfig>
+    config as Required<VendureConfig>,
   );
   await server.init({
     initialData: {
@@ -67,7 +67,7 @@ export let intent: StripeSubscriptionIntent;
   console.log(`Created paymentMethod stripe-subscription`);
 
   await shopClient.asUserWithCredentials('hayden.zieme12@hotmail.com', 'test');
-  let { addItemToOrder: order } = await shopClient.query(ADD_ITEM_TO_ORDER, {
+  const { addItemToOrder: order } = await shopClient.query(ADD_ITEM_TO_ORDER, {
     productVariantId: '1',
     quantity: 1,
   });
@@ -79,10 +79,10 @@ export let intent: StripeSubscriptionIntent;
   await new Promise((resolve) => setTimeout(resolve, 5000));
 
   const { createStripeSubscriptionIntent } = await shopClient.query(
-    CREATE_SHOP_PAYMENT_LINK
+    CREATE_SHOP_PAYMENT_LINK,
   );
   intent = createStripeSubscriptionIntent;
   console.log(
-    `Go to http://localhost:3050/checkout/ to test your ${intent.intentType}`
+    `Go to http://localhost:3050/checkout/ to test your ${intent.intentType}`,
   );
 })();

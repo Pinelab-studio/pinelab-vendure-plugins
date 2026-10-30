@@ -5,8 +5,8 @@ import {
   DefaultSchedulerPlugin,
   Injector,
   LogLevel,
-  ProductVariantService,
   mergeConfig,
+  ProductVariantService,
   RequestContext,
   RequestContextService,
   TransactionalConnection,
@@ -17,8 +17,8 @@ import {
   registerInitializer,
   SimpleGraphQLClient,
   SqljsInitializer,
-  testConfig,
   TestServer,
+  testConfig,
 } from '@vendure/testing';
 import gql from 'graphql-tag';
 import {
@@ -113,13 +113,13 @@ const loadAllInputs = () => Promise.resolve(inputs);
 let load: (ctx: RequestContext) => Promise<TestInput[]> = loadAllInputs;
 let generate: (
   ctx: RequestContext,
-  input: TestInput
+  input: TestInput,
 ) => Promise<ContentAutomationResult | false>;
 
 /**
  * Successfully generates content for every input
  */
-const succeed = (ctx: RequestContext, input: TestInput) =>
+const succeed = (_ctx: RequestContext, input: TestInput) =>
   Promise.resolve({
     resultMessage: `Generated for ${input.id}`,
     entityUrl: `/products/${input.id}`,
@@ -136,7 +136,7 @@ const testStrategy = {
   }),
   generateAndSaveContent: vi.fn(
     (ctx: RequestContext, _injector: Injector, input: TestInput) =>
-      generate(ctx, input)
+      generate(ctx, input),
   ),
 } satisfies ContentAutomationStrategy<TestInput>;
 
@@ -184,12 +184,12 @@ describe('ContentAutomationPlugin (e2e)', () => {
       async () => {
         const { jobs } = await adminClient.query(GET_JOBS);
         const settled = jobs.items.every((job: { state: string }) =>
-          ['COMPLETED', 'FAILED'].includes(job.state)
+          ['COMPLETED', 'FAILED'].includes(job.state),
         );
         return jobs.totalItems === total && settled ? jobs : undefined;
       },
       100,
-      30000
+      30000,
     );
   }
 
@@ -230,7 +230,7 @@ describe('ContentAutomationPlugin (e2e)', () => {
       }
     `);
     const defaultZone = zones.items.find(
-      (zone: { name: string }) => zone.name === initialData.defaultZone
+      (zone: { name: string }) => zone.name === initialData.defaultZone,
     );
     if (!defaultZone)
       throw new Error('Initial data default zone was not created');
@@ -261,7 +261,7 @@ describe('ContentAutomationPlugin (e2e)', () => {
   it('Registers the nightly scheduled task', async () => {
     const { scheduledTasks } = await adminClient.query(GET_SCHEDULED_TASKS);
     expect(scheduledTasks.map((t: { id: string }) => t.id)).toContain(
-      'content-automation'
+      'content-automation',
     );
   });
 
@@ -274,7 +274,7 @@ describe('ContentAutomationPlugin (e2e)', () => {
     // 2 inputs + 1 skipping input, for 3 contexts
     expect(result.jobsCreated).toBe(9);
     expect(
-      testStrategy.loadInputData.mock.calls.map(([ctx]) => ctxKey(ctx)).sort()
+      testStrategy.loadInputData.mock.calls.map(([ctx]) => ctxKey(ctx)).sort(),
     ).toEqual(ALL_CONTEXTS);
     expect(skippingStrategy.loadInputData).toHaveBeenCalledTimes(3);
   });
@@ -292,23 +292,23 @@ describe('ContentAutomationPlugin (e2e)', () => {
     const { jobs } = await adminClient.query(GET_JOBS);
     const skippingJobs = jobs.items.filter(
       (job: { data: { strategyName: string } }) =>
-        job.data.strategyName === 'skipping-strategy'
+        job.data.strategyName === 'skipping-strategy',
     );
     expect(skippingJobs).toHaveLength(3);
     expect(
       skippingJobs.every(
-        (job: { data: { hash: string } }) => job.data.hash === 'custom-hash'
-      )
+        (job: { data: { hash: string } }) => job.data.hash === 'custom-hash',
+      ),
     ).toBe(true);
   });
 
   it('Calls generateAndSaveContent with the ctx and input of each job', async () => {
     await waitForSettledJobs(9);
     const calls = testStrategy.generateAndSaveContent.mock.calls.map(
-      ([ctx, _injector, input]) => `${ctxKey(ctx)}:${input.id}`
+      ([ctx, _injector, input]) => `${ctxKey(ctx)}:${input.id}`,
     );
     expect(calls.sort()).toEqual(
-      ALL_CONTEXTS.flatMap((key) => [`${key}:1`, `${key}:2`])
+      ALL_CONTEXTS.flatMap((key) => [`${key}:1`, `${key}:2`]),
     );
     expect(skippingStrategy.generateAndSaveContent).toHaveBeenCalledTimes(3);
   });
@@ -352,7 +352,9 @@ describe('ContentAutomationPlugin (e2e)', () => {
     expect(result.jobsCreated).toBe(6);
     await waitForSettledJobs(18);
     expect(
-      testStrategy.generateAndSaveContent.mock.calls.map(([, , input]) => input)
+      testStrategy.generateAndSaveContent.mock.calls.map(
+        ([, , input]) => input,
+      ),
     ).toEqual([
       { id: '1', text: 'changed' },
       { id: '1', text: 'changed' },
@@ -371,12 +373,12 @@ describe('ContentAutomationPlugin (e2e)', () => {
     expect(result.jobsCreated).toBe(6);
     const jobs = await waitForSettledJobs(24);
     const failedJobs = jobs.items.filter(
-      (job: { state: string }) => job.state === 'FAILED'
+      (job: { state: string }) => job.state === 'FAILED',
     );
     expect(failedJobs).toHaveLength(3);
     // 1 attempt + 3 retries
     expect(
-      failedJobs.every((job: { attempts: number }) => job.attempts === 4)
+      failedJobs.every((job: { attempts: number }) => job.attempts === 4),
     ).toBe(true);
     expect(testStrategy.generateAndSaveContent).toHaveBeenCalledTimes(12);
     expect(await getUpdates()).toHaveLength(6);
@@ -399,7 +401,7 @@ describe('ContentAutomationPlugin (e2e)', () => {
     const updates = await getUpdates();
     expect(updates).toHaveLength(9);
     expect(updates.filter((u) => u.entityUrl === '/products/3')).toHaveLength(
-      3
+      3,
     );
   }, 60000);
 
@@ -475,8 +477,8 @@ describe('ContentAutomationPlugin (e2e)', () => {
     expect(result).toEqual({ processed: 6, failed: 0 });
     expect(
       testStrategy.generateAndSaveContent.mock.calls.map(
-        ([, , input]) => input.id
-      )
+        ([, , input]) => input.id,
+      ),
     ).toEqual(['3', '3', '3']);
     const { jobs } = await adminClient.query(GET_JOBS);
     expect(jobs.totalItems).toBe(30);
@@ -485,7 +487,7 @@ describe('ContentAutomationPlugin (e2e)', () => {
 
   it('Creates jobs for changed inputs when the scheduled task is executed', async () => {
     const result = await contentAutomationTask.execute(
-      new Injector(server.app.get(ModuleRef))
+      new Injector(server.app.get(ModuleRef)),
     );
     // All test inputs are processed, so only the skipping input, for 3 contexts
     expect(result).toEqual({ jobsCreated: 3 });
@@ -507,8 +509,8 @@ describe('ContentAutomationPlugin (e2e)', () => {
     await waitForSettledJobs(39);
     expect(
       testStrategy.generateAndSaveContent.mock.calls.map(
-        ([, , input]) => input.id
-      )
+        ([, , input]) => input.id,
+      ),
     ).toEqual(['5', '5', '5']);
     inputs = inputs.filter((i) => i.id !== 'unhashable');
   });
@@ -525,7 +527,7 @@ describe('ContentAutomationPlugin (e2e)', () => {
     expect(
       testStrategy.generateAndSaveContent.mock.calls
         .map(([ctx]) => ctxKey(ctx))
-        .sort()
+        .sort(),
     ).toEqual(['__default_channel__:en', 'second-channel:en']);
     expect(skippingStrategy.generateAndSaveContent).toHaveBeenCalledTimes(3);
   });
@@ -547,11 +549,11 @@ describe('ContentAutomationPlugin (e2e)', () => {
     expect(messages).toHaveLength(3);
     expect(messages).toContain('second-channel:');
     const defaultChannelMessages = messages.filter((m) =>
-      m?.startsWith('__default_channel__:')
+      m?.startsWith('__default_channel__:'),
     );
     expect(defaultChannelMessages).toHaveLength(2);
     expect(
-      defaultChannelMessages.every((m) => /^__default_channel__:\d+/.test(m!))
+      defaultChannelMessages.every((m) => /^__default_channel__:\d+/.test(m!)),
     ).toBe(true);
   });
 
@@ -561,8 +563,8 @@ describe('ContentAutomationPlugin (e2e)', () => {
         inputs.map((i) =>
           i.id === '1' && ctx.languageCode === 'nl'
             ? { ...i, text: 'changed in nl only' }
-            : i
-        )
+            : i,
+        ),
       );
     const result = await service.createJobsForChangedInputs();
     // Input 1 for the 'nl' context + skipping input, for 3 contexts
@@ -570,8 +572,8 @@ describe('ContentAutomationPlugin (e2e)', () => {
     await waitForSettledJobs(54);
     expect(
       testStrategy.generateAndSaveContent.mock.calls.map(
-        ([ctx, , input]) => `${ctxKey(ctx)}:${input.text}`
-      )
+        ([ctx, , input]) => `${ctxKey(ctx)}:${input.text}`,
+      ),
     ).toEqual(['__default_channel__:nl:changed in nl only']);
   });
 
@@ -582,7 +584,7 @@ describe('ContentAutomationPlugin (e2e)', () => {
     // The Dutch input for entity 1 also reverts to its previous value.
     await waitForSettledJobs(61);
     const updates = (await getUpdates()).filter(
-      (u) => u.hash === defaultHash({ id: '8', text: 'h' })
+      (u) => u.hash === defaultHash({ id: '8', text: 'h' }),
     );
     expect(updates).toHaveLength(3);
     expect(updates.every((u) => !u.resultMessage && !u.entityUrl)).toBe(true);
@@ -594,7 +596,7 @@ describe('ContentAutomationPlugin (e2e)', () => {
       .getChannelFromToken('second-channel-token');
     const allUpdates = await getUpdates();
     const secondChannelUpdates = allUpdates.filter(
-      (u) => u.channelId === String(secondChannel.id)
+      (u) => u.channelId === String(secondChannel.id),
     );
     adminClient.setChannelToken('second-channel-token');
     const { contentAutomationUpdates } = await adminClient.query(GET_UPDATES, {
@@ -602,7 +604,7 @@ describe('ContentAutomationPlugin (e2e)', () => {
     });
     adminClient.setChannelToken(E2E_DEFAULT_CHANNEL_TOKEN);
     expect(contentAutomationUpdates.totalItems).toBe(
-      secondChannelUpdates.length
+      secondChannelUpdates.length,
     );
     expect(contentAutomationUpdates.totalItems).toBeGreaterThan(0);
     expect(contentAutomationUpdates.totalItems).toBeLessThan(allUpdates.length);
@@ -611,7 +613,7 @@ describe('ContentAutomationPlugin (e2e)', () => {
   it('Rejects listing updates without the required permission', async () => {
     await adminClient.asAnonymousUser();
     await expect(adminClient.query(GET_UPDATES)).rejects.toThrow(
-      'not currently authorized'
+      'not currently authorized',
     );
     await adminClient.asSuperAdmin();
   });
@@ -632,7 +634,7 @@ describe('ContentAutomationPlugin (e2e)', () => {
     }
     expect(strategy.generateAndSaveContent).toHaveBeenCalledTimes(3);
     const updates = (await getUpdates()).filter(
-      (u) => u.strategyName === strategy.name
+      (u) => u.strategyName === strategy.name,
     );
     expect(updates).toHaveLength(1);
     expect(updates[0]).toMatchObject({
@@ -650,7 +652,7 @@ describe('ContentAutomationPlugin (e2e)', () => {
     strategies.push(testStrategy);
     try {
       await expect(service.onApplicationBootstrap()).rejects.toThrow(
-        'Duplicates: test-strategy'
+        'Duplicates: test-strategy',
       );
     } finally {
       strategies.pop();
@@ -661,7 +663,7 @@ describe('ContentAutomationPlugin (e2e)', () => {
     expect(() =>
       ContentAutomationPlugin.init({
         automationStrategies: [testStrategy, testStrategy],
-      })
+      }),
     ).toThrow('Duplicates: test-strategy');
   });
 

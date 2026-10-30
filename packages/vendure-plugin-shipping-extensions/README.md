@@ -30,16 +30,6 @@ plugins: [
        */
       customFieldsTab: "Physical properties",
     }),
-    AdminUiPlugin.init({
-        ...
-        app: compileUiExtensions({
-          extensions: [
-            ...
-            ShippingExtensionsPlugin.ui
-            ],
-          ...
-        }),
-      })
   ...
 ]
 ```

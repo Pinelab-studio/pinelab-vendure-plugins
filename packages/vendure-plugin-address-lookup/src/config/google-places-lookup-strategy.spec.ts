@@ -128,7 +128,7 @@ describe('GooglePlacesLookupStrategy', () => {
           textQuery: '123 Test Street',
           regionCode: 'de',
         }),
-      }
+      },
     );
 
     expect(result).toHaveLength(2);
@@ -219,7 +219,7 @@ describe('GooglePlacesLookupStrategy', () => {
           textQuery: '123 Test Street, 10115',
           regionCode: 'de',
         }),
-      }
+      },
     );
 
     expect(result).toHaveLength(1);

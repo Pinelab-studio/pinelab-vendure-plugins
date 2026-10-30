@@ -6,7 +6,7 @@ import { KlaviyoEventHandler, KlaviyoGenericEvent } from '../src';
  */
 export const mockCustomEventHandler: KlaviyoEventHandler<OrderPlacedEvent> = {
   vendureEvent: OrderPlacedEvent,
-  mapToKlaviyoEvent: async ({ order, ctx }, injector) => {
+  mapToKlaviyoEvent: async ({ order, ctx }, _injector) => {
     if (!order.customer) {
       return false;
     }

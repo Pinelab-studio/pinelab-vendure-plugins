@@ -20,9 +20,9 @@
   "scripts": {
     "serve": "nodemon --watch \"src/**\" --ext \"ts,json\" --exec \"ts-node test/dev-server.ts\"",
     "start": "ts-node --transpile-only test/dev-server.ts",
-    "build": "rimraf dist && yarn codegen && tsc && copyfiles -u 1 'src/ui/**/*' dist/",
+    "build": "rimraf dist && yarn codegen && tsc",
     "test": "vitest run",
-    "lint": "eslint .",
+    "lint": "biome check .",
     "codegen": "graphql-codegen --config codegen.yml"
   },
   "dependencies": {

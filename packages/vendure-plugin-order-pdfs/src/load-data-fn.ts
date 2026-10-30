@@ -8,18 +8,18 @@ import {
 export type LoadDataFn = (
   ctx: RequestContext,
   injector: Injector,
-  order: Order
+  order: Order,
 ) => Promise<any>;
 
 export const defaultLoadDataFn: LoadDataFn = async (
   ctx: RequestContext,
-  injector: Injector,
-  order: Order
+  _injector: Injector,
+  order: Order,
 ): Promise<any> => {
   order.lines.forEach((line) => {
     line.productVariant = translateEntity(
       line.productVariant,
-      ctx.languageCode
+      ctx.languageCode,
     );
   });
   return {

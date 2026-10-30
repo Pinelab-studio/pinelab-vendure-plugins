@@ -1,3 +1,4 @@
+import { useQuery } from '@tanstack/react-query';
 import {
   api,
   DateTime,
@@ -10,7 +11,6 @@ import {
   TableRow,
 } from '@vendure/dashboard';
 import { graphql } from '@/gql';
-import { useQuery } from '@tanstack/react-query';
 
 const getUtmParametersDocument = graphql(`
   query GetUtmParameters($orderId: ID!) {
@@ -54,8 +54,8 @@ export function UtmAttributionBlock({ orderId }: { orderId?: string }) {
   if (isLoading) {
     return (
       <div className="animate-pulse space-y-2">
-        <div className="h-8 bg-muted rounded-md" />
-        <div className="h-8 bg-muted rounded-md" />
+        <div className="h-8 rounded-md bg-muted" />
+        <div className="h-8 rounded-md bg-muted" />
       </div>
     );
   }
@@ -65,7 +65,7 @@ export function UtmAttributionBlock({ orderId }: { orderId?: string }) {
 
   if (utmParameters.length === 0) {
     return (
-      <p className="text-sm text-muted-foreground">
+      <p className="text-muted-foreground text-sm">
         No UTM parameters found for this order.
       </p>
     );
@@ -118,8 +118,8 @@ export function UtmParametersBlock({ orderId }: { orderId?: string }) {
   if (isLoading) {
     return (
       <div className="animate-pulse space-y-2">
-        <div className="h-8 bg-muted rounded-md" />
-        <div className="h-8 bg-muted rounded-md" />
+        <div className="h-8 rounded-md bg-muted" />
+        <div className="h-8 rounded-md bg-muted" />
       </div>
     );
   }
@@ -128,7 +128,7 @@ export function UtmParametersBlock({ orderId }: { orderId?: string }) {
 
   if (utmParameters.length === 0) {
     return (
-      <p className="text-sm text-muted-foreground">
+      <p className="text-muted-foreground text-sm">
         No UTM parameters found for this order.
       </p>
     );

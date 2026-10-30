@@ -6,21 +6,22 @@ import {
   mergeConfig,
   ProductEvent,
 } from '@vendure/core';
+import { EmailPlugin, TemplateLoader } from '@vendure/email-plugin';
 import {
   createTestEnvironment,
   registerInitializer,
   SqljsInitializer,
   testConfig,
 } from '@vendure/testing';
-import { EmailPlugin, TemplateLoader } from '@vendure/email-plugin';
 import { initialData } from '../../test/src/initial-data';
 import {
   AlertingPlugin,
+  EmailNotifier,
   EventAlert,
   LogAlert,
   WebhookNotifier,
-  EmailNotifier,
 } from '../src';
+
 require('dotenv').config();
 
 class DummyTemplateLoader implements TemplateLoader {
@@ -79,7 +80,7 @@ class DummyTemplateLoader implements TemplateLoader {
         alerts: [
           new EventAlert([slack, emailNotifier])
             .on(ProductEvent)
-            .notify((ctx, injector, event) => `Product event: ${event.type}`),
+            .notify((_ctx, _injector, event) => `Product event: ${event.type}`),
 
           new LogAlert([slack, emailNotifier])
             .onLog('error')
@@ -102,6 +103,6 @@ class DummyTemplateLoader implements TemplateLoader {
   await new Promise((r) => setTimeout(r, 300));
   Logger.error(
     `This is a serious error! Should be notified in slack and email!`,
-    'DevServer'
+    'DevServer',
   );
 })();

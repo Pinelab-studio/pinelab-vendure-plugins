@@ -1,18 +1,18 @@
+import path from 'node:path';
+import { AssetServerPlugin } from '@vendure/asset-server-plugin';
 import {
-  Product,
-  ProductVariant,
+  Asset,
   DefaultLogger,
   DefaultSearchPlugin,
   LogLevel,
   mergeConfig,
+  Product,
+  ProductVariant,
   VendureConfig,
-  Asset,
 } from '@vendure/core';
 import { DashboardPlugin } from '@vendure/dashboard/plugin';
 import { testConfig } from '@vendure/testing';
-import path from 'path';
 import { SimpleCmsPlugin } from '../src';
-import { AssetServerPlugin } from '@vendure/asset-server-plugin';
 
 export const config: VendureConfig = mergeConfig(testConfig, {
   logger: new DefaultLogger({ level: LogLevel.Debug }),

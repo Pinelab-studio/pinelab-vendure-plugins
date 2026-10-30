@@ -8,12 +8,12 @@ import {
   RequestContext,
   TransactionalConnection,
 } from '@vendure/core';
-import { Webhook } from './webhook.entity';
 import fetch from 'node-fetch';
 import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
-import { EventWithContext, RequestTransformer } from './request-transformer';
-import { WebhookPluginOptions } from '../webhook.plugin';
 import { WebhookInput } from '../generated/graphql-types';
+import { WebhookPluginOptions } from '../webhook.plugin';
+import { EventWithContext, RequestTransformer } from './request-transformer';
+import { Webhook } from './webhook.entity';
 
 /**
  * Service for updating and retrieving webhooks from db
@@ -31,7 +31,7 @@ export class WebhookService implements OnApplicationBootstrap {
     private eventBus: EventBus,
     private connection: TransactionalConnection,
     private moduleRef: ModuleRef,
-    @Inject(PLUGIN_INIT_OPTIONS) private options: WebhookPluginOptions
+    @Inject(PLUGIN_INIT_OPTIONS) private options: WebhookPluginOptions,
   ) {}
 
   /**
@@ -40,13 +40,13 @@ export class WebhookService implements OnApplicationBootstrap {
   async onApplicationBootstrap(): Promise<void> {
     if (!this.options.events || this.options.events.length === 0) {
       throw Error(
-        `Please specify VendureEvents with Webhook.init() to use this plugin.`
+        `Please specify VendureEvents with Webhook.init() to use this plugin.`,
       );
     }
     if (this.options.disabled) {
       Logger.info(
         `Webhook plugin disabled,not listening for events`,
-        loggerCtx
+        loggerCtx,
       );
       return;
     }
@@ -58,13 +58,13 @@ export class WebhookService implements OnApplicationBootstrap {
           // Start processing after the given delay, because
           // we might get multiple of the same events within the specified delay
           await new Promise((resolve) =>
-            setTimeout(resolve, this.options.delay)
+            setTimeout(resolve, this.options.delay),
           );
           await this.processQueue(event);
         } catch (e: unknown) {
           Logger.error(
             `Failed to call webhook for event ${event.constructor.name} for channel ${event.ctx.channelId}: ${e}`,
-            loggerCtx
+            loggerCtx,
           );
         }
       });
@@ -102,7 +102,7 @@ export class WebhookService implements OnApplicationBootstrap {
    * Get configured webhooks for given Event
    */
   async getWebhooksForEvent<T extends EventWithContext>(
-    event: T
+    event: T,
   ): Promise<Webhook[]> {
     const eventName = event.constructor.name;
     return this.connection.getRepository(event.ctx, Webhook).find({
@@ -121,7 +121,7 @@ export class WebhookService implements OnApplicationBootstrap {
    */
   async saveWebhooks(
     ctx: RequestContext,
-    inputs: WebhookInput[]
+    inputs: WebhookInput[],
   ): Promise<Webhook[]> {
     const repository = this.connection.getRepository(ctx, Webhook);
     // Delete all current hooks
@@ -144,13 +144,13 @@ export class WebhookService implements OnApplicationBootstrap {
    */
   async addWebhookToQueue(event: EventWithContext): Promise<void> {
     const webhooks = await this.getWebhooksForEvent(event);
-    webhooks.map((webhook) => {
+    webhooks.forEach((webhook) => {
       this.webhookQueue.set(webhook.id, webhook);
     });
     if (webhooks.length > 0) {
       Logger.info(
         `Added ${webhooks.length} webhooks to the webhook queue for ${event.constructor.name}`,
-        loggerCtx
+        loggerCtx,
       );
     }
   }
@@ -165,7 +165,9 @@ export class WebhookService implements OnApplicationBootstrap {
     }
     // Copy queue, and empty original
     const webhooks: Webhook[] = [];
-    this.webhookQueue.forEach((webhook) => webhooks.push(webhook));
+    this.webhookQueue.forEach((webhook) => {
+      webhooks.push(webhook);
+    });
     this.webhookQueue.clear();
     // Start calling the webhooks
     await Promise.all(
@@ -175,10 +177,10 @@ export class WebhookService implements OnApplicationBootstrap {
         } catch (e) {
           Logger.error(
             `Failed to call webhook for event ${webhook.event} channel ${webhook.channelId}: ${e}`,
-            loggerCtx
+            loggerCtx,
           );
         }
-      })
+      }),
     );
   }
 
@@ -191,12 +193,12 @@ export class WebhookService implements OnApplicationBootstrap {
       await fetch(webhook.url, { method: 'POST' });
       return Logger.info(
         `Successfully triggered webhook for event ${webhook.event} for channel ${webhook.channelId} without transformer`,
-        loggerCtx
+        loggerCtx,
       );
     }
     // Have the configured transformer construct the request
     const transformer = this.getAvailableTransformers().find(
-      (transformer) => transformer.name === webhook.transformerName
+      (transformer) => transformer.name === webhook.transformerName,
     );
     if (!transformer) {
       throw Error(`Could not find transformer ${webhook.transformerName}`);
@@ -204,13 +206,13 @@ export class WebhookService implements OnApplicationBootstrap {
     const request = await transformer.transform(
       event,
       new Injector(this.moduleRef),
-      webhook
+      webhook,
     );
     if (request === false) {
       // Don't call webhook if transformer returns false
       Logger.info(
         `Ignoring event ${event.constructor.name} for channel ${webhook.channelId} because transformer "${webhook.transformerName}" returned false`,
-        loggerCtx
+        loggerCtx,
       );
       return;
     }
@@ -223,12 +225,12 @@ export class WebhookService implements OnApplicationBootstrap {
       });
       Logger.info(
         `Successfully triggered webhook for event ${event.constructor.name} for channel ${webhook.channelId} with transformer "${webhook.transformerName}"`,
-        loggerCtx
+        loggerCtx,
       );
     } catch (error) {
       Logger.error(
         `Failed to call webhook for event ${webhook.event} channel ${webhook.channelId}: ${error}`,
-        loggerCtx
+        loggerCtx,
       );
     }
   }

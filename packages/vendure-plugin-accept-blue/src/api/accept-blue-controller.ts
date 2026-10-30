@@ -1,16 +1,16 @@
 import { Controller, Headers, Param, Post, Req } from '@nestjs/common';
 import { ChannelService, Logger, RequestContext } from '@vendure/core';
+import { asError } from 'catch-unknown';
 import { Request } from 'express';
 import { loggerCtx } from '../constants';
-import { AcceptBlueEvent } from '../types';
 import { AcceptBlueService } from '../service/accept-blue-service';
-import { asError } from 'catch-unknown';
+import { AcceptBlueEvent } from '../types';
 
 @Controller('accept-blue')
 export class AcceptBlueController {
   constructor(
     private channelService: ChannelService,
-    private acceptBlueService: AcceptBlueService
+    private acceptBlueService: AcceptBlueService,
   ) {}
 
   /**
@@ -20,7 +20,7 @@ export class AcceptBlueController {
   async events(
     @Param('channelToken') channelToken: string,
     @Req() request: Request,
-    @Headers('X-Signature') signature: string
+    @Headers('X-Signature') signature: string,
   ) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
     const rawBody = (request as any).rawBody as Buffer;
@@ -31,7 +31,7 @@ export class AcceptBlueController {
       .catch((e) => {
         Logger.error(
           `Error handling Accept Blue webhook event: ${asError(e).message}`,
-          loggerCtx
+          loggerCtx,
         );
         throw e;
       });

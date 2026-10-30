@@ -1,3 +1,4 @@
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   ActionBarItem,
   api,
@@ -13,12 +14,11 @@ import {
   Switch,
   Textarea,
 } from '@vendure/dashboard';
-import { graphql } from '@/gql';
+import { useEffect, useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { useState, useEffect } from 'react';
-import { getAuthHeaders, getServerBaseUrl, downloadBlob } from '../utils';
+import { graphql } from '@/gql';
+import { downloadBlob, getAuthHeaders, getServerBaseUrl } from '../utils';
 
 const invoiceConfigDocument = graphql(`
   query InvoiceConfig {
@@ -138,7 +138,7 @@ function InvoiceConfigPageComponent() {
               type="button"
               disabled={!form.formState.isDirty || saving}
               onClick={form.handleSubmit((values: ConfigFormValues) =>
-                saveConfig(values)
+                saveConfig(values),
               )}
             >
               {saving ? 'Saving...' : 'Update'}

@@ -3,9 +3,9 @@ import {
   DefaultLogger,
   LanguageCode,
   LogLevel,
+  mergeConfig,
   PaymentMethod,
   PaymentMethodService,
-  mergeConfig,
 } from '@vendure/core';
 import {
   createTestEnvironment,
@@ -15,13 +15,13 @@ import {
   testConfig,
 } from '@vendure/testing';
 import { TestServer } from '@vendure/testing/lib/test-server';
+import { getSuperadminContext } from '@vendure/testing/lib/utils/get-superadmin-context';
 import { afterAll, beforeAll, expect, it } from 'vitest';
 import { initialData } from '../../test/src/initial-data';
-import { PaymentExtensionsPlugin } from '../src/payment-extensions-plugin';
-import { getSuperadminContext } from '@vendure/testing/lib/utils/get-superadmin-context';
-import { settleWithoutPaymentHandler } from '../src/settle-without-payment-handler';
 import { createSettledOrder } from '../../test/src/shop-utils';
 import { isCustomerInGroupPaymentChecker } from '../src/is-customer-In-group-payment-checker';
+import { PaymentExtensionsPlugin } from '../src/payment-extensions-plugin';
+import { settleWithoutPaymentHandler } from '../src/settle-without-payment-handler';
 
 let server: TestServer;
 let shopClient: SimpleGraphQLClient;
@@ -49,7 +49,7 @@ beforeAll(async () => {
     {
       name: 'Settle Without Payment Group',
       customerIds: ['1'],
-    }
+    },
   );
   //create a payment method with isCustomerInGroupPaymentChecker and settleWithoutPaymentHandler
   settleWithoutPaymentMethod = await paymentMethodService.create(ctx, {
@@ -94,7 +94,7 @@ it('it should settle payment for Customer(1) with "settle-without-payment" Payme
     ],
     undefined,
     undefined,
-    settleWithoutPaymentMethod.code
+    settleWithoutPaymentMethod.code,
   );
   expect(order.id).toBeDefined();
 });
@@ -102,10 +102,10 @@ it('it should settle payment for Customer(1) with "settle-without-payment" Payme
 it('it should not settle payment for Customer(2) with "settle-without-payment" PaymentMethod', async () => {
   await shopClient.asUserWithCredentials(
     'trevor_donnelly96@hotmail.com',
-    'test'
+    'test',
   );
   try {
-    const order = await createSettledOrder(
+    const _order = await createSettledOrder(
       shopClient,
       1,
       false,
@@ -115,7 +115,7 @@ it('it should not settle payment for Customer(2) with "settle-without-payment" P
       ],
       undefined,
       undefined,
-      settleWithoutPaymentMethod.code
+      settleWithoutPaymentMethod.code,
     );
   } catch (e: any) {
     expect(e.message).toMatch(`Failed to create settled order:`);

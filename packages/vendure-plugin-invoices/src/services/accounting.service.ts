@@ -25,7 +25,7 @@ export class AccountingService implements OnModuleInit {
     private connection: TransactionalConnection,
     private jobQueueService: JobQueueService,
     private orderService: OrderService,
-    @Inject(PLUGIN_INIT_OPTIONS) private config: InvoicePluginConfig
+    @Inject(PLUGIN_INIT_OPTIONS) private config: InvoicePluginConfig,
   ) {}
 
   /**
@@ -53,11 +53,11 @@ export class AccountingService implements OnModuleInit {
         await this.handleAccountingExportJob(
           RequestContext.deserialize(job.data.ctx),
           job.data.invoiceNumber,
-          job.data.orderCode
+          job.data.orderCode,
         ).catch((error: Error) => {
           Logger.warn(
             `Failed to export invoice '${job.data.invoiceNumber}' to accounting platform for '${job.data.orderCode}': ${error?.message}`,
-            loggerCtx
+            loggerCtx,
           );
           throw error;
         });
@@ -69,46 +69,46 @@ export class AccountingService implements OnModuleInit {
    * Find strategy for channel. If strategy.channelToken is undefined, it can be used for all channels
    */
   findAccountingExportStrategyForChannel(
-    ctx: RequestContext
+    ctx: RequestContext,
   ): AccountingExportStrategy | undefined {
     return (this.config.accountingExports || []).find(
-      (s) => s.channelToken === ctx.channel.token || !s.channelToken
+      (s) => s.channelToken === ctx.channel.token || !s.channelToken,
     );
   }
 
   async exportInvoiceToAccountingPlatform(
     ctx: RequestContext,
-    invoiceNumber: number
+    invoiceNumber: number,
   ): Promise<void> {
     if (!this.findAccountingExportStrategyForChannel(ctx)) {
       throw new UserInputError(
-        `No account exports configured for channel '${ctx.channel.token}'`
+        `No account exports configured for channel '${ctx.channel.token}'`,
       );
     }
     const invoice = await this.getInvoiceByNumber(ctx, invoiceNumber);
     const order = await this.orderService.findOne(ctx, invoice.orderId, []);
     if (!order) {
       throw new UserInputError(
-        `No order found with id '${invoice.orderId}'. Can not export invoice without order`
+        `No order found with id '${invoice.orderId}'. Can not export invoice without order`,
       );
     }
     await this.createAccountingExportJob(
       ctx,
       invoice.invoiceNumber,
-      order.code
+      order.code,
     );
   }
 
   async handleAccountingExportJob(
     ctx: RequestContext,
     invoiceNumber: number,
-    orderCode: string
+    orderCode: string,
   ): Promise<void> {
     const strategy = this.findAccountingExportStrategyForChannel(ctx);
     if (!strategy) {
       Logger.warn(
         `No accounting export strategy found for channel ${ctx.channel.token}. Not exporting invoice '${invoiceNumber}' for order '${orderCode}'`,
-        loggerCtx
+        loggerCtx,
       );
       return;
     }
@@ -128,7 +128,7 @@ export class AccountingService implements OnModuleInit {
         // Throw an error when order totals don't match to prevent re-exporting wrong data.
         // Credit invoices are allowed, because they use the reversed invoice.orderTotals instead of the order data itself
         throw Error(
-          `Order '${order.code}' has changed compared to the invoice. Can not export this invoice again!`
+          `Order '${order.code}' has changed compared to the invoice. Can not export this invoice again!`,
         );
       }
       let reference: ExternalReference;
@@ -137,7 +137,7 @@ export class AccountingService implements OnModuleInit {
           ctx,
           invoice,
           invoice.isCreditInvoiceFor!, // this is always defined when it's a creditInvoice
-          order
+          order,
         );
       } else {
         reference = await strategy.exportInvoice(ctx, invoice, order);
@@ -147,7 +147,7 @@ export class AccountingService implements OnModuleInit {
       });
       Logger.info(
         `Exported invoice '${invoiceNumber}' for order '${orderCode}' to accounting system '${strategy.constructor.name}' with reference '${reference.reference}'`,
-        loggerCtx
+        loggerCtx,
       );
     } catch (e) {
       await invoiceRepository.update(invoice.id, {
@@ -164,7 +164,7 @@ export class AccountingService implements OnModuleInit {
   async createAccountingExportJob(
     ctx: RequestContext,
     invoiceNumber: number,
-    orderCode: string
+    orderCode: string,
   ): Promise<void> {
     if (!this.findAccountingExportStrategyForChannel(ctx)) {
       Logger.debug(`No accounting export strategies configured`, loggerCtx);
@@ -178,11 +178,11 @@ export class AccountingService implements OnModuleInit {
       },
       {
         retries: 10,
-      }
+      },
     );
     Logger.info(
       `Added accounting export job for invoice '${invoiceNumber}' for order '${orderCode}'`,
-      loggerCtx
+      loggerCtx,
     );
   }
 
@@ -206,7 +206,7 @@ export class AccountingService implements OnModuleInit {
       const matchingInvoiceSummary = invoice.orderTotals.taxSummaries.find(
         (invoiceSummary) =>
           invoiceSummary.taxRate === orderSummary.taxRate &&
-          invoiceSummary.taxBase === orderSummary.taxBase
+          invoiceSummary.taxBase === orderSummary.taxBase,
       );
       // If no matching tax summary is found, the order doesn't match the invoice
       return !!matchingInvoiceSummary;
@@ -215,7 +215,7 @@ export class AccountingService implements OnModuleInit {
 
   private async getInvoiceByNumber(
     ctx: RequestContext,
-    invoiceNumber: number
+    invoiceNumber: number,
   ): Promise<InvoiceEntity> {
     const invoice = await this.connection
       .getRepository(ctx, InvoiceEntity)

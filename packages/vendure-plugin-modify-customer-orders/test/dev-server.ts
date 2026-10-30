@@ -1,9 +1,9 @@
+import { VendureConfig } from '@vendure/core';
 import {
   createTestEnvironment,
   registerInitializer,
   SqljsInitializer,
 } from '@vendure/testing';
-import { VendureConfig } from '@vendure/core';
 import { initialData } from '../../test/src/initial-data';
 import { addItem, createSettledOrder } from '../../test/src/shop-utils';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
@@ -19,7 +19,7 @@ import { config } from './vendure-config';
   };
 
   const { server, shopClient } = createTestEnvironment(
-    config as Required<VendureConfig>
+    config as Required<VendureConfig>,
   );
   await server.init({
     initialData: {

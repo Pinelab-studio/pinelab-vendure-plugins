@@ -1,8 +1,9 @@
 import gql from 'graphql-tag';
+
 // These stubs are only used by codegen so it can resolve
 // Vendure core types referenced in the plugin schema
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-const scalars = gql`
+const _scalars = gql`
   scalar DateTime
   scalar JSON
   scalar LogicalOperator

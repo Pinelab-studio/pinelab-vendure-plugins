@@ -1,5 +1,5 @@
-import { CurrencyCode, LanguageCode } from '@vendure/core';
 import { CreateChannelInput } from '@vendure/common/lib/generated-types';
+import { CurrencyCode, LanguageCode } from '@vendure/core';
 import { gql } from 'graphql-tag';
 
 export const createChannelInput: CreateChannelInput = {

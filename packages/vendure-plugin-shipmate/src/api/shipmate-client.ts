@@ -40,7 +40,7 @@ export class ShipmateClient {
       await this.setToken();
       const result = await this.client.post<CreateShipmentResponse>(
         `/shipments`,
-        shipment
+        shipment,
       );
       Logger.info(result.data.message, loggerCtx);
       return result.data?.data;
@@ -53,7 +53,7 @@ export class ShipmateClient {
     try {
       await this.setToken();
       const result = await this.client.delete<DeleteShipmentResponse>(
-        `/shipments/${shipment_reference}`
+        `/shipments/${shipment_reference}`,
       );
       Logger.info(result.data.message, loggerCtx);
     } catch (error) {
@@ -75,7 +75,7 @@ export class ShipmateClient {
 
   async getShipmentToken(
     shipmateUsername: string,
-    shipmatePassword: string
+    shipmatePassword: string,
   ): Promise<string> {
     const response = await this.client.post<GetTokenRespose>(`/tokens`, {
       username: shipmateUsername,
@@ -85,7 +85,7 @@ export class ShipmateClient {
       Logger.error(
         response.data.message,
         loggerCtx,
-        JSON.stringify(response.data)
+        JSON.stringify(response.data),
       );
       throw new Error(response.data.message);
     }
@@ -99,7 +99,7 @@ export class ShipmateClient {
     if (!this.token) {
       this.token = await this.getShipmentToken(
         this.input.username,
-        this.input.password
+        this.input.password,
       );
     }
     this.client.defaults.headers.common['X-SHIPMATE-TOKEN'] = this.token;

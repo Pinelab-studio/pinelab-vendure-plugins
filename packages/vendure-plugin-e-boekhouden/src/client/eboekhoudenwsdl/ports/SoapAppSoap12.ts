@@ -1,43 +1,43 @@
-import { GetAdministraties } from '../definitions/GetAdministraties';
-import { GetAdministratiesResponse } from '../definitions/GetAdministratiesResponse';
-import { GetSaldo } from '../definitions/GetSaldo';
-import { GetSaldoResponse } from '../definitions/GetSaldoResponse';
-import { GetSaldi } from '../definitions/GetSaldi';
-import { GetSaldiResponse } from '../definitions/GetSaldiResponse';
 import { AddFactuur } from '../definitions/AddFactuur';
 import { AddFactuurResponse } from '../definitions/AddFactuurResponse';
-import { GetFacturen } from '../definitions/GetFacturen';
-import { GetFacturenResponse } from '../definitions/GetFacturenResponse';
-import { AddMutatie } from '../definitions/AddMutatie';
-import { AddMutatieResponse } from '../definitions/AddMutatieResponse';
-import { GetMutaties } from '../definitions/GetMutaties';
-import { GetMutatiesResponse } from '../definitions/GetMutatiesResponse';
 import { AddGrootboekrekening } from '../definitions/AddGrootboekrekening';
 import { AddGrootboekrekeningResponse } from '../definitions/AddGrootboekrekeningResponse';
-import { UpdateGrootboekrekening } from '../definitions/UpdateGrootboekrekening';
-import { UpdateGrootboekrekeningResponse } from '../definitions/UpdateGrootboekrekeningResponse';
-import { GetGrootboekrekeningen } from '../definitions/GetGrootboekrekeningen';
-import { GetGrootboekrekeningenResponse } from '../definitions/GetGrootboekrekeningenResponse';
+import { AddMutatie } from '../definitions/AddMutatie';
+import { AddMutatieResponse } from '../definitions/AddMutatieResponse';
 import { AddRelatie } from '../definitions/AddRelatie';
 import { AddRelatieResponse } from '../definitions/AddRelatieResponse';
-import { UpdateRelatie } from '../definitions/UpdateRelatie';
-import { UpdateRelatieResponse } from '../definitions/UpdateRelatieResponse';
-import { GetRelaties } from '../definitions/GetRelaties';
-import { GetRelatiesResponse } from '../definitions/GetRelatiesResponse';
+import { AutoLogin } from '../definitions/AutoLogin';
+import { AutoLoginResponse } from '../definitions/AutoLoginResponse';
+import { CloseSession } from '../definitions/CloseSession';
+import { CloseSessionResponse } from '../definitions/CloseSessionResponse';
+import { GetAdministraties } from '../definitions/GetAdministraties';
+import { GetAdministratiesResponse } from '../definitions/GetAdministratiesResponse';
+import { GetArtikelen } from '../definitions/GetArtikelen';
+import { GetArtikelenResponse } from '../definitions/GetArtikelenResponse';
+import { GetFacturen } from '../definitions/GetFacturen';
+import { GetFacturenResponse } from '../definitions/GetFacturenResponse';
+import { GetGrootboekrekeningen } from '../definitions/GetGrootboekrekeningen';
+import { GetGrootboekrekeningenResponse } from '../definitions/GetGrootboekrekeningenResponse';
+import { GetKostenplaatsen } from '../definitions/GetKostenplaatsen';
+import { GetKostenplaatsenResponse } from '../definitions/GetKostenplaatsenResponse';
+import { GetMutaties } from '../definitions/GetMutaties';
+import { GetMutatiesResponse } from '../definitions/GetMutatiesResponse';
 import { GetOpenPosten } from '../definitions/GetOpenPosten';
 import { GetOpenPostenResponse } from '../definitions/GetOpenPostenResponse';
+import { GetRelaties } from '../definitions/GetRelaties';
+import { GetRelatiesResponse } from '../definitions/GetRelatiesResponse';
+import { GetSaldi } from '../definitions/GetSaldi';
+import { GetSaldiResponse } from '../definitions/GetSaldiResponse';
+import { GetSaldo } from '../definitions/GetSaldo';
+import { GetSaldoResponse } from '../definitions/GetSaldoResponse';
 import { OpenSession } from '../definitions/OpenSession';
 import { OpenSessionResponse } from '../definitions/OpenSessionResponse';
 import { OpenSessionSub } from '../definitions/OpenSessionSub';
 import { OpenSessionSubResponse } from '../definitions/OpenSessionSubResponse';
-import { CloseSession } from '../definitions/CloseSession';
-import { CloseSessionResponse } from '../definitions/CloseSessionResponse';
-import { AutoLogin } from '../definitions/AutoLogin';
-import { AutoLoginResponse } from '../definitions/AutoLoginResponse';
-import { GetKostenplaatsen } from '../definitions/GetKostenplaatsen';
-import { GetKostenplaatsenResponse } from '../definitions/GetKostenplaatsenResponse';
-import { GetArtikelen } from '../definitions/GetArtikelen';
-import { GetArtikelenResponse } from '../definitions/GetArtikelenResponse';
+import { UpdateGrootboekrekening } from '../definitions/UpdateGrootboekrekening';
+import { UpdateGrootboekrekeningResponse } from '../definitions/UpdateGrootboekrekeningResponse';
+import { UpdateRelatie } from '../definitions/UpdateRelatie';
+import { UpdateRelatieResponse } from '../definitions/UpdateRelatieResponse';
 
 export interface SoapAppSoap12 {
   GetAdministraties(
@@ -47,8 +47,8 @@ export interface SoapAppSoap12 {
       result: GetAdministratiesResponse,
       rawResponse: any,
       soapHeader: any,
-      rawRequest: any
-    ) => void
+      rawRequest: any,
+    ) => void,
   ): void;
   GetSaldo(
     getSaldo: GetSaldo,
@@ -57,8 +57,8 @@ export interface SoapAppSoap12 {
       result: GetSaldoResponse,
       rawResponse: any,
       soapHeader: any,
-      rawRequest: any
-    ) => void
+      rawRequest: any,
+    ) => void,
   ): void;
   GetSaldi(
     getSaldi: GetSaldi,
@@ -67,8 +67,8 @@ export interface SoapAppSoap12 {
       result: GetSaldiResponse,
       rawResponse: any,
       soapHeader: any,
-      rawRequest: any
-    ) => void
+      rawRequest: any,
+    ) => void,
   ): void;
   AddFactuur(
     addFactuur: AddFactuur,
@@ -77,8 +77,8 @@ export interface SoapAppSoap12 {
       result: AddFactuurResponse,
       rawResponse: any,
       soapHeader: any,
-      rawRequest: any
-    ) => void
+      rawRequest: any,
+    ) => void,
   ): void;
   GetFacturen(
     getFacturen: GetFacturen,
@@ -87,8 +87,8 @@ export interface SoapAppSoap12 {
       result: GetFacturenResponse,
       rawResponse: any,
       soapHeader: any,
-      rawRequest: any
-    ) => void
+      rawRequest: any,
+    ) => void,
   ): void;
   AddMutatie(
     addMutatie: AddMutatie,
@@ -97,8 +97,8 @@ export interface SoapAppSoap12 {
       result: AddMutatieResponse,
       rawResponse: any,
       soapHeader: any,
-      rawRequest: any
-    ) => void
+      rawRequest: any,
+    ) => void,
   ): void;
   GetMutaties(
     getMutaties: GetMutaties,
@@ -107,8 +107,8 @@ export interface SoapAppSoap12 {
       result: GetMutatiesResponse,
       rawResponse: any,
       soapHeader: any,
-      rawRequest: any
-    ) => void
+      rawRequest: any,
+    ) => void,
   ): void;
   AddGrootboekrekening(
     addGrootboekrekening: AddGrootboekrekening,
@@ -117,8 +117,8 @@ export interface SoapAppSoap12 {
       result: AddGrootboekrekeningResponse,
       rawResponse: any,
       soapHeader: any,
-      rawRequest: any
-    ) => void
+      rawRequest: any,
+    ) => void,
   ): void;
   UpdateGrootboekrekening(
     updateGrootboekrekening: UpdateGrootboekrekening,
@@ -127,8 +127,8 @@ export interface SoapAppSoap12 {
       result: UpdateGrootboekrekeningResponse,
       rawResponse: any,
       soapHeader: any,
-      rawRequest: any
-    ) => void
+      rawRequest: any,
+    ) => void,
   ): void;
   GetGrootboekrekeningen(
     getGrootboekrekeningen: GetGrootboekrekeningen,
@@ -137,8 +137,8 @@ export interface SoapAppSoap12 {
       result: GetGrootboekrekeningenResponse,
       rawResponse: any,
       soapHeader: any,
-      rawRequest: any
-    ) => void
+      rawRequest: any,
+    ) => void,
   ): void;
   AddRelatie(
     addRelatie: AddRelatie,
@@ -147,8 +147,8 @@ export interface SoapAppSoap12 {
       result: AddRelatieResponse,
       rawResponse: any,
       soapHeader: any,
-      rawRequest: any
-    ) => void
+      rawRequest: any,
+    ) => void,
   ): void;
   UpdateRelatie(
     updateRelatie: UpdateRelatie,
@@ -157,8 +157,8 @@ export interface SoapAppSoap12 {
       result: UpdateRelatieResponse,
       rawResponse: any,
       soapHeader: any,
-      rawRequest: any
-    ) => void
+      rawRequest: any,
+    ) => void,
   ): void;
   GetRelaties(
     getRelaties: GetRelaties,
@@ -167,8 +167,8 @@ export interface SoapAppSoap12 {
       result: GetRelatiesResponse,
       rawResponse: any,
       soapHeader: any,
-      rawRequest: any
-    ) => void
+      rawRequest: any,
+    ) => void,
   ): void;
   GetOpenPosten(
     getOpenPosten: GetOpenPosten,
@@ -177,8 +177,8 @@ export interface SoapAppSoap12 {
       result: GetOpenPostenResponse,
       rawResponse: any,
       soapHeader: any,
-      rawRequest: any
-    ) => void
+      rawRequest: any,
+    ) => void,
   ): void;
   OpenSession(
     openSession: OpenSession,
@@ -187,8 +187,8 @@ export interface SoapAppSoap12 {
       result: OpenSessionResponse,
       rawResponse: any,
       soapHeader: any,
-      rawRequest: any
-    ) => void
+      rawRequest: any,
+    ) => void,
   ): void;
   OpenSessionSub(
     openSessionSub: OpenSessionSub,
@@ -197,8 +197,8 @@ export interface SoapAppSoap12 {
       result: OpenSessionSubResponse,
       rawResponse: any,
       soapHeader: any,
-      rawRequest: any
-    ) => void
+      rawRequest: any,
+    ) => void,
   ): void;
   CloseSession(
     closeSession: CloseSession,
@@ -207,8 +207,8 @@ export interface SoapAppSoap12 {
       result: CloseSessionResponse,
       rawResponse: any,
       soapHeader: any,
-      rawRequest: any
-    ) => void
+      rawRequest: any,
+    ) => void,
   ): void;
   AutoLogin(
     autoLogin: AutoLogin,
@@ -217,8 +217,8 @@ export interface SoapAppSoap12 {
       result: AutoLoginResponse,
       rawResponse: any,
       soapHeader: any,
-      rawRequest: any
-    ) => void
+      rawRequest: any,
+    ) => void,
   ): void;
   GetKostenplaatsen(
     getKostenplaatsen: GetKostenplaatsen,
@@ -227,8 +227,8 @@ export interface SoapAppSoap12 {
       result: GetKostenplaatsenResponse,
       rawResponse: any,
       soapHeader: any,
-      rawRequest: any
-    ) => void
+      rawRequest: any,
+    ) => void,
   ): void;
   GetArtikelen(
     getArtikelen: GetArtikelen,
@@ -237,7 +237,7 @@ export interface SoapAppSoap12 {
       result: GetArtikelenResponse,
       rawResponse: any,
       soapHeader: any,
-      rawRequest: any
-    ) => void
+      rawRequest: any,
+    ) => void,
   ): void;
 }

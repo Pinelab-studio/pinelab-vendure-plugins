@@ -1,16 +1,14 @@
-import { OrderPDFsService } from './order-pdfs.service';
 import {
-  Controller,
-  Post,
-  Get,
-  Res,
-  Param,
-  Query,
-  Body,
   BadRequestException,
+  Body,
+  Controller,
+  Get,
   Inject,
+  Param,
+  Post,
+  Query,
+  Res,
 } from '@nestjs/common';
-import { Response } from 'express';
 import {
   Allow,
   Ctx,
@@ -22,9 +20,11 @@ import {
   RequestContextService,
   UserInputError,
 } from '@vendure/core';
-import { pdfDownloadPermission } from './pdf-template-admin-resolver';
+import { Response } from 'express';
 import { PLUGIN_INIT_OPTIONS } from '../constants';
 import { PDFTemplatePluginOptions } from '../order-pdfs-plugin';
+import { OrderPDFsService } from './order-pdfs.service';
+import { pdfDownloadPermission } from './pdf-template-admin-resolver';
 
 @Controller('order-pdf')
 export class OrderPDFsController {
@@ -33,7 +33,7 @@ export class OrderPDFsController {
     private readonly orderService: OrderService,
     private readonly entityHydrator: EntityHydrator,
     private readonly requestContextService: RequestContextService,
-    @Inject(PLUGIN_INIT_OPTIONS) private config: PDFTemplatePluginOptions
+    @Inject(PLUGIN_INIT_OPTIONS) private config: PDFTemplatePluginOptions,
   ) {}
 
   @Allow(pdfDownloadPermission.Permission)
@@ -41,18 +41,18 @@ export class OrderPDFsController {
   async preview(
     @Ctx() ctx: RequestContext,
     @Res() res: Response,
-    @Body() body: { template: string }
+    @Body() body: { template: string },
   ) {
     if (!ctx.channel?.token) {
       throw new BadRequestException('No channel set for request');
     }
-    if (!body?.template || !body?.template.trim()) {
+    if (!body?.template?.trim()) {
       throw new BadRequestException('No template given');
     }
     const stream = await this.pdfTemplateService.downloadPDF(
       ctx,
       undefined,
-      body.template
+      body.template,
     );
     res.set({
       'Content-Type': 'application/pdf',
@@ -67,7 +67,7 @@ export class OrderPDFsController {
     @Ctx() ctx: RequestContext,
     @Res() res: Response,
     @Param('templateId') templateId: ID,
-    @Query('orderCodes') orderCodesString: string
+    @Query('orderCodes') orderCodesString: string,
   ) {
     const orderCodes = orderCodesString.split(',');
     if (String(templateId).startsWith('T_')) {
@@ -77,7 +77,7 @@ export class OrderPDFsController {
     if (!ctx.channel?.token) {
       throw new BadRequestException('No channel set for request');
     }
-    if (orderCodes?.length == 1) {
+    if (orderCodes?.length === 1) {
       // Return single as inline PDF
       const orderCode = orderCodes[0];
       const order = await this.orderService.findOneByCode(ctx, orderCode);
@@ -88,7 +88,7 @@ export class OrderPDFsController {
         ctx,
         templateId,
         undefined,
-        order
+        order,
       );
       res.set({
         'Content-Type': 'application/pdf',
@@ -101,7 +101,7 @@ export class OrderPDFsController {
         await this.orderService.findAll(
           ctx,
           { filter: { code: { in: orderCodes } } },
-          []
+          [],
         )
       ).items;
       if (!orders?.length) {
@@ -110,7 +110,7 @@ export class OrderPDFsController {
       const stream = await this.pdfTemplateService.downloadMultiplePDFs(
         ctx,
         templateId,
-        orders
+        orders,
       );
       res.set({
         'Content-Type': 'application/zip',
@@ -126,7 +126,7 @@ export class OrderPDFsController {
     @Param('channelToken') channelToken: string,
     @Param('orderCode') orderCode: string,
     @Param('templateId') templateId: ID,
-    @Param('emailAddress') emailAddress: string
+    @Param('emailAddress') emailAddress: string,
   ) {
     if (!this.config.allowPublicDownload) {
       throw new BadRequestException('PDF downloads not allowed');
@@ -144,7 +144,7 @@ export class OrderPDFsController {
     });
     const template = await this.pdfTemplateService.findTemplate(
       ctx,
-      templateId
+      templateId,
     );
     if (!template?.enabled || !template?.public) {
       throw new ForbiddenError();
@@ -161,7 +161,7 @@ export class OrderPDFsController {
       ctx,
       templateId,
       undefined,
-      order
+      order,
     );
     res.set({
       'Content-Type': 'application/pdf',

@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { getRelatedProductsPerProduct } from './util'; // Adjust the import path as needed
 
 describe('getRelatedProductsPerProduct', () => {

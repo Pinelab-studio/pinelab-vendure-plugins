@@ -13,7 +13,7 @@ export async function assignCustomersToChannel(
   targetChannelId: ID,
   injector: Injector,
   ctx: RequestContext,
-  batch: number = 10
+  batch: number = 10,
 ): Promise<void> {
   await assignEntitiesToChannel<Customer>(
     sourceChannelId,
@@ -21,7 +21,7 @@ export async function assignCustomersToChannel(
     injector,
     ctx,
     getCustomers,
-    batch
+    batch,
   );
 }
 
@@ -30,7 +30,7 @@ function getCustomers(
   sourceChanneId: ID,
   injector: Injector,
   skip: number = 0,
-  take: number = 10
+  take: number = 10,
 ): Promise<Customer[]> {
   const conn = injector.get(TransactionalConnection);
   const customerRepo = conn.getRepository(ctx, Customer);

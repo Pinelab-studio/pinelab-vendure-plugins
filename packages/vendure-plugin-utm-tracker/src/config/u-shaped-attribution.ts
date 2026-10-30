@@ -9,7 +9,7 @@ export class UShapedAttribution implements AttributionModel {
   name = 'U-Shaped Attribution';
 
   calculateAttribution(
-    utmParameters: UtmOrderParameter[]
+    utmParameters: UtmOrderParameter[],
   ): AttributionResult[] {
     if (utmParameters.length === 0) {
       return [];

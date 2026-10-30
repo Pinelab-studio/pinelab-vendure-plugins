@@ -1,5 +1,5 @@
-import { Column, Entity } from 'typeorm';
 import { DeepPartial, VendureEntity } from '@vendure/core';
+import { Column, Entity } from 'typeorm';
 
 /**
  * Each `Webhook` entity represents 1 webhook call for the specified

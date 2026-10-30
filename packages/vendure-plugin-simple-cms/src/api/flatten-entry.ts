@@ -10,7 +10,7 @@ function mapFieldDefinition(field: TypeDefinition['fields'][number]) {
     type: field.type,
     nullable: field.nullable === true,
     isTranslatable: field.type !== 'relation' ? field.isTranslatable : false,
-    list: field.type === 'relation' ? field.list ?? false : undefined,
+    list: field.type === 'relation' ? (field.list ?? false) : undefined,
     fields:
       field.type === 'struct'
         ? field.fields.map((sub) => ({
@@ -31,7 +31,7 @@ function mapFieldDefinition(field: TypeDefinition['fields'][number]) {
 export function flattenEntry(
   ctx: RequestContext,
   entity: ContentEntry,
-  options: SimpleCmsPluginOptions
+  options: SimpleCmsPluginOptions,
 ): Record<string, unknown> {
   const typeDef = options.contentTypes[entity.contentTypeCode];
   const typeName = typeDef

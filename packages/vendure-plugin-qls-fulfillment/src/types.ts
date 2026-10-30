@@ -20,7 +20,7 @@ export interface QlsPluginOptions {
    * Get the QLS client config for the current channel based on given context
    */
   getConfig: (
-    ctx: RequestContext
+    ctx: RequestContext,
   ) => QlsClientConfig | undefined | Promise<QlsClientConfig | undefined>;
   /**
    * A key used to verify if the caller is authorized to call the webhook.
@@ -38,7 +38,7 @@ export interface QlsPluginOptions {
     pushAdditionalOrderFields?: (
       ctx: RequestContext,
       injector: Injector,
-      order: Order
+      order: Order,
     ) =>
       | Promise<AdditionalOrderFields | undefined>
       | AdditionalOrderFields
@@ -55,7 +55,7 @@ export interface QlsPluginOptions {
      */
     processOrderFrom?: (
       ctx: RequestContext,
-      order: Order
+      order: Order,
     ) => Date | Promise<Date>;
     /**
      * Optional function to customize the receiver contact details when creating a QLS order.
@@ -64,7 +64,7 @@ export interface QlsPluginOptions {
      */
     getReceiverContact?: (
       ctx: RequestContext,
-      order: Order
+      order: Order,
     ) => FulfillmentOrderInput['receiver_contact'] | undefined;
     /**
      * Optional hook called after an order has been successfully created in QLS.
@@ -75,7 +75,7 @@ export interface QlsPluginOptions {
       ctx: RequestContext,
       injector: Injector,
       order: Order,
-      createdQlsOrder: FulfillmentOrder
+      createdQlsOrder: FulfillmentOrder,
     ) => Promise<void> | void;
     /**
      * Additional order items to add to the QLS order.
@@ -83,7 +83,7 @@ export interface QlsPluginOptions {
     addAdditionalOrderItems?: (
       ctx: RequestContext,
       injector: Injector,
-      order: Order
+      order: Order,
     ) => FulfillmentOrderLineInput[] | Promise<FulfillmentOrderLineInput[]>;
   };
   /**
@@ -96,7 +96,7 @@ export interface QlsPluginOptions {
      */
     getAdditionalVariantFields: (
       ctx: RequestContext,
-      variant: ProductVariant
+      variant: ProductVariant,
     ) => AdditionalVariantFields;
     /**
      * Allows you to disable the pulling in of stock levels from QLS. When disabled, stock in Vendure will not be modified based on QLS stock levels.
@@ -111,7 +111,7 @@ export interface QlsPluginOptions {
     excludeVariantFromSync?: (
       ctx: RequestContext,
       injector: Injector,
-      variant: ProductVariant
+      variant: ProductVariant,
     ) => boolean | Promise<boolean>;
     /**
      * Optional hook called after syncing a variant to QLS.
@@ -123,7 +123,7 @@ export interface QlsPluginOptions {
       ctx: RequestContext,
       injector: Injector,
       qlsProduct: FulfillmentProductDetail,
-      variant: ProductVariant
+      variant: ProductVariant,
     ) => Promise<void> | void;
     /**
      * Admin UI tab name where the QLS Product ID custom field is shown on ProductVariant.

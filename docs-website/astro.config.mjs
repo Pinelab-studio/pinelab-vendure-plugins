@@ -1,8 +1,9 @@
 // @ts-check
+
+import sitemap from '@astrojs/sitemap';
+import starlight from '@astrojs/starlight';
 import { defineConfig } from 'astro/config';
 import { getPlugins } from './src/utils/plugins.ts';
-import starlight from '@astrojs/starlight';
-import sitemap from '@astrojs/sitemap';
 
 const plugins = await getPlugins();
 

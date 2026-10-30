@@ -1,4 +1,8 @@
 import {
+  ModifyOrderInput,
+  MutationModifyOrderArgs,
+} from '@vendure/common/lib/generated-types';
+import {
   ChannelService,
   DefaultLogger,
   DefaultOrderCodeStrategy,
@@ -17,16 +21,11 @@ import {
   testConfig,
 } from '@vendure/testing';
 import { TestServer } from '@vendure/testing/lib/test-server';
+import { getSuperadminContext } from '@vendure/testing/lib/utils/get-superadmin-context';
+import axios from 'axios';
 import nock from 'nock';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { initialData } from '../../test/src/initial-data';
-
-import {
-  ModifyOrderInput,
-  MutationModifyOrderArgs,
-} from '@vendure/common/lib/generated-types';
-import { getSuperadminContext } from '@vendure/testing/lib/utils/get-superadmin-context';
-import axios from 'axios';
 import { createSettledOrder } from '../../test/src/shop-utils';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
 import { ShipmatePlugin } from '../src/shipmate.plugin';
@@ -34,8 +33,8 @@ import type { TrackingEventPayload } from '../src/types';
 import {
   authToken,
   cancelShipmentResponse,
-  mockShipment,
   MODIFY_ORDER,
+  mockShipment,
 } from './test-helpers';
 
 /**
@@ -61,10 +60,10 @@ describe('Shipmate plugin', async () => {
         ShipmatePlugin.init({
           apiUrl: nockBaseUrl,
           //only send order if the total quantity is less than 5
-          shouldSendOrder: function (
-            ctx: RequestContext,
-            order: Order
-          ): Promise<boolean> | boolean {
+          shouldSendOrder: (
+            _ctx: RequestContext,
+            order: Order,
+          ): Promise<boolean> | boolean => {
             orderFromShouldSendStrategy = order;
             return order.totalQuantity < 5;
           },
@@ -109,7 +108,7 @@ describe('Shipmate plugin', async () => {
 
   // Global tokens mock, neede before each API call
   nock(nockBaseUrl)
-    .post('/tokens', (reqBody) => {
+    .post('/tokens', (_reqBody) => {
       return true;
     })
     .reply(200, {
@@ -121,7 +120,7 @@ describe('Shipmate plugin', async () => {
     .persist(true);
 
   // Global mock for outgoing requests to Shipmate API
-  let shipmentRequests: any[] = [];
+  const shipmentRequests: any[] = [];
   nock(nockBaseUrl)
     .post('/shipments', (reqBody) => {
       shipmentRequests.push(reqBody);
@@ -144,7 +143,7 @@ describe('Shipmate plugin', async () => {
 
   it('Should create a Shipment when an Order is placed', async () => {
     vi.spyOn(DefaultOrderCodeStrategy.prototype, 'generate').mockImplementation(
-      () => mockShipment.shipment_reference
+      () => mockShipment.shipment_reference,
     );
     await shopClient.asAnonymousUser();
     await createSettledOrder(shopClient, 'T_1');
@@ -158,10 +157,10 @@ describe('Shipmate plugin', async () => {
   it('Should pass the order with relations into "shouldSendOrder" strategy', async () => {
     expect(orderFromShouldSendStrategy?.customer?.emailAddress).toBeDefined();
     expect(
-      orderFromShouldSendStrategy?.lines[0].productVariant.name
+      orderFromShouldSendStrategy?.lines[0].productVariant.name,
     ).toBeDefined();
     expect(
-      orderFromShouldSendStrategy?.shippingLines[0].shippingMethod.name
+      orderFromShouldSendStrategy?.shippingLines[0].shippingMethod.name,
     ).toBeDefined();
   });
 
@@ -189,7 +188,7 @@ describe('Shipmate plugin', async () => {
       const transitionToModifyingResult = await orderService.transitionToState(
         ctx,
         2,
-        'Modifying'
+        'Modifying',
       );
       if (isGraphQlErrorResult(transitionToModifyingResult)) {
         throw transitionToModifyingResult.transitionError;
@@ -202,7 +201,7 @@ describe('Shipmate plugin', async () => {
         await orderService.transitionToState(
           ctx,
           2,
-          'ArrangingAdditionalPayment'
+          'ArrangingAdditionalPayment',
         );
       if (isGraphQlErrorResult(transitionArrangingAdditionalPaymentResult)) {
         throw transitionArrangingAdditionalPaymentResult.transitionError;

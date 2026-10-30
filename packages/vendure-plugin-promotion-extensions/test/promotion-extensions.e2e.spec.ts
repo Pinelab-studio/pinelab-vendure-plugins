@@ -7,11 +7,11 @@ import {
   testConfig,
 } from '@vendure/testing';
 import { TestServer } from '@vendure/testing/lib/test-server';
+import gql from 'graphql-tag';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { initialData } from '../../test/src/initial-data';
-import { buyMinMaxOfTheSpecifiedProductsCondition } from '../src';
-import gql from 'graphql-tag';
 import { addItem } from '../../test/src/shop-utils';
+import { buyMinMaxOfTheSpecifiedProductsCondition } from '../src';
 
 describe('Promotion Extensions plugin', () => {
   let server: TestServer;
@@ -52,7 +52,7 @@ describe('Promotion Extensions plugin', () => {
         min: '1',
         max: '5',
         discountAmount: '500',
-      })
+      }),
     );
     expect(createPromotion.name).toBe('$5 off for 1-5 items');
   });
@@ -67,7 +67,7 @@ describe('Promotion Extensions plugin', () => {
         min: '6',
         max: '10',
         discountAmount: '1000',
-      })
+      }),
     );
     expect(createPromotion.name).toBe('$10 off for 6-10 items');
   });
@@ -134,7 +134,7 @@ const createPromotionInput = ({
             },
             {
               name: 'productVariantIds',
-              value: `[\"${productVariantId}\"]`,
+              value: `["${productVariantId}"]`,
             },
           ],
         },

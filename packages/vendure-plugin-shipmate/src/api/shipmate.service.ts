@@ -1,3 +1,4 @@
+import util from 'node:util';
 import { Inject, Injectable, OnApplicationBootstrap } from '@nestjs/common';
 import { FulfillOrderInput } from '@vendure/common/lib/generated-types';
 import {
@@ -6,9 +7,11 @@ import {
   EventBus,
   FulfillmentState,
   ID,
+  isGraphQlErrorResult,
   JobQueue,
   JobQueueService,
   Logger,
+  manualFulfillmentHandler,
   Order,
   OrderPlacedEvent,
   OrderService,
@@ -16,11 +19,8 @@ import {
   RequestContext,
   SerializedRequestContext,
   TransactionalConnection,
-  isGraphQlErrorResult,
-  manualFulfillmentHandler,
 } from '@vendure/core';
-import util from 'util';
-import { PLUGIN_INIT_OPTIONS, loggerCtx } from '../constants';
+import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
 import { ShipmatePluginConfig } from '../shipmate.plugin';
 import { EventPayload, TrackingEventPayload } from '../types';
 import { ShipmateClient } from './shipmate-client';
@@ -44,7 +44,7 @@ export class ShipmateService implements OnApplicationBootstrap {
     private eventBus: EventBus,
     private connection: TransactionalConnection,
     private entityHydrator: EntityHydrator,
-    private jobQueueService: JobQueueService
+    private jobQueueService: JobQueueService,
   ) {}
 
   async onApplicationBootstrap(): Promise<void> {
@@ -55,7 +55,7 @@ export class ShipmateService implements OnApplicationBootstrap {
         await this.upsertShipment(
           ctx,
           job.data.orderCode,
-          job.data.cancelExistingFirst
+          job.data.cancelExistingFirst,
         );
       },
     });
@@ -65,7 +65,7 @@ export class ShipmateService implements OnApplicationBootstrap {
           // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
           `Error adding job to queue: ${e?.message}`,
           loggerCtx,
-          util.inspect(e)
+          util.inspect(e),
         );
       });
     });
@@ -75,7 +75,7 @@ export class ShipmateService implements OnApplicationBootstrap {
           // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
           `Error adding job to queue: ${e?.message}`,
           loggerCtx,
-          util.inspect(e)
+          util.inspect(e),
         );
       });
     });
@@ -85,7 +85,7 @@ export class ShipmateService implements OnApplicationBootstrap {
    * Creates a job in the job queue to send the order to Shipmate
    */
   async addJob(
-    event: OrderStateTransitionEvent | OrderPlacedEvent
+    event: OrderStateTransitionEvent | OrderPlacedEvent,
   ): Promise<void> {
     await this.entityHydrator.hydrate(event.ctx, event.order, {
       relations: [
@@ -106,7 +106,7 @@ export class ShipmateService implements OnApplicationBootstrap {
           orderCode: order.code,
           cancelExistingFirst: false,
         },
-        { retries: 10 }
+        { retries: 10 },
       );
       return;
     }
@@ -126,7 +126,7 @@ export class ShipmateService implements OnApplicationBootstrap {
           orderCode: order.code,
           cancelExistingFirst: true,
         },
-        { retries: 10 }
+        { retries: 10 },
       );
     }
   }
@@ -134,13 +134,13 @@ export class ShipmateService implements OnApplicationBootstrap {
   async upsertShipment(
     ctx: RequestContext,
     orderCode: string,
-    cancelExistingFirst: boolean
+    cancelExistingFirst: boolean,
   ): Promise<void> {
     const client = await this.getClient(ctx);
     if (!client) {
       Logger.info(
         `Can not create shipment for '${ctx.channel.code}'. Shipmate is not enabled`,
-        loggerCtx
+        loggerCtx,
       );
       return;
     }
@@ -154,14 +154,14 @@ export class ShipmateService implements OnApplicationBootstrap {
         await client.cancelShipment(order.code);
         Logger.info(
           `Cancelled shipment for order '${order.code}', because we will create a new update shipment.`,
-          loggerCtx
+          loggerCtx,
         );
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } catch (err: any) {
         Logger.warn(
           // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
           `Failed to cancel Shipment for order '${order.code}' on Shipmate: ${err?.message}`,
-          loggerCtx
+          loggerCtx,
         );
         throw err;
       }
@@ -183,7 +183,7 @@ export class ShipmateService implements OnApplicationBootstrap {
         order.id,
         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         `Failed to send order '${order.code}' to Shipmate: ${err?.message}`,
-        err
+        err,
       );
       throw err;
     }
@@ -196,7 +196,7 @@ export class ShipmateService implements OnApplicationBootstrap {
     ctx: RequestContext,
     orderId: ID,
     message: string,
-    err: unknown
+    err: unknown,
   ): Promise<void> {
     await this.orderService
       .addNoteToOrder(ctx, {
@@ -208,8 +208,8 @@ export class ShipmateService implements OnApplicationBootstrap {
         Logger.error(
           // eslint-disable-next-line  @typescript-eslint/no-unsafe-member-access
           `Error adding note to order ${orderId}: ${err?.message}`,
-          loggerCtx
-        )
+          loggerCtx,
+        ),
       );
     Logger.error(message, loggerCtx, util.inspect(err));
   }
@@ -222,24 +222,24 @@ export class ShipmateService implements OnApplicationBootstrap {
     if (!ctx) {
       Logger.warn(
         `No Shipmate config found with webhook auth token '${payload.auth_token}'`,
-        loggerCtx
+        loggerCtx,
       );
       return;
     }
     const order = await this.orderService.findOneByCode(
       ctx,
-      payload.order_reference
+      payload.order_reference,
     );
     if (!order) {
       Logger.warn(
         `No Order with code ${payload.order_reference} in channel ${ctx.channel.code}`,
-        loggerCtx
+        loggerCtx,
       );
       return;
     }
     Logger.info(
       `${payload.event} event received for Order with code ${payload.order_reference} in channel ${ctx.channel.code}`,
-      loggerCtx
+      loggerCtx,
     );
     if (payload.event === 'TRACKING_COLLECTED') {
       await this.updateFulFillment(ctx, order, payload, 'Shipped');
@@ -252,7 +252,7 @@ export class ShipmateService implements OnApplicationBootstrap {
     }
     Logger.info(
       `No configured handler for event "${payload.event}"`,
-      loggerCtx
+      loggerCtx,
     );
   }
 
@@ -263,7 +263,7 @@ export class ShipmateService implements OnApplicationBootstrap {
     ctx: RequestContext,
     order: Order,
     payload: EventPayload,
-    state: FulfillmentState
+    state: FulfillmentState,
   ) {
     await this.entityHydrator.hydrate(ctx, order, {
       relations: ['fulfillments'],
@@ -279,7 +279,7 @@ export class ShipmateService implements OnApplicationBootstrap {
           ctx,
           order.id,
           `Unable to create Fulfillment for order ${order.code}: ${createdFulfillmentResult.message}`,
-          createdFulfillmentResult
+          createdFulfillmentResult,
         );
         // eslint-disable-next-line @typescript-eslint/only-throw-error
         throw createdFulfillmentResult.message;
@@ -289,7 +289,7 @@ export class ShipmateService implements OnApplicationBootstrap {
           await this.orderService.transitionFulfillmentToState(
             ctx,
             createdFulfillmentResult.id,
-            state
+            state,
           );
         if (isGraphQlErrorResult(transitionResult)) {
           // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
@@ -297,7 +297,7 @@ export class ShipmateService implements OnApplicationBootstrap {
             ctx,
             order.id,
             `Unable to transition Fulfillment ${createdFulfillmentResult.id} of order ${order.code} to ${state}: ${transitionResult.transitionError}`,
-            createdFulfillmentResult
+            createdFulfillmentResult,
           );
           // eslint-disable-next-line @typescript-eslint/only-throw-error
           throw transitionResult.transitionError;
@@ -310,7 +310,7 @@ export class ShipmateService implements OnApplicationBootstrap {
           await this.orderService.transitionFulfillmentToState(
             ctx,
             fulfillment.id,
-            state
+            state,
           );
         if (isGraphQlErrorResult(transitionResult)) {
           // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
@@ -318,7 +318,7 @@ export class ShipmateService implements OnApplicationBootstrap {
             ctx,
             order.id,
             `Unable to transition Fulfillment ${fulfillment.id} of order ${order.code} to ${state}: ${transitionResult.transitionError}`,
-            transitionResult
+            transitionResult,
           );
           // eslint-disable-next-line @typescript-eslint/only-throw-error
           throw transitionResult.transitionError;
@@ -332,7 +332,7 @@ export class ShipmateService implements OnApplicationBootstrap {
    */
   createFulfillOrderInput(
     order: Order,
-    payload: EventPayload
+    payload: EventPayload,
   ): FulfillOrderInput {
     return {
       handler: {
@@ -362,7 +362,7 @@ export class ShipmateService implements OnApplicationBootstrap {
     if (!shipmateConfig) {
       Logger.info(
         `Shipmate credentials not configured for channel ${ctx.channel.code}`,
-        loggerCtx
+        loggerCtx,
       );
       return;
     }
@@ -378,11 +378,11 @@ export class ShipmateService implements OnApplicationBootstrap {
    * Create RequestContext or the given Shipmate auth token
    */
   private async createCtxForWebhookToken(
-    webhookAuthToken: string
+    webhookAuthToken: string,
   ): Promise<RequestContext | undefined> {
     const config =
       await this.shipmateConfigService.getConfigWithWebhookAuthToken(
-        webhookAuthToken
+        webhookAuthToken,
       );
     if (!config) {
       Logger.error(`No channel with this webhooks auth token`, loggerCtx);

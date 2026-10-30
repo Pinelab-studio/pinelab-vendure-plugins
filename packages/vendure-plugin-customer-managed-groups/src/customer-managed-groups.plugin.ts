@@ -1,14 +1,12 @@
 import { PluginCommonModule, VendurePlugin } from '@vendure/core';
-import { AdminUiExtension } from '@vendure/ui-devkit/compiler';
-import path from 'path';
-import { shopSchema } from './api/shop-graphql';
 import { adminSchema } from './api/admin-graphql';
 import { customFields } from './api/custom-fields';
-import { CustomerManagedGroupsService } from './api/customer-managed-groups.service';
 import {
   CustomerManagedGroupsAdminResolver,
   CustomerManagedGroupsShopResolver,
 } from './api/customer-managed-groups.resolver';
+import { CustomerManagedGroupsService } from './api/customer-managed-groups.service';
+import { shopSchema } from './api/shop-graphql';
 
 @VendurePlugin({
   imports: [PluginCommonModule],
@@ -30,15 +28,4 @@ import {
   },
   compatibility: '>=2.2.0',
 })
-export class CustomerManagedGroupsPlugin {
-  // static ui: AdminUiExtension = {
-  //   extensionPath: path.join(__dirname, 'ui'),
-  //   ngModules: [
-  //     {
-  //       type: 'shared',
-  //       ngModuleFileName: 'customer-group-extension.shared-module.ts',
-  //       ngModuleName: 'CustomerGroupExtensionSharedModule',
-  //     },
-  //   ],
-  // };
-}
+export class CustomerManagedGroupsPlugin {}

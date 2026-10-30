@@ -11,11 +11,11 @@ export class UTMTrackerAdminResolver {
   @Resolver('Order')
   async utmParameters(
     @Ctx() ctx: RequestContext,
-    @Parent() order: Order
+    @Parent() order: Order,
   ): Promise<(UtmOrderParameter & { attributedValue?: number })[]> {
     const utmParameters = await this.utmTrackerService.getUTMParameters(
       ctx,
-      order.id
+      order.id,
     );
     return utmParameters.map((param) => ({
       ...param,

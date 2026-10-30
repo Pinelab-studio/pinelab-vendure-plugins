@@ -1,4 +1,5 @@
 import { CurrencyCode } from '@vendure/core';
+
 type JSONLike = {
   [key in string]: string;
 };

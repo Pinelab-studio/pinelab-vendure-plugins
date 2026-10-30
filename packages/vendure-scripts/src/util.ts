@@ -16,18 +16,18 @@ export type GetEntityFunction<T> = (
   injector: Injector,
   skip: number,
   take: number,
-  condition?: FindOptionsWhere<T> | FindOptionsWhere<T>[]
+  condition?: FindOptionsWhere<T> | FindOptionsWhere<T>[],
 ) => Promise<T[]>;
 
 export async function assignEntitiesToChannel<
-  T extends VendureEntity & ChannelAware
+  T extends VendureEntity & ChannelAware,
 >(
   sourceChannelId: ID,
   targetChannelId: ID,
   injector: Injector,
   ctx: RequestContext,
   getEntityFn: GetEntityFunction<T>,
-  batchSize: number
+  batchSize: number,
 ): Promise<void> {
   let skip = 0;
   const conn = injector.get(TransactionalConnection);
@@ -39,7 +39,7 @@ export async function assignEntitiesToChannel<
       const entity = items[0].constructor;
       Logger.info(
         `Asigning ${entity.name}s ${skip}-${skip + batchSize} to Channel`,
-        loggerCtx
+        loggerCtx,
       );
       await injector
         .get(DataSource)
@@ -54,7 +54,7 @@ export async function assignEntitiesToChannel<
               skip + batchSize
               // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
             } to Channel: ${e.message}`,
-            loggerCtx
+            loggerCtx,
           );
         });
       skip += batchSize;

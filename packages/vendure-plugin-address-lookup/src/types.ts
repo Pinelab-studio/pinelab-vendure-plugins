@@ -34,7 +34,7 @@ export interface AddressLookupStrategy {
    */
   lookup(
     ctx: RequestContext,
-    input: AddressLookupInput
+    input: AddressLookupInput,
   ): Promise<OrderAddress[]>;
 }
 
@@ -54,7 +54,7 @@ export class NoAddressLookupStrategyFoundError extends I18nError {
       `No lookup strategy found for country code: ${countryCode}`,
       undefined,
       'NO_ADDRESS_LOOKUP_STRATEGY_FOUND',
-      LogLevel.Warn
+      LogLevel.Warn,
     );
   }
 }

@@ -1,5 +1,5 @@
-import { Order, OrderLine } from '@vendure/core';
 import { OrderAddress } from '@vendure/common/lib/generated-types';
+import { Order, OrderLine } from '@vendure/core';
 import { GraphQLError } from 'graphql';
 
 export type PartialBy<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>;
@@ -90,7 +90,7 @@ export interface MyParcelShipmentStrategy {
   getShipment: (
     address: OrderAddress,
     order: Order,
-    customsContent: string
+    customsContent: string,
   ) => MyparcelShipment;
 }
 

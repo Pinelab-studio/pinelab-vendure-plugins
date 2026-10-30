@@ -1,11 +1,4 @@
-import {
-  createTestEnvironment,
-  registerInitializer,
-  SimpleGraphQLClient,
-  SqljsInitializer,
-  testConfig,
-  TestServer,
-} from '@vendure/testing';
+import { ModuleRef } from '@nestjs/core';
 import {
   ChannelService,
   configureDefaultOrderProcess,
@@ -17,36 +10,44 @@ import {
   OrderService,
   RequestContextService,
 } from '@vendure/core';
-import { ModuleRef } from '@nestjs/core';
-import { testPaymentMethod } from '../../test/src/test-payment-method';
+import {
+  createTestEnvironment,
+  registerInitializer,
+  SimpleGraphQLClient,
+  SqljsInitializer,
+  TestServer,
+  testConfig,
+} from '@vendure/testing';
+import gql from 'graphql-tag';
+import nock from 'nock';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import {
+  addShippingMethod,
+  fulfill,
+  getAllVariants,
+  getOrder,
+  updateVariants,
+} from '../../test/src/admin-utils';
+import { GlobalFlag } from '../../test/src/generated/admin-graphql';
 import { initialData } from '../../test/src/initial-data';
+import { createSettledOrder } from '../../test/src/shop-utils';
+import { waitFor } from '../../test/src/test-helpers';
+import { testPaymentMethod } from '../../test/src/test-payment-method';
 import {
   fulfillSettledOrdersTask,
   getNrOfOrders,
   ParcelInput,
   ParcelInputItem,
-  sendcloudHandler,
   SendcloudPlugin,
+  sendcloudHandler,
 } from '../src';
 import { getSyncSuccessNote, updateSendCloudConfig } from './test.helpers';
-import {
-  addShippingMethod,
-  fulfill,
-  getOrder,
-  updateVariants,
-  getAllVariants,
-} from '../../test/src/admin-utils';
-import { createSettledOrder } from '../../test/src/shop-utils';
-import { waitFor } from '../../test/src/test-helpers';
-import nock from 'nock';
-import gql from 'graphql-tag';
-import { expect, describe, beforeAll, afterAll, it } from 'vitest';
-import { GlobalFlag } from '../../test/src/generated/admin-graphql';
+
 describe('SendCloud', () => {
   let shopClient: SimpleGraphQLClient;
   let adminClient: SimpleGraphQLClient;
   let server: TestServer;
-  let orderCode: string | undefined;
+  let _orderCode: string | undefined;
   let orderId: string | undefined;
   let unsyncedOrderId: string | undefined;
   let channelId: string;
@@ -66,7 +67,7 @@ describe('SendCloud', () => {
           hsCodeFn: (line) =>
             (line.productVariant.product?.customFields as any)?.hsCode ||
             'test hs',
-          originCountryFn: (line) => 'NL',
+          originCountryFn: (_line) => 'NL',
           additionalParcelItemsFn: async (ctx, injector, order) => {
             const additionalInputs: ParcelInputItem[] = [
               {
@@ -152,8 +153,8 @@ describe('SendCloud', () => {
         channelId,
         'test-secret',
         'test-public',
-        '06123456789'
-      )
+        '06123456789',
+      ),
     ).rejects.toThrow('authorized');
   });
 
@@ -164,7 +165,7 @@ describe('SendCloud', () => {
       channelId,
       'test-secret',
       'test-public',
-      '06123456789'
+      '06123456789',
     );
     expect(config.sendcloudSecret).toBe('test-secret');
     expect(config.sendcloudPublicKey).toBe('test-public');
@@ -183,13 +184,14 @@ describe('SendCloud', () => {
     });
     await waitFor(() => getSyncSuccessNote(adminClient, String(id)));
     const order = await getOrder(adminClient, String(id));
-    orderCode = order?.code;
+    _orderCode = order?.code;
     orderId = order?.id;
     // Allocation should have been created for the ordered lines (before fulfillment)
     await adminClient.asSuperAdmin();
     await waitFor(async () => {
       const variants = await getAllVariants(adminClient);
-      for (const l of order!.lines) {
+      if (!order) throw new Error('Order not found');
+      for (const l of order.lines) {
         const v = variants.find((x) => x.id === l.productVariant.id);
         if (!v || v.stockAllocated !== l.quantity) {
           return undefined;
@@ -207,26 +209,26 @@ describe('SendCloud', () => {
     expect(v2Alloc.stockAllocated).toBe(2);
     // Verify parcel was sent to SendCloud with correct data
     expect(
-      body?.parcel.parcel_items.find((i) => i.sku === 'additional')
+      body?.parcel.parcel_items.find((i) => i.sku === 'additional'),
     ).toBeDefined();
     expect(
-      body?.parcel.parcel_items.find((i) => i.weight === '5.000')
+      body?.parcel.parcel_items.find((i) => i.weight === '5.000'),
     ).toBeDefined();
     expect(
-      body?.parcel.parcel_items.find((i) => i.origin_country === 'NL')
+      body?.parcel.parcel_items.find((i) => i.origin_country === 'NL'),
     ).toBeDefined();
     expect(
-      body?.parcel.parcel_items.find((i) => i.hs_code === 'test hs')
+      body?.parcel.parcel_items.find((i) => i.hs_code === 'test hs'),
     ).toBeDefined();
     expect(
-      body?.parcel.parcel_items.find((item) => item.sku === 'L2201308')?.value
+      body?.parcel.parcel_items.find((item) => item.sku === 'L2201308')?.value,
     ).toBe('1558.80');
     expect(
-      body?.parcel.parcel_items.find((item) => item.sku === 'L2201508')?.value
+      body?.parcel.parcel_items.find((item) => item.sku === 'L2201508')?.value,
     ).toBe('1678.80');
     expect(authHeader?.[0]).toContain('Basic');
     expect(body?.parcel.shipping_method_checkout_name).toContain(
-      'test-shipping-method'
+      'test-shipping-method',
     );
     expect(body?.parcel.telephone).toContain('029 1203 1336');
     expect(body?.parcel.email).toContain('hayden.zieme12@hotmail.com');
@@ -289,8 +291,8 @@ describe('SendCloud', () => {
     await fulfill(
       adminClient,
       sendcloudHandler.code,
-      settledOrder!.lines.map((l) => [l.id, l.quantity] as [string, number]),
-      []
+      settledOrder?.lines.map((l) => [l.id, l.quantity] as [string, number]),
+      [],
     );
     const fulfilledOrder = await getOrder(adminClient, String(newId));
     expect(fulfilledOrder?.state).toBe('PaymentSettled');
@@ -344,7 +346,7 @@ describe('SendCloud', () => {
           }
         }
       `,
-      { id: settledOrder!.id, state: 'Shipped' }
+      { id: settledOrder?.id, state: 'Shipped' },
     );
     expect(transitionOrderToState.state).toBe('Shipped');
     // Run the task: should detect the Shipped order with no fulfillment and transition directly to Delivered
@@ -375,7 +377,7 @@ describe('SendCloud', () => {
       shopClient,
       1,
       true,
-      [{ id: 'T_1', quantity: 1 }]
+      [{ id: 'T_1', quantity: 1 }],
     );
     unsyncedOrderId = String(failedOrderId);
     await waitFor(async () => {
@@ -404,7 +406,7 @@ describe('SendCloud', () => {
               }
             }
           `,
-          { id: failedOrderId }
+          { id: failedOrderId },
         );
         const errorEntries =
           order?.history?.items?.filter(isSendcloudErrorNote);
@@ -412,7 +414,7 @@ describe('SendCloud', () => {
         return errorEntries?.length >= 3 ? errorEntries : undefined;
       },
       500,
-      30000
+      30000,
     );
     const { order: finalOrder } = await adminClient.query(
       gql`
@@ -427,7 +429,7 @@ describe('SendCloud', () => {
           }
         }
       `,
-      { id: failedOrderId }
+      { id: failedOrderId },
     );
     const errorEntries =
       finalOrder?.history?.items?.filter(isSendcloudErrorNote);
@@ -457,7 +459,7 @@ describe('SendCloud', () => {
           sendToSendCloud(orderId: $orderId)
         }
       `,
-      { orderId: unsyncedOrderId }
+      { orderId: unsyncedOrderId },
     );
     expect(sendToSendCloud).toBe(true);
     const injector = new Injector(server.app.get(ModuleRef));
@@ -471,7 +473,7 @@ describe('SendCloud', () => {
     const { id, code } = await createSettledOrder(shopClient, 1);
     // Remove the sync note, so only the legacy history entries are checked
     const syncNote = await waitFor(() =>
-      getSyncSuccessNote(adminClient, String(id))
+      getSyncSuccessNote(adminClient, String(id)),
     );
     await adminClient.query(
       gql`
@@ -481,7 +483,7 @@ describe('SendCloud', () => {
           }
         }
       `,
-      { id: syncNote.id }
+      { id: syncNote.id },
     );
     const ctx = await server.app
       .get(RequestContextService)
@@ -494,18 +496,18 @@ describe('SendCloud', () => {
       server.app.get(HistoryService).createHistoryEntryForOrder(
         {
           ctx,
-          orderId: orderEntity!.id,
+          orderId: orderEntity?.id,
           type: 'SENDCLOUD_NOTIFICATION' as any,
           data: { name: 'SendCloud', valid },
         },
-        false
+        false,
       );
     const injector = new Injector(server.app.get(ModuleRef));
     await addLegacyHistoryEntry(false);
     let result = await fulfillSettledOrdersTask.execute(injector);
     expect(result).toEqual({ fulfilled: 0, skipped: 1, failed: 0 });
     expect((await getOrder(adminClient, String(id)))?.state).toBe(
-      'PaymentSettled'
+      'PaymentSettled',
     );
     await addLegacyHistoryEntry(true);
     result = await fulfillSettledOrdersTask.execute(injector);
@@ -525,12 +527,12 @@ describe('SendCloud', () => {
           }
         }
       `,
-      { id }
+      { id },
     );
     expect(
       order.history.items.filter(
-        (entry: any) => entry.type === 'SENDCLOUD_NOTIFICATION'
-      )
+        (entry: any) => entry.type === 'SENDCLOUD_NOTIFICATION',
+      ),
     ).toHaveLength(2);
   });
 

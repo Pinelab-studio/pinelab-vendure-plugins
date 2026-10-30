@@ -1,4 +1,3 @@
-import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
 import {
   AutoIncrementIdStrategy,
   DefaultLogger,
@@ -12,10 +11,8 @@ import {
   SqljsInitializer,
   testConfig,
 } from '@vendure/testing';
-import { initialTestData } from './initial-test-data';
 import { PrimaryCollectionPlugin } from '../src/primary-collection-plugin';
-import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
-import path from 'path';
+import { initialTestData } from './initial-test-data';
 
 require('dotenv').config();
 
@@ -23,19 +20,7 @@ require('dotenv').config();
   registerInitializer('sqljs', new SqljsInitializer('__data__'));
   const devConfig = mergeConfig(testConfig, {
     logger: new DefaultLogger({ level: LogLevel.Debug }),
-    plugins: [
-      PrimaryCollectionPlugin,
-      DefaultSearchPlugin,
-      AdminUiPlugin.init({
-        port: 3002,
-        route: 'admin',
-        app: compileUiExtensions({
-          outputPath: path.join(__dirname, '__admin-ui'),
-          extensions: [PrimaryCollectionPlugin.ui],
-          devMode: true,
-        }),
-      }),
-    ],
+    plugins: [PrimaryCollectionPlugin, DefaultSearchPlugin],
     apiOptions: {
       shopApiPlayground: true,
       adminApiPlayground: true,

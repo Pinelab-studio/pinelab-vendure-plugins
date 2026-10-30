@@ -1,7 +1,7 @@
 import { PluginCommonModule, Type, VendurePlugin } from '@vendure/core';
 import { PLUGIN_INIT_OPTIONS } from './constants';
-import { AlertingPluginOptions } from './types';
 import { AlertingService } from './services/alerting.service';
+import { AlertingPluginOptions } from './types';
 
 @VendurePlugin({
   imports: [PluginCommonModule],
@@ -24,8 +24,8 @@ export class AlertingPlugin {
   };
 
   static init(options: AlertingPluginOptions): Type<AlertingPlugin> {
-    this.options = {
-      ...this.options,
+    AlertingPlugin.options = {
+      ...AlertingPlugin.options,
       ...options,
     };
     return AlertingPlugin;

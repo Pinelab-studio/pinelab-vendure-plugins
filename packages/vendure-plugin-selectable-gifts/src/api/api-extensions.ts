@@ -28,7 +28,7 @@ export const shopApiExtensions = gql`
 export class GiftResolver {
   constructor(
     private giftService: GiftService,
-    private activeOrderService: ActiveOrderService
+    private activeOrderService: ActiveOrderService,
   ) {}
 
   @Query()
@@ -43,13 +43,13 @@ export class GiftResolver {
   @Allow(Permission.UpdateOrder, Permission.Owner)
   async addSelectedGiftToOrder(
     @Ctx() ctx: RequestContext,
-    @Args('productVariantId') productVariantId: ID
+    @Args('productVariantId') productVariantId: ID,
   ): Promise<Order> {
     const activeOrder = await this.getActiveOrder(ctx);
     return this.giftService.addGiftToOrder(
       ctx,
       activeOrder.id,
-      productVariantId
+      productVariantId,
     );
   }
 
@@ -57,7 +57,7 @@ export class GiftResolver {
     const order = await this.activeOrderService.getActiveOrder(
       ctx,
       undefined,
-      true
+      true,
     );
     if (!order) {
       throw new UserInputError('No active order found');

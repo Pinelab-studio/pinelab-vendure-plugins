@@ -78,7 +78,7 @@ export interface CollectionCheckArgs {
  */
 export type ProductContentCheck = (
   ctx: RequestContext,
-  args: ProductCheckArgs
+  args: ProductCheckArgs,
 ) => Promise<ContentCheckMessage[]> | ContentCheckMessage[];
 
 /**
@@ -88,7 +88,7 @@ export type ProductContentCheck = (
  */
 export type CollectionContentCheck = (
   ctx: RequestContext,
-  args: CollectionCheckArgs
+  args: CollectionCheckArgs,
 ) => Promise<ContentCheckMessage[]> | ContentCheckMessage[];
 
 /**
@@ -159,7 +159,7 @@ export interface AdditionalCheckResult {
  */
 export type AdditionalContentCheck = (
   ctx: RequestContext,
-  injector: Injector
+  injector: Injector,
 ) => Promise<AdditionalCheckResult[]> | AdditionalCheckResult[];
 
 /**
@@ -175,7 +175,7 @@ export interface ContentHealthPluginOptions {
    */
   getProductUrl: (
     ctx: RequestContext,
-    args: ProductCheckArgs
+    args: ProductCheckArgs,
   ) => string | undefined | Promise<string | undefined>;
   /**
    * @description
@@ -187,7 +187,7 @@ export interface ContentHealthPluginOptions {
    */
   getCollectionUrl: (
     ctx: RequestContext,
-    args: CollectionCheckArgs
+    args: CollectionCheckArgs,
   ) => string | undefined | Promise<string | undefined>;
   /**
    * @description
@@ -198,7 +198,7 @@ export interface ContentHealthPluginOptions {
    */
   getSitemapUrl?: (
     ctx: RequestContext,
-    args: { channel: Channel; languageCode: LanguageCode }
+    args: { channel: Channel; languageCode: LanguageCode },
   ) => string | undefined | Promise<string | undefined>;
   /**
    * @description
@@ -260,6 +260,6 @@ export interface ContentHealthPluginOptions {
    */
   shouldCheckEntity?: (
     ctx: RequestContext,
-    entity: Product | Collection
+    entity: Product | Collection,
   ) => boolean | Promise<boolean>;
 }

@@ -4,22 +4,14 @@ import {
   registerInitializer,
   SimpleGraphQLClient,
   SqljsInitializer,
-  testConfig,
   TestServer,
+  testConfig,
 } from '@vendure/testing';
-import {
-  afterAll,
-  beforeAll,
-  beforeEach,
-  expect,
-  it,
-  SpyInstance,
-  vi,
-} from 'vitest';
-import { initialData } from '../../test/src/initial-data';
-import { ValidateCartPlugin } from '../src/validate-cart.plugin';
 import gql from 'graphql-tag';
+import { afterAll, beforeAll, expect, it, vi } from 'vitest';
+import { initialData } from '../../test/src/initial-data';
 import { addItem } from '../../test/src/shop-utils';
+import { ValidateCartPlugin } from '../src/validate-cart.plugin';
 
 const UPDATE_PRODUCT_VARIANTS = gql`
   mutation ProductVariantUpdateMutation($input: [UpdateProductVariantInput!]!) {
@@ -135,14 +127,14 @@ it('Validates cart without errors', async () => {
   expect(validateActiveOrder.order).toBeDefined();
   expect(validateActiveOrder.order.lines.length).toBe(1);
   expect(validateActiveOrder.order.lines[0].productVariant.product.id).toBe(
-    'T_1'
+    'T_1',
   );
 });
 
 it('Logged a warning', async () => {
   expect(loggerSpy).toHaveBeenCalledWith(
     expect.any(String),
-    'ValidateCartPlugin'
+    'ValidateCartPlugin',
   );
 });
 
@@ -151,7 +143,7 @@ it('Validates cart and resolves calculated order field totalQuantity', async () 
   // requires the `lines` relation should not throw, even though `lines` is not
   // explicitly requested in the query.
   const { validateActiveOrder } = await shopClient.query(
-    VALIDATE_ACTIVE_ORDER_TOTAL_QUANTITY
+    VALIDATE_ACTIVE_ORDER_TOTAL_QUANTITY,
   );
   expect(validateActiveOrder.order).toBeDefined();
   expect(validateActiveOrder.order.totalQuantity).toBe(4);
@@ -182,14 +174,14 @@ it('Returns errors on validation', async () => {
   const { validateActiveOrder } = await shopClient.query(VALIDATE_ACTIVE_ORDER);
   expect(validateActiveOrder.errors.length).toBe(1);
   expect(validateActiveOrder.errors[0].message).toBe(
-    "Insufficient stock for variants: 'Laptop 13 inch 8GB'"
+    "Insufficient stock for variants: 'Laptop 13 inch 8GB'",
   );
   expect(validateActiveOrder.errors[0].errorCode).toBe('ITEM_UNAVAILABLE');
   expect(validateActiveOrder.errors[0].relatedOrderLineIds).toEqual(['T_1']);
   expect(validateActiveOrder.order).toBeDefined();
   expect(validateActiveOrder.order.lines.length).toBe(1);
   expect(validateActiveOrder.order.lines[0].productVariant.product.id).toBe(
-    'T_1'
+    'T_1',
   );
 });
 

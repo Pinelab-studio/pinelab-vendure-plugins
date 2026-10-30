@@ -1,12 +1,12 @@
 import {
-  LanguageCode,
-  ShippingCalculator,
   Injector,
   InternalServerError,
+  LanguageCode,
   Logger,
+  ShippingCalculator,
 } from '@vendure/core';
-import { ShippingExtensionsOptions } from '../../shipping-extensions.plugin';
 import { loggerCtx, PLUGIN_OPTIONS } from '../../constants';
+import { ShippingExtensionsOptions } from '../../shipping-extensions.plugin';
 import { getDistanceBetweenPointsInKMs } from '../../util/get-distance-between-points';
 import { getHighestTaxRateOfOrder } from './shipping-util';
 
@@ -54,7 +54,7 @@ export const distanceBasedShippingCalculator = new ShippingCalculator({
   calculate: async (ctx, order, args, method) => {
     if (!pluginOptions?.orderAddressToGeolocationStrategy) {
       throw new InternalServerError(
-        'OrderAddress to geolocation conversion strategy not configured'
+        'OrderAddress to geolocation conversion strategy not configured',
       );
     }
     const taxRate = await getHighestTaxRateOfOrder(ctx, injector, order);
@@ -78,14 +78,14 @@ export const distanceBasedShippingCalculator = new ShippingCalculator({
     try {
       const shippingAddressGeoLocation =
         await pluginOptions.orderAddressToGeolocationStrategy.getGeoLocationForAddress(
-          order.shippingAddress
+          order.shippingAddress,
         );
       if (!shippingAddressGeoLocation) {
         return minimumPrice;
       }
       const distance = getDistanceBetweenPointsInKMs(
         shippingAddressGeoLocation,
-        storeGeoLocation
+        storeGeoLocation,
       );
       let price = distance * args.pricePerKm;
       if (price < args.minPrice) {
@@ -104,7 +104,7 @@ export const distanceBasedShippingCalculator = new ShippingCalculator({
         `Failed to calculate shipping for ${method.name}: ${
           (e as Error)?.message
         }`,
-        loggerCtx
+        loggerCtx,
       );
       return minimumPrice;
     }

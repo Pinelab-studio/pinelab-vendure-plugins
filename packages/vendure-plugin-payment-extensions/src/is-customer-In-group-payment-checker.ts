@@ -2,10 +2,10 @@ import {
   CustomerService,
   ID,
   Injector,
+  idsAreEqual,
   LanguageCode,
   PaymentMethodEligibilityChecker,
   TtlCache,
-  idsAreEqual,
 } from '@vendure/core';
 
 const fiveMinutes = 5 * 60 * 1000;
@@ -50,7 +50,7 @@ export const isCustomerInGroupPaymentChecker =
         groupsPerCustomerCache.set(customerId, groupIds);
       }
       const isEligible = groupIds.some((id) =>
-        idsAreEqual(id, args.customerGroupId)
+        idsAreEqual(id, args.customerGroupId),
       );
       if (!isEligible) {
         return 'You are not in the required customer group';

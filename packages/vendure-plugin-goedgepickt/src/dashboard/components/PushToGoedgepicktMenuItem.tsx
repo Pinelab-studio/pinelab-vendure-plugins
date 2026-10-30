@@ -1,8 +1,8 @@
-import { DropdownMenuItem, api } from '@vendure/dashboard';
-import { graphql } from '@/gql';
 import { useMutation } from '@tanstack/react-query';
-import { toast } from 'sonner';
+import { api, DropdownMenuItem } from '@vendure/dashboard';
 import { RefreshCwIcon } from 'lucide-react';
+import { toast } from 'sonner';
+import { graphql } from '@/gql';
 
 const syncOrderToGoedgepicktDocument = graphql(`
   mutation SyncOrderToGoedgepickt($orderCode: String!) {

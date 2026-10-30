@@ -3,13 +3,13 @@ import { UtmOrderParameter } from '../entities/utm-order-parameter.entity';
 import { FirstClickAttribution } from './first-click-attribution';
 import { LastClickAttribution } from './last-click-attribution';
 import { LinearAttribution } from './linear-attribution';
-import { UShapedAttribution } from './u-shaped-attribution';
 import { NoopAttribution } from './noop-attribution';
+import { UShapedAttribution } from './u-shaped-attribution';
 
 describe('Attribution Models', () => {
   const createMockUtmParameter = (
     id: number,
-    connectedAt: Date
+    connectedAt: Date,
   ): UtmOrderParameter => {
     return {
       id,
@@ -130,10 +130,10 @@ describe('Attribution Models', () => {
       const result = model.calculateAttribution(utmParams);
       expect(result).toHaveLength(2);
       expect(
-        result.find((r) => r.utmParameterId === 2)?.attributionPercentage
+        result.find((r) => r.utmParameterId === 2)?.attributionPercentage,
       ).toBe(0.5);
       expect(
-        result.find((r) => r.utmParameterId === 1)?.attributionPercentage
+        result.find((r) => r.utmParameterId === 1)?.attributionPercentage,
       ).toBe(0.5);
       const sum = result.reduce((s, r) => s + r.attributionPercentage, 0);
       expect(sum).toBe(1);

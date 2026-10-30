@@ -1,3 +1,4 @@
+import { Link } from '@tanstack/react-router';
 import {
   ActionBarItem,
   Badge,
@@ -6,9 +7,8 @@ import {
   DetailPageButton,
   ListPage,
 } from '@vendure/dashboard';
-import { graphql } from '@/gql';
-import { Link } from '@tanstack/react-router';
 import { PlusIcon } from 'lucide-react';
+import { graphql } from '@/gql';
 
 export const pdfTemplateListDocument = graphql(`
   query PdfTemplateList($options: PDFTemplateListOptions) {

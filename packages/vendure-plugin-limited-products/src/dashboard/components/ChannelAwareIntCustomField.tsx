@@ -19,7 +19,7 @@ export const ChannelAwareIntCustomField: DashboardFormComponent = (props) => {
   const activeChannelId = activeChannel?.id;
 
   const values: ChannelAwareIntValue[] = ((props.value as string[]) ?? []).map(
-    (v) => JSON.parse(v) as ChannelAwareIntValue
+    (v) => JSON.parse(v) as ChannelAwareIntValue,
   );
   const currentValue =
     values.find((v) => idsAreEqual(v.channelId as string, activeChannelId))
@@ -31,17 +31,17 @@ export const ChannelAwareIntCustomField: DashboardFormComponent = (props) => {
     if (!newValue) {
       // Remove entry for this channel
       nextValues = values.filter(
-        (v) => !idsAreEqual(v.channelId as string, activeChannelId)
+        (v) => !idsAreEqual(v.channelId as string, activeChannelId),
       );
     } else {
       const existing = values.find((v) =>
-        idsAreEqual(v.channelId as string, activeChannelId)
+        idsAreEqual(v.channelId as string, activeChannelId),
       );
       if (existing) {
         nextValues = values.map((v) =>
           idsAreEqual(v.channelId as string, activeChannelId)
             ? { ...v, value: newValue }
-            : v
+            : v,
         );
       } else {
         nextValues = [

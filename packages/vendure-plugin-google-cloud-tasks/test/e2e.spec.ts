@@ -45,7 +45,7 @@ describe('CloudTasks job queue e2e', () => {
       clientOptions: {
         fallback: true,
       },
-    })
+    }),
   );
   testConfig.plugins.push(DefaultSearchPlugin);
   // Enable this line to see debug logs
@@ -79,17 +79,17 @@ describe('CloudTasks job queue e2e', () => {
             id
           }
         }
-      `
+      `,
     ));
     expect(reindexId).toBeDefined();
     expect(mockClient.locationPath).lastCalledWith(
       'test-project',
-      'europe-west1'
+      'europe-west1',
     );
     expect(mockClient.queuePath).lastCalledWith(
       'test-project',
       'europe-west1',
-      'update-search-index-plugin-test'
+      'update-search-index-plugin-test',
     );
     expect(mockClient.createQueue).toHaveBeenCalled();
     expect(mockClient.createTask).toHaveBeenCalled();
@@ -109,7 +109,7 @@ describe('CloudTasks job queue e2e', () => {
           'Content-Type': 'application/json',
           Authorization: 'Bearer malicious-attempt',
         },
-      }
+      },
     );
     expect(res.status).toBe(401);
   });
@@ -125,7 +125,7 @@ describe('CloudTasks job queue e2e', () => {
           'Content-Type': 'application/json',
           Authorization: 'Bearer some-secret',
         },
-      }
+      },
     );
     expect(res.status).toBe(200);
   });
@@ -139,7 +139,7 @@ describe('CloudTasks job queue e2e', () => {
             totalItems
           }
         }
-      `
+      `,
     );
     expect(data.jobs?.totalItems).toBeGreaterThan(0);
   });
@@ -153,7 +153,7 @@ describe('CloudTasks job queue e2e', () => {
           'Content-Type': 'application/json',
           Authorization: 'Bearer some-secret',
         },
-      }
+      },
     );
     expect(res.status).toBe(200);
   });

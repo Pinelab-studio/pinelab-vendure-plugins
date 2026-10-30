@@ -65,10 +65,10 @@ export const stripeSubscriptionHandler = new PaymentMethodHandler({
 
   async createPayment(
     ctx,
-    order,
-    amount,
+    _order,
+    _amount,
     _,
-    metadata
+    metadata,
   ): Promise<CreatePaymentResult> {
     // Payment is already settled in Stripe by the time the webhook in stripe.controller.ts
     // adds the payment to the order
@@ -91,11 +91,11 @@ export const stripeSubscriptionHandler = new PaymentMethodHandler({
 
   async createRefund(
     ctx,
-    input,
+    _input,
     amount,
     order,
     payment,
-    args
+    _args,
   ): Promise<CreateRefundResult> {
     const { stripeClient } = await service.getStripeContext(ctx);
     const refund = await stripeClient.refunds.create({
@@ -106,12 +106,12 @@ export const stripeSubscriptionHandler = new PaymentMethodHandler({
       `Refund of ${printMoney(amount)} created for payment ${
         payment.transactionId
       } for order ${order.id}`,
-      loggerCtx
+      loggerCtx,
     );
     await service.logHistoryEntry(
       ctx,
       order.id,
-      `Created refund of ${printMoney(amount)}`
+      `Created refund of ${printMoney(amount)}`,
     );
     return {
       state: 'Settled',

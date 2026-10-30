@@ -98,10 +98,10 @@ describe('Address Lookup plugin', () => {
       `);
     } catch (e: any) {
       expect(e.response.errors[0].extensions.code).toBe(
-        'NO_ADDRESS_LOOKUP_STRATEGY_FOUND'
+        'NO_ADDRESS_LOOKUP_STRATEGY_FOUND',
       );
       expect(e.response.errors[0].message).toBe(
-        'No lookup strategy found for country code: xyz'
+        'No lookup strategy found for country code: xyz',
       );
     }
   });
@@ -130,11 +130,11 @@ describe('Address Lookup plugin', () => {
       `);
       } catch (e: any) {
         expect(e.response.errors[0].extensions.code).toBe(
-          'INVALID_ADDRESS_LOOKUP_INPUT'
+          'INVALID_ADDRESS_LOOKUP_INPUT',
         );
         expect(e.response.errors[0].message).toBe(expectedMessage);
       }
-    }
+    },
   );
 
   it('returns array of OrderAddress when results found', async () => {
@@ -205,7 +205,7 @@ describe('Address Lookup plugin', () => {
       'fetch',
       mockFetch(false, 500, 'Internal Server Error', {
         error: 'some error message',
-      })
+      }),
     );
     expect.assertions(2);
     await addItem(shopClient, 'T_1', 1);
@@ -229,12 +229,12 @@ describe('Address Lookup plugin', () => {
       `);
     } catch (e: any) {
       expect(e.response.errors[0].message).toBe(
-        '500: {"error":"some error message"}'
+        '500: {"error":"some error message"}',
       );
     }
     expect(loggerSpy).toHaveBeenCalledWith(
       'Error looking up address via BAGLookupStrategy: 500: {"error":"some error message"}',
-      loggerCtx
+      loggerCtx,
     );
   });
 
@@ -247,7 +247,7 @@ function mockFetch(
   ok: boolean,
   status: number,
   statusText: string,
-  bodyJson: any
+  bodyJson: any,
 ) {
   // Keep a reference to the real fetch. Since @vendure/testing 3.7.0 the
   // SimpleGraphQLClient also uses global fetch, so the mock must let

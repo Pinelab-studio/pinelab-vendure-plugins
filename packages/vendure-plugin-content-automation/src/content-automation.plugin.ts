@@ -45,20 +45,20 @@ export class ContentAutomationPlugin {
    * Throws if multiple strategies have the same name.
    */
   static init(
-    options: ContentAutomationPluginOptions
+    options: ContentAutomationPluginOptions,
   ): Type<ContentAutomationPlugin> {
     const duplicates = findDuplicates(
-      options.automationStrategies.map((s) => s.name)
+      options.automationStrategies.map((s) => s.name),
     );
     if (duplicates.length) {
       throw new Error(
         `Content automation strategy names must be unique. Duplicates: ${duplicates.join(
-          ', '
-        )}`
+          ', ',
+        )}`,
       );
     }
-    this.options = {
-      ...this.options,
+    ContentAutomationPlugin.options = {
+      ...ContentAutomationPlugin.options,
       ...options,
     };
     return ContentAutomationPlugin;

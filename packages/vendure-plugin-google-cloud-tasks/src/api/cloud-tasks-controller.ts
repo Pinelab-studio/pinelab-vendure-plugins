@@ -9,9 +9,9 @@ import {
 } from '@nestjs/common';
 import { Logger } from '@vendure/core';
 import { Request, Response } from 'express';
-import { CloudTasksService } from '../services/cloud-tasks-service';
 import { CloudTasksPlugin } from '../cloud-tasks.plugin';
 import { loggerCtx } from '../constants';
+import { CloudTasksService } from '../services/cloud-tasks-service';
 import { CloudTaskMessage, ROUTE } from '../types';
 
 @Controller(ROUTE)
@@ -39,7 +39,7 @@ export class CloudTasksController implements OnApplicationBootstrap {
     const attemptsHeader = req.header('x-cloudtasks-taskretrycount');
     const responseCode = await this.service.handleIncomingJob(
       message,
-      attemptsHeader
+      attemptsHeader,
     );
     res.sendStatus(responseCode);
   }
@@ -48,17 +48,17 @@ export class CloudTasksController implements OnApplicationBootstrap {
   async clearJobs(
     @Req() req: Request,
     @Res() res: Response,
-    @Param('days') daysString: string
+    @Param('days') daysString: string,
   ): Promise<void> {
     if (!this.isValidRequest(req)) {
       res.sendStatus(401);
       return;
     }
-    if (isNaN(parseInt(daysString))) {
+    if (Number.isNaN(parseInt(daysString, 10))) {
       res.status(400).send(`${daysString} is not a number`);
       return;
     }
-    const days = parseInt(daysString);
+    const days = parseInt(daysString, 10);
     const daysAgo = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
     await this.service.removeStaleJobs(daysAgo);
     res.sendStatus(200);
@@ -71,9 +71,9 @@ export class CloudTasksController implements OnApplicationBootstrap {
     ) {
       Logger.warn(
         `Unauthorized incoming webhook with Auth header ${req.header(
-          'Authorization'
+          'Authorization',
         )}`,
-        loggerCtx
+        loggerCtx,
       );
       return false;
     }

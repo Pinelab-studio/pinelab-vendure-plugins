@@ -19,7 +19,7 @@ export interface PageFetchOptions {
 export class StorefrontPageFetcher {
   async fetch(
     url: string,
-    options: PageFetchOptions = {}
+    options: PageFetchOptions = {},
   ): Promise<PageFetchResult> {
     const maxRedirects = options.maxRedirects ?? 5;
     const timeoutMs = options.timeoutMs ?? 10000;
@@ -47,32 +47,24 @@ export class StorefrontPageFetcher {
           signal,
         });
 
-        if (response.status >= 300 && response.status < 400) {
-          const location = response.headers.get('location');
-          if (location) {
-            if (redirectsFollowed >= maxRedirects) {
-              return {
-                ok: false,
-                error: `Redirect limit of ${maxRedirects} exceeded when fetching '${url}'.`,
-              };
-            }
-            redirectsFollowed++;
-            currentUrl = new URL(location, currentUrl).toString();
-            continue;
+        const location =
+          response.status >= 300 && response.status < 400
+            ? response.headers.get('location')
+            : null;
+        if (location) {
+          if (redirectsFollowed >= maxRedirects) {
+            return {
+              ok: false,
+              error: `Redirect limit of ${maxRedirects} exceeded when fetching '${url}'.`,
+            };
           }
-          // A 3xx with no Location header can't be followed; fall through
-          // to being treated as a non-2xx final response below.
+          redirectsFollowed++;
+          currentUrl = new URL(location, currentUrl).toString();
+          continue;
         }
+        // A redirect without a Location header is a non-2xx final response.
 
-        if (response.status < 200 || response.status >= 300) {
-          return {
-            ok: false,
-            error: `Received non-2xx status ${response.status} when fetching '${url}'.`,
-          };
-        }
-
-        const html = await response.text();
-        return { ok: true, html, finalUrl: currentUrl };
+        return await this.readPage(response, url, currentUrl);
       }
     } catch (e) {
       const err = e as { message?: string };
@@ -81,5 +73,20 @@ export class StorefrontPageFetcher {
         error: `Failed to fetch '${url}': ${err?.message ?? 'unknown error'}`,
       };
     }
+  }
+
+  /** Reads only successful final responses, preserving the requested URL in errors. */
+  private async readPage(
+    response: Response,
+    requestedUrl: string,
+    finalUrl: string,
+  ): Promise<PageFetchResult> {
+    if (response.status < 200 || response.status >= 300) {
+      return {
+        ok: false,
+        error: `Received non-2xx status ${response.status} when fetching '${requestedUrl}'.`,
+      };
+    }
+    return { ok: true, html: await response.text(), finalUrl };
   }
 }

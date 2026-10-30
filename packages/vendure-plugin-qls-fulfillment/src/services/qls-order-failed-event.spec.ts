@@ -20,7 +20,7 @@ describe('QlsOrderFailedEvent', () => {
       mockCtx,
       mockOrder,
       mockFailedAt,
-      fullError
+      fullError,
     );
     expect(event.errorCode).toBe(QLSOrderError.INCORRECT_HOUSE_NUMBER);
     expect(event.ctx).toBe(mockCtx);
@@ -42,7 +42,7 @@ describe('QlsOrderFailedEvent', () => {
       mockCtx,
       mockOrder,
       mockFailedAt,
-      fullError
+      fullError,
     );
     expect(event.errorCode).toBe(QLSOrderError.INCORRECT_POSTAL_CODE);
   });
@@ -60,7 +60,7 @@ describe('QlsOrderFailedEvent', () => {
       mockCtx,
       mockOrder,
       mockFailedAt,
-      fullError
+      fullError,
     );
     expect(event.errorCode).toBe(QLSOrderError.INCORRECT_POSTAL_CODE);
   });
@@ -81,7 +81,7 @@ describe('QlsOrderFailedEvent', () => {
       mockCtx,
       mockOrder,
       mockFailedAt,
-      fullError
+      fullError,
     );
     expect(event.errorCode).toBe(QLSOrderError.INCORRECT_POSTAL_CODE);
   });
@@ -94,7 +94,7 @@ describe('QlsOrderFailedEvent', () => {
       mockCtx,
       mockOrder,
       mockFailedAt,
-      fullError
+      fullError,
     );
     expect(event.errorCode).toBe(QLSOrderError.UNKNOWN_ERROR);
   });
@@ -108,7 +108,7 @@ describe('QlsOrderFailedEvent', () => {
       mockCtx,
       mockOrder,
       mockFailedAt,
-      fullError
+      fullError,
     );
     expect(event.errorCode).toBe(QLSOrderError.UNKNOWN_ERROR);
   });

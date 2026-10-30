@@ -22,7 +22,7 @@ export function ContentCheckFindingsList({
   emptyMessage?: string;
 }) {
   if (messages.length === 0) {
-    return <p className="text-sm text-muted-foreground">{emptyMessage}</p>;
+    return <p className="text-muted-foreground text-sm">{emptyMessage}</p>;
   }
 
   return (
@@ -44,7 +44,7 @@ export function ContentCheckFindingsList({
           <div>
             <div className="flex items-center gap-2">
               <Badge variant="outline">{m.languageCode}</Badge>
-              <span className="text-xs text-muted-foreground">{m.source}</span>
+              <span className="text-muted-foreground text-xs">{m.source}</span>
             </div>
             <p>{m.message}</p>
           </div>

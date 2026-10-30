@@ -1,13 +1,13 @@
+import { VendureConfig } from '@vendure/core';
 import {
   createTestEnvironment,
   registerInitializer,
   SqljsInitializer,
 } from '@vendure/testing';
-import { VendureConfig } from '@vendure/core';
 import gql from 'graphql-tag';
 import { initialData } from '../../test/src/initial-data';
-import { config } from './vendure-config';
 import { startMockStorefrontServer } from './mock-storefront-server';
+import { config } from './vendure-config';
 
 /**
  * The dev-server is just for development. Feel free to break anything here.
@@ -24,7 +24,7 @@ import { startMockStorefrontServer } from './mock-storefront-server';
   };
 
   const { server, adminClient } = createTestEnvironment(
-    config as Required<VendureConfig>
+    config as Required<VendureConfig>,
   );
   await server.init({
     initialData,
@@ -55,11 +55,11 @@ import { startMockStorefrontServer } from './mock-storefront-server';
           },
         ],
       },
-    }
+    },
   );
   console.log(
     'Seeded "Broken SEO Demo Product" (slug: broken-seo-demo). Run the ' +
       '"content-health-full-scan" scheduled task from the admin UI, ' +
-      'then open this product to see the findings.'
+      'then open this product to see the findings.',
   );
 })();

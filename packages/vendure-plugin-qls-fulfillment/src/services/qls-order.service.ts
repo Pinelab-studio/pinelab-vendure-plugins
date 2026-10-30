@@ -1,3 +1,4 @@
+import util from 'node:util';
 import {
   Inject,
   Injectable,
@@ -22,12 +23,12 @@ import {
   UserInputError,
 } from '@vendure/core';
 import { asError } from 'catch-unknown';
-import util from 'util';
 import {
   QlsServicePoint,
   QlsServicePointSearchInput,
 } from '../api/generated/graphql';
 import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
+import { QlsOrderEntity } from '../entities/qls-order-entity.entity';
 import {
   FulfillmentOrderInput,
   FulfillmentOrderLineInput,
@@ -35,9 +36,8 @@ import {
   IncomingShipmentWebhook,
 } from '../lib/client-types';
 import { getQlsClient } from '../lib/qls-client';
-import { QlsOrderFailedEvent } from './qls-order-failed-event';
 import { QlsOrderJobData, QlsPluginOptions } from '../types';
-import { QlsOrderEntity } from '../entities/qls-order-entity.entity';
+import { QlsOrderFailedEvent } from './qls-order-failed-event';
 
 @Injectable()
 export class QlsOrderService implements OnModuleInit, OnApplicationBootstrap {
@@ -49,7 +49,7 @@ export class QlsOrderService implements OnModuleInit, OnApplicationBootstrap {
     private eventBus: EventBus,
     private orderService: OrderService,
     private moduleRef: ModuleRef,
-    private readonly connection: TransactionalConnection
+    private readonly connection: TransactionalConnection,
   ) {}
 
   onApplicationBootstrap(): void {
@@ -58,7 +58,7 @@ export class QlsOrderService implements OnModuleInit, OnApplicationBootstrap {
       if (!this.options.orderSync.autoPushOrders) {
         Logger.info(
           `Auto push orders disabled, not triggering push order job for order ${event.order.code}`,
-          loggerCtx
+          loggerCtx,
         );
         return;
       }
@@ -68,9 +68,9 @@ export class QlsOrderService implements OnModuleInit, OnApplicationBootstrap {
           Logger.error(
             `Failed to trigger push order job for order ${event.order.code}: ${error.message}`,
             loggerCtx,
-            error.stack
+            error.stack,
           );
-        }
+        },
       );
     });
   }
@@ -105,9 +105,70 @@ export class QlsOrderService implements OnModuleInit, OnApplicationBootstrap {
       Logger.error(
         `Error handling job ${job.data.action}: ${error}`,
         loggerCtx,
-        util.inspect(dataWithoutCtx, false, 5)
+        util.inspect(dataWithoutCtx, false, 5),
       );
       throw error;
+    }
+  }
+
+  /** Checks the address fields required by QLS fulfillment orders. */
+  private hasRequiredShippingFields(
+    address: NonNullable<Order['shippingAddress']>,
+  ): address is NonNullable<Order['shippingAddress']> &
+    Required<
+      Pick<
+        NonNullable<Order['shippingAddress']>,
+        'streetLine1' | 'postalCode' | 'city' | 'streetLine2' | 'countryCode'
+      >
+    > {
+    return !!(
+      address.streetLine1 &&
+      address.postalCode &&
+      address.city &&
+      address.streetLine2 &&
+      address.countryCode
+    );
+  }
+
+  /** Rejects repeated pushes unless explicitly forced. */
+  private async assertOrderNotSynced(
+    ctx: RequestContext,
+    order: Order,
+    force: boolean,
+  ): Promise<void> {
+    if (force) return;
+    const existing = await this.connection
+      .getRepository(ctx, QlsOrderEntity)
+      .findOne({ where: { vendureOrderId: order.id } });
+    if (existing)
+      throw new UserInputError(
+        `Order '${order.code}' has already been synced to QLS`,
+      );
+  }
+
+  /** Loads optional extra order items and reports callback failures consistently. */
+  private async getAdditionalOrderItems(
+    ctx: RequestContext,
+    order: Order,
+  ): Promise<FulfillmentOrderLineInput[]> {
+    try {
+      return (
+        (await this.options.orderSync.addAdditionalOrderItems?.(
+          ctx,
+          new Injector(this.moduleRef),
+          order,
+        )) ?? []
+      );
+    } catch (e) {
+      const error = asError(e);
+      Logger.error(
+        `Error getting additional order items for order '${order.code}': ${error.message}`,
+        loggerCtx,
+        error.stack,
+      );
+      throw new Error(
+        `Error adding additional order items for order '${order.code}': ${error.message}`,
+      );
     }
   }
 
@@ -120,7 +181,7 @@ export class QlsOrderService implements OnModuleInit, OnApplicationBootstrap {
   async pushOrderToQls(
     ctx: RequestContext,
     orderId: ID,
-    force: boolean = false
+    force: boolean = false,
   ): Promise<string> {
     const client = await getQlsClient(ctx, this.options);
     if (!client) {
@@ -131,20 +192,7 @@ export class QlsOrderService implements OnModuleInit, OnApplicationBootstrap {
     if (!order) {
       throw new Error(`No order with id ${orderId} not found`);
     }
-    if (!force) {
-      const existingQlsOrder = await this.connection
-        .getRepository(ctx, QlsOrderEntity)
-        .findOne({
-          where: {
-            vendureOrderId: orderId,
-          },
-        });
-      if (existingQlsOrder) {
-        throw new UserInputError(
-          `Order '${order.code}' has already been synced to QLS`
-        );
-      }
-    }
+    await this.assertOrderNotSynced(ctx, order, force);
     try {
       // Map order variants to QLS products
       const qlsProducts: FulfillmentOrderLineInput[] = [];
@@ -155,19 +203,19 @@ export class QlsOrderService implements OnModuleInit, OnApplicationBootstrap {
             await this.options.productSync.excludeVariantFromSync?.(
               ctx,
               new Injector(this.moduleRef),
-              line.productVariant
+              line.productVariant,
             )
           ) {
             Logger.info(
               `Product variant '${line.productVariant.sku}' not sent to QLS in order '${order.code}' because it is excluded from sync.`,
-              loggerCtx
+              loggerCtx,
             );
             return;
           }
           // Check if product is available in QLS
           if (!line.productVariant.customFields.qlsProductId) {
             throw new Error(
-              `Product variant '${line.productVariant.sku}' does not have a QLS product ID set. Unable to push order '${order.code}' to QLS.`
+              `Product variant '${line.productVariant.sku}' does not have a QLS product ID set. Unable to push order '${order.code}' to QLS.`,
             );
           }
           qlsProducts.push({
@@ -175,30 +223,10 @@ export class QlsOrderService implements OnModuleInit, OnApplicationBootstrap {
             product_id: line.productVariant.customFields.qlsProductId,
             name: line.productVariant.name,
           });
-        })
+        }),
       );
       // Add additional order items, if any
-      try {
-        const additionalOrderItems =
-          await this.options.orderSync.addAdditionalOrderItems?.(
-            ctx,
-            new Injector(this.moduleRef),
-            order
-          );
-        if (additionalOrderItems) {
-          qlsProducts.push(...additionalOrderItems);
-        }
-      } catch (e) {
-        const error = asError(e);
-        Logger.error(
-          `Error getting additional order items for order '${order.code}': ${error.message}`,
-          loggerCtx,
-          error.stack
-        );
-        throw new Error(
-          `Error adding additional order items for order '${order.code}': ${error.message}`
-        );
-      }
+      qlsProducts.push(...(await this.getAdditionalOrderItems(ctx, order)));
       if (qlsProducts.length === 0) {
         const message = `No products to push to QLS for order '${order.code}'. Ignoring order.`;
         Logger.info(message, loggerCtx);
@@ -208,7 +236,7 @@ export class QlsOrderService implements OnModuleInit, OnApplicationBootstrap {
         await this.options.orderSync.pushAdditionalOrderFields?.(
           ctx,
           new Injector(this.moduleRef),
-          order
+          order,
         );
       const customerName = [order.customer?.firstName, order.customer?.lastName]
         .filter(Boolean)
@@ -216,23 +244,17 @@ export class QlsOrderService implements OnModuleInit, OnApplicationBootstrap {
       // Validate customer and shipping address
       if (!order.customer) {
         throw new Error(
-          `Order '${order.code}' has no customer! Can not push order to QLS.`
+          `Order '${order.code}' has no customer! Can not push order to QLS.`,
         );
       }
       if (!order.shippingAddress) {
         throw new Error(
-          `Order '${order.code}' has no shipping address! Can not push order to QLS.`
+          `Order '${order.code}' has no shipping address! Can not push order to QLS.`,
         );
       }
-      if (
-        !order.shippingAddress.streetLine1 ||
-        !order.shippingAddress.postalCode ||
-        !order.shippingAddress.city ||
-        !order.shippingAddress.streetLine2 ||
-        !order.shippingAddress.countryCode
-      ) {
+      if (!this.hasRequiredShippingFields(order.shippingAddress)) {
         throw new Error(
-          `Shipping address for order '${order.code}' is missing one of required fields: streetLine1, postalCode, city, streetLine2, countryCode. Can not push order to QLS.`
+          `Shipping address for order '${order.code}' is missing one of required fields: streetLine1, postalCode, city, streetLine2, countryCode. Can not push order to QLS.`,
         );
       }
       const processable =
@@ -240,7 +262,7 @@ export class QlsOrderService implements OnModuleInit, OnApplicationBootstrap {
         new Date();
       const receiverContact = this.options.orderSync.getReceiverContact?.(
         ctx,
-        order
+        order,
       );
       const qlsOrder: Omit<FulfillmentOrderInput, 'brand_id'> = {
         customer_reference: order.code,
@@ -266,7 +288,7 @@ export class QlsOrderService implements OnModuleInit, OnApplicationBootstrap {
       const result = await client.createFulfillmentOrder(qlsOrder);
       Logger.info(
         `Successfully created order '${order.code}' in QLS with id '${result.id}'`,
-        loggerCtx
+        loggerCtx,
       );
       // Add note but catch any errors, because we don't want the job to fail and retry when adding a note fails
       await this.orderService
@@ -280,7 +302,7 @@ export class QlsOrderService implements OnModuleInit, OnApplicationBootstrap {
           Logger.error(
             `Error adding note to order '${order.code}': ${error.message}`,
             loggerCtx,
-            error.stack
+            error.stack,
           );
         });
       await this.connection
@@ -295,7 +317,7 @@ export class QlsOrderService implements OnModuleInit, OnApplicationBootstrap {
           Logger.error(
             `Error saving QLS order entity for order '${order.code}': ${error.message}`,
             loggerCtx,
-            error.stack
+            error.stack,
           );
         });
       try {
@@ -303,14 +325,14 @@ export class QlsOrderService implements OnModuleInit, OnApplicationBootstrap {
           ctx,
           new Injector(this.moduleRef),
           order,
-          result
+          result,
         );
       } catch (e) {
         const error = asError(e);
         Logger.error(
           `Error in pullAdditionalOrderFields for order '${order.code}': ${error.message}`,
           loggerCtx,
-          error.stack
+          error.stack,
         );
       }
       return `Order '${order.code}' created in QLS with id '${result.id}'`;
@@ -327,7 +349,7 @@ export class QlsOrderService implements OnModuleInit, OnApplicationBootstrap {
           Logger.error(
             `Error adding note to order '${order.code}': ${error.message}`,
             loggerCtx,
-            error.stack
+            error.stack,
           );
         });
       await this.eventBus
@@ -338,7 +360,7 @@ export class QlsOrderService implements OnModuleInit, OnApplicationBootstrap {
           Logger.error(
             `Error publishing QlsOrderFailedEvent for order '${order.code}': ${error.message}`,
             loggerCtx,
-            error.stack
+            error.stack,
           );
         });
       throw error;
@@ -350,18 +372,18 @@ export class QlsOrderService implements OnModuleInit, OnApplicationBootstrap {
    */
   async handleOrderStatusUpdate(
     ctx: RequestContext,
-    body: IncomingOrderWebhook
+    body: IncomingOrderWebhook,
   ): Promise<void> {
     Logger.info(
       `Handling QLS order status update for order '${body.customer_reference}' with status '${body.status} and amount_delivered '${body.amount_delivered}' and amount_total '${body.amount_total}'`,
-      loggerCtx
+      loggerCtx,
     );
     const orderCode = body.customer_reference;
     const order = await this.orderService.findOneByCode(ctx, orderCode, []);
     if (!order) {
       return Logger.warn(
         `Order with code '${orderCode}' not found, ignoring order status update`,
-        loggerCtx
+        loggerCtx,
       );
     }
     const client = await getQlsClient(ctx, this.options);
@@ -372,14 +394,14 @@ export class QlsOrderService implements OnModuleInit, OnApplicationBootstrap {
     if (!vendureOrderState) {
       Logger.info(
         `Not handling QLS order status '${body.status}' for order '${orderCode}', because no Vendure order state found for this status`,
-        loggerCtx
+        loggerCtx,
       );
       return;
     }
     await this.orderService.transitionToState(ctx, order.id, vendureOrderState);
     Logger.info(
       `Successfully updated order '${orderCode}' to '${vendureOrderState}'`,
-      loggerCtx
+      loggerCtx,
     );
   }
 
@@ -390,14 +412,14 @@ export class QlsOrderService implements OnModuleInit, OnApplicationBootstrap {
    */
   async handleShipmentBarcodeWebhook(
     ctx: RequestContext,
-    body: IncomingShipmentWebhook
+    body: IncomingShipmentWebhook,
   ): Promise<void> {
     const orderCode = body.reference;
     const { barcode, trackingUrl } = this.getShipmentTrackingInfo(body);
     if (!barcode) {
       Logger.info(
         `Ignoring shipment.barcode webhook for order '${orderCode}', because no barcode was found in the payload`,
-        loggerCtx
+        loggerCtx,
       );
       return;
     }
@@ -405,14 +427,14 @@ export class QlsOrderService implements OnModuleInit, OnApplicationBootstrap {
     if (!order) {
       return Logger.warn(
         `Order with code '${orderCode}' not found, ignoring shipment.barcode webhook`,
-        loggerCtx
+        loggerCtx,
       );
     }
     const existingCodes = order.customFields.qlsTrackingCodes ?? [];
     if (existingCodes.includes(barcode)) {
       Logger.info(
         `Tracking code '${barcode}' already stored for order '${orderCode}', ignoring duplicate shipment.barcode webhook`,
-        loggerCtx
+        loggerCtx,
       );
       return;
     }
@@ -426,11 +448,11 @@ export class QlsOrderService implements OnModuleInit, OnApplicationBootstrap {
             ? [...existingUrls, trackingUrl]
             : existingUrls,
         },
-      }
+      },
     );
     Logger.info(
       `Stored tracking code '${barcode}' for order '${orderCode}'`,
-      loggerCtx
+      loggerCtx,
     );
   }
 
@@ -457,7 +479,7 @@ export class QlsOrderService implements OnModuleInit, OnApplicationBootstrap {
   async triggerPushOrder(
     ctx: RequestContext,
     orderId: ID,
-    orderCode?: string
+    orderCode?: string,
   ): Promise<Job<QlsOrderJobData> | undefined> {
     const client = await getQlsClient(ctx, this.options);
     if (!client) {
@@ -466,7 +488,7 @@ export class QlsOrderService implements OnModuleInit, OnApplicationBootstrap {
         `QLS not enabled for channel ${ctx.channel.token}, not adding order '${
           orderCode ?? orderId
         }' job to queue`,
-        loggerCtx
+        loggerCtx,
       );
       return;
     }
@@ -476,7 +498,7 @@ export class QlsOrderService implements OnModuleInit, OnApplicationBootstrap {
         ctx: ctx.serialize(),
         orderId,
       },
-      { retries: 3 }
+      { retries: 3 },
     );
   }
 
@@ -485,7 +507,7 @@ export class QlsOrderService implements OnModuleInit, OnApplicationBootstrap {
    */
   async getQlsOrderIdsForOrder(
     ctx: RequestContext,
-    orderId: ID
+    orderId: ID,
   ): Promise<string[]> {
     const entities = await this.connection
       .getRepository(ctx, QlsOrderEntity)
@@ -502,7 +524,7 @@ export class QlsOrderService implements OnModuleInit, OnApplicationBootstrap {
    */
   async getQlsOrderUrl(
     ctx: RequestContext,
-    orderId: ID
+    orderId: ID,
   ): Promise<string | null> {
     const entities = await this.connection
       .getRepository(ctx, QlsOrderEntity)
@@ -522,19 +544,19 @@ export class QlsOrderService implements OnModuleInit, OnApplicationBootstrap {
 
   async getServicePoints(
     ctx: RequestContext,
-    input: QlsServicePointSearchInput
+    input: QlsServicePointSearchInput,
   ): Promise<QlsServicePoint[]> {
     const client = await getQlsClient(ctx, this.options);
     if (!client) {
       throw new UserInputError(
-        `QLS not enabled for channel ${ctx.channel.token}`
+        `QLS not enabled for channel ${ctx.channel.token}`,
       );
     }
     return await client.getServicePoints(input.countryCode, input.postalCode);
   }
 
   private getVendureOrderState(
-    body: IncomingOrderWebhook
+    body: IncomingOrderWebhook,
   ): OrderState | undefined {
     if (body.cancelled) {
       return 'Cancelled';

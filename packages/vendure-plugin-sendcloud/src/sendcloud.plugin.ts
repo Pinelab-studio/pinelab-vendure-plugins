@@ -4,11 +4,11 @@ import {
   VendurePlugin,
 } from '@vendure/core';
 import { gql } from 'graphql-tag';
-import { SendcloudPluginOptions } from './api/types/sendcloud.types';
-import { SendcloudResolver } from './api/sendcloud.resolver';
-import { SendcloudService } from './api/sendcloud.service';
 import { PLUGIN_OPTIONS } from './api/constants';
 import { sendcloudHandler } from './api/sendcloud.handler';
+import { SendcloudResolver } from './api/sendcloud.resolver';
+import { SendcloudService } from './api/sendcloud.service';
+import { SendcloudPluginOptions } from './api/types/sendcloud.types';
 import { channelCustomFields, sendcloudPermission } from './custom-fields';
 
 @VendurePlugin({
@@ -42,10 +42,8 @@ import { channelCustomFields, sendcloudPermission } from './custom-fields';
   dashboard: './dashboard/index.tsx',
 })
 export class SendcloudPlugin {
-  private static options: SendcloudPluginOptions;
-
   static init(options: SendcloudPluginOptions): typeof SendcloudPlugin {
-    this.options = options;
+    SendcloudPlugin.options = options;
     return SendcloudPlugin;
   }
 }

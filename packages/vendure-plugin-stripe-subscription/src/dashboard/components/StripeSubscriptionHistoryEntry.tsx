@@ -1,5 +1,5 @@
 import { HistoryEntry } from '@vendure/dashboard';
-import { ExternalLinkIcon, AlertTriangleIcon, ReceiptIcon } from 'lucide-react';
+import { AlertTriangleIcon, ExternalLinkIcon, ReceiptIcon } from 'lucide-react';
 
 interface StripeSubscriptionHistoryEntryData {
   message: string;
@@ -28,7 +28,7 @@ export function StripeSubscriptionHistoryEntry({ entry }: { entry: any }) {
           : 'bg-success text-success-foreground'
       }
     >
-      <div className="text-xs space-y-1">
+      <div className="space-y-1 text-xs">
         <div className="flex items-center gap-2">
           <span>{data.message}</span>
           {data.subscriptionId && (
@@ -43,7 +43,7 @@ export function StripeSubscriptionHistoryEntry({ entry }: { entry: any }) {
           )}
         </div>
         {data.error ? (
-          <pre className="bg-muted rounded-md p-2 overflow-x-auto text-xs">
+          <pre className="overflow-x-auto rounded-md bg-muted p-2 text-xs">
             {JSON.stringify(data.error, null, 2)}
           </pre>
         ) : null}
@@ -52,7 +52,7 @@ export function StripeSubscriptionHistoryEntry({ entry }: { entry: any }) {
             <summary className="cursor-pointer text-muted-foreground">
               Subscription
             </summary>
-            <pre className="bg-muted rounded-md p-2 overflow-x-auto text-xs">
+            <pre className="overflow-x-auto rounded-md bg-muted p-2 text-xs">
               {JSON.stringify(data.subscription, null, 2)}
             </pre>
           </details>

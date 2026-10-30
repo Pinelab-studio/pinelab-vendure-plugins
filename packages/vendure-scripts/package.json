@@ -21,7 +21,7 @@
     "start": "ts-node ./test/dev-server.ts",
     "build": "rimraf dist && tsc",
     "test": "vitest run --bail 1",
-    "lint": "eslint ."
+    "lint": "biome check ."
   },
   "dependencies": {
     "prompt-confirm": "^2.0.4"

@@ -15,10 +15,10 @@ const WalletAdjustmentCard: React.FC<Props> = ({
   const isPositive = adjustment.amount >= 0;
 
   return (
-    <div className="flex justify-between py-2 border-b border-border last:border-0">
+    <div className="flex justify-between border-border border-b py-2 last:border-0">
       <div>
         <div className="font-medium">{adjustment.description}</div>
-        <div className="text-xs text-muted-foreground">
+        <div className="text-muted-foreground text-xs">
           {new Date(adjustment.createdAt).toLocaleDateString()}
           {adjustment.mutatedBy && ` • By: ${adjustment.mutatedBy.identifier}`}
         </div>

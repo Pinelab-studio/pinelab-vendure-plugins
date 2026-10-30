@@ -1,3 +1,5 @@
+import os from 'node:os';
+import path from 'node:path';
 import {
   Injector,
   InternalServerError,
@@ -5,8 +7,6 @@ import {
   OrderService,
   RequestContext,
 } from '@vendure/core';
-import os from 'os';
-import path from 'path';
 import { createObjectCsvWriter } from 'csv-writer';
 import { loggerCtx } from '../constants';
 
@@ -71,12 +71,12 @@ export class DefaultExportStrategy implements ExportStrategy {
           },
         },
       },
-      []
+      [],
     );
     if (orders.totalItems > orders.items.length) {
       // This is just a sample strategy, so this is oke
       throw new InternalServerError(
-        'Too many orders, getting paginated orders is not implemented.'
+        'Too many orders, getting paginated orders is not implemented.',
       );
     }
     Logger.info(`Exporting ${orders.items.length} orders`, loggerCtx);
@@ -87,7 +87,7 @@ export class DefaultExportStrategy implements ExportStrategy {
       totalWithTax: this.formatCurrency(order.totalWithTax),
     }));
     // Write to file
-    const fileName = `${new Date().getTime()}-${startDate.getTime()}-${endDate.getTime()}.${
+    const fileName = `${Date.now()}-${startDate.getTime()}-${endDate.getTime()}.${
       this.fileExtension
     }`;
     const exportFile = path.join(os.tmpdir(), fileName);

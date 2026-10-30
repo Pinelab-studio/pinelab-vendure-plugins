@@ -1,5 +1,5 @@
-import { Notifier } from './notifier';
 import { AlertLogLevel, AlertMessage, LogAlertContext } from '../types';
+import { Notifier } from './notifier';
 
 /**
  * Builder for an alert rule that reacts to log messages emitted through
@@ -26,7 +26,7 @@ export class LogAlert {
   /** Function that converts the trigger into an {@link AlertMessage}
    *  (or a plain string, which is auto-wrapped as `{ subject: 'Alert', text: <string> }`). */
   notifyFn?: (
-    trigger: LogAlertContext
+    trigger: LogAlertContext,
   ) => string | AlertMessage | Promise<string | AlertMessage>;
 
   /**
@@ -56,8 +56,8 @@ export class LogAlert {
    */
   notify(
     fn: (
-      trigger: LogAlertContext
-    ) => string | AlertMessage | Promise<string | AlertMessage>
+      trigger: LogAlertContext,
+    ) => string | AlertMessage | Promise<string | AlertMessage>,
   ): this {
     this.notifyFn = fn;
     return this;

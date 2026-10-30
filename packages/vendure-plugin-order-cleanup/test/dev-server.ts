@@ -1,4 +1,3 @@
-import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
 import {
   DefaultLogger,
   DefaultSearchPlugin,
@@ -33,10 +32,6 @@ import { OrderCleanupPlugin } from '../src';
         olderThanDays: 1,
       }),
       DefaultSearchPlugin,
-      AdminUiPlugin.init({
-        port: 3002,
-        route: 'admin',
-      }),
     ],
   });
   const { server, shopClient } = createTestEnvironment(config);

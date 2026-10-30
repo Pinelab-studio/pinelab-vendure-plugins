@@ -15,24 +15,24 @@ export class GoedgepicktController {
   @Post('webhook/:channelToken')
   async webhook(
     @Param('channelToken') channelToken: string,
-    @Req() req: Request,
+    @Req() _req: Request,
     @Body() body: IncomingStockUpdateEvent | IncomingOrderStatusEvent,
-    @Headers('signature') signature: string
+    @Headers('signature') signature: string,
   ) {
     Logger.info(
       `Incoming event ${body?.event} for channel ${channelToken}`,
-      loggerCtx
+      loggerCtx,
     );
     if (!signature) {
       return Logger.warn(
         `Ignoring incoming event without signature for channel ${channelToken}`,
-        loggerCtx
+        loggerCtx,
       );
     }
     if (!channelToken) {
       return Logger.warn(
         `Ignoring incoming event without channelToken`,
-        loggerCtx
+        loggerCtx,
       );
     }
     try {
@@ -46,7 +46,7 @@ export class GoedgepicktController {
               orderCode: body.orderNumber,
               orderUuid: body.orderUuid,
             },
-            { retries: 20 }
+            { retries: 20 },
           );
           break;
         case 'stockUpdated':
@@ -56,7 +56,7 @@ export class GoedgepicktController {
               ctx: ctx.serialize(),
               sku: body.productSku,
             },
-            { retries: 20 }
+            { retries: 20 },
           );
           break;
         case 'compoundProductStockUpdated':
@@ -66,24 +66,24 @@ export class GoedgepicktController {
               ctx: ctx.serialize(),
               sku: body.productSku,
             },
-            { retries: 20 }
+            { retries: 20 },
           );
           break;
         default:
           return Logger.warn(
             `Unknown incoming event: ${JSON.stringify(body)}`,
-            loggerCtx
+            loggerCtx,
           );
       }
       Logger.info(
         `Successfully created jobs for incoming webhook with event ${body.event} for channel ${channelToken}`,
-        loggerCtx
+        loggerCtx,
       );
     } catch (err: any) {
       Logger.error(
         `Failed to create jobs for incoming webhook ${body?.event} for channel ${channelToken}: ${err?.message}`,
         loggerCtx,
-        JSON.stringify(err, Object.getOwnPropertyNames(err))
+        JSON.stringify(err, Object.getOwnPropertyNames(err)),
       );
       throw err;
     }

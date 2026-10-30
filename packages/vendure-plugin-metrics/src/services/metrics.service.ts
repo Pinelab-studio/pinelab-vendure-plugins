@@ -1,6 +1,4 @@
 import { Inject, Injectable, OnModuleInit } from '@nestjs/common';
-import { ModuleRef } from '@nestjs/core';
-import { JobState } from '@vendure/common/lib/generated-types';
 import {
   ID,
   JobQueue,
@@ -14,21 +12,20 @@ import {
   TransactionalConnection,
 } from '@vendure/core';
 import { endOfDay, startOfMonth, sub } from 'date-fns';
-import { PLUGIN_INIT_OPTIONS, loggerCtx } from '../constants';
-import { MetricsPluginOptions } from '../metrics.plugin';
+import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
+import { MetricSummary } from '../entities/metric-summary.entity';
 import {
   AdvancedMetricSummary,
   AdvancedMetricSummaryInput,
-} from '../ui/generated/graphql';
+} from '../generated/graphql';
+import { MetricsPluginOptions } from '../metrics.plugin';
 import { MetricStrategy } from './metric-strategy';
 import {
   DataPointsPerLegend,
-  getEntitiesForMonth,
   getMonthName,
   groupEntitiesPerMonth,
   mapToSeries,
 } from './metric-util';
-import { MetricSummary } from '../entities/metric-summary.entity';
 
 @Injectable()
 export class MetricsService implements OnModuleInit {
@@ -44,7 +41,7 @@ export class MetricsService implements OnModuleInit {
     private variantService: ProductVariantService,
     @Inject(PLUGIN_INIT_OPTIONS) private options: MetricsPluginOptions,
     private connection: TransactionalConnection,
-    private jobQueueService: JobQueueService
+    private jobQueueService: JobQueueService,
   ) {
     this.metricStrategies = this.options.metrics;
   }
@@ -62,10 +59,10 @@ export class MetricsService implements OnModuleInit {
           (e) => {
             Logger.error(
               `Error processing 'generate-metrics' job: ${e}`,
-              loggerCtx
+              loggerCtx,
             );
             throw e;
-          }
+          },
         );
       },
     });
@@ -76,23 +73,23 @@ export class MetricsService implements OnModuleInit {
    */
   async getMetrics(
     ctx: RequestContext,
-    input?: AdvancedMetricSummaryInput
+    input?: AdvancedMetricSummaryInput,
   ): Promise<AdvancedMetricSummary[]> {
     const today = endOfDay(new Date());
     // Use start of month, because we'd like to see the full results of last years same month
     const startDate = startOfMonth(
-      sub(today, { months: this.options.displayPastMonths })
+      sub(today, { months: this.options.displayPastMonths }),
     );
     const metrics = await this.getAllMetricsFromCache(
       ctx,
       startDate,
       today,
-      input?.variantIds ?? []
+      input?.variantIds ?? [],
     );
     if (metrics) {
       Logger.info(
         `Loaded data for ${metrics.length} metrics from cache.`,
-        loggerCtx
+        loggerCtx,
       );
       // All metrics were found in cache, return them
       return metrics;
@@ -105,26 +102,26 @@ export class MetricsService implements OnModuleInit {
         endDate: today.toISOString(),
         variantIds: input?.variantIds ?? [],
       },
-      { retries: 2 }
+      { retries: 2 },
     );
     Logger.info(`Added 'generate-metrics' job to queue for metric`, loggerCtx);
     // Poll every 1 seconds for the job to finish, with a timeout of 1 minute
     for (let i = 0; i < 60; i++) {
       Logger.info(
         `Waiting for 'generate-metrics' job to finish... (${i + 1}/60)`,
-        loggerCtx
+        loggerCtx,
       );
       await new Promise((resolve) => setTimeout(resolve, 1000));
       const metrics = await this.getAllMetricsFromCache(
         ctx,
         startDate,
         today,
-        input?.variantIds ?? []
+        input?.variantIds ?? [],
       );
       if (metrics) {
         Logger.info(
           `Loaded data for ${metrics.length} metrics from cache.`,
-          loggerCtx
+          loggerCtx,
         );
         return metrics;
       }
@@ -140,7 +137,7 @@ export class MetricsService implements OnModuleInit {
     ctx: RequestContext,
     from: Date,
     to: Date,
-    variantIds: ID[]
+    variantIds: ID[],
   ): Promise<AdvancedMetricSummary[] | undefined> {
     const metrics: AdvancedMetricSummary[] = [];
     for (const metricStrategy of this.metricStrategies) {
@@ -149,10 +146,10 @@ export class MetricsService implements OnModuleInit {
         metricStrategy,
         from,
         to,
-        variantIds ?? []
+        variantIds ?? [],
       );
       // Return cached result if exists
-      let cachedMetricSummary = await this.findMetricSummary(ctx, cacheKey);
+      const cachedMetricSummary = await this.findMetricSummary(ctx, cacheKey);
       if (cachedMetricSummary) {
         metrics.push(cachedMetricSummary.summaryData);
       } else {
@@ -173,14 +170,14 @@ export class MetricsService implements OnModuleInit {
     ctx: RequestContext,
     startDate: Date,
     endDate: Date,
-    variantIds: ID[]
+    variantIds: ID[],
   ) {
     // Check cache before processing because another job could have completed in the meantime
     const metrics = await this.getAllMetricsFromCache(
       ctx,
       startDate,
       endDate,
-      variantIds
+      variantIds,
     );
     if (metrics) {
       // All metrics were found in cache, return them
@@ -192,13 +189,13 @@ export class MetricsService implements OnModuleInit {
       ctx,
       startDate,
       endDate,
-      variants
+      variants,
     );
     const ordersPerMonth = groupEntitiesPerMonth(
       orders,
       'orderPlacedAt',
       startDate,
-      endDate
+      endDate,
     );
     await Promise.all(
       this.metricStrategies.map(async (metricStrategy) => {
@@ -211,7 +208,7 @@ export class MetricsService implements OnModuleInit {
           const calculatedDataPoints = metricStrategy.calculateDataPoints(
             ctx,
             entityMap.entities,
-            variants
+            variants,
           );
           // Loop over datapoint, because we support multi line charts
           calculatedDataPoints.forEach((dataPoint) => {
@@ -235,17 +232,17 @@ export class MetricsService implements OnModuleInit {
           metricStrategy,
           startDate,
           endDate,
-          variantIds
+          variantIds,
         );
         await this.saveMetricSummary(ctx, cacheKey, summary);
-      })
+      }),
     );
     const stop = performance.now();
     Logger.info(
       `Generated metrics for channel ${ctx.channel.token} in ${Math.round(
-        stop - start
+        stop - start,
       )}ms`,
-      loggerCtx
+      loggerCtx,
     );
   }
 
@@ -256,7 +253,7 @@ export class MetricsService implements OnModuleInit {
     ctx: RequestContext,
     from: Date,
     to: Date,
-    variants: ProductVariant[] = []
+    variants: ProductVariant[] = [],
   ): Promise<Order[]> {
     let skip = 0;
     const take = 500;
@@ -301,7 +298,7 @@ export class MetricsService implements OnModuleInit {
           `Fetched orders ${skip}-${
             skip + take
           } (${firstDate} to ${lastDate}) for channel ${ctx.channel.token}`,
-          loggerCtx
+          loggerCtx,
         );
       }
 
@@ -316,7 +313,7 @@ export class MetricsService implements OnModuleInit {
 
   async findMetricSummary(
     ctx: RequestContext,
-    cacheKey: string
+    cacheKey: string,
   ): Promise<MetricSummary | undefined | null> {
     return await this.connection
       .getRepository(ctx, MetricSummary)
@@ -326,7 +323,7 @@ export class MetricsService implements OnModuleInit {
   async saveMetricSummary(
     ctx: RequestContext,
     cacheKey: string,
-    summary: AdvancedMetricSummary
+    summary: AdvancedMetricSummary,
   ): Promise<MetricSummary | undefined | null> {
     // Check if the summary already exists
     const existingSummary = await this.findMetricSummary(ctx, cacheKey);
@@ -346,7 +343,7 @@ export class MetricsService implements OnModuleInit {
     strategy: MetricStrategy,
     from: Date,
     to: Date,
-    variantIds: ID[]
+    variantIds: ID[],
   ) {
     const cacheKeyObject = {
       code: strategy.code,

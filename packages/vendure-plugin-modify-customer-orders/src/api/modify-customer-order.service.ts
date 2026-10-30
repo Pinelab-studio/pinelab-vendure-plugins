@@ -1,6 +1,6 @@
 import { Inject, Injectable, OnApplicationBootstrap } from '@nestjs/common';
-import { filter } from 'rxjs';
 import {
+  assertFound,
   ConfigService,
   EventBus,
   ID,
@@ -16,8 +16,8 @@ import {
   SessionService,
   TransactionalConnection,
   UserInputError,
-  assertFound,
 } from '@vendure/core';
+import { filter } from 'rxjs';
 import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
 import { ModifyCustomerOrdersPluginOptions } from '../modify-customer-orders.plugin';
 
@@ -29,31 +29,31 @@ export class ModifyCustomerOrderService implements OnApplicationBootstrap {
     private readonly connection: TransactionalConnection,
     private readonly sessionService: SessionService,
     private readonly configService: ConfigService,
-    private readonly processContext: ProcessContext,
+    readonly _processContext: ProcessContext,
     @Inject(PLUGIN_INIT_OPTIONS)
-    private readonly options: ModifyCustomerOrdersPluginOptions
+    private readonly options: ModifyCustomerOrdersPluginOptions,
   ) {}
 
   onApplicationBootstrap(): void {
     if (this.options.autoAssignDraftOrdersToCustomer) {
       Logger.info(
         'Listening for Draft order completion, to auto assign draft orders to customers',
-        loggerCtx
+        loggerCtx,
       );
       this.eventBus
         .ofType(OrderStateTransitionEvent)
         .pipe(
           filter((event) => event.fromState === 'Draft'),
-          filter((event) => event.toState === 'ArrangingPayment')
+          filter((event) => event.toState === 'ArrangingPayment'),
         )
         .subscribe(({ ctx, order: draftOrder }) =>
           this.assignOrderToCustomer(ctx, draftOrder).catch((e: any) => {
             Logger.error(
               `Error assigning draft order ${draftOrder.code} to customer`,
               loggerCtx,
-              e?.stack
+              e?.stack,
             );
-          })
+          }),
         );
     }
   }
@@ -65,7 +65,7 @@ export class ModifyCustomerOrderService implements OnApplicationBootstrap {
     const order = await this.orderService.findOne(ctx, id);
     if (order?.state !== 'AddingItems') {
       throw new UserInputError(
-        `Only active orders can be changed to a draft order`
+        `Only active orders can be changed to a draft order`,
       );
     }
     // Deactivate order, because a customer should not have multiple orders in AddingItems state
@@ -73,20 +73,20 @@ export class ModifyCustomerOrderService implements OnApplicationBootstrap {
     const transitionResult = await this.orderService.transitionToState(
       ctx,
       id,
-      'Draft'
+      'Draft',
     );
     if (transitionResult instanceof Order) {
       Logger.info(
         `Transitioned Order with id ${transitionResult.id} from 'AddingItems' to 'Draft'`,
-        loggerCtx
+        loggerCtx,
       );
       return await assertFound(
-        this.orderService.findOne(ctx, transitionResult.id)
+        this.orderService.findOne(ctx, transitionResult.id),
       );
     }
     Logger.error(
       `Failed to transition Order with id ${id} to 'Draft' state`,
-      loggerCtx
+      loggerCtx,
     );
     throw transitionResult;
   }
@@ -96,19 +96,19 @@ export class ModifyCustomerOrderService implements OnApplicationBootstrap {
    */
   async assignOrderToCustomer(
     ctx: RequestContext,
-    draftOrder: Order
+    draftOrder: Order,
   ): Promise<void> {
     if (!draftOrder.customer?.user?.id) {
       Logger.info(
         `Draft order ${draftOrder.code} has no customer, skipping auto assign`,
-        loggerCtx
+        loggerCtx,
       );
       return;
     }
     // Get current active order
     const currentActiveOrder = await this.orderService.getActiveOrderForUser(
       ctx,
-      draftOrder.customer.user.id
+      draftOrder.customer.user.id,
     );
     if (currentActiveOrder) {
       // Move current active order to Draft, because a customer should not have multiple active orders
@@ -118,7 +118,7 @@ export class ModifyCustomerOrderService implements OnApplicationBootstrap {
     await this.setAsActiveOrder(ctx, draftOrder, draftOrder.customer.user.id);
     Logger.info(
       `Assigned draft order ${draftOrder.code} as active order to ${draftOrder.customer?.emailAddress}`,
-      loggerCtx
+      loggerCtx,
     );
   }
 
@@ -128,7 +128,7 @@ export class ModifyCustomerOrderService implements OnApplicationBootstrap {
   async setAsActiveOrder(
     ctx: RequestContext,
     order: Order,
-    userId: ID
+    userId: ID,
   ): Promise<void> {
     // Make order active
     await this.connection
@@ -151,7 +151,7 @@ export class ModifyCustomerOrderService implements OnApplicationBootstrap {
       const updatedSerializedSession =
         this.sessionService.serializeSession(session);
       await this.configService.authOptions.sessionCacheStrategy.set(
-        updatedSerializedSession
+        updatedSerializedSession,
       );
     }
   }
@@ -175,28 +175,28 @@ export class ModifyCustomerOrderService implements OnApplicationBootstrap {
       const updatedSerializedSession =
         this.sessionService.serializeSession(session);
       await this.configService.authOptions.sessionCacheStrategy.set(
-        updatedSerializedSession
+        updatedSerializedSession,
       );
     }
     Logger.info(
       `Unset active order ${order.code} for customer ${order.customer?.emailAddress}`,
-      loggerCtx
+      loggerCtx,
     );
   }
 
   async setOrderState(
     ctx: RequestContext,
     order: Order,
-    state: OrderState
+    state: OrderState,
   ): Promise<Order | OrderStateTransitionError> {
     const transitionToStateResult = await this.orderService.transitionToState(
       ctx,
       order.id,
-      state
+      state,
     );
     if (transitionToStateResult instanceof OrderStateTransitionError) {
       throw Error(
-        `Error transitioning order ${order.code} from ${transitionToStateResult.fromState} to ${transitionToStateResult.toState}: ${transitionToStateResult.message}`
+        `Error transitioning order ${order.code} from ${transitionToStateResult.fromState} to ${transitionToStateResult.toState}: ${transitionToStateResult.message}`,
       );
     }
     return transitionToStateResult;

@@ -1,3 +1,4 @@
+import { useQuery } from '@tanstack/react-query';
 import {
   api,
   Badge,
@@ -10,9 +11,8 @@ import {
   TableRow,
   usePermissions,
 } from '@vendure/dashboard';
-import { graphql } from '@/gql';
-import { useQuery } from '@tanstack/react-query';
 import { DownloadIcon } from 'lucide-react';
+import { graphql } from '@/gql';
 
 const getOrderInvoicesDocument = graphql(`
   query GetOrderInvoices($id: ID!) {
@@ -48,14 +48,14 @@ export function OrderInvoicesBlock({ orderId }: { orderId?: string }) {
   if (isLoading) {
     return (
       <div className="animate-pulse space-y-2">
-        <div className="h-8 bg-muted rounded-md" />
-        <div className="h-8 bg-muted rounded-md" />
+        <div className="h-8 rounded-md bg-muted" />
+        <div className="h-8 rounded-md bg-muted" />
       </div>
     );
   }
 
   if (invoices.length === 0) {
-    return <p className="text-sm text-muted-foreground">No invoices yet.</p>;
+    return <p className="text-muted-foreground text-sm">No invoices yet.</p>;
   }
 
   return (

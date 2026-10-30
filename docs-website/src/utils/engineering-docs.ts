@@ -8,7 +8,7 @@ async function fetchDocs(url: string) {
   const response = await fetch(url, { signal: AbortSignal.timeout(30_000) });
   if (!response.ok) {
     throw new Error(
-      `Unable to fetch engineering documentation: ${url} (${response.status})`
+      `Unable to fetch engineering documentation: ${url} (${response.status})`,
     );
   }
   return response;
@@ -18,7 +18,7 @@ async function fetchDocs(url: string) {
 export async function getEngineeringDocs() {
   const tree = (await (
     await fetchDocs(
-      'https://api.github.com/repos/Pinelab-studio/pinelab-engineering/git/trees/main?recursive=1'
+      'https://api.github.com/repos/Pinelab-studio/pinelab-engineering/git/trees/main?recursive=1',
     )
   ).json()) as {
     sha: string;
@@ -30,7 +30,8 @@ export async function getEngineeringDocs() {
   const files = tree.tree
     .filter(
       ({ path, type }) =>
-        type === 'blob' && /^docs\/(best-practices|recipes)\/.+\.md$/.test(path)
+        type === 'blob' &&
+        /^docs\/(best-practices|recipes)\/.+\.md$/.test(path),
     )
     .sort((a, b) => a.path.localeCompare(b.path));
   for (const directory of ['best-practices', 'recipes']) {
@@ -44,7 +45,7 @@ export async function getEngineeringDocs() {
       markdown: await (
         await fetchDocs(`${rawRepository}/${tree.sha}/${path}`)
       ).text(),
-    }))
+    })),
   );
   return { sha: tree.sha, sources };
 }
@@ -58,5 +59,5 @@ export function stripFrontmatter(markdown: string) {
 
 /** Escape source titles for use as Markdown link labels. */
 export function markdownLabel(title: string) {
-  return title.replace(/[\\\[\]]/g, '\\$&').replace(/\s+/g, ' ');
+  return title.replace(/[\\[\]]/g, '\\$&').replace(/\s+/g, ' ');
 }

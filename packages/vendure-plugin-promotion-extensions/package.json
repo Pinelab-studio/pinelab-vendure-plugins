@@ -22,6 +22,6 @@
     "start": "ts-node --swc test/dev-server.ts",
     "serve": "nodemon --exec ts-node --swc test/dev-server.ts",
     "test": "vitest run --bail 1",
-    "lint": "eslint ."
+    "lint": "biome check ."
   }
 }

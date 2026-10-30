@@ -40,8 +40,8 @@ export class PostNLLookupStrategy implements AddressLookupStrategy {
   }
 
   async lookup(
-    ctx: RequestContext,
-    input: AddressLookupInput
+    _ctx: RequestContext,
+    input: AddressLookupInput,
   ): Promise<OrderAddress[]> {
     const countryCode = input.countryCode.toLowerCase();
     const postalCode = normalizePostalCode(input.postalCode!);
@@ -61,7 +61,7 @@ export class PostNLLookupStrategy implements AddressLookupStrategy {
     });
     if (!result.ok) {
       throw new Error(
-        `PostNL API returned status ${result.status}: ${result.statusText}`
+        `PostNL API returned status ${result.status}: ${result.statusText}`,
       );
     }
     // Valid results, map to OrderAddress
@@ -116,7 +116,7 @@ export class PostNLLookupStrategy implements AddressLookupStrategy {
     const [, houseNumber, addition] = match;
     const cleanedUpAddition = addition.trim().replace(/[ -]/g, '');
     return {
-      houseNumber: parseInt(houseNumber),
+      houseNumber: parseInt(houseNumber, 10),
       addition: cleanedUpAddition || undefined,
     };
   }

@@ -1,10 +1,10 @@
+import { ModuleRef } from '@nestjs/core';
+import { Injector, Logger, VendureConfig } from '@vendure/core';
 import {
   createTestEnvironment,
   registerInitializer,
   SqljsInitializer,
 } from '@vendure/testing';
-import { Injector, Logger, VendureConfig } from '@vendure/core';
-import { ModuleRef } from '@nestjs/core';
 import { initialData } from '../../test/src/initial-data';
 import { contentAutomationTask, runContentAutomationPopulation } from '../src';
 import { config } from './vendure-config';
@@ -39,7 +39,7 @@ import { config } from './vendure-config';
     contentAutomationTask
       .execute(injector)
       .catch((error: Error) =>
-        Logger.error(error.message, 'ContentAutomationDemo', error.stack)
+        Logger.error(error.message, 'ContentAutomationDemo', error.stack),
       )
       .finally(() => {
         running = false;

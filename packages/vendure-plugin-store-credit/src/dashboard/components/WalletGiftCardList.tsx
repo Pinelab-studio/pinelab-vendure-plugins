@@ -1,3 +1,4 @@
+import { Trans } from '@lingui/react/macro';
 import {
   ActionBarItem,
   Button,
@@ -5,12 +6,11 @@ import {
   ListPage,
   useLocalFormat,
 } from '@vendure/dashboard';
-import { graphql } from '@/vdb/graphql/graphql';
-import { Trans } from '@lingui/react/macro';
-import { GiftCardWalletDetailSheet } from './GiftCardWalletDetailSheet';
-import { Wallet } from '../../api/generated/graphql';
 import { Plus } from 'lucide-react';
+import { graphql } from '@/vdb/graphql/graphql';
+import { Wallet } from '../../api/generated/graphql';
 import { CreateGiftCardDialog } from './CreateGiftCardDialog';
+import { GiftCardWalletDetailSheet } from './GiftCardWalletDetailSheet';
 
 export const getWalletList = graphql(`
   query GetWallets($options: WalletListOptions) {
@@ -47,7 +47,7 @@ const WalletListInner = ({ route }: { route: any }) => {
               return null;
             }
             return (
-              <div className="flex flex-wrap gap-2 items-center">
+              <div className="flex flex-wrap items-center gap-2">
                 <GiftCardWalletDetailSheet wallet={wallet}>
                   <Trans>{wallet.name}</Trans>
                 </GiftCardWalletDetailSheet>

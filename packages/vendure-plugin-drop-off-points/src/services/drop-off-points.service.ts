@@ -9,9 +9,9 @@ import {
   RequestContext,
   UserInputError,
 } from '@vendure/core';
+import { asError } from 'catch-unknown';
 import { DROP_OFF_POINTS_PLUGIN_OPTIONS } from '../constants';
 import { PluginInitOptions, SavedDropOffPoint } from '../types';
-import { asError } from 'catch-unknown';
 import {
   ParcelDropOffPoint,
   ParcelDropOffPointSearchInput,
@@ -19,20 +19,19 @@ import {
 
 @Injectable()
 export class DropOffPointsService {
-  private readonly injector: Injector;
   constructor(
     @Inject(DROP_OFF_POINTS_PLUGIN_OPTIONS)
     private readonly options: PluginInitOptions,
     private readonly moduleRef: ModuleRef,
     private readonly activeOrderService: ActiveOrderService,
-    private readonly orderService: OrderService
+    private readonly orderService: OrderService,
   ) {
     this.injector = new Injector(this.moduleRef);
   }
 
   async getDropOffPoints(
     ctx: RequestContext,
-    input: ParcelDropOffPointSearchInput
+    input: ParcelDropOffPointSearchInput,
   ): Promise<ParcelDropOffPoint[]> {
     const carrier = this.options.carriers.find((c) => c.name === input.carrier);
     if (!carrier) {
@@ -64,13 +63,13 @@ export class DropOffPointsService {
 
   async setDropOffPointOnOrder(
     ctx: RequestContext,
-    token: string
+    token: string,
   ): Promise<Order> {
     const point = this.getSavedPointFromToken(token);
     const activeOrder = await this.activeOrderService.getActiveOrder(
       ctx,
       undefined,
-      true
+      true,
     );
     if (this.options.customMutations?.setDropOffPointOnOrder) {
       // Save using custom mutations
@@ -78,7 +77,7 @@ export class DropOffPointsService {
         await this.options.customMutations.setDropOffPointOnOrder(
           ctx,
           activeOrder,
-          point
+          point,
         );
       await this.orderService.updateCustomFields(ctx, activeOrder.id, {
         ...updatedOrder.customFields,
@@ -104,13 +103,13 @@ export class DropOffPointsService {
     const activeOrder = await this.activeOrderService.getActiveOrder(
       ctx,
       undefined,
-      true
+      true,
     );
     if (this.options.customMutations?.unsetDropOffPoint) {
       // Save using custom mutations
       const updatedOrder = await this.options.customMutations.unsetDropOffPoint(
         ctx,
-        activeOrder
+        activeOrder,
       );
       await this.orderService.updateCustomFields(ctx, activeOrder.id, {
         ...updatedOrder.customFields,
@@ -140,7 +139,7 @@ export class DropOffPointsService {
     try {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       const point: SavedDropOffPoint = JSON.parse(
-        Buffer.from(token, 'base64').toString()
+        Buffer.from(token, 'base64').toString(),
       );
       if (
         !point.id ||
@@ -155,7 +154,7 @@ export class DropOffPointsService {
       return point;
     } catch (e) {
       throw new UserInputError(
-        `Invalid drop off point token: ${asError(e).message}`
+        `Invalid drop off point token: ${asError(e).message}`,
       );
     }
   }

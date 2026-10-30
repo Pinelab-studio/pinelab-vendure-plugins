@@ -1,5 +1,6 @@
 require('dotenv').config();
 
+import path from 'node:path';
 import {
   configureDefaultOrderProcess,
   DefaultLogger,
@@ -9,9 +10,9 @@ import {
   mergeConfig,
   VendureConfig,
 } from '@vendure/core';
-import { testConfig } from '@vendure/testing';
 import { DashboardPlugin } from '@vendure/dashboard/plugin';
-import path from 'path';
+import { testConfig } from '@vendure/testing';
+import { testPaymentMethod } from '../../test/src/test-payment-method';
 import {
   fulfillSettledOrdersTask,
   getCouponCodes,
@@ -19,7 +20,6 @@ import {
   ParcelInputItem,
   SendcloudPlugin,
 } from '../src';
-import { testPaymentMethod } from '../../test/src/test-payment-method';
 
 export const config: VendureConfig = mergeConfig(testConfig, {
   logger: new DefaultLogger({ level: LogLevel.Debug }),

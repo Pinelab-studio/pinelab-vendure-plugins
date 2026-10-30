@@ -1,15 +1,15 @@
+import {
+  CreateChannelInput,
+  CurrencyCode,
+  LanguageCode,
+} from '@vendure/common/lib/generated-types';
 import { gql } from 'graphql-tag';
 import {
-  EventSubscriber,
   EntitySubscriberInterface,
+  EventSubscriber,
   InsertEvent,
 } from 'typeorm';
 import { WalletAdjustment } from '../src/entities/wallet-adjustment.entity';
-import {
-  CreateChannelInput,
-  LanguageCode,
-  CurrencyCode,
-} from '@vendure/common/lib/generated-types';
 
 export const CREATE_PRODUCT = gql`
   mutation CreateProduct($input: CreateProductInput!) {
@@ -241,7 +241,7 @@ export const sum = (nums: number[]) => nums.reduce((a, b) => a + b, 0);
 
 export const buildRandomAmounts = (
   count: number,
-  opts?: { maxAbs?: number; seed?: number }
+  opts?: { maxAbs?: number; seed?: number },
 ) => {
   const maxAbs = opts?.maxAbs ?? 25;
   let s = (opts?.seed ?? 123456789) >>> 0;
@@ -276,7 +276,7 @@ export class WalletAdjustmentSubscriber
   private validateStatus(status: number) {
     if (status === MAGIC_NUMBER) {
       throw new Error(
-        `Update Failed: You passed the forbidden Magic Number ${MAGIC_NUMBER}`
+        `Update Failed: You passed the forbidden Magic Number ${MAGIC_NUMBER}`,
       );
     }
   }

@@ -20,7 +20,7 @@ function createFakeConnection() {
         r.entityType === where.entityType &&
         String(r.entityId) === String(where.entityId) &&
         String(r.channelId) === String(where.channelId) &&
-        r.languageCode === where.languageCode
+        r.languageCode === where.languageCode,
     );
   }
   let queryChannelId: string | undefined;
@@ -37,8 +37,8 @@ function createFakeConnection() {
         rows.filter(
           (row) =>
             String(row.channelId) === queryChannelId &&
-            (row.hasError || row.hasWarning)
-        )
+            (row.hasError || row.hasWarning),
+        ),
       ),
   };
   const repo = {
@@ -147,7 +147,7 @@ describe('ContentCheckResultService', () => {
       { entityType: 'product', entityId: '1' },
     ]);
     await expect(
-      service.findDistinctEntityTypesWithIssues(ctx)
+      service.findDistinctEntityTypesWithIssues(ctx),
     ).resolves.toEqual(['product']);
   });
 });

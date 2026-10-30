@@ -1,10 +1,9 @@
 import {
   DefaultLogger,
   EventBus,
-  ID,
   LogLevel,
-  ProductVariantEvent,
   mergeConfig,
+  ProductVariantEvent,
 } from '@vendure/core';
 import {
   createTestEnvironment,
@@ -14,6 +13,8 @@ import {
   testConfig,
 } from '@vendure/testing';
 import { TestServer } from '@vendure/testing/lib/test-server';
+import { getSuperadminContext } from '@vendure/testing/lib/utils/get-superadmin-context';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import {
   cancelOrder,
   createCollection,
@@ -24,19 +25,17 @@ import {
   CreateCollectionMutation,
   LanguageCode,
 } from '../../test/src/generated/admin-graphql';
-import { initialTestData } from './initial-test-data';
 import { createSettledOrder } from '../../test/src/shop-utils';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
 import { PopularityScoresPlugin } from '../src';
+import { getRootCollection, updateCollectionParent } from './helpers';
+import { initialTestData } from './initial-test-data';
 import {
   GET_COLLECTIONS_WITH_POPULARITY_SCORE,
   GET_PRODUCTS_WITH_POPULARITY_SCORES,
 } from './queries';
-import { expect, describe, beforeAll, afterAll, it } from 'vitest';
-import { getRootCollection, updateCollectionParent } from './helpers';
-import { getSuperadminContext } from '@vendure/testing/lib/utils/get-superadmin-context';
 
-describe('Sort by Popularity Plugin', function () {
+describe('Sort by Popularity Plugin', () => {
   let server: TestServer;
   let adminClient: SimpleGraphQLClient;
   let shopClient: SimpleGraphQLClient;
@@ -117,13 +116,13 @@ describe('Sort by Popularity Plugin', function () {
     const updatedComputerCollection = await updateCollectionParent(
       adminClient,
       2,
-      collection.id
+      collection.id,
     );
     expect(updatedComputerCollection.parent.id).toBe(collection.id);
     const updatedElectronicsCollection = await updateCollectionParent(
       adminClient,
       3,
-      collection.id
+      collection.id,
     );
     expect(updatedElectronicsCollection.parent.id).toBe(collection.id);
   });
@@ -143,7 +142,7 @@ describe('Sort by Popularity Plugin', function () {
     const orders = await getAllOrders(adminClient);
     expect(orders.length).toBe(2);
     expect(
-      orders[1].lines.every((line) => line.productVariant.product.id === 'T_2')
+      orders[1].lines.every((line) => line.productVariant.product.id === 'T_2'),
     ).toBe(true);
   });
 
@@ -155,10 +154,10 @@ describe('Sort by Popularity Plugin', function () {
     await cancelOrder(adminClient, order!);
     const orders = await getAllOrders(adminClient);
     const cancelledOrder = orders.find((o) => o.id === settledOrder.id);
-    expect(cancelledOrder!.lines.every((l) => l.quantity === 0)).toBe(true);
+    expect(cancelledOrder?.lines.every((l) => l.quantity === 0)).toBe(true);
     // Trigger popularity score calculation with cancelled order present
     const res = await adminClient.fetch(
-      `http://localhost:3106/popularity-scores/calculate-scores/e2e-default-channel/test-secret`
+      `http://localhost:3106/popularity-scores/calculate-scores/e2e-default-channel/test-secret`,
     );
     expect(res.status).toBe(200);
     await new Promise((r) => setTimeout(r, 1000));
@@ -167,20 +166,20 @@ describe('Sort by Popularity Plugin', function () {
     } = await adminClient.query(GET_PRODUCTS_WITH_POPULARITY_SCORES);
     const laptopProduct = products.find((p: any) => p.name === 'Laptop');
     expect(laptopProduct.customFields.popularityScore).toBeGreaterThanOrEqual(
-      0
+      0,
     );
   });
 
   it('Fails for unauthenticated calls to calculate popularity endpoint', async () => {
     const res = await adminClient.fetch(
-      `http://localhost:3106/popularity-scores/calculate-scores/e2e-default-channel/invalid-secreet`
+      `http://localhost:3106/popularity-scores/calculate-scores/e2e-default-channel/invalid-secreet`,
     );
     expect(res.status).toBe(401);
   });
 
   it('Calls endpoint to calculate popularity', async () => {
     const res = await adminClient.fetch(
-      `http://localhost:3106/popularity-scores/calculate-scores/e2e-default-channel/test-secret`
+      `http://localhost:3106/popularity-scores/calculate-scores/e2e-default-channel/test-secret`,
     );
     expect(res.status).toBe(200);
   });
@@ -203,7 +202,7 @@ describe('Sort by Popularity Plugin', function () {
       collections: { items: collections },
     } = await adminClient.query(GET_COLLECTIONS_WITH_POPULARITY_SCORE);
     const electronics = collections.find(
-      (col: any) => col.name === 'Electronics'
+      (col: any) => col.name === 'Electronics',
     );
     const rootCollection = await getRootCollection(adminClient);
     const computers = collections.find((col: any) => col.name === 'Computers');

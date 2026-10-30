@@ -1,4 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
+
+import crypto from 'node:crypto';
+import * as util from 'node:util';
 import { Inject, Injectable, OnApplicationBootstrap } from '@nestjs/common';
 import { ModuleRef } from '@nestjs/core';
 import {
@@ -23,43 +26,10 @@ import {
   UserInputError,
 } from '@vendure/core';
 import { asError } from 'catch-unknown';
-import crypto from 'node:crypto';
 import { filter } from 'rxjs';
 import { In } from 'typeorm';
-import * as util from 'util';
 import { SubscriptionHelper } from '../';
 import { AcceptBluePluginOptions } from '../accept-blue-plugin';
-import { PLUGIN_INIT_OPTIONS, loggerCtx } from '../constants';
-import { AcceptBlueSubscriptionEvent } from '../events/accept-blue-subscription-event';
-import { AcceptBlueTransactionEvent } from '../events/accept-blue-transaction-event';
-import {
-  AcceptBlueChargeTransaction,
-  AcceptBlueCustomerInput,
-  AcceptBlueEvent,
-  AcceptBluePaymentMethod,
-  AcceptBlueRecurringSchedule,
-  AcceptBlueRecurringScheduleTransaction,
-  CheckPaymentMethodInput,
-  EnabledPaymentMethodsArgs,
-  AppleOrGooglePayInput,
-  HandlePaymentResult,
-  NoncePaymentMethodInput,
-  SavedPaymentMethodInput,
-  StorefrontKeys,
-  AcceptBlueCardPaymentMethod,
-  SecCode,
-  AccountType,
-} from '../types';
-import {
-  getNrOfBillingCyclesLeft,
-  isSavedPaymentMethod,
-  isToday,
-  toAcceptBlueFrequency,
-  toGraphqlRefundStatus,
-  toSubscriptionInterval,
-} from '../util';
-import { AcceptBlueChargeError, AcceptBlueClient } from './accept-blue-client';
-import { acceptBluePaymentHandler } from './accept-blue-handler';
 import {
   AcceptBlueCheckPaymentMethod,
   AcceptBluePaymentMethodQuote,
@@ -73,6 +43,37 @@ import {
   UpdateAcceptBlueCheckPaymentMethodInput,
   UpdateAcceptBlueSubscriptionInput,
 } from '../api/generated/graphql';
+import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
+import { AcceptBlueSubscriptionEvent } from '../events/accept-blue-subscription-event';
+import { AcceptBlueTransactionEvent } from '../events/accept-blue-transaction-event';
+import {
+  AcceptBlueCardPaymentMethod,
+  AcceptBlueChargeTransaction,
+  AcceptBlueCustomerInput,
+  AcceptBlueEvent,
+  AcceptBluePaymentMethod,
+  AcceptBlueRecurringSchedule,
+  AcceptBlueRecurringScheduleTransaction,
+  AccountType,
+  AppleOrGooglePayInput,
+  CheckPaymentMethodInput,
+  EnabledPaymentMethodsArgs,
+  HandlePaymentResult,
+  NoncePaymentMethodInput,
+  SavedPaymentMethodInput,
+  SecCode,
+  StorefrontKeys,
+} from '../types';
+import {
+  getNrOfBillingCyclesLeft,
+  isSavedPaymentMethod,
+  isToday,
+  toAcceptBlueFrequency,
+  toGraphqlRefundStatus,
+  toSubscriptionInterval,
+} from '../util';
+import { AcceptBlueChargeError, AcceptBlueClient } from './accept-blue-client';
+import { acceptBluePaymentHandler } from './accept-blue-handler';
 
 @Injectable()
 export class AcceptBlueService implements OnApplicationBootstrap {
@@ -86,13 +87,13 @@ export class AcceptBlueService implements OnApplicationBootstrap {
     private eventBus: EventBus,
     private readonly moduleRef: ModuleRef,
     @Inject(PLUGIN_INIT_OPTIONS)
-    private readonly options: AcceptBluePluginOptions
+    private readonly options: AcceptBluePluginOptions,
   ) {
     this.subscriptionHelper = new SubscriptionHelper(
       loggerCtx,
       moduleRef,
       productVariantService,
-      this.options.subscriptionStrategy
+      this.options.subscriptionStrategy,
     );
     this.injector = new Injector(this.moduleRef);
   }
@@ -106,15 +107,15 @@ export class AcceptBlueService implements OnApplicationBootstrap {
       .ofType(PaymentMethodEvent)
       .pipe(
         filter(
-          (data) => data.entity.handler?.code === acceptBluePaymentHandler.code
-        )
+          (data) => data.entity.handler?.code === acceptBluePaymentHandler.code,
+        ),
       )
       .subscribe(({ ctx, entity }) => {
         this.registerWebhook(ctx, entity).catch((err) => {
           Logger.error(
             `Failed to register webhook: ${asError(err).message}`,
             loggerCtx,
-            util.inspect(err)
+            util.inspect(err),
           );
         });
       });
@@ -128,7 +129,7 @@ export class AcceptBlueService implements OnApplicationBootstrap {
     const webhookUrl = `${this.options.vendureHost}/accept-blue/webhook/${ctx.channel.token}`;
     const existingHooks = await client.getWebhooks();
     const existingHook = existingHooks.find(
-      (hook) => hook.webhook_url === webhookUrl
+      (hook) => hook.webhook_url === webhookUrl,
     );
     let webhookSecret: string;
     if (existingHook) {
@@ -144,7 +145,7 @@ export class AcceptBlueService implements OnApplicationBootstrap {
       webhookSecret = webhook.signature;
     }
     const signatureArg = paymentMethod.handler.args.find(
-      (a) => a.name === 'webhookSecret'
+      (a) => a.name === 'webhookSecret',
     );
     if (signatureArg) {
       // Set value if signature arg already present
@@ -159,26 +160,26 @@ export class AcceptBlueService implements OnApplicationBootstrap {
     await this.connection.getRepository(ctx, PaymentMethod).save(paymentMethod);
     Logger.info(
       `The AcceptBlue PaymentMethod (${paymentMethod.code})'s webhook signature has been updated`,
-      loggerCtx
+      loggerCtx,
     );
   }
 
   async getOrCreateCustomerForOrder(
     ctx: RequestContext,
     client: AcceptBlueClient,
-    order: Order
+    order: Order,
   ): Promise<number> {
     if (!order.customer) {
       throw new UserInputError(`Order must have a customer`);
     }
     if (!ctx.activeUserId) {
       throw new UserInputError(
-        `We can only handle Accept Blue payments for logged in users, because we need to save the payment methods on Accept Blue customers`
+        `We can only handle Accept Blue payments for logged in users, because we need to save the payment methods on Accept Blue customers`,
       );
     }
     const acceptBlueCustomer = await client.upsertCustomer(
       order.customer.emailAddress,
-      this.mapToAcceptBlueCustomerInput(order, order.customer)
+      this.mapToAcceptBlueCustomerInput(order, order.customer),
     );
     await this.customerService.update(ctx, {
       id: order.customer?.id,
@@ -202,34 +203,34 @@ export class AcceptBlueService implements OnApplicationBootstrap {
     input:
       | NoncePaymentMethodInput
       | CheckPaymentMethodInput
-      | SavedPaymentMethodInput
+      | SavedPaymentMethodInput,
   ): Promise<HandlePaymentResult> {
     const acceptBlueCustomerId = await this.getOrCreateCustomerForOrder(
       ctx,
       client,
-      order
+      order,
     );
     // Get or create payment method, depending on the input given
     let paymentMethod: AcceptBluePaymentMethod;
     if (isSavedPaymentMethod(input as SavedPaymentMethodInput)) {
       const foundMethod = await client.getPaymentMethod(
-        (input as SavedPaymentMethodInput).paymentMethodId
+        (input as SavedPaymentMethodInput).paymentMethodId,
       );
       if (
         !foundMethod ||
-        foundMethod.customer_id != String(acceptBlueCustomerId)
+        foundMethod.customer_id !== String(acceptBlueCustomerId)
       ) {
         throw new UserInputError(
           `No Accept Blue payment method found with id ${
             (input as SavedPaymentMethodInput).paymentMethodId
-          }`
+          }`,
         );
       }
       paymentMethod = foundMethod;
     } else {
       paymentMethod = await client.getOrCreatePaymentMethod(
         acceptBlueCustomerId,
-        input as NoncePaymentMethodInput | CheckPaymentMethodInput
+        input as NoncePaymentMethodInput | CheckPaymentMethodInput,
       );
     }
     client.throwIfPaymentMethodNotAllowed(paymentMethod);
@@ -238,7 +239,7 @@ export class AcceptBlueService implements OnApplicationBootstrap {
       ctx,
       order,
       client,
-      paymentMethod.id
+      paymentMethod.id,
     );
     // Create charge transaction if amount is greater than 0
     let chargeTransaction: AcceptBlueChargeTransaction | undefined;
@@ -255,24 +256,24 @@ export class AcceptBlueService implements OnApplicationBootstrap {
             // Pass subscription orderLine's as custom field, so we receive it in incoming webhooks
             custom1: JSON.stringify(subscriptionOrderLines.map((l) => l.id)),
           },
-          additionalChargeInput
+          additionalChargeInput,
         );
       } catch (e) {
         const error = asError(e);
         Logger.error(
           `Error creating charge for order '${order.code}': ${error.message}`,
           loggerCtx,
-          error.stack
+          error.stack,
         );
         // If the charge fails, we need to delete the recurring schedules again
         await Promise.all(
-          createdSchedules.map((s) => client.deleteRecurringSchedule(s.id))
+          createdSchedules.map((s) => client.deleteRecurringSchedule(s.id)),
         );
         Logger.warn(
           `Deleted recurring schedules '${createdSchedules
             .map((s) => s.id)
             .join(', ')}' for order '${order.code}' because the charge failed`,
-          loggerCtx
+          loggerCtx,
         );
         if (e instanceof AcceptBlueChargeError) {
           return {
@@ -287,7 +288,7 @@ export class AcceptBlueService implements OnApplicationBootstrap {
     const chargeTransactionId = chargeTransaction?.transaction?.id;
     Logger.info(
       `Settled payment for order '${order.code}', for Accept Blue customer '${acceptBlueCustomerId}' and one time charge transaction '${chargeTransactionId}'`,
-      loggerCtx
+      loggerCtx,
     );
     return {
       amount,
@@ -312,13 +313,13 @@ export class AcceptBlueService implements OnApplicationBootstrap {
     order: Order,
     amount: number,
     client: AcceptBlueClient,
-    input: AppleOrGooglePayInput
+    input: AppleOrGooglePayInput,
   ): Promise<HandlePaymentResult> {
     client.throwIfPaymentMethodNotAllowed(input);
     const googleAmountInCents = input.amount * 100;
     if (amount !== googleAmountInCents) {
       throw new UserInputError(
-        `Amount in Google Pay payment method does not match the order amount. Expected '${amount}', got '${googleAmountInCents}' from the Google Pay payment`
+        `Amount in Google Pay payment method does not match the order amount. Expected '${amount}', got '${googleAmountInCents}' from the Google Pay payment`,
       );
     }
     // Create Charge
@@ -329,7 +330,7 @@ export class AcceptBlueService implements OnApplicationBootstrap {
       const additionalChargeInput = await this.options.additionalChargeInput?.(
         ctx,
         this.injector,
-        order
+        order,
       );
       chargeTransaction = await client.createDigitalWalletCharge(
         input,
@@ -337,7 +338,7 @@ export class AcceptBlueService implements OnApplicationBootstrap {
           // Pass subscription orderLine's as custom field, so we receive it in incoming webhooks
           custom1: JSON.stringify(subscriptionOrderLines.map((l) => l.id)),
         },
-        additionalChargeInput
+        additionalChargeInput,
       );
     } catch (e) {
       if (e instanceof AcceptBlueChargeError) {
@@ -352,23 +353,23 @@ export class AcceptBlueService implements OnApplicationBootstrap {
     const acceptBlueCustomerId = await this.getOrCreateCustomerForOrder(
       ctx,
       client,
-      order
+      order,
     );
     const acceptBluePaymentMethod = await client.createPaymentMethod(
       acceptBlueCustomerId,
       {
         source: `ref-${chargeTransaction.reference_number}`,
-      }
+      },
     );
     await this.createRecurringSchedule(
       ctx,
       order,
       client,
-      acceptBluePaymentMethod.id
+      acceptBluePaymentMethod.id,
     );
     Logger.info(
       `Settled payment for order '${order.code}' with '${input.source}', for Accept Blue customer '${acceptBlueCustomerId}' and one time charge transaction '${chargeTransaction.transaction?.id}'`,
-      loggerCtx
+      loggerCtx,
     );
     return {
       amount,
@@ -381,7 +382,7 @@ export class AcceptBlueService implements OnApplicationBootstrap {
   }
 
   async getEligiblePaymentMethods(
-    ctx: RequestContext
+    ctx: RequestContext,
   ): Promise<AcceptBluePaymentMethodQuote[]> {
     const client = await this.getClientForChannel(ctx);
     const storefrontKeys = await this.getStorefrontKeys(ctx, undefined);
@@ -401,25 +402,25 @@ export class AcceptBlueService implements OnApplicationBootstrap {
     ctx: RequestContext,
     order: Order,
     client: AcceptBlueClient,
-    paymentMethodId: number
+    paymentMethodId: number,
   ): Promise<AcceptBlueRecurringSchedule[]> {
     if (!order.customer) {
       throw new UserInputError(
-        `Order must have a customer before creating a payment`
+        `Order must have a customer before creating a payment`,
       );
     }
     if (!order.customer.user) {
       // We don't want unregistered users to be able to use someone's email address to pay
       throw new UserInputError(
-        `Saved payment methods can only be used for registered customers, ${order.customer.emailAddress} (customer ID ${order.customer.id}) is not a registered customer`
+        `Saved payment methods can only be used for registered customers, ${order.customer.emailAddress} (customer ID ${order.customer.id}) is not a registered customer`,
       );
     }
     const acceptBlueCustomer = await client.getCustomer(
-      order.customer.emailAddress
+      order.customer.emailAddress,
     );
     if (!acceptBlueCustomer) {
       throw new UserInputError(
-        `No customer found in Accept Blue with email ${order.customer.emailAddress} not found`
+        `No customer found in Accept Blue with email ${order.customer.emailAddress} not found`,
       );
     }
     // Create recurring schedules
@@ -438,8 +439,8 @@ export class AcceptBlueService implements OnApplicationBootstrap {
         numLeft && numLeft > 0
           ? numLeft
           : endDate
-          ? getNrOfBillingCyclesLeft(startDate, endDate, frequency)
-          : 0;
+            ? getNrOfBillingCyclesLeft(startDate, endDate, frequency)
+            : 0;
       // Only pass next_run_date if it's not today, because the API requires this date to be in the future
       const nextRunDate = isToday(startDate) ? undefined : startDate;
       return {
@@ -456,7 +457,7 @@ export class AcceptBlueService implements OnApplicationBootstrap {
       if (subscriptionDefinition.recurring.amount <= 0) {
         Logger.warn(
           `Skipping creation of recurring schedule for subscription '${subscriptionDefinition.name}' for customer '${order.customer.emailAddress}' because recurring.amount is 0, and that is not allowed with Accept Blue`,
-          loggerCtx
+          loggerCtx,
         );
         continue;
       }
@@ -473,7 +474,7 @@ export class AcceptBlueService implements OnApplicationBootstrap {
             ? order.customer.emailAddress
             : undefined,
           next_run_date: subscriptionDefinition.nextRunDate,
-        }
+        },
       );
       // Save subscriptionId for orderLine
       const subscriptionIds =
@@ -481,7 +482,7 @@ export class AcceptBlueService implements OnApplicationBootstrap {
       subscriptionIds.push(recurringSchedule.id);
       subscriptionsPerOrderLine.set(
         subscriptionDefinition.orderLineId,
-        subscriptionIds
+        subscriptionIds,
       );
       recurringSchedules.push(recurringSchedule);
     }
@@ -495,15 +496,15 @@ export class AcceptBlueService implements OnApplicationBootstrap {
             orderLine.customFields.acceptBlueSubscriptionIds = subscriptionIds;
             await this.connection.getRepository(ctx, OrderLine).save(orderLine);
           }
-        }
-      )
+        },
+      ),
     );
     return recurringSchedules;
   }
 
   async updateCardPaymentMethod(
     ctx: RequestContext,
-    input: UpdateAcceptBlueCardPaymentMethodInput
+    input: UpdateAcceptBlueCardPaymentMethodInput,
   ): Promise<AcceptBlueCardPaymentMethod> {
     const client = await this.getClientForChannel(ctx);
     await this.isPaymentMethodAllowed(ctx, client, input.id, 'card');
@@ -518,7 +519,7 @@ export class AcceptBlueService implements OnApplicationBootstrap {
 
   async updateCheckPaymentMethod(
     ctx: RequestContext,
-    input: UpdateAcceptBlueCheckPaymentMethodInput
+    input: UpdateAcceptBlueCheckPaymentMethodInput,
   ): Promise<AcceptBlueCheckPaymentMethod> {
     const client = await this.getClientForChannel(ctx);
     await this.isPaymentMethodAllowed(ctx, client, input.id, 'check');
@@ -540,13 +541,13 @@ export class AcceptBlueService implements OnApplicationBootstrap {
   async createCardPaymentMethod(
     ctx: RequestContext,
     input: CreateAcceptBlueCardPaymentMethodInput,
-    customerId?: ID
+    customerId?: ID,
   ): Promise<AcceptBlueCardPaymentMethod> {
     const client = await this.getClientForChannel(ctx);
     // Get customer ID from CTX if no customerId is given
     const acceptBlueCustomerId = await this.getAcceptBlueCustomerId(
       ctx,
-      customerId
+      customerId,
     );
     return (await client.createPaymentMethod(acceptBlueCustomerId, {
       source: input.sourceToken,
@@ -560,13 +561,13 @@ export class AcceptBlueService implements OnApplicationBootstrap {
   async createCheckPaymentMethod(
     ctx: RequestContext,
     input: CreateAcceptBlueCheckPaymentMethodInput,
-    customerId?: ID
+    customerId?: ID,
   ): Promise<AcceptBlueCheckPaymentMethod> {
     const client = await this.getClientForChannel(ctx);
     // Get customer ID from CTX if no customerId is given
     const acceptBlueCustomerId = await this.getAcceptBlueCustomerId(
       ctx,
-      customerId
+      customerId,
     );
     return (await client.createPaymentMethod(acceptBlueCustomerId, {
       account_number: input.account_number,
@@ -585,14 +586,14 @@ export class AcceptBlueService implements OnApplicationBootstrap {
    */
   async updateSubscription(
     ctx: RequestContext,
-    input: UpdateAcceptBlueSubscriptionInput
+    input: UpdateAcceptBlueSubscriptionInput,
   ): Promise<AcceptBlueSubscription> {
     const client = await this.getClientForChannel(ctx);
     const scheduleId = input.id;
     const orderLine = await this.findOrderLineByScheduleId(ctx, scheduleId);
     if (!orderLine) {
       throw new UserInputError(
-        `No order exists with an Accept Blue subscription id of ${scheduleId}`
+        `No order exists with an Accept Blue subscription id of ${scheduleId}`,
       );
     }
     if (ctx.apiType === 'shop') {
@@ -602,12 +603,12 @@ export class AcceptBlueService implements OnApplicationBootstrap {
           ctx,
           client,
           input.paymentMethodId,
-          false
+          false,
         );
       }
       const acceptBlueCustomerId = await this.getAcceptBlueCustomerId(ctx);
       const schedule = await client.getRecurringSchedules([scheduleId]);
-      if (schedule?.[0].customer_id != acceptBlueCustomerId) {
+      if (schedule?.[0].customer_id !== acceptBlueCustomerId) {
         throw new ForbiddenError();
       }
     }
@@ -632,11 +633,11 @@ export class AcceptBlueService implements OnApplicationBootstrap {
     });
     const subscription = this.mapToGraphqlSubscription(
       schedule,
-      orderLine.productVariant.id
+      orderLine.productVariant.id,
     );
     // Publish event
     await this.eventBus.publish(
-      new AcceptBlueSubscriptionEvent(ctx, subscription, 'updated', input)
+      new AcceptBlueSubscriptionEvent(ctx, subscription, 'updated', input),
     );
     return subscription;
   }
@@ -652,12 +653,12 @@ export class AcceptBlueService implements OnApplicationBootstrap {
     client: AcceptBlueClient,
     paymentMethodId: number,
     shouldBeOfType: 'card' | 'check' | false,
-    checkIfAllowedMethod: boolean = true
+    checkIfAllowedMethod: boolean = true,
   ): Promise<void> {
     const existingMethod = await client.getPaymentMethod(paymentMethodId);
     if (!existingMethod) {
       throw new UserInputError(
-        `No Accept Blue payment method found with id ${paymentMethodId}`
+        `No Accept Blue payment method found with id ${paymentMethodId}`,
       );
     }
     if (checkIfAllowedMethod) {
@@ -669,7 +670,7 @@ export class AcceptBlueService implements OnApplicationBootstrap {
       existingMethod.payment_method_type !== shouldBeOfType
     ) {
       throw new UserInputError(
-        `Payment method '${paymentMethodId}' is not a ${shouldBeOfType} payment method`
+        `Payment method '${paymentMethodId}' is not a ${shouldBeOfType} payment method`,
       );
     }
     // if Shop API, we check if the logged in user is owner of the payment method
@@ -678,7 +679,7 @@ export class AcceptBlueService implements OnApplicationBootstrap {
         throw new ForbiddenError();
       }
       const customerId = await this.getAcceptBlueCustomerId(ctx);
-      if (existingMethod.customer_id != String(customerId)) {
+      if (existingMethod.customer_id !== String(customerId)) {
         // Given ID is not a payment method of the customer
         throw new ForbiddenError();
       }
@@ -690,13 +691,13 @@ export class AcceptBlueService implements OnApplicationBootstrap {
    */
   async getAcceptBlueCustomerId(
     ctx: RequestContext,
-    customerId?: ID
+    customerId?: ID,
   ): Promise<number> {
     let customer: Customer;
     if (customerId) {
       const potentialCustomer = await this.customerService.findOne(
         ctx,
-        customerId
+        customerId,
       );
       if (!potentialCustomer) {
         throw new UserInputError(`No customer found for user ${customerId}`);
@@ -707,12 +708,12 @@ export class AcceptBlueService implements OnApplicationBootstrap {
         throw new UserInputError(`User is not logged in!`);
       }
       customer = await assertFound(
-        this.customerService.findOneByUserId(ctx, ctx.activeUserId)
+        this.customerService.findOneByUserId(ctx, ctx.activeUserId),
       );
     }
     if (!customer.customFields.acceptBlueCustomerId) {
       throw new UserInputError(
-        `Customer '${customer.emailAddress}' (${customer.id}) is not linked to an Accept Blue customer`
+        `Customer '${customer.emailAddress}' (${customer.id}) is not linked to an Accept Blue customer`,
       );
     }
     return customer.customFields.acceptBlueCustomerId;
@@ -724,31 +725,30 @@ export class AcceptBlueService implements OnApplicationBootstrap {
   async getSubscriptionsForOrderLine(
     ctx: RequestContext,
     orderLine: OrderLine,
-    order: Order
+    order: Order,
   ): Promise<AcceptBlueSubscription[]> {
     if (order.orderPlacedAt) {
       // Return actual created subscriptions for placed orders
       const client = await this.getClientForChannel(ctx);
       const subscriptionIds =
         orderLine.customFields.acceptBlueSubscriptionIds ?? [];
-      const createdSubscriptions = await client.getRecurringSchedules(
-        subscriptionIds
-      );
+      const createdSubscriptions =
+        await client.getRecurringSchedules(subscriptionIds);
       return await Promise.all(
         createdSubscriptions.map(async (s) => {
           const transactions = await client.getTransactionsForRecurringSchedule(
-            s.id
+            s.id,
           );
           // Map to Graphql Transaction type
           const graphqlTransactions = transactions.map((t) =>
-            this.mapToGraphqlTransaction(t)
+            this.mapToGraphqlTransaction(t),
           );
           return this.mapToGraphqlSubscription(
             s,
             orderLine.productVariant.id,
-            graphqlTransactions
+            graphqlTransactions,
           );
-        })
+        }),
       );
     }
     // If the order is not placed, we dynamically generate subscriptions
@@ -756,7 +756,7 @@ export class AcceptBlueService implements OnApplicationBootstrap {
       await this.subscriptionHelper.getSubscriptionsForOrderLine(
         ctx,
         orderLine,
-        order
+        order,
       );
     return subscriptionsForOrderLine.map((s) => {
       return {
@@ -772,7 +772,7 @@ export class AcceptBlueService implements OnApplicationBootstrap {
    */
   async getSavedPaymentMethods(
     ctx: RequestContext,
-    customer: Customer
+    customer: Customer,
   ): Promise<AcceptBluePaymentMethod[]> {
     const client = await this.getClientForChannel(ctx);
     if (!ctx.activeUserId) {
@@ -782,7 +782,7 @@ export class AcceptBlueService implements OnApplicationBootstrap {
       throw new Error(`No customer found for user ${ctx.activeUserId}`);
     }
     return await client.getPaymentMethods(
-      customer.customFields.acceptBlueCustomerId
+      customer.customFields.acceptBlueCustomerId,
     );
   }
 
@@ -790,12 +790,12 @@ export class AcceptBlueService implements OnApplicationBootstrap {
     ctx: RequestContext,
     transactionId: number,
     amount?: number,
-    cvv2?: string
+    cvv2?: string,
   ): Promise<AcceptBlueRefundResult> {
     const client = await this.getClientForChannel(ctx);
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const refundResult = await client.refund(transactionId, amount, cvv2);
-    let errorDetails: string | undefined = undefined;
+    let errorDetails: string | undefined;
     if (refundResult.error_details) {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       errorDetails =
@@ -805,7 +805,7 @@ export class AcceptBlueService implements OnApplicationBootstrap {
     }
     Logger.info(
       `Attempted refund of transaction '${transactionId}' by user '${ctx.activeUserId}' resulted in status '${refundResult.status}'`,
-      loggerCtx
+      loggerCtx,
     );
     return {
       version: refundResult.version,
@@ -826,59 +826,60 @@ export class AcceptBlueService implements OnApplicationBootstrap {
     const acceptBlueMethod = await this.getAcceptBlueMethod(ctx);
     if (!acceptBlueMethod) {
       throw new Error(
-        `No enabled payment method found with code ${acceptBluePaymentHandler.code}`
+        `No enabled payment method found with code ${acceptBluePaymentHandler.code}`,
       );
     }
     // Find the handler arguments and pass the enabled payment methods to the client
-    const mapToBoolean = (value: string | undefined) =>
-      value === 'true' ? true : false;
+    const mapToBoolean = (value: string | undefined) => value === 'true';
     const apiKey = acceptBlueMethod.handler.args.find(
-      (a) => a.name === 'apiKey'
+      (a) => a.name === 'apiKey',
     )?.value;
     const pin = acceptBlueMethod.handler.args.find(
-      (a) => a.name === 'pin'
+      (a) => a.name === 'pin',
     )?.value;
     const testMode = mapToBoolean(
-      acceptBlueMethod.handler.args.find((a) => a.name === 'testMode')?.value
+      acceptBlueMethod.handler.args.find((a) => a.name === 'testMode')?.value,
     );
     if (!apiKey) {
       throw new Error(
-        `No apiKey or pin found on configured Accept Blue payment method`
+        `No apiKey or pin found on configured Accept Blue payment method`,
       );
     }
     const enabledPaymentMethodArgs: EnabledPaymentMethodsArgs = {
       allowAmex: mapToBoolean(
-        acceptBlueMethod.handler.args.find((a) => a.name === 'allowAmex')?.value
+        acceptBlueMethod.handler.args.find((a) => a.name === 'allowAmex')
+          ?.value,
       ),
       allowECheck: mapToBoolean(
         acceptBlueMethod.handler.args.find((a) => a.name === 'allowECheck')
-          ?.value
+          ?.value,
       ),
       allowDiscover: mapToBoolean(
         acceptBlueMethod.handler.args.find((a) => a.name === 'allowDiscover')
-          ?.value
+          ?.value,
       ),
       allowMasterCard: mapToBoolean(
         acceptBlueMethod.handler.args.find((a) => a.name === 'allowMasterCard')
-          ?.value
+          ?.value,
       ),
       allowVisa: mapToBoolean(
-        acceptBlueMethod.handler.args.find((a) => a.name === 'allowVisa')?.value
+        acceptBlueMethod.handler.args.find((a) => a.name === 'allowVisa')
+          ?.value,
       ),
       allowApplePay: mapToBoolean(
         acceptBlueMethod.handler.args.find((a) => a.name === 'allowApplePay')
-          ?.value
+          ?.value,
       ),
       allowGooglePay: mapToBoolean(
         acceptBlueMethod.handler.args.find((a) => a.name === 'allowGooglePay')
-          ?.value
+          ?.value,
       ),
     };
     return new AcceptBlueClient(
       apiKey,
       pin,
       enabledPaymentMethodArgs,
-      testMode
+      testMode,
     );
   }
 
@@ -892,7 +893,7 @@ export class AcceptBlueService implements OnApplicationBootstrap {
    */
   async getStorefrontKeys(
     ctx: RequestContext,
-    parentPaymentMethodId: ID | undefined
+    parentPaymentMethodId: ID | undefined,
   ): Promise<StorefrontKeys> {
     const acceptBlueMethod = await this.getAcceptBlueMethod(ctx);
     if (!acceptBlueMethod) {
@@ -902,19 +903,19 @@ export class AcceptBlueService implements OnApplicationBootstrap {
     const client = await this.getClientForChannel(ctx);
     if (
       parentPaymentMethodId &&
-      acceptBlueMethod?.id != parentPaymentMethodId
+      acceptBlueMethod?.id !== parentPaymentMethodId
     ) {
       // If the parent payment method is not an Accept Blue payment method, we don't need to return any keys
       return {};
     }
     const tokenizationSourceKey = acceptBlueMethod?.handler.args.find(
-      (a) => a.name === 'tokenizationSourceKey'
+      (a) => a.name === 'tokenizationSourceKey',
     )?.value;
     const googlePayMerchantId = acceptBlueMethod?.handler.args.find(
-      (a) => a.name === 'googlePayMerchantId'
+      (a) => a.name === 'googlePayMerchantId',
     )?.value;
     const googlePayGatewayMerchantId = acceptBlueMethod?.handler.args.find(
-      (a) => a.name === 'googlePayGatewayMerchantId'
+      (a) => a.name === 'googlePayGatewayMerchantId',
     )?.value;
     return {
       acceptBlueHostedTokenizationKey: tokenizationSourceKey,
@@ -925,7 +926,7 @@ export class AcceptBlueService implements OnApplicationBootstrap {
   }
 
   async getAcceptBlueMethod(
-    ctx: RequestContext
+    ctx: RequestContext,
   ): Promise<PaymentMethod | undefined> {
     const methods = await this.paymentMethodService.findAll(ctx, {
       filter: {
@@ -933,11 +934,11 @@ export class AcceptBlueService implements OnApplicationBootstrap {
       },
     });
     const acceptBlueMethod = methods.items.filter(
-      (m) => m.handler.code === acceptBluePaymentHandler.code
+      (m) => m.handler.code === acceptBluePaymentHandler.code,
     );
     if (acceptBlueMethod.length > 1) {
       throw Error(
-        `More than one enabled payment method found with code ${acceptBluePaymentHandler.code}. There should be only 1 per channel`
+        `More than one enabled payment method found with code ${acceptBluePaymentHandler.code}. There should be only 1 per channel`,
       );
     }
     return acceptBlueMethod[0];
@@ -949,26 +950,26 @@ export class AcceptBlueService implements OnApplicationBootstrap {
     ctx: RequestContext,
     event: AcceptBlueEvent,
     rawBody: Buffer,
-    incomingSignature: string
+    incomingSignature: string,
   ): Promise<void> {
     if (event.event === 'batch') {
       Logger.info(
         `Ignoring incoming webhook of type '${event.event}' '${event.type}' (${event.id})`,
-        loggerCtx
+        loggerCtx,
       );
       return;
     }
     Logger.info(
       `Handling incoming webhook '${event.subType}' '${event.event}' '${event.type}' (${event.id}) ...`,
-      loggerCtx
+      loggerCtx,
     );
     const acceptBlueMethod = await this.getAcceptBlueMethod(ctx);
     const savedSecret = acceptBlueMethod?.handler.args.find(
-      (a) => a.name === 'webhookSecret'
+      (a) => a.name === 'webhookSecret',
     )?.value;
     if (!savedSecret) {
       throw new Error(
-        'No webhook secret found on Accept Blue payment method, can not validate incoming webhook'
+        'No webhook secret found on Accept Blue payment method, can not validate incoming webhook',
       );
     }
     if (!this.isValidSignature(savedSecret, rawBody, incomingSignature)) {
@@ -977,7 +978,7 @@ export class AcceptBlueService implements OnApplicationBootstrap {
     // Get corresponding order lines based on the incoming webhook fields: Either schedule_id or custom_fields should be defined
     const scheduleId = event.data.transaction?.transaction_details?.schedule_id;
     const orderLineIds = this.parseOrderLineCustomField(
-      event.data.transaction?.custom_fields?.custom1
+      event.data.transaction?.custom_fields?.custom1,
     );
     let orderLines: OrderLine[] = [];
     if (scheduleId) {
@@ -995,9 +996,9 @@ export class AcceptBlueService implements OnApplicationBootstrap {
     if (!orderLines.length) {
       Logger.error(
         `No order lines found for incoming webhook, we can not connect this event to an order line: ${JSON.stringify(
-          event
+          event,
         )}`,
-        loggerCtx
+        loggerCtx,
       );
       return;
     }
@@ -1012,17 +1013,17 @@ export class AcceptBlueService implements OnApplicationBootstrap {
           event.type,
           event,
           orderLine,
-          event.data.transaction?.id
-        )
+          event.data.transaction?.id,
+        ),
       );
       Logger.debug(
         `Published AcceptBlueTransactionEvent (${event.id}) for orderLine ${orderLine.id}`,
-        loggerCtx
+        loggerCtx,
       );
     }
     Logger.info(
       `Successfully handled incoming webhook '${event.subType}' '${event.event}' '${event.type}' (${event.id})`,
-      loggerCtx
+      loggerCtx,
     );
   }
 
@@ -1031,20 +1032,20 @@ export class AcceptBlueService implements OnApplicationBootstrap {
    */
   async findOrderLineByScheduleId(
     ctx: RequestContext,
-    scheduleId: number
+    scheduleId: number,
   ): Promise<OrderLine | null | undefined> {
     const result = await this.connection
       .getRepository(ctx, OrderLine)
       .createQueryBuilder('orderLine')
       .where(
         'orderLine.customFields.acceptBlueSubscriptionIds LIKE :scheduleId',
-        { scheduleId: `%${scheduleId}%` }
+        { scheduleId: `%${scheduleId}%` },
       )
       .getMany();
     // We query with LIKE, because array custom fields are stored as simple-json in the database
     // With LIKE, we can get false positives, so we check again if the parsed result contains the exact scheduleId
     return result.find((orderLine) =>
-      orderLine.customFields.acceptBlueSubscriptionIds.includes(scheduleId)
+      orderLine.customFields.acceptBlueSubscriptionIds.includes(scheduleId),
     );
   }
 
@@ -1054,7 +1055,7 @@ export class AcceptBlueService implements OnApplicationBootstrap {
   isValidSignature(
     savedSecret: string,
     rawBody: Buffer,
-    incomingSignature: string
+    incomingSignature: string,
   ): boolean {
     const hash = crypto
       .createHmac('sha256', savedSecret)
@@ -1084,7 +1085,7 @@ export class AcceptBlueService implements OnApplicationBootstrap {
    */
   mapToAcceptBlueCustomerInput(
     order: Order,
-    customer: Customer
+    customer: Customer,
   ): AcceptBlueCustomerInput {
     const shippingName = order.shippingAddress?.fullName?.split(' ');
     const shippingAddress: AcceptBlueCustomerInput['shipping_info'] = {
@@ -1127,10 +1128,10 @@ export class AcceptBlueService implements OnApplicationBootstrap {
   private mapToGraphqlSubscription(
     schedule: AcceptBlueRecurringSchedule,
     variantId: ID,
-    transactions: AcceptBlueTransaction[] = []
+    transactions: AcceptBlueTransaction[] = [],
   ): AcceptBlueSubscription {
     const { interval, intervalCount } = toSubscriptionInterval(
-      schedule.frequency
+      schedule.frequency,
     );
     return {
       id: schedule.id,
@@ -1161,7 +1162,7 @@ export class AcceptBlueService implements OnApplicationBootstrap {
    * Map a transaction from Accept Blue to the GraphQL Transaction type
    */
   private mapToGraphqlTransaction(
-    transaction: AcceptBlueRecurringScheduleTransaction
+    transaction: AcceptBlueRecurringScheduleTransaction,
   ): AcceptBlueTransaction {
     return {
       id: transaction.id,

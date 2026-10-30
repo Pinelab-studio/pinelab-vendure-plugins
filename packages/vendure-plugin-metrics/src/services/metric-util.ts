@@ -5,7 +5,7 @@ import {
   isSameYear,
   startOfMonth,
 } from 'date-fns';
-import { AdvancedMetricSeries } from '../ui/generated/graphql';
+import { AdvancedMetricSeries } from '../generated/graphql';
 
 interface EntitiesPerMonth<T> {
   monthNr: number;
@@ -42,7 +42,7 @@ export function groupEntitiesPerMonth<T, K extends keyof T>(
   entities: T[],
   sortableField: K,
   from: Date,
-  to: Date
+  to: Date,
 ): EntitiesPerMonth<T>[] {
   // Helper function to construct yearMonth as identifier. E.g. "2021-1"
   const getYearMonth = (date: Date) =>
@@ -64,9 +64,9 @@ export function groupEntitiesPerMonth<T, K extends keyof T>(
   // Loop over each item and categorize it in the correct month
   entities.forEach((entity) => {
     const date = (entity as any)[sortableField] as Date;
-    if (!(date instanceof Date) || isNaN(date as any)) {
+    if (!(date instanceof Date) || Number.isNaN(date as any)) {
       throw Error(
-        `${date} is not a valid date! Can not split ${entities.constructor.name}'s in months.`
+        `${date} is not a valid date! Can not split ${entities.constructor.name}'s in months.`,
       );
     }
     const yearMonth = getYearMonth(date);
@@ -87,7 +87,7 @@ export function groupEntitiesPerMonth<T, K extends keyof T>(
 export function getEntitiesForMonth<T, K extends keyof T>(
   entities: T[],
   date: Date,
-  dateFilterField: K
+  dateFilterField: K,
 ): T[] {
   return entities.filter((entity) => {
     const entityDate = (entity as any)[dateFilterField] as Date;
@@ -102,7 +102,7 @@ export function getEntitiesForMonth<T, K extends keyof T>(
  * This is used to display the data in the chart.
  */
 export function mapToSeries(
-  dataPointsPerMonth: DataPointsPerLegend
+  dataPointsPerMonth: DataPointsPerLegend,
 ): AdvancedMetricSeries[] {
   const series: AdvancedMetricSeries[] = [];
   dataPointsPerMonth.forEach((dataPoints, name) => {

@@ -1,6 +1,5 @@
 // This import is needed to accept custom field types
-import {} from '../src/service/custom-field-types';
-import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
+
 import {
   DefaultLogger,
   DefaultSearchPlugin,
@@ -14,24 +13,20 @@ import {
   registerInitializer,
   SqljsInitializer,
 } from '@vendure/testing';
-import readline from 'readline';
+import { SetShippingAddress } from '../../test/src/generated/shop-graphql';
+import { testPaymentMethod } from '../../test/src/test-payment-method';
 import { AcceptBluePlugin } from '../src';
 import { acceptBluePaymentHandler } from '../src/service/accept-blue-handler';
+import { AppleOrGooglePayInput } from '../src/types';
 import { AcceptBlueTestCheckoutPlugin } from './helpers/accept-blue-test-checkout.plugin';
 import {
   ADD_ITEM_TO_ORDER,
   ADD_PAYMENT_TO_ORDER,
   CREATE_PAYMENT_METHOD,
-  GET_ORDER_BY_CODE,
-  REFUND_TRANSACTION,
   SET_SHIPPING_METHOD,
   TRANSITION_ORDER_TO,
 } from './helpers/graphql-helpers';
-import { AppleOrGooglePayInput, NoncePaymentMethodInput } from '../src/types';
-import { add } from 'date-fns';
 import { TestSubscriptionStrategy } from './helpers/test-subscription-strategy';
-import { SetShippingAddress } from '../../test/src/generated/shop-graphql';
-import { testPaymentMethod } from '../../test/src/test-payment-method';
 
 /**
  * Ensure you have a .env in the plugin root directory with the variable ACCEPT_BLUE_TOKENIZATION_SOURCE_KEY=pk-abc123
@@ -48,7 +43,7 @@ import { testPaymentMethod } from '../../test/src/test-payment-method';
 
   if (!tokenizationSourceKey.length) {
     console.log(
-      "Missing Accept Blue tokenizationSourceKey. Please look it up on the dashboard and add it to the environment key 'ACCEPT_BLUE_TOKENIZATION_SOURCE_KEY'"
+      "Missing Accept Blue tokenizationSourceKey. Please look it up on the dashboard and add it to the environment key 'ACCEPT_BLUE_TOKENIZATION_SOURCE_KEY'",
     );
   }
 
@@ -79,7 +74,7 @@ import { testPaymentMethod } from '../../test/src/test-payment-method';
           'https://webhook.site/cdef50e0-0e6d-4e23-a4b1-6ffc9ca89df8',
         subscriptionStrategy: new TestSubscriptionStrategy(),
         sendReceiptEmail: false,
-        additionalChargeInput: async (ctx, injector, order) => {
+        additionalChargeInput: async (_ctx, _injector, _order) => {
           // Amounts should be in Vendure cents - they are automatically converted to dollars before being sent to Accept Blue
           // See https://docs.accept.blue/api/v2#tag/processing-charges for the fields available
           return {
@@ -124,10 +119,6 @@ import { testPaymentMethod } from '../../test/src/test-payment-method';
         },
       }),
       DefaultSearchPlugin,
-      AdminUiPlugin.init({
-        port: 3002,
-        route: 'admin',
-      }),
     ],
   });
   const { server, shopClient, adminClient } = createTestEnvironment(config);
@@ -203,10 +194,10 @@ import { testPaymentMethod } from '../../test/src/test-payment-method';
     TRANSITION_ORDER_TO,
     {
       state: 'ArrangingPayment',
-    }
+    },
   );
   console.log(
-    `Transitioned order '${transitionOrderToState.code}' to ArrangingPayment`
+    `Transitioned order '${transitionOrderToState.code}' to ArrangingPayment`,
   );
 
   // Add payment
@@ -217,7 +208,7 @@ import { testPaymentMethod } from '../../test/src/test-payment-method';
   //   expiry_year: 2030,
   //   expiry_month: 3,
   // };
-  const metadata: AppleOrGooglePayInput = {
+  const _metadata: AppleOrGooglePayInput = {
     source: 'googlepay',
     amount: 10.8,
     token:
@@ -234,7 +225,7 @@ import { testPaymentMethod } from '../../test/src/test-payment-method';
     });
     console.log(JSON.stringify(addPaymentToOrder, null, 2));
     console.log(
-      `Successfully transitioned order to ${addPaymentToOrder.state}`
+      `Successfully transitioned order to ${addPaymentToOrder.state}`,
     );
 
     //   // Attempt a refund

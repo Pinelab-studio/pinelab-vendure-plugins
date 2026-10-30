@@ -1,7 +1,7 @@
-import { useQueryClient, useQuery, useMutation } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { FulfillmentStateTransitionError } from '@vendure/common/lib/generated-types';
 import { api, getDetailQueryOptions, graphql } from '@vendure/dashboard';
 import { toast } from 'sonner';
-import { FulfillmentStateTransitionError } from '@vendure/common/lib/generated-types';
 
 export const CONFIGURABLE_OPERATION_DEF_FRAGMENT = graphql(`
   fragment ConfigurableOperationDef on ConfigurableOperationDefinition {
@@ -34,7 +34,7 @@ export const GET_SHIPPING_METHOD_OPERATIONS = graphql(
       }
     }
   `,
-  [CONFIGURABLE_OPERATION_DEF_FRAGMENT]
+  [CONFIGURABLE_OPERATION_DEF_FRAGMENT],
 );
 
 export const orderDetailDocument = graphql(
@@ -54,7 +54,7 @@ export const orderDetailDocument = graphql(
         }
       }
     }
-  `
+  `,
 );
 
 export const CREATE_FULFILLMENT = graphql(`
@@ -133,94 +133,86 @@ export function CompleteOrderButton({
     },
   });
 
+  /** Creates a fulfillment and ships the settled order, reporting API failures. */
+  const shipSettledOrder = async (hydratedOrder: any): Promise<boolean> => {
+    const { data: shippingOperationsDetail } =
+      await refetchShippingMethodOperations();
+    const handlerCode =
+      hydratedOrder?.order?.shippingLines[0].shippingMethod
+        .fulfillmentHandlerCode;
+    const handler = (shippingOperationsDetail?.fulfillmentHandlers ?? []).find(
+      (handler) => handler.code === handlerCode,
+    );
+    if (!handler) {
+      toast.error(`No handler found for ${handlerCode}`);
+      return false;
+    }
+    const args = handler.args.map((arg) => ({ name: arg.name, value: '' }));
+    const response = await createFulfillmentMutation.mutateAsync({
+      handler: { code: handlerCode, arguments: args },
+      lines: order.lines.map((line: any) => ({
+        quantity: line.quantity,
+        orderLineId: String(line.id),
+      })),
+    });
+    let fulfillmentId = (response?.addFulfillmentToOrder as any)?.id;
+    const creationError = response?.addFulfillmentToOrder;
+    if (creationError?.errorCode === 'ITEMS_ALREADY_FULFILLED_ERROR') {
+      fulfillmentId = order.fulfillments?.[0].id;
+    } else if (creationError.errorCode) {
+      toast.error(
+        `${creationError.errorCode} - ${creationError.transitionError}`,
+      );
+      return false;
+    }
+    const transition = await transitionMutation.mutateAsync({
+      id: fulfillmentId,
+      state: 'Shipped',
+    });
+    const error =
+      transition?.transitionFulfillmentToState as FulfillmentStateTransitionError;
+    if (error?.errorCode)
+      toast.error(`${error.errorCode} - ${error.transitionError}`);
+    return true;
+  };
+
+  /** Delivers an existing fulfillment, accepting an already-delivered response. */
+  const deliverShippedOrder = async (): Promise<boolean> => {
+    const response = await transitionMutation.mutateAsync({
+      id: order.fulfillments?.[0].id,
+      state: 'Delivered',
+    });
+    const error =
+      response?.transitionFulfillmentToState as FulfillmentStateTransitionError;
+    if (error?.errorCode?.indexOf('"Delivered" to "Delivered"') > -1)
+      return true;
+    if (error.errorCode) {
+      toast.error(`${error.errorCode} - ${error.transitionError}`);
+      return false;
+    }
+    return true;
+  };
+
   const handleComplete = async () => {
     try {
       if (!window.confirm('Are you sure? This can not be undone.')) {
         return;
       }
       const { data: hydratedOrder } = await refetchOrder();
-      if (order.state === 'AddingItems') {
-        return toast.error('Active orders cannot be completed.');
+      switch (order.state) {
+        case 'AddingItems':
+          return toast.error('Active orders cannot be completed.');
+        case 'Delivered':
+          return toast.warning('Order is already Delivered.');
+        case 'Cancelled':
+          return toast.error('Order is already Cancelled.');
       }
-      if (order.state === 'Delivered') {
-        return toast.warning('Order is already Delivered.');
-      }
-      if (order.state === 'Cancelled') {
-        return toast.error('Order is already Cancelled.');
-      }
-      if (order.state === 'PaymentSettled') {
-        const { data: shippingOperationsDetail } =
-          await refetchShippingMethodOperations();
-        const handlerCode =
-          hydratedOrder?.order?.shippingLines[0].shippingMethod
-            .fulfillmentHandlerCode;
-        const handler = (
-          shippingOperationsDetail?.fulfillmentHandlers ?? []
-        ).find((handler) => handler.code === handlerCode);
-        if (!handler) {
-          toast.error(`No handler found for ${handlerCode}`);
-          return;
-        }
-        const args = handler.args.map((arg) => ({ name: arg.name, value: '' }));
-        const createFullfilmentResponse =
-          await createFulfillmentMutation.mutateAsync({
-            handler: {
-              code: handlerCode,
-              arguments: args,
-            },
-            lines: order.lines.map((line: any) => ({
-              quantity: line.quantity,
-              orderLineId: String(line.id),
-            })),
-          });
-
-        let fulfillmentId = (
-          createFullfilmentResponse?.addFulfillmentToOrder as any
-        )?.id;
-        const creationError = createFullfilmentResponse?.addFulfillmentToOrder;
-        if (creationError?.errorCode === 'ITEMS_ALREADY_FULFILLED_ERROR') {
-          fulfillmentId = order.fulfillments?.[0].id;
-        } else if (creationError.errorCode) {
-          toast.error(
-            `${creationError.errorCode} - ${creationError.transitionError}`
-          );
-          return;
-        }
-        const transitionFulfillmentToStateResponse =
-          await transitionMutation.mutateAsync({
-            id: fulfillmentId,
-            state: 'Shipped',
-          });
-
-        const transitionError =
-          transitionFulfillmentToStateResponse?.transitionFulfillmentToState as FulfillmentStateTransitionError;
-        if (transitionError?.errorCode) {
-          toast.error(
-            `${transitionError.errorCode} - ${transitionError.transitionError}`
-          );
-        }
-      }
-      if (order.state === 'Shipped') {
-        // await transitionToDelivered(dataService, getOrderResponse.order);
-        const fulfillmentId = order.fulfillments?.[0].id;
-        const transitionFulfillmentToStateResponse =
-          await transitionMutation.mutateAsync({
-            id: fulfillmentId,
-            state: 'Delivered',
-          });
-        const transitionError =
-          transitionFulfillmentToStateResponse?.transitionFulfillmentToState as FulfillmentStateTransitionError;
-        if (
-          transitionError?.errorCode?.indexOf('"Delivered" to "Delivered"') > -1
-        ) {
-          // this is ok
-        } else if (transitionError.errorCode) {
-          toast.error(
-            `${transitionError.errorCode} - ${transitionError.transitionError}`
-          );
-          return;
-        }
-      }
+      if (
+        order.state === 'PaymentSettled' &&
+        !(await shipSettledOrder(hydratedOrder))
+      )
+        return;
+      if (order.state === 'Shipped' && !(await deliverShippedOrder())) return;
       toast.success('Order completed');
     } catch (e: any) {
       toast.error(e.message);

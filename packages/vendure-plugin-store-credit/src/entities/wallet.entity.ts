@@ -1,20 +1,20 @@
 import {
   Channel,
+  ChannelAware,
   Customer,
   DeepPartial,
-  VendureEntity,
-  ChannelAware,
   Money,
+  VendureEntity,
 } from '@vendure/core';
 import {
+  Check,
+  Column,
   Entity,
   Index,
+  JoinTable,
+  ManyToMany,
   ManyToOne,
   OneToMany,
-  ManyToMany,
-  JoinTable,
-  Column,
-  Check,
   RelationId,
 } from 'typeorm';
 import { WalletAdjustment } from './wallet-adjustment.entity';
@@ -57,6 +57,9 @@ export class Wallet extends VendureEntity implements ChannelAware {
   @Column({ type: 'json', nullable: true })
   metadata?: Record<string, unknown>;
 
-  @OneToMany(() => WalletAdjustment, (e) => e.wallet)
+  @OneToMany(
+    () => WalletAdjustment,
+    (e) => e.wallet,
+  )
   adjustments!: WalletAdjustment[];
 }

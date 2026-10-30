@@ -1,10 +1,10 @@
-import { ModuleRef } from '@nestjs/core';
 import {
   Inject,
   Injectable,
   OnApplicationBootstrap,
   OnModuleInit,
 } from '@nestjs/common';
+import { ModuleRef } from '@nestjs/core';
 import {
   EventBus,
   Injector,
@@ -12,21 +12,14 @@ import {
   JobQueueService,
   Logger,
   RequestContext,
-  Type,
   VendureEvent,
   VendureLogger,
 } from '@vendure/core';
-import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
-import {
-  AlertingPluginOptions,
-  AlertLogLevel,
-  AlertMessage,
-  AlertTrigger,
-  LogAlertContext,
-} from '../types';
 import { EventAlert } from '../config/event-alert';
 import { LogAlert } from '../config/log-alert';
 import { Notifier } from '../config/notifier';
+import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
+import { AlertingPluginOptions, AlertMessage, LogAlertContext } from '../types';
 import { AlertingLogger } from './alert-logger';
 
 type AlertJobData = {
@@ -46,7 +39,7 @@ export class AlertingService implements OnModuleInit, OnApplicationBootstrap {
     private eventBus: EventBus,
     private jobQueueService: JobQueueService,
     @Inject(PLUGIN_INIT_OPTIONS) private options: AlertingPluginOptions,
-    private moduleRef: ModuleRef
+    private moduleRef: ModuleRef,
   ) {
     this.injector = new Injector(this.moduleRef);
   }
@@ -62,7 +55,7 @@ export class AlertingService implements OnModuleInit, OnApplicationBootstrap {
           Logger.error(
             `Failed to process alert job for notifier "${job.data.notifierName}": ${err.message}`,
             loggerCtx,
-            err.stack
+            err.stack,
           );
           throw e;
         }
@@ -90,7 +83,7 @@ export class AlertingService implements OnModuleInit, OnApplicationBootstrap {
                 `Failed to handle event ${
                   (event as any).constructor.name
                 } for alert: ${e}`,
-                loggerCtx
+                loggerCtx,
               );
             }
           });
@@ -116,47 +109,13 @@ export class AlertingService implements OnModuleInit, OnApplicationBootstrap {
 
   private async handleTrigger(
     alert: EventAlert<any> | LogAlert,
-    trigger: VendureEvent | LogAlertContext
+    trigger: VendureEvent | LogAlertContext,
   ): Promise<void> {
-    let raw: string | AlertMessage;
-
-    if (alert instanceof LogAlert) {
-      // Prevent infinite loops: skip logs emitted by this plugin
-      const logCtx = (trigger as LogAlertContext).loggerCtx;
-      if (logCtx === loggerCtx) {
-        return;
-      }
-
-      // Apply filter if configured
-      if (alert.filterFn) {
-        const passes = await alert.filterFn(trigger as LogAlertContext);
-        if (!passes) {
-          return;
-        }
-      }
-
-      if (!alert.notifyFn) {
-        return;
-      }
-      raw = await alert.notifyFn(trigger as LogAlertContext);
-    } else if (alert instanceof EventAlert) {
-      // Apply filter if configured
-      if (alert.filterFn) {
-        const passes = await alert.filterFn(trigger as VendureEvent);
-        if (!passes) {
-          return;
-        }
-      }
-
-      if (!alert.eventNotifyFn) {
-        return;
-      }
-      const event = trigger as VendureEvent;
-      const ctx = (event as any).ctx as RequestContext | undefined;
-      raw = await alert.eventNotifyFn(ctx, this.injector, event);
-    } else {
-      return;
-    }
+    const raw =
+      alert instanceof LogAlert
+        ? await this.getLogMessage(alert, trigger as LogAlertContext)
+        : await this.getEventMessage(alert, trigger as VendureEvent);
+    if (raw === undefined) return;
 
     const message: AlertMessage =
       typeof raw === 'string' ? { subject: 'Alert', text: raw } : raw;
@@ -170,9 +129,30 @@ export class AlertingService implements OnModuleInit, OnApplicationBootstrap {
     }
   }
 
+  /** Applies log filters without triggering alerts from the alerting logger itself. */
+  private async getLogMessage(
+    alert: LogAlert,
+    trigger: LogAlertContext,
+  ): Promise<string | AlertMessage | undefined> {
+    if (trigger.loggerCtx === loggerCtx) return;
+    if (alert.filterFn && !(await alert.filterFn(trigger))) return;
+    return alert.notifyFn?.(trigger);
+  }
+
+  /** Applies event filters before generating the notification message. */
+  private async getEventMessage(
+    alert: EventAlert<any>,
+    event: VendureEvent,
+  ): Promise<string | AlertMessage | undefined> {
+    if (!(alert instanceof EventAlert)) return;
+    if (alert.filterFn && !(await alert.filterFn(event))) return;
+    const ctx = (event as any).ctx as RequestContext | undefined;
+    return alert.eventNotifyFn?.(ctx, this.injector, event);
+  }
+
   private async processJob(
     notifierName: string,
-    message: AlertMessage
+    message: AlertMessage,
   ): Promise<void> {
     const windowMs = this.options.deduplicationWindowMs ?? 60_000;
     const key = this.dedupKey(notifierName, message);
@@ -182,7 +162,7 @@ export class AlertingService implements OnModuleInit, OnApplicationBootstrap {
     if (lastSent && now - lastSent < windowMs) {
       Logger.info(
         `Dropping duplicate alert for notifier "${notifierName}" with subject "${message.subject}"`,
-        loggerCtx
+        loggerCtx,
       );
       return;
     }
@@ -197,7 +177,7 @@ export class AlertingService implements OnModuleInit, OnApplicationBootstrap {
     await notifier.notify(message);
     Logger.info(
       `Sent alert to notifier "${notifierName}" with subject "${message.subject}"`,
-      loggerCtx
+      loggerCtx,
     );
   }
 

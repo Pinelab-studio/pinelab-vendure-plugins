@@ -1,3 +1,4 @@
+import { HttpModule } from '@nestjs/axios';
 import {
   Order,
   PluginCommonModule,
@@ -5,11 +6,10 @@ import {
   RuntimeVendureConfig,
   VendurePlugin,
 } from '@vendure/core';
+import { ShipmateController } from './api/shipmate.controller';
 import { ShipmateService } from './api/shipmate.service';
-import { HttpModule } from '@nestjs/axios';
 import { ShipmateConfigService } from './api/shipmate-config.service';
 import { PLUGIN_INIT_OPTIONS } from './constants';
-import { ShipmateController } from './api/shipmate.controller';
 import { channelCustomFields, shipmatePermission } from './custom-fields';
 
 export interface ShipmatePluginConfig {
@@ -18,7 +18,7 @@ export interface ShipmatePluginConfig {
     | 'https://api-staging.shipmate.co.uk/v1.2';
   shouldSendOrder(
     ctx: RequestContext,
-    order: Order
+    order: Order,
   ): Promise<boolean> | boolean;
 }
 
@@ -43,7 +43,7 @@ export interface ShipmatePluginConfig {
 export class ShipmatePlugin {
   static config: ShipmatePluginConfig;
   static init(config: ShipmatePluginConfig): typeof ShipmatePlugin {
-    this.config = config;
+    ShipmatePlugin.config = config;
     return ShipmatePlugin;
   }
 }

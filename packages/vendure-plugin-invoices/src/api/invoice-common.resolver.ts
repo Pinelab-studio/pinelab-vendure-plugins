@@ -7,8 +7,8 @@ import {
   PermissionDefinition,
   RequestContext,
 } from '@vendure/core';
-import { InvoiceService } from '../services/invoice.service';
 import { Invoice } from '../generated-graphql-types';
+import { InvoiceService } from '../services/invoice.service';
 
 export const invoicePermission = new PermissionDefinition({
   name: 'AllowInvoicesPermission',
@@ -19,7 +19,7 @@ export const invoicePermission = new PermissionDefinition({
 export class InvoiceCommonResolver {
   constructor(
     private invoiceService: InvoiceService,
-    private entityHydrator: EntityHydrator
+    private entityHydrator: EntityHydrator,
   ) {}
 
   @ResolveField('invoices')
@@ -27,11 +27,11 @@ export class InvoiceCommonResolver {
   @Allow(invoicePermission.Permission)
   async invoices(
     @Ctx() ctx: RequestContext,
-    @Parent() order: Order
+    @Parent() order: Order,
   ): Promise<Invoice[]> {
     const invoices = await this.invoiceService.getInvoicesForOrder(
       ctx,
-      order.id
+      order.id,
     );
     await this.entityHydrator.hydrate(ctx, order, { relations: ['customer'] });
     if (!order.customer?.emailAddress) {
@@ -47,7 +47,7 @@ export class InvoiceCommonResolver {
         ctx,
         invoice.invoiceNumber,
         order.code,
-        order.customer!.emailAddress
+        order.customer?.emailAddress,
       ),
     }));
   }

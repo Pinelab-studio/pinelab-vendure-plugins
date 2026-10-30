@@ -7,7 +7,7 @@ import {
   testConfig,
 } from '@vendure/testing';
 import { TestServer } from '@vendure/testing/lib/test-server';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, expect, it } from 'vitest';
 import { initialData } from '../../test/src/initial-data';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
 import { GoogleSheetLoaderPlugin } from '../src';
@@ -15,7 +15,7 @@ import { TestDataStrategy } from './test-data-strategy';
 
 let server: TestServer;
 let adminClient: SimpleGraphQLClient;
-let shopClient: SimpleGraphQLClient;
+let _shopClient: SimpleGraphQLClient;
 let serverStarted = false;
 
 beforeAll(async () => {
@@ -40,7 +40,7 @@ beforeAll(async () => {
     },
   });
 
-  ({ server, adminClient, shopClient } = createTestEnvironment(config));
+  ({ server, adminClient, _shopClient } = createTestEnvironment(config));
   await server.init({
     initialData: {
       ...initialData,

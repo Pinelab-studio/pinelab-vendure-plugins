@@ -1,6 +1,6 @@
 import { Order, OrderLine } from '@vendure/core';
-import { ParcelInput, ParcelInputItem } from './types/sendcloud-api.types';
 import { SendcloudPluginOptions } from './types/sendcloud.types';
+import { ParcelInput, ParcelInputItem } from './types/sendcloud-api.types';
 
 /**
  * Transforms order and variants to ParcelInput
@@ -10,7 +10,7 @@ import { SendcloudPluginOptions } from './types/sendcloud.types';
 export function toParcelInput(
   order: Order,
   options: SendcloudPluginOptions,
-  defaultPhoneNr?: string
+  defaultPhoneNr?: string,
 ): ParcelInput {
   const items = order.lines
     .filter((line) => line.quantity >= 1)
@@ -22,7 +22,7 @@ export function toParcelInput(
     house_number: order.shippingAddress.streetLine2!,
     city: order.shippingAddress.city!,
     postal_code: order.shippingAddress.postalCode!,
-    country: order.shippingAddress.countryCode!.toUpperCase(),
+    country: order.shippingAddress.countryCode?.toUpperCase(),
     telephone: order.customer?.phoneNumber || defaultPhoneNr,
     request_label: false,
     email: order.customer?.emailAddress,
@@ -36,11 +36,11 @@ export function toParcelInput(
 
 export function toParcelInputItem(
   line: OrderLine,
-  options: SendcloudPluginOptions
+  options: SendcloudPluginOptions,
 ): ParcelInputItem {
   const variant = line.productVariant;
   let weightPerUnit = options.weightFn?.(line) || 0;
-  let hsCode = options.hsCodeFn?.(line);
+  const hsCode = options.hsCodeFn?.(line);
   if (weightPerUnit < 0.001) {
     weightPerUnit = 0.001;
   }

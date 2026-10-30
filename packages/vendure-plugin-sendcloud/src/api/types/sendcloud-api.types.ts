@@ -67,7 +67,7 @@ export interface Country {
   name: string;
 }
 
-export interface CustomsDeclaration {}
+export type CustomsDeclaration = {};
 
 export interface Label {
   normal_printer: string[];

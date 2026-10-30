@@ -1,9 +1,11 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-argument */
+
+import util from 'node:util';
 import {
-  createSelfRefreshingCache,
   Customer,
+  createSelfRefreshingCache,
   EntityHydrator,
   Injector,
   Logger,
@@ -12,7 +14,6 @@ import {
   SelfRefreshingCache,
   translateDeep,
 } from '@vendure/core';
-import util from 'util';
 import { InvoiceEntity } from '../../entities/invoice.entity';
 import {
   AccountingExportStrategy,
@@ -43,7 +44,7 @@ interface Config {
   getReference?: (
     order: Order,
     invoice: InvoiceEntity,
-    isCreditInvoiceFor?: number
+    isCreditInvoiceFor?: number,
   ) => string;
   /**
    * Construct a URL that links to the order in Vendure Admin
@@ -89,7 +90,7 @@ export class XeroUKExportStrategy implements AccountingExportStrategy {
     } catch (e: any) {
       throw Error(
         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-        `Could not find the "xero-node" package. Make sure it is installed: ${e?.message}`
+        `Could not find the "xero-node" package. Make sure it is installed: ${e?.message}`,
       );
     }
     const XeroNode = await import('xero-node');
@@ -107,7 +108,7 @@ export class XeroUKExportStrategy implements AccountingExportStrategy {
         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         `Failed initialize: Could not get tax rates from Xero: ${e?.message}`,
         loggerCtx,
-        util.inspect(e, false, 5)
+        util.inspect(e, false, 5),
       );
     }
   }
@@ -118,7 +119,7 @@ export class XeroUKExportStrategy implements AccountingExportStrategy {
   async exportInvoice(
     ctx: RequestContext,
     invoice: InvoiceEntity,
-    order: Order
+    order: Order,
   ): Promise<ExternalReference> {
     await injector.get(EntityHydrator).hydrate(ctx, order, {
       relations: [
@@ -131,13 +132,13 @@ export class XeroUKExportStrategy implements AccountingExportStrategy {
     });
     if (!order.customer) {
       throw Error(
-        `Cannot export invoice of order '${order.code}' to Xero without a customer`
+        `Cannot export invoice of order '${order.code}' to Xero without a customer`,
       );
     }
     try {
       const contact = await this.getOrCreateContact(
         order.customer,
-        order.billingAddress?.company
+        order.billingAddress?.company,
       );
       const reference =
         this.config.getReference?.(order, invoice) || order.code;
@@ -170,12 +171,12 @@ export class XeroUKExportStrategy implements AccountingExportStrategy {
         { invoices: [xeroInvoice] },
         true,
         undefined,
-        idempotencyKey
+        idempotencyKey,
       );
       const createdInvoice = response.body.invoices?.[0];
       Logger.info(
         `Created invoice '${invoice.invoiceNumber}' for order '${order.code}' in Xero with ID '${createdInvoice?.invoiceID}' with a total Incl. Tax of ${createdInvoice?.total}`,
-        loggerCtx
+        loggerCtx,
       );
       return {
         reference: createdInvoice?.invoiceID,
@@ -186,7 +187,7 @@ export class XeroUKExportStrategy implements AccountingExportStrategy {
       const errorMessage = this.getErrorMessage(err);
       Logger.warn(
         `Failed to export invoice to Xero for order '${order.code}': ${errorMessage}`,
-        loggerCtx
+        loggerCtx,
       );
       throw Error(errorMessage);
     }
@@ -196,7 +197,7 @@ export class XeroUKExportStrategy implements AccountingExportStrategy {
     ctx: RequestContext,
     invoice: InvoiceEntity,
     isCreditInvoiceFor: InvoiceEntity,
-    order: Order
+    order: Order,
   ): Promise<ExternalReference> {
     await this.tokenCache.value(); // Always get a token before making a request
     await injector
@@ -204,19 +205,19 @@ export class XeroUKExportStrategy implements AccountingExportStrategy {
       .hydrate(ctx, order, { relations: ['customer'] });
     if (!order.customer) {
       throw Error(
-        `Cannot export credit invoice of order '${order.code}' to Xero without a customer`
+        `Cannot export credit invoice of order '${order.code}' to Xero without a customer`,
       );
     }
     try {
       const contact = await this.getOrCreateContact(
         order.customer,
-        order.billingAddress?.company
+        order.billingAddress?.company,
       );
       const reference =
         this.config.getReference?.(
           order,
           invoice,
-          isCreditInvoiceFor.invoiceNumber
+          isCreditInvoiceFor.invoiceNumber,
         ) || `Credit note for ${isCreditInvoiceFor.invoiceNumber}`;
       const creditNote: import('xero-node').CreditNote = {
         creditNoteNumber: `${invoice.invoiceNumber} (CN)`,
@@ -240,12 +241,12 @@ export class XeroUKExportStrategy implements AccountingExportStrategy {
         { creditNotes: [creditNote] },
         true,
         undefined,
-        idempotencyKey
+        idempotencyKey,
       );
       const creditNoteResponse = response.body.creditNotes?.[0];
       Logger.info(
         `Created credit note '${invoice.invoiceNumber}' for order '${order.code}' in Xero with ID '${creditNoteResponse?.creditNoteID}' with a total Incl. Tax of ${creditNoteResponse?.total}`,
-        loggerCtx
+        loggerCtx,
       );
       return {
         reference: creditNoteResponse?.creditNoteID,
@@ -256,7 +257,7 @@ export class XeroUKExportStrategy implements AccountingExportStrategy {
       const errorMessage = this.getErrorMessage(err);
       Logger.warn(
         `Failed to export Credit Invoice to Xero for order '${order.code}': ${errorMessage}`,
-        loggerCtx
+        loggerCtx,
       );
       throw Error(errorMessage);
     }
@@ -264,7 +265,7 @@ export class XeroUKExportStrategy implements AccountingExportStrategy {
 
   async getOrCreateContact(
     customer: Customer,
-    companyName?: string
+    companyName?: string,
   ): Promise<import('xero-node').Contact> {
     await this.tokenCache.value(); // Always get a token before making a request
     // Find by contact name first
@@ -278,7 +279,7 @@ export class XeroUKExportStrategy implements AccountingExportStrategy {
       undefined,
       undefined,
       undefined,
-      contactName
+      contactName,
     );
     if (!contacts.body.contacts?.length) {
       // If no contacts, try to find by email
@@ -291,19 +292,19 @@ export class XeroUKExportStrategy implements AccountingExportStrategy {
         undefined,
         undefined,
         undefined,
-        customer.emailAddress
+        customer.emailAddress,
       );
     }
     if ((contacts.body?.contacts?.length ?? 0) > 1) {
-      const contact = contacts.body.contacts![0];
+      const contact = contacts.body.contacts?.[0];
       Logger.info(
         `Found multiple contacts in Xero with email address "${customer.emailAddress}". Using ${contact.contactID}`,
-        loggerCtx
+        loggerCtx,
       );
       return contact;
     } else if ((contacts.body?.contacts?.length ?? 0) === 1) {
       // Return only contact
-      return contacts.body.contacts![0];
+      return contacts.body.contacts?.[0];
     }
     // Else, create a new contact
     const createdContacts = await this.xero.accountingApi.createContacts(
@@ -317,14 +318,14 @@ export class XeroUKExportStrategy implements AccountingExportStrategy {
             lastName: customer.lastName,
           },
         ],
-      }
+      },
     );
     const createdContact = createdContacts.body.contacts?.[0];
     Logger.info(
       `No contact found with name '${contactName}' or email '${customer.emailAddress}'. Created new contact with email "${createdContact?.emailAddress}" (${createdContact?.contactID})`,
-      loggerCtx
+      loggerCtx,
     );
-    return createdContacts.body.contacts![0];
+    return createdContacts.body.contacts?.[0];
   }
 
   /**
@@ -362,7 +363,7 @@ export class XeroUKExportStrategy implements AccountingExportStrategy {
    */
   private getLineItems(
     ctx: RequestContext,
-    order: Order
+    order: Order,
   ): import('xero-node').LineItem[] {
     // Map line items
     const lineItems: import('xero-node').LineItem[] = order.lines.map(
@@ -370,14 +371,14 @@ export class XeroUKExportStrategy implements AccountingExportStrategy {
         return {
           description: translateDeep(
             line.productVariant,
-            ctx.channel.defaultLanguageCode
+            ctx.channel.defaultLanguageCode,
           ).name,
           quantity: line.quantity,
           unitAmount: this.toMoney(line.proratedUnitPrice),
           accountCode: this.config.salesAccountCode,
           taxType: this.getTaxType(line.taxRate, order.code),
         };
-      }
+      },
     );
     // Map shipping lines
     lineItems.push(
@@ -385,14 +386,14 @@ export class XeroUKExportStrategy implements AccountingExportStrategy {
         return {
           description: translateDeep(
             shippingLine.shippingMethod,
-            ctx.channel.defaultLanguageCode
+            ctx.channel.defaultLanguageCode,
           ).name,
           quantity: 1,
           unitAmount: this.toMoney(shippingLine.discountedPrice),
           accountCode: this.config.shippingAccountCode,
           taxType: this.getTaxType(shippingLine.taxRate, order.code),
         };
-      })
+      }),
     );
     // Map surcharges
     lineItems.push(
@@ -404,17 +405,17 @@ export class XeroUKExportStrategy implements AccountingExportStrategy {
           accountCode: this.config.salesAccountCode,
           taxType: this.getTaxType(surcharge.taxRate, order.code),
         };
-      })
+      }),
     );
     return lineItems;
   }
 
   private getCreditLineItems(
-    invoice: InvoiceEntity
+    invoice: InvoiceEntity,
   ): import('xero-node').LineItem[] {
     if (!invoice.isCreditInvoice) {
       throw Error(
-        `Cannot create credit line items for non-credit invoice '${invoice.invoiceNumber}'`
+        `Cannot create credit line items for non-credit invoice '${invoice.invoiceNumber}'`,
       );
     }
     return invoice.orderTotals.taxSummaries.map((taxSummary) => {
@@ -435,7 +436,7 @@ export class XeroUKExportStrategy implements AccountingExportStrategy {
    */
   private getNormalizedContactName(
     customer: Customer,
-    companyName?: string
+    companyName?: string,
   ): string {
     const contactName =
       companyName ||
@@ -445,10 +446,10 @@ export class XeroUKExportStrategy implements AccountingExportStrategy {
 
   private getTaxType(
     rate: number,
-    orderOrInvoice: string | number
+    orderOrInvoice: string | number,
   ): string | undefined {
     const taxType = this.taxRates.find(
-      (xeroRate) => xeroRate.rate == rate
+      (xeroRate) => xeroRate.rate === rate,
     )?.type;
     if (taxType) {
       return taxType;
@@ -458,7 +459,7 @@ export class XeroUKExportStrategy implements AccountingExportStrategy {
       loggerCtx,
       `Available tax rates: ${this.taxRates
         .map((r) => `${r.type}=${r.rate}`)
-        .join(', ')}`
+        .join(', ')}`,
     );
   }
 
@@ -488,12 +489,12 @@ export class XeroUKExportStrategy implements AccountingExportStrategy {
             Logger.error(
               `Failed to get access_token for Xero: ${e?.message}`,
               loggerCtx,
-              util.inspect(e, false, 5)
+              util.inspect(e, false, 5),
             );
             throw Error(
               `Failed to get access_token for Xero: ${
                 e?.message
-              }: ${JSON.stringify(e?.response?.data)}`
+              }: ${JSON.stringify(e?.response?.data)}`,
             );
           }
         },

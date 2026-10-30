@@ -1,3 +1,4 @@
+import { VendureConfig } from '@vendure/core';
 import {
   createTestEnvironment,
   registerInitializer,
@@ -7,24 +8,23 @@ import {
 import { TestServer } from '@vendure/testing/lib/test-server';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { initialData } from '../../test/src/initial-data';
-import { config } from './vendure-config';
-import { VendureConfig } from '@vendure/core';
 import {
+  CONTENT_ENTRIES_QUERY,
+  CREATE_CONTENT_ENTRY,
+  DELETE_CONTENT_ENTRY,
+  GET_BANNER_BY_ID,
+  GET_BANNERS,
+  GET_CONTENT_ENTRY,
+  GET_CONTENT_TYPES,
+  GET_FEATURED_PRODUCT,
   getField,
   getQueryField,
   getType,
   INTROSPECTION_QUERY,
   IntrospectionSchema,
   typeRefToString,
-  CREATE_CONTENT_ENTRY,
-  DELETE_CONTENT_ENTRY,
-  CONTENT_ENTRIES_QUERY,
-  GET_CONTENT_ENTRY,
-  GET_CONTENT_TYPES,
-  GET_FEATURED_PRODUCT,
-  GET_BANNERS,
-  GET_BANNER_BY_ID,
 } from './simple-cms-helpers';
+import { config } from './vendure-config';
 
 let server: TestServer;
 let adminClient: SimpleGraphQLClient;
@@ -38,7 +38,7 @@ beforeAll(async () => {
   // Override from dev-server
   (config.dbConnectionOptions as any).autoSave = false;
   ({ server, adminClient, shopClient } = createTestEnvironment(
-    config as Required<VendureConfig>
+    config as Required<VendureConfig>,
   ));
   await server.init({
     initialData: {
@@ -62,109 +62,108 @@ describe('SimpleCmsPlugin', () => {
     it('Generates the ContentEntry interface on the shop API', () => {
       const iface = getType(shopSchema, 'ContentEntry');
       expect(iface).toBeDefined();
-      expect(iface!.kind).toBe('INTERFACE');
-      expect(typeRefToString(getField(iface, 'id')!.type)).toBe('ID!');
+      expect(iface?.kind).toBe('INTERFACE');
+      expect(typeRefToString(getField(iface, 'id')?.type)).toBe('ID!');
       expect(getField(iface, 'code')).toBeUndefined();
-      expect(typeRefToString(getField(iface, 'createdAt')!.type)).toBe(
-        'DateTime!'
+      expect(typeRefToString(getField(iface, 'createdAt')?.type)).toBe(
+        'DateTime!',
       );
-      expect(typeRefToString(getField(iface, 'updatedAt')!.type)).toBe(
-        'DateTime!'
+      expect(typeRefToString(getField(iface, 'updatedAt')?.type)).toBe(
+        'DateTime!',
       );
     });
 
     it('Generates the FeaturedProduct singleton type and query', () => {
       const type = getType(shopSchema, 'FeaturedProduct');
       expect(type).toBeDefined();
-      expect(type!.kind).toBe('OBJECT');
-      expect(type!.interfaces?.map((i) => i.name)).toContain('ContentEntry');
+      expect(type?.kind).toBe('OBJECT');
+      expect(type?.interfaces?.map((i) => i.name)).toContain('ContentEntry');
       expect(getField(type, 'code')).toBeUndefined();
 
       // Fields with correct nullability
-      expect(typeRefToString(getField(type, 'subtitle')!.type)).toBe('String');
-      expect(typeRefToString(getField(type, 'title')!.type)).toBe('String!');
-      expect(typeRefToString(getField(type, 'seo')!.type)).toBe(
-        'FeaturedProductSeo!'
+      expect(typeRefToString(getField(type, 'subtitle')?.type)).toBe('String');
+      expect(typeRefToString(getField(type, 'title')?.type)).toBe('String!');
+      expect(typeRefToString(getField(type, 'seo')?.type)).toBe(
+        'FeaturedProductSeo!',
       );
-      expect(typeRefToString(getField(type, 'product')!.type)).toBe('Product!');
+      expect(typeRefToString(getField(type, 'product')?.type)).toBe('Product!');
 
       // Nested struct type
       const seoType = getType(shopSchema, 'FeaturedProductSeo');
       expect(seoType).toBeDefined();
-      expect(typeRefToString(getField(seoType, 'metaTitle')!.type)).toBe(
-        'String!'
+      expect(typeRefToString(getField(seoType, 'metaTitle')?.type)).toBe(
+        'String!',
       );
-      expect(typeRefToString(getField(seoType, 'metaDescription')!.type)).toBe(
-        'String!'
+      expect(typeRefToString(getField(seoType, 'metaDescription')?.type)).toBe(
+        'String!',
       );
 
       // Singleton query: no args, no list, no by-id variants
       const singleton = getQueryField(shopSchema, 'featuredProduct');
       expect(singleton).toBeDefined();
-      expect(singleton!.args).toHaveLength(0);
-      expect(typeRefToString(singleton!.type)).toBe('FeaturedProduct');
+      expect(singleton?.args).toHaveLength(0);
+      expect(typeRefToString(singleton?.type)).toBe('FeaturedProduct');
       expect(getQueryField(shopSchema, 'featuredProducts')).toBeUndefined();
     });
 
     it('Generates the Banner non-singleton type and queries', () => {
       const type = getType(shopSchema, 'Banner');
       expect(type).toBeDefined();
-      expect(type!.kind).toBe('OBJECT');
-      expect(type!.interfaces?.map((i) => i.name)).toContain('ContentEntry');
+      expect(type?.kind).toBe('OBJECT');
+      expect(type?.interfaces?.map((i) => i.name)).toContain('ContentEntry');
       expect(getField(type, 'code')).toBeUndefined();
 
-      expect(typeRefToString(getField(type, 'title')!.type)).toBe('String!');
-      expect(typeRefToString(getField(type, 'priority')!.type)).toBe('Int');
-      expect(typeRefToString(getField(type, 'product')!.type)).toBe('Product!');
-      expect(typeRefToString(getField(type, 'relatedProducts')!.type)).toBe(
-        '[Product!]'
+      expect(typeRefToString(getField(type, 'title')?.type)).toBe('String!');
+      expect(typeRefToString(getField(type, 'priority')?.type)).toBe('Int');
+      expect(typeRefToString(getField(type, 'product')?.type)).toBe('Product!');
+      expect(typeRefToString(getField(type, 'relatedProducts')?.type)).toBe(
+        '[Product!]',
       );
-      expect(typeRefToString(getField(type, 'variant')!.type)).toBe(
-        'ProductVariant'
+      expect(typeRefToString(getField(type, 'variant')?.type)).toBe(
+        'ProductVariant',
       );
-      expect(typeRefToString(getField(type, 'relatedVariants')!.type)).toBe(
-        '[ProductVariant!]'
+      expect(typeRefToString(getField(type, 'relatedVariants')?.type)).toBe(
+        '[ProductVariant!]',
       );
 
       // List query: no args, returns [Banner!]!
       const list = getQueryField(shopSchema, 'banners');
       expect(list).toBeDefined();
-      expect(list!.args).toHaveLength(0);
-      expect(typeRefToString(list!.type)).toBe('[Banner!]!');
+      expect(list?.args).toHaveLength(0);
+      expect(typeRefToString(list?.type)).toBe('[Banner!]!');
 
       // By-id query: required `id: ID!`, returns Banner (nullable)
       const byId = getQueryField(shopSchema, 'banner');
       expect(byId).toBeDefined();
-      expect(byId!.args).toHaveLength(1);
-      expect(byId!.args[0].name).toBe('id');
-      expect(typeRefToString(byId!.args[0].type)).toBe('ID!');
-      expect(typeRefToString(byId!.type)).toBe('Banner');
+      expect(byId?.args).toHaveLength(1);
+      expect(byId?.args[0].name).toBe('id');
+      expect(typeRefToString(byId?.args[0].type)).toBe('ID!');
+      expect(typeRefToString(byId?.type)).toBe('Banner');
     });
 
     it('Generates the AdminContentEntry type with JSON fields on the admin API', () => {
       const type = getType(adminSchema, 'AdminContentEntry');
       expect(type).toBeDefined();
-      expect(type!.kind).toBe('OBJECT');
-      expect(typeRefToString(getField(type, 'id')!.type)).toBe('ID!');
+      expect(type?.kind).toBe('OBJECT');
+      expect(typeRefToString(getField(type, 'id')?.type)).toBe('ID!');
       expect(getField(type, 'code')).toBeUndefined();
       expect(getField(type, 'name')).toBeUndefined();
-      expect(typeRefToString(getField(type, 'fields')!.type)).toBe('JSON!');
+      expect(typeRefToString(getField(type, 'fields')?.type)).toBe('JSON!');
     });
 
     it('Exposes content type metadata (incl. ui config) via the admin API', async () => {
-      const { simpleCmsContentTypes } = await adminClient.query(
-        GET_CONTENT_TYPES
-      );
+      const { simpleCmsContentTypes } =
+        await adminClient.query(GET_CONTENT_TYPES);
       expect(simpleCmsContentTypes).toHaveLength(3);
 
       const featured = simpleCmsContentTypes.find(
-        (c: { code: string }) => c.code === 'featuredProduct'
+        (c: { code: string }) => c.code === 'featuredProduct',
       );
       expect(featured.displayName).toBe('Featured Product');
       expect(featured.allowMultiple).toBe(false);
 
       const productField = featured.fields.find(
-        (f: { name: string }) => f.name === 'product'
+        (f: { name: string }) => f.name === 'product',
       );
       expect(productField.type).toBe('relation');
       expect(productField.graphQLType).toBe('Product');
@@ -173,12 +172,12 @@ describe('SimpleCmsPlugin', () => {
       expect(productField.ui).toBeNull();
 
       const seoField = featured.fields.find(
-        (f: { name: string }) => f.name === 'seo'
+        (f: { name: string }) => f.name === 'seo',
       );
       expect(seoField.type).toBe('struct');
       expect(seoField.ui).toBeNull();
       const metaDescription = seoField.fields.find(
-        (f: { name: string }) => f.name === 'metaDescription'
+        (f: { name: string }) => f.name === 'metaDescription',
       );
       expect(metaDescription.ui).toEqual({
         component: 'textarea-form-input',
@@ -186,16 +185,16 @@ describe('SimpleCmsPlugin', () => {
 
       // Banner relation fields should expose single vs multi via `list`
       const banner = simpleCmsContentTypes.find(
-        (c: { code: string }) => c.code === 'banner'
+        (c: { code: string }) => c.code === 'banner',
       );
       const bannerProduct = banner.fields.find(
-        (f: { name: string }) => f.name === 'product'
+        (f: { name: string }) => f.name === 'product',
       );
       expect(bannerProduct.list).toBe(false);
       expect(bannerProduct.ui).toBeNull();
 
       const bannerRelated = banner.fields.find(
-        (f: { name: string }) => f.name === 'relatedProducts'
+        (f: { name: string }) => f.name === 'relatedProducts',
       );
       expect(bannerRelated.list).toBe(true);
       expect(bannerRelated.ui).toEqual({
@@ -204,7 +203,7 @@ describe('SimpleCmsPlugin', () => {
       });
 
       const bannerVariant = banner.fields.find(
-        (f: { name: string }) => f.name === 'variant'
+        (f: { name: string }) => f.name === 'variant',
       );
       expect(bannerVariant.type).toBe('relation');
       expect(bannerVariant.graphQLType).toBe('ProductVariant');
@@ -212,7 +211,7 @@ describe('SimpleCmsPlugin', () => {
       expect(bannerVariant.ui).toBeNull();
 
       const bannerRelatedVariants = banner.fields.find(
-        (f: { name: string }) => f.name === 'relatedVariants'
+        (f: { name: string }) => f.name === 'relatedVariants',
       );
       expect(bannerRelatedVariants.type).toBe('relation');
       expect(bannerRelatedVariants.graphQLType).toBe('ProductVariant');
@@ -248,7 +247,7 @@ describe('SimpleCmsPlugin', () => {
               },
             ],
           },
-        }
+        },
       );
       expect(createContentEntry.id).toBeTruthy();
       expect(createContentEntry.contentTypeCode).toBe('featuredProduct');
@@ -272,7 +271,7 @@ describe('SimpleCmsPlugin', () => {
               },
             ],
           },
-        })
+        }),
       ).rejects.toThrow(/only allows a single entry/);
     });
 
@@ -284,7 +283,7 @@ describe('SimpleCmsPlugin', () => {
             fields: {},
             translations: [{ languageCode: 'en', fields: { title: 'X' } }],
           },
-        })
+        }),
       ).rejects.toThrow(/Required field 'product' is missing/);
     });
 
@@ -296,7 +295,7 @@ describe('SimpleCmsPlugin', () => {
             fields: { product: { id: 1 }, title: 'should be in translations' },
             translations: [],
           },
-        })
+        }),
       ).rejects.toThrow(/translatable/);
     });
 
@@ -313,7 +312,7 @@ describe('SimpleCmsPlugin', () => {
               { languageCode: 'en', fields: { title: 'Wrong relation type' } },
             ],
           },
-        })
+        }),
       ).rejects.toThrow(/must be an array/);
     });
 
@@ -330,7 +329,7 @@ describe('SimpleCmsPlugin', () => {
               { languageCode: 'en', fields: { title: 'Wrong relation type' } },
             ],
           },
-        })
+        }),
       ).rejects.toThrow(/must be an array/);
     });
 
@@ -351,7 +350,7 @@ describe('SimpleCmsPlugin', () => {
               { languageCode: 'en', fields: { title: 'Top banner EN' } },
             ],
           },
-        }
+        },
       );
       expect(createContentEntry.id).toBeTruthy();
       expect(createContentEntry.fields.priority).toBe(1);
@@ -375,7 +374,7 @@ describe('SimpleCmsPlugin', () => {
               { languageCode: 'en', fields: { title: 'Side banner EN' } },
             ],
           },
-        }
+        },
       );
       expect(createContentEntry.id).toBeTruthy();
       expect(createContentEntry.fields.priority).toBe(2);
@@ -472,7 +471,7 @@ describe('SimpleCmsPlugin', () => {
     it('Returns paginated list of all content entries', async () => {
       const { contentEntries } = await adminClient.query(
         CONTENT_ENTRIES_QUERY,
-        { options: {} }
+        { options: {} },
       );
       // 1 featuredProduct + 2 banners
       expect(contentEntries.totalItems).toBe(3);
@@ -482,7 +481,7 @@ describe('SimpleCmsPlugin', () => {
     it('Respects take/skip', async () => {
       const { contentEntries } = await adminClient.query(
         CONTENT_ENTRIES_QUERY,
-        { options: { take: 1, skip: 1 } }
+        { options: { take: 1, skip: 1 } },
       );
       expect(contentEntries.totalItems).toBe(3);
       expect(contentEntries.items).toHaveLength(1);
@@ -495,7 +494,7 @@ describe('SimpleCmsPlugin', () => {
           options: {
             filter: { contentTypeCode: { eq: 'banner' } },
           },
-        }
+        },
       );
       expect(contentEntries.totalItems).toBe(2);
       contentEntries.items.forEach((e: { contentTypeCode: string }) => {
@@ -506,10 +505,10 @@ describe('SimpleCmsPlugin', () => {
     it('Sorts by updatedAt DESC', async () => {
       const { contentEntries } = await adminClient.query(
         CONTENT_ENTRIES_QUERY,
-        { options: { sort: { updatedAt: 'DESC' } } }
+        { options: { sort: { updatedAt: 'DESC' } } },
       );
       const dates = contentEntries.items.map((e: { updatedAt: string }) =>
-        new Date(e.updatedAt).getTime()
+        new Date(e.updatedAt).getTime(),
       );
       const sorted = [...dates].sort((a: number, b: number) => b - a);
       expect(dates).toEqual(sorted);
@@ -518,7 +517,7 @@ describe('SimpleCmsPlugin', () => {
     it('Resolves displayName from first translatable string field (active language)', async () => {
       const { contentEntries } = await adminClient.query(
         CONTENT_ENTRIES_QUERY,
-        { options: { filter: { contentTypeCode: { eq: 'featuredProduct' } } } }
+        { options: { filter: { contentTypeCode: { eq: 'featuredProduct' } } } },
       );
       expect(contentEntries.items).toHaveLength(1);
       expect(contentEntries.items[0].displayName).toBe('Featured title');
@@ -532,7 +531,7 @@ describe('SimpleCmsPlugin', () => {
             filter: { contentTypeCode: { eq: 'banner' } },
             sort: { id: 'ASC' },
           },
-        }
+        },
       );
       expect(contentEntries.items[0].displayName).toBe('Top banner EN');
       expect(contentEntries.items[1].displayName).toBe('Side banner EN');
@@ -555,13 +554,13 @@ describe('SimpleCmsPlugin', () => {
               },
             ],
           },
-        }
+        },
       );
       expect(createContentEntry.id).toBeTruthy();
 
       const { contentEntries } = await adminClient.query(
         CONTENT_ENTRIES_QUERY,
-        { options: { filter: { contentTypeCode: { eq: 'metric' } } } }
+        { options: { filter: { contentTypeCode: { eq: 'metric' } } } },
       );
       expect(contentEntries.items).toHaveLength(1);
       expect(contentEntries.items[0].displayName).toBe('My Metric');
@@ -588,7 +587,7 @@ describe('SimpleCmsPlugin', () => {
               { languageCode: 'en', fields: { title: 'Delete me' } },
             ],
           },
-        }
+        },
       );
       expect(createContentEntry.id).toBeTruthy();
       entryToDeleteId = createContentEntry.id;
@@ -597,7 +596,7 @@ describe('SimpleCmsPlugin', () => {
     it('Soft-deletes the entry and returns DELETED result', async () => {
       const { deleteContentEntry } = await adminClient.query(
         DELETE_CONTENT_ENTRY,
-        { id: entryToDeleteId }
+        { id: entryToDeleteId },
       );
       expect(deleteContentEntry.result).toBe('DELETED');
     });
@@ -607,7 +606,7 @@ describe('SimpleCmsPlugin', () => {
         CONTENT_ENTRIES_QUERY,
         {
           options: { filter: { contentTypeCode: { eq: 'banner' } } },
-        }
+        },
       );
       const ids = contentEntries.items.map((e: { id: string }) => e.id);
       expect(ids).not.toContain(entryToDeleteId);

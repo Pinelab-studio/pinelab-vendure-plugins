@@ -2,18 +2,17 @@ import { DefaultLogger, LogLevel, mergeConfig } from '@vendure/core';
 import {
   createTestEnvironment,
   registerInitializer,
-  SimpleGraphQLClient,
+  type SimpleGraphQLClient,
   SqljsInitializer,
+  type TestServer,
   testConfig,
-  TestServer,
 } from '@vendure/testing';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import getFilesInAdminUiFolder from '../../test/src/compile-admin-ui.util';
 import { initialData } from '../../test/src/initial-data';
 import { createSettledOrder } from '../../test/src/shop-utils';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
-import { AdvancedMetricSummariesQuery, MetricsPlugin } from '../src';
-import { GET_METRICS } from '../src/ui/queries.graphql';
+import { type AdvancedMetricSummariesQuery, MetricsPlugin } from '../src';
+import { GET_METRICS } from './queries.graphql';
 
 describe('Metrics', () => {
   let shopClient: SimpleGraphQLClient;
@@ -72,19 +71,19 @@ describe('Metrics', () => {
       await adminClient.query<AdvancedMetricSummariesQuery>(GET_METRICS);
     expect.hasAssertions();
     const averageOrderValue = advancedMetricSummaries.find(
-      (m) => m.code === 'aov'
+      (m) => m.code === 'aov',
     )!;
     const revenuePerProduct = advancedMetricSummaries.find(
-      (m) => m.code === 'revenue-per-product'
+      (m) => m.code === 'revenue-per-product',
     )!;
     const salesPerProduct = advancedMetricSummaries.find(
-      (m) => m.code === 'units-sold'
+      (m) => m.code === 'units-sold',
     )!;
     [averageOrderValue, revenuePerProduct, salesPerProduct].forEach(
       (metric) => {
         expect(metric.series[0].values.length).toEqual(14);
         expect(metric.labels.length).toEqual(14);
-      }
+      },
     );
     expect(averageOrderValue.series[0].values.length).toEqual(14);
     expect(averageOrderValue.labels.length).toEqual(14);
@@ -102,7 +101,7 @@ describe('Metrics', () => {
         input: { variantIds: [1, 2] },
       });
     const revenuePerProduct = advancedMetricSummaries.find(
-      (m) => m.code === 'revenue-per-product'
+      (m) => m.code === 'revenue-per-product',
     )!;
     // For revenue per product we expect 2 series: one for each variant
     expect(revenuePerProduct.series[0].values.length).toEqual(14);
@@ -113,7 +112,7 @@ describe('Metrics', () => {
     // Expect the first series (variant 2), to have 839400 revenue in last month
     expect(revenuePerProduct.series[1].values[13]).toEqual(8394);
     const salesPerProduct = advancedMetricSummaries.find(
-      (m) => m.code === 'units-sold'
+      (m) => m.code === 'units-sold',
     )!;
     // For sales per product we expect 2 series: one for each variant
     expect(salesPerProduct.series[0].values.length).toEqual(14);
@@ -124,13 +123,6 @@ describe('Metrics', () => {
     // Expect the first series (variant 2), to have 6 revenue in last month
     expect(salesPerProduct.series[1].values[13]).toEqual(6);
   });
-
-  if (process.env.TEST_ADMIN_UI) {
-    it('Should compile admin', async () => {
-      const files = await getFilesInAdminUiFolder(__dirname, MetricsPlugin.ui);
-      expect(files?.length).toBeGreaterThan(0);
-    }, 200000);
-  }
 
   afterAll(async () => {
     await server.destroy();

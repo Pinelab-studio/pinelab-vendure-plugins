@@ -25,8 +25,8 @@ export class TEMPLATEPlugin {
 
   static init(options: TEMPLATEPluginOptions): Type<TEMPLATEPlugin> {
     // FIXME
-    this.options = {
-      ...this.options,
+    TEMPLATEPlugin.options = {
+      ...TEMPLATEPlugin.options,
       ...options,
     };
     return TEMPLATEPlugin;

@@ -1,7 +1,7 @@
+import { createReadStream, promises as fs, ReadStream } from 'node:fs';
 import { Response } from 'express';
-import { createReadStream, promises as fs, ReadStream } from 'fs';
 import { InvoiceEntity } from '../../entities/invoice.entity';
-import { exists, zipFiles, ZippableFile } from '../../util/file.util';
+import { exists, ZippableFile, zipFiles } from '../../util/file.util';
 import { LocalStorageStrategy } from './storage-strategy';
 
 /**
@@ -17,7 +17,7 @@ export class LocalFileStrategy implements LocalStorageStrategy {
     tmpFile: string,
     invoiceNumber: number,
     channelToken: string,
-    isCreditInvoice: boolean
+    isCreditInvoice: boolean,
   ) {
     const channelDir = `${this.invoiceDir}/${channelToken}`;
     await fs.mkdir(channelDir, { recursive: true });
@@ -33,7 +33,7 @@ export class LocalFileStrategy implements LocalStorageStrategy {
 
   async streamMultiple(
     invoices: InvoiceEntity[],
-    res: Response
+    res: Response,
   ): Promise<ReadStream> {
     res.set({
       'Content-Type': 'application/zip',
@@ -42,13 +42,13 @@ export class LocalFileStrategy implements LocalStorageStrategy {
     for (const invoice of invoices) {
       if (!(await exists(invoice.storageReference))) {
         throw new Error(
-          `Invoice file not found at path: ${invoice.storageReference}`
+          `Invoice file not found at path: ${invoice.storageReference}`,
         );
       }
     }
     const zippableFiles: ZippableFile[] = invoices.map((invoice) => ({
       path: invoice.storageReference,
-      name: invoice.invoiceNumber + '.pdf',
+      name: `${invoice.invoiceNumber}.pdf`,
     }));
     const zipFile = await zipFiles(zippableFiles);
     return createReadStream(zipFile);

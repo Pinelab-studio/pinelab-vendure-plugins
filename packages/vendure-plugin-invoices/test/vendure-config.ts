@@ -1,15 +1,15 @@
+import path from 'node:path';
 import {
-  mergeConfig,
   DefaultLogger,
-  LogLevel,
   DefaultSearchPlugin,
+  LogLevel,
+  mergeConfig,
   VendureConfig,
 } from '@vendure/core';
 import { DashboardPlugin } from '@vendure/dashboard/plugin';
-import { InvoicePlugin, LocalFileStrategy, XeroUKExportStrategy } from '../src';
 import { testConfig } from '@vendure/testing';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
-import path from 'path';
+import { InvoicePlugin, LocalFileStrategy, XeroUKExportStrategy } from '../src';
 
 require('dotenv').config();
 
@@ -27,7 +27,7 @@ const xeroAccountingExports =
             'THIS IS A TEST INVOICE, DONT APPROVE THIS PLEASE.',
           getVendureUrl: (order) =>
             `https://pinelab.studio/order/${order.code}`,
-          getDueDate: (ctx, order, invoice) => {
+          getDueDate: (_ctx, order, _invoice) => {
             const payment = order.payments.find((p) => p.state === 'Settled');
             if (payment?.method === 'purchase-order') {
               const date = new Date();

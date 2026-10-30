@@ -1,5 +1,5 @@
-import { ModuleRef } from '@nestjs/core';
 import { rmSync } from 'node:fs';
+import { ModuleRef } from '@nestjs/core';
 import {
   Channel,
   ConfigService,
@@ -24,8 +24,8 @@ import {
   createTestEnvironment,
   registerInitializer,
   SqljsInitializer,
-  testConfig,
   TestServer,
+  testConfig,
 } from '@vendure/testing';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { initialData } from '../../test/src/initial-data';
@@ -107,7 +107,7 @@ beforeAll(async () => {
   ).map((variant) => variant.id);
   if (testVariantIds.length < 2) {
     throw new Error(
-      `Expected at least two product variants, found ${testVariantIds.length}`
+      `Expected at least two product variants, found ${testVariantIds.length}`,
     );
   }
 }, 60000);
@@ -123,7 +123,7 @@ afterAll(async () => {
 /** Create an order with the requested variants and persisted state. */
 async function createOrder(
   state: Order['state'] = 'AddingItems',
-  productVariantIds: ID[] = testVariantIds.slice(0, 1)
+  productVariantIds: ID[] = testVariantIds.slice(0, 1),
 ): Promise<ID> {
   let order = await orderService.create(ctx);
   for (const productVariantId of productVariantIds) {
@@ -131,7 +131,7 @@ async function createOrder(
       ctx,
       order.id,
       productVariantId,
-      1
+      1,
     );
     if (isGraphQlErrorResult(result)) {
       throw new Error(result.message);
@@ -155,14 +155,14 @@ async function setUpdatedAt(orderId: ID, updatedAt: Date): Promise<void> {
   const driver = connection.rawConnection.driver;
   const table = driver.escape(repository.metadata.tablePath);
   const updatedAtColumn = driver.escape(
-    repository.metadata.findColumnWithPropertyName('updatedAt')!.databaseName
+    repository.metadata.findColumnWithPropertyName('updatedAt')?.databaseName,
   );
   const idColumn = driver.escape(
-    repository.metadata.findColumnWithPropertyName('id')!.databaseName
+    repository.metadata.findColumnWithPropertyName('id')?.databaseName,
   );
   await connection.rawConnection.query(
     `UPDATE ${table} SET ${updatedAtColumn} = ? WHERE ${idColumn} = ?`,
-    [updatedAt.toISOString(), orderId]
+    [updatedAt.toISOString(), orderId],
   );
 }
 
@@ -183,22 +183,22 @@ describe('schedule configuration', () => {
 
   it('rejects invalid option values', () => {
     expect(() => normalizeOrderCleanupOptions({ olderThanDays: -1 })).toThrow(
-      /olderThanDays/
+      /olderThanDays/,
     );
     expect(() =>
-      normalizeOrderCleanupOptions({ olderThanDays: 1, batchSize: 0 })
+      normalizeOrderCleanupOptions({ olderThanDays: 1, batchSize: 0 }),
     ).toThrow(/batchSize/);
     expect(() =>
       normalizeOrderCleanupOptions({
         olderThanDays: 1,
         schedule: { cron: '* * * * * *' },
-      })
+      }),
     ).toThrow(/five-field/);
     expect(() =>
       normalizeOrderCleanupOptions({
         olderThanDays: 1,
         schedule: { timezone: 'Not/A_Timezone' },
-      })
+      }),
     ).toThrow(/IANA timezone/);
   });
 
@@ -207,22 +207,22 @@ describe('schedule configuration', () => {
       isCronDue(
         '0 3 * * *',
         'Europe/Amsterdam',
-        new Date('2026-01-15T02:00:37Z')
-      )
+        new Date('2026-01-15T02:00:37Z'),
+      ),
     ).toBe(true);
     expect(
       isCronDue(
         '0 3 * * *',
         'Europe/Amsterdam',
-        new Date('2026-07-15T01:00:37Z')
-      )
+        new Date('2026-07-15T01:00:37Z'),
+      ),
     ).toBe(true);
     expect(
       isCronDue(
         '0 3 * * *',
         'Europe/Amsterdam',
-        new Date('2026-07-15T02:00:00Z')
-      )
+        new Date('2026-07-15T02:00:00Z'),
+      ),
     ).toBe(false);
   });
 
@@ -231,15 +231,15 @@ describe('schedule configuration', () => {
       isCronDue(
         '0 3 * * *',
         'America/New_York',
-        new Date('2026-03-07T08:00:00Z')
-      )
+        new Date('2026-03-07T08:00:00Z'),
+      ),
     ).toBe(true);
     expect(
       isCronDue(
         '0 3 * * *',
         'America/New_York',
-        new Date('2026-03-09T07:00:00Z')
-      )
+        new Date('2026-03-09T07:00:00Z'),
+      ),
     ).toBe(true);
   });
 
@@ -273,11 +273,11 @@ describe('schedule configuration', () => {
           cron: `${nonMatchingMinute} * * * *`,
           timezone: 'UTC',
         },
-      })
+      }),
     );
     const cleanupSpy = vi.spyOn(cleanupService, 'emptyStaleOrders');
     const result = (await task.execute(
-      new Injector(server.app.get(ModuleRef))
+      new Injector(server.app.get(ModuleRef)),
     )) as { scheduleSkipped: boolean };
 
     expect(result.scheduleSkipped).toBe(true);
@@ -330,7 +330,7 @@ describe('batch and processing bounds', () => {
     expect(emptySpy).toHaveBeenCalledTimes(ORDER_CLEANUP_PROCESSING_LIMIT);
     expect(warnSpy).toHaveBeenCalledWith(
       expect.stringContaining('next run'),
-      expect.any(String)
+      expect.any(String),
     );
     findSpy.mockRestore();
     emptySpy.mockRestore();
@@ -344,13 +344,16 @@ describe('order channel resolution', () => {
 
   it('uses the default channel for a default-only order', () => {
     expect(resolveOrderCleanupChannel([defaultChannel], defaultChannel)).toBe(
-      defaultChannel
+      defaultChannel,
     );
   });
 
   it('uses the single non-default sales channel', () => {
     expect(
-      resolveOrderCleanupChannel([defaultChannel, salesChannel], defaultChannel)
+      resolveOrderCleanupChannel(
+        [defaultChannel, salesChannel],
+        defaultChannel,
+      ),
     ).toBe(salesChannel);
   });
 
@@ -359,8 +362,8 @@ describe('order channel resolution', () => {
     expect(() =>
       resolveOrderCleanupChannel(
         [defaultChannel, salesChannel, secondSalesChannel],
-        defaultChannel
-      )
+        defaultChannel,
+      ),
     ).toThrow(/multiple non-default channels: 2, 3/);
   });
 });
@@ -382,10 +385,10 @@ describe('stale order cleanup', () => {
     expect(contextOptions).not.toHaveProperty('languageCode');
     const orderContext = await createContextSpy.mock.results[0].value;
     expect(orderContext.channelId).toBe(
-      (contextOptions.channelOrToken as Channel).id
+      (contextOptions.channelOrToken as Channel).id,
     );
     expect(orderContext.languageCode).toBe(
-      orderContext.channel.defaultLanguageCode
+      orderContext.channel.defaultLanguageCode,
     );
     createContextSpy.mockRestore();
   });
@@ -400,11 +403,11 @@ describe('stale order cleanup', () => {
 
     await Promise.all(
       [addingItemsId, createdId, arrangingPaymentId, ineligibleId, emptyId].map(
-        makeStale
-      )
+        makeStale,
+      ),
     );
     expect((await getOrder(addingItemsId)).updatedAt.getUTCFullYear()).toBe(
-      2020
+      2020,
     );
     expect((await getOrder(addingItemsId)).lines).toHaveLength(2);
 
@@ -445,11 +448,11 @@ describe('stale order cleanup', () => {
     const deletionEvents = publishSpy.mock.calls
       .map(([event]) => event)
       .filter(
-        (event): event is OrderLineEvent => event instanceof OrderLineEvent
+        (event): event is OrderLineEvent => event instanceof OrderLineEvent,
       );
     expect(deletionEvents).toHaveLength(lineIds.length);
     expect(deletionEvents.map(({ orderLine }) => String(orderLine.id))).toEqual(
-      expect.arrayContaining(lineIds)
+      expect.arrayContaining(lineIds),
     );
     expect(deletionEvents.every(({ type }) => type === 'deleted')).toBe(true);
     publishSpy.mockRestore();
@@ -566,14 +569,14 @@ describe('stale order cleanup', () => {
     const task = server.app
       .get(ConfigService)
       .schedulerOptions.tasks?.find(
-        (candidate) => candidate.id === 'order-cleanup'
+        (candidate) => candidate.id === 'order-cleanup',
       );
     if (!task) {
       throw new Error('Order cleanup task is not registered');
     }
 
     const result = (await task.execute(
-      new Injector(server.app.get(ModuleRef))
+      new Injector(server.app.get(ModuleRef)),
     )) as { scheduleSkipped: boolean; emptied: number };
     expect(result.scheduleSkipped).toBe(false);
     expect(result.emptied).toBeGreaterThanOrEqual(1);

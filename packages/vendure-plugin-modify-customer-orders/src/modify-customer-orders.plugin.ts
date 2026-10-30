@@ -1,9 +1,9 @@
 import { PluginCommonModule, VendurePlugin } from '@vendure/core';
 import { adminApiExtension } from './api/api.extension';
 import { AdminApiResolver } from './api/api.resolver';
+import { ModifyCustomerOrderService } from './api/modify-customer-order.service';
 import { PLUGIN_INIT_OPTIONS } from './constants';
 import { convertToDraft } from './custom-order-process';
-import { ModifyCustomerOrderService } from './api/modify-customer-order.service';
 
 export interface ModifyCustomerOrdersPluginOptions {
   /**
@@ -39,9 +39,9 @@ export class ModifyCustomerOrdersPlugin {
     autoAssignDraftOrdersToCustomer: false,
   };
   static init(
-    options: ModifyCustomerOrdersPluginOptions
+    options: ModifyCustomerOrdersPluginOptions,
   ): typeof ModifyCustomerOrdersPlugin {
-    this.options = options;
+    ModifyCustomerOrdersPlugin.options = options;
     return ModifyCustomerOrdersPlugin;
   }
 }

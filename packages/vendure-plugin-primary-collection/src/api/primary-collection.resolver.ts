@@ -1,16 +1,16 @@
 import { Parent, ResolveField, Resolver } from '@nestjs/graphql';
+import { CollectionBreadcrumb } from '@vendure/common/lib/generated-types';
 import {
-  Collection,
-  Ctx,
-  RequestContext,
-  Product,
-  CollectionService,
-  Translated,
   Channel,
+  Collection,
+  CollectionService,
+  Ctx,
   EntityHydrator,
   ID,
+  Product,
+  RequestContext,
+  Translated,
 } from '@vendure/core';
-import { CollectionBreadcrumb } from '@vendure/common/lib/generated-types';
 import { getProductPrimaryCollectionIDInChannel } from '../util/helpers';
 
 interface ProductBreadcrumb {
@@ -23,19 +23,19 @@ interface ProductBreadcrumb {
 export class PrimaryCollectionPluginResolver {
   constructor(
     private collectionService: CollectionService,
-    private entityHydrator: EntityHydrator
+    private entityHydrator: EntityHydrator,
   ) {}
 
   @ResolveField('primaryCollection')
   @Resolver('Product')
   async primaryCollection(
     @Ctx() ctx: RequestContext,
-    @Parent() product: Product
+    @Parent() product: Product,
   ): Promise<Translated<Collection> | undefined> {
     const collectionId = getProductPrimaryCollectionIDInChannel(
       ctx,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
-      (product.customFields as any).primaryCollection as string
+      (product.customFields as any).primaryCollection as string,
     );
     if (collectionId) {
       return this.collectionService.findOne(ctx, collectionId);
@@ -46,7 +46,7 @@ export class PrimaryCollectionPluginResolver {
   @Resolver('Product')
   async productBreadcrumb(
     @Ctx() ctx: RequestContext,
-    @Parent() product: Product
+    @Parent() product: Product,
   ): Promise<ProductBreadcrumb[]> {
     const primaryCollection = await this.primaryCollection(ctx, product);
     const productBreadcrumb = {
@@ -62,7 +62,7 @@ export class PrimaryCollectionPluginResolver {
       const parentCollectionbreadcrumb =
         (await this.collectionService.getBreadcrumbs(
           ctx,
-          primaryCollection
+          primaryCollection,
         )) as CollectionBreadcrumb[];
       // Append product breadcrumb to it's parent breadcrumbs, so that we get Product > Parent Collection > Root Collection
       return [...parentCollectionbreadcrumb, productBreadcrumb];
@@ -73,7 +73,7 @@ export class PrimaryCollectionPluginResolver {
   @Resolver('Collection')
   async channels(
     @Ctx() ctx: RequestContext,
-    @Parent() collection: Collection
+    @Parent() collection: Collection,
   ): Promise<Channel[] | undefined> {
     await this.entityHydrator.hydrate(ctx, collection, {
       relations: ['channels'],

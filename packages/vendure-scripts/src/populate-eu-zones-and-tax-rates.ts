@@ -27,7 +27,7 @@ const loggerCtx = 'PopulateZonesAndTaxRatesScript';
 export async function populateEuZonesAndTaxRates(
   app: INestApplication,
   taxCategories: { zero: ID; reduced: ID; standard: ID },
-  channelToken?: string
+  channelToken?: string,
 ): Promise<void> {
   const zoneService = app.get(ZoneService);
   const taxRateService = app.get(TaxRateService);
@@ -37,7 +37,7 @@ export async function populateEuZonesAndTaxRates(
   });
 
   const existingZones = await zoneService.getAllWithMembers(ctx);
-  const existingMembers = existingZones.map((zone) => zone.members).flat();
+  const existingMembers = existingZones.flatMap((zone) => zone.members);
 
   // Create a zone for each country in the EU
   for (const {
@@ -51,12 +51,12 @@ export async function populateEuZonesAndTaxRates(
     const memberIds: ID[] = [];
     zoneMembers.forEach((zoneMemberCode) => {
       const existingMember = existingMembers.find(
-        (existingMember) => existingMember.code === zoneMemberCode
+        (existingMember) => existingMember.code === zoneMemberCode,
       );
       if (!existingMember) {
         Logger.error(
           `Country ${zoneMemberCode} does not exist, you should manually create it and add it as member to zone '${name}'`,
-          loggerCtx
+          loggerCtx,
         );
         return;
       }
@@ -66,7 +66,7 @@ export async function populateEuZonesAndTaxRates(
     if (existingZone) {
       Logger.info(
         `Zone ${name} already exists, updating it's members`,
-        loggerCtx
+        loggerCtx,
       );
       zone = await zoneService.addMembersToZone(ctx, {
         zoneId: existingZone.id,
@@ -82,15 +82,14 @@ export async function populateEuZonesAndTaxRates(
     // Create the corresponding tax rates for each zone
     for (const [i, value] of [zero, low, standard].entries()) {
       // Display name
-      const rateName = i === 0 ? 'Zero' : i === 1 ? 'Reduced' : 'Standard';
+      const rateName = ['Zero', 'Reduced', 'Standard'][i];
       // Category name to get the category ID
-      const categoryName: 'zero' | 'reduced' | 'standard' =
-        i === 0 ? 'zero' : i === 1 ? 'reduced' : 'standard';
+      const categoryName = (['zero', 'reduced', 'standard'] as const)[i];
       const categoryId: ID = taxCategories[categoryName];
       if (!categoryId) {
         Logger.error(
           `Tax category ${rateName} does not exist, you should manually create it and add it as member to zone '${name}'`,
-          loggerCtx
+          loggerCtx,
         );
         continue;
       }
@@ -103,7 +102,7 @@ export async function populateEuZonesAndTaxRates(
       });
       Logger.info(
         `Tax rate '${name} ${rateName}' created with value ${value}%`,
-        loggerCtx
+        loggerCtx,
       );
     }
   }
