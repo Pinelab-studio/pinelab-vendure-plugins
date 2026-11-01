@@ -10,6 +10,7 @@ export const collections = {
       extend: z.object({
         engineeringPath: z.string().optional(),
         pluginReadmeUrl: z.string().url().optional(),
+        pluginSearchTerms: z.array(z.string()).default([]),
         pluginMonthlyDownloads: z.number().int().nonnegative().optional(),
         pluginMetadata: z
           .object({

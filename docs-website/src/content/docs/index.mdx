@@ -22,8 +22,19 @@ import { getCollection } from 'astro:content';
 import { CardGrid, Icon } from '@astrojs/starlight/components';
 import { pluginIcons } from '../../utils/plugin-icons';
 import { getContributors } from '../../utils/plugins';
+import CatalogSearch from '../../components/CatalogSearch.astro';
 
-Enjoying our free knowledge and plugins? [Consider leaving us a review](https://www.trustpilot.com/review/pinelab.studio).
+<CatalogSearch />
+
+<div className="catalog-review">
+  <em>
+    Enjoying our free knowledge and plugins?{' '}
+    <a href="https://www.trustpilot.com/review/pinelab.studio">
+      Consider leaving us a review
+    </a>
+    .
+  </em>
+</div>
 
 ## Plugins
 
@@ -43,6 +54,10 @@ Enjoying our free knowledge and plugins? [Consider leaving us a review](https://
     .map((plugin) => (
       <article
         className="card plugin-card"
+        data-catalog-search={[
+          plugin.data.title,
+          ...plugin.data.pluginSearchTerms,
+        ].join(' ')}
         style={{ '--plugin-color': pluginIcons[plugin.id.slice(7)].color }}
       >
         <div className="plugin-card-icon" aria-hidden="true">
@@ -68,8 +83,6 @@ Enjoying our free knowledge and plugins? [Consider leaving us a review](https://
 
 ## Recipes
 
-Practical recipes and best practices from our engineering documentation, updated from GitHub on every build.
-
 <CardGrid>
   {(await getCollection('docs', ({ id }) => id.startsWith('recipes/')))
     .sort(
@@ -80,6 +93,9 @@ Practical recipes and best practices from our engineering documentation, updated
     .map((recipe) => (
       <article
         className="card plugin-card"
+        data-catalog-search={`${recipe.data.title} ${
+          recipe.data.description ?? ''
+        }`}
         style={{ '--plugin-color': 'var(--brand)' }}
       >
         <div className="plugin-card-icon" aria-hidden="true">

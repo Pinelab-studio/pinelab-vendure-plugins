@@ -50,6 +50,7 @@ export async function getPlugins() {
           name: string;
           description: string;
           version: string;
+          keywords?: string[];
         };
         const sourceFiles = await readdir(new URL('src/', base));
         const pluginFile = sourceFiles.find((file) =>

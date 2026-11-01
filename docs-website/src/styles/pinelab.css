@@ -167,6 +167,47 @@ body:has(.hero):not(:has(.sidebar-pane)) {
   box-shadow: var(--shadow);
 }
 
+.card-grid:has(.plugin-card) {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+@media (min-width: 40rem) {
+  .card-grid:has(.plugin-card) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 72rem) {
+  .card-grid:has(.plugin-card) {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.sl-heading-wrapper[hidden],
+.plugin-card[hidden] {
+  display: none;
+}
+
+.catalog-review {
+  font-size: 0.875rem;
+  font-style: italic;
+}
+
+.catalog-search {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.catalog-search input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--line);
+  border-radius: 0.65rem;
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+}
+
 .plugin-card {
   position: relative;
   display: grid;

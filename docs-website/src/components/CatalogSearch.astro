@@ -1,0 +1,32 @@
+<label class="catalog-search">
+  <input
+    type="search"
+    aria-label="Search plugins and recipes"
+    placeholder="Search plugins and recipes"
+  />
+</label>
+<p id="catalog-no-results" role="status" hidden>No plugins or recipes found.</p>
+
+<script>
+  const input = document.querySelector<HTMLInputElement>(
+    '.catalog-search input'
+  )!;
+  const cards = document.querySelectorAll<HTMLElement>('[data-catalog-search]');
+  const noResults = document.querySelector<HTMLElement>('#catalog-no-results')!;
+
+  input.addEventListener('input', () => {
+    const query = input.value.trim().toLowerCase();
+    let matches = 0;
+    for (const card of cards) {
+      card.hidden = !card.dataset.catalogSearch!.toLowerCase().includes(query);
+      if (!card.hidden) matches++;
+    }
+    noResults.hidden = matches > 0;
+    const pluginsHeading = document
+      .querySelector<HTMLElement>('#plugins')!
+      .closest<HTMLElement>('.sl-heading-wrapper')!;
+    pluginsHeading.hidden = !Array.from(cards).some(
+      (card) => !card.hidden && card.querySelector('a[href^="/plugin/"]')
+    );
+  });
+</script>

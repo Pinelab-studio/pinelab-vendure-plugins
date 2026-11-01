@@ -25,6 +25,7 @@ async function generatePluginDocs() {
         description: plugin.description,
         pluginReadmeUrl: `https://github.com/Pinelab-studio/pinelab-vendure-plugins/blob/main/packages/${plugin.directory}/README.md`,
         pluginMonthlyDownloads: plugin.monthlyDownloads,
+        pluginSearchTerms: [plugin.name, ...(plugin.keywords ?? [])],
         pluginMetadata: {
           npmUrl: `https://www.npmjs.com/package/${plugin.name}`,
           changelogUrl: `/plugin/${plugin.slug}/changelog/`,
