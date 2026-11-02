@@ -42,6 +42,8 @@ import { channelCustomFields, sendcloudPermission } from './custom-fields';
   dashboard: './dashboard/index.tsx',
 })
 export class SendcloudPlugin {
+  private static options: SendcloudPluginOptions;
+
   static init(options: SendcloudPluginOptions): typeof SendcloudPlugin {
     SendcloudPlugin.options = options;
     return SendcloudPlugin;

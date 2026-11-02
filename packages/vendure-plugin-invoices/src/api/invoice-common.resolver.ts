@@ -34,7 +34,8 @@ export class InvoiceCommonResolver {
       order.id,
     );
     await this.entityHydrator.hydrate(ctx, order, { relations: ['customer'] });
-    if (!order.customer?.emailAddress) {
+    const emailAddress = order.customer?.emailAddress;
+    if (!emailAddress) {
       return [];
     }
     return invoices.map((invoice) => ({
@@ -47,7 +48,7 @@ export class InvoiceCommonResolver {
         ctx,
         invoice.invoiceNumber,
         order.code,
-        order.customer?.emailAddress,
+        emailAddress,
       ),
     }));
   }

@@ -33,9 +33,10 @@ import { Release } from '@vendure/core/dist/entity/stock-movement/release.entity
 import { Request } from 'express';
 import { filter } from 'rxjs/operators';
 import Stripe from 'stripe';
-import { Subscription, SubscriptionHelper } from '../';
+import { SubscriptionHelper } from '../../../util/src/subscription/subscription-helper';
+import type { Subscription } from '../../../util/src/subscription/subscription-strategy';
 import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
-import { StripeSubscriptionPluginOptions } from '../stripe-subscription.plugin';
+import type { StripeSubscriptionPluginOptions } from '../stripe-subscription.plugin';
 import { StripeSubscriptionIntent } from './generated/shop-graphql';
 import { StripeClient } from './stripe.client';
 import {

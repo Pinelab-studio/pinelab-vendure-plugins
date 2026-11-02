@@ -3,7 +3,7 @@ import { Logger, OrderService } from '@vendure/core';
 import { Request } from 'express';
 import Stripe from 'stripe';
 import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
-import { StripeSubscriptionPluginOptions } from '../stripe-subscription.plugin';
+import type { StripeSubscriptionPluginOptions } from '../stripe-subscription.plugin';
 import { StripeSubscriptionService } from './stripe-subscription.service';
 import { IncomingStripeWebhook } from './types/stripe.common';
 import {

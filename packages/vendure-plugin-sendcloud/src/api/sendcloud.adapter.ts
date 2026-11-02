@@ -12,6 +12,10 @@ export function toParcelInput(
   options: SendcloudPluginOptions,
   defaultPhoneNr?: string,
 ): ParcelInput {
+  const countryCode = order.shippingAddress.countryCode;
+  if (!countryCode) {
+    throw new Error(`Missing shipping country code for order '${order.code}'`);
+  }
   const items = order.lines
     .filter((line) => line.quantity >= 1)
     .map((line) => toParcelInputItem(line, options));
@@ -22,7 +26,7 @@ export function toParcelInput(
     house_number: order.shippingAddress.streetLine2!,
     city: order.shippingAddress.city!,
     postal_code: order.shippingAddress.postalCode!,
-    country: order.shippingAddress.countryCode?.toUpperCase(),
+    country: countryCode.toUpperCase(),
     telephone: order.customer?.phoneNumber || defaultPhoneNr,
     request_label: false,
     email: order.customer?.emailAddress,

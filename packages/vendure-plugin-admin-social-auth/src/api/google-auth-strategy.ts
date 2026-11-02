@@ -28,7 +28,7 @@ export class GoogleAuthStrategy
 {
   readonly name = 'google';
   private client!: import('google-auth-library').OAuth2Client;
-  private connection: TransactionalConnection | undefined;
+  private connection!: TransactionalConnection;
 
   constructor(private readonly clientId: string) {}
 
@@ -69,7 +69,7 @@ export class GoogleAuthStrategy
       // Login is unauthenticated, so do not use AdministratorService.findAll(),
       // which filters administrators by the active user's role visibility.
       const admins = await this.connection
-        ?.getRepository(ctx, Administrator)
+        .getRepository(ctx, Administrator)
         .find({
           where: { emailAddress: email, deletedAt: IsNull() },
           relations: ['user', 'user.authenticationMethods'],
@@ -127,7 +127,7 @@ export class GoogleAuthStrategy
     externalIdentifier: string,
   ): Promise<User> {
     const googleAuthMethod = await this.connection
-      ?.getRepository(ctx, ExternalAuthenticationMethod)
+      .getRepository(ctx, ExternalAuthenticationMethod)
       .save(
         new ExternalAuthenticationMethod({
           externalIdentifier,
@@ -135,6 +135,6 @@ export class GoogleAuthStrategy
         }),
       );
     user.authenticationMethods.push(googleAuthMethod);
-    return await this.connection?.getRepository(ctx, User).save(user);
+    return await this.connection.getRepository(ctx, User).save(user);
   }
 }

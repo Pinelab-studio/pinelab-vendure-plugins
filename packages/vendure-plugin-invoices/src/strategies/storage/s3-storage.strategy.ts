@@ -27,7 +27,7 @@ export interface Config {
  * Store invoice files in an Amazon S3 bucket
  */
 export class S3StorageStrategy implements RemoteStorageStrategy {
-  private s3?: import('aws-sdk').S3;
+  private s3!: import('aws-sdk').S3;
   private readonly bucket: string;
   private readonly expiresInSeconds: number;
   constructor(private readonly config: Config) {
@@ -52,7 +52,7 @@ export class S3StorageStrategy implements RemoteStorageStrategy {
   }
 
   getPublicUrl(invoice: InvoiceEntity): string {
-    return this.s3?.getSignedUrl('getObject', {
+    return this.s3.getSignedUrl('getObject', {
       Key: invoice.storageReference,
       Bucket: this.bucket,
       Expires: this.expiresInSeconds,
@@ -71,7 +71,7 @@ export class S3StorageStrategy implements RemoteStorageStrategy {
     }
     const Key: string = `invoices/${channelToken}/${filename}`;
     await this.s3
-      ?.upload({
+      .upload({
         Bucket: this.bucket,
         Key,
         Body: await readFile(tmpFile),
@@ -89,7 +89,7 @@ export class S3StorageStrategy implements RemoteStorageStrategy {
         const tmpFile = await createTempFile('.pdf');
         try {
           const object = await this.s3
-            ?.getObject({
+            .getObject({
               Bucket: this.bucket,
               Key: invoice.storageReference,
             })

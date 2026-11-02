@@ -51,7 +51,7 @@ import {
   InvoiceListOptions,
   InvoiceOrderTotals,
 } from '../generated-graphql-types';
-import { InvoicePluginConfig } from '../invoice.plugin';
+import type { InvoicePluginConfig } from '../invoice.plugin';
 import { CreditInvoiceInput } from '../strategies/load-data-fn';
 import {
   LocalStorageStrategy,
@@ -697,7 +697,7 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
     // If an invoiceNumber is given, we need to find the invoice with that number
     if (input.invoiceNumber) {
       const invoiceWithNumber = invoices.find(
-        (i) => i.invoiceNumber === input.invoiceNumber,
+        (i) => String(i.invoiceNumber) === String(input.invoiceNumber),
       );
       if (!invoiceWithNumber) {
         throw new UserInputError(

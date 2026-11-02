@@ -17,7 +17,7 @@ import {
   InvoiceConfigInput,
   QueryInvoicesArgs,
 } from '../generated-graphql-types';
-import { InvoicePluginConfig } from '../index';
+import type { InvoicePluginConfig } from '../invoice.plugin';
 import { AccountingService } from '../services/accounting.service';
 import { InvoiceService } from '../services/invoice.service';
 import { invoicePermission } from './invoice-common.resolver';

@@ -13,7 +13,7 @@ import {
 } from '@vendure/core';
 import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
 import { InvoiceEntity } from '../entities/invoice.entity';
-import { InvoicePluginConfig } from '../invoice.plugin';
+import type { InvoicePluginConfig } from '../invoice.plugin';
 import {
   AccountingExportStrategy,
   ExternalReference,

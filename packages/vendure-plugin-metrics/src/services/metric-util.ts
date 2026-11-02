@@ -64,7 +64,7 @@ export function groupEntitiesPerMonth<T, K extends keyof T>(
   // Loop over each item and categorize it in the correct month
   entities.forEach((entity) => {
     const date = (entity as any)[sortableField] as Date;
-    if (!(date instanceof Date) || Number.isNaN(date as any)) {
+    if (!(date instanceof Date) || Number.isNaN(date.getTime())) {
       throw Error(
         `${date} is not a valid date! Can not split ${entities.constructor.name}'s in months.`,
       );

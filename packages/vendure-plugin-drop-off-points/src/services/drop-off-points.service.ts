@@ -19,6 +19,8 @@ import {
 
 @Injectable()
 export class DropOffPointsService {
+  private readonly injector: Injector;
+
   constructor(
     @Inject(DROP_OFF_POINTS_PLUGIN_OPTIONS)
     private readonly options: PluginInitOptions,

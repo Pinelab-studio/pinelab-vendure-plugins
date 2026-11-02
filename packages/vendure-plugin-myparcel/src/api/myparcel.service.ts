@@ -122,7 +122,9 @@ export class MyparcelService implements OnApplicationBootstrap {
     let results = res.data.drop_off_points || [];
     // FIXME because of myparcel bug: also returns other carriers
     if (input.carrierId) {
-      results = results.filter((r: any) => r.carrier_id === input.carrierId);
+      results = results.filter(
+        (r: any) => String(r.carrier_id) === input.carrierId,
+      );
     }
     Logger.debug(
       `Fetched ${results.length} drop off points from MyParcel for channel ${ctx.channel.token}`,

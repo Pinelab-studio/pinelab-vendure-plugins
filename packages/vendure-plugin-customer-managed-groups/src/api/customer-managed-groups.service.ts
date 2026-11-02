@@ -61,10 +61,9 @@ export class CustomerManagedGroupsService {
     if (!customerManagedGroup) {
       throw new UserInputError(`You are not in a customer managed group`);
     }
-    const isAdmin = this.isAdministratorOfGroup(
-      customer.user?.id,
-      customerManagedGroup,
-    );
+    const isAdmin = customer.user
+      ? this.isAdministratorOfGroup(customer.user.id, customerManagedGroup)
+      : false;
     const orders: Order[] = [];
     // If not admin, only fetch orders for the current user
     const customers = isAdmin ? customerManagedGroup.customers : [customer];

@@ -43,7 +43,6 @@ interface SendcloudJobData {
 
 @Injectable()
 export class SendcloudService implements OnApplicationBootstrap {
-  // @ts-expect-error
   private jobQueue!: JobQueue<SendcloudJobData>;
 
   constructor(

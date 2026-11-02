@@ -155,6 +155,9 @@ export function createOrderCleanupTask(
   },
 })
 export class OrderCleanupPlugin {
+  private static options: NormalizedOrderCleanupPluginOptions =
+    DEFAULT_ORDER_CLEANUP_OPTIONS;
+
   static init(options: OrderCleanupPluginOptions): Type<OrderCleanupPlugin> {
     OrderCleanupPlugin.options = normalizeOrderCleanupOptions(options);
     return OrderCleanupPlugin;

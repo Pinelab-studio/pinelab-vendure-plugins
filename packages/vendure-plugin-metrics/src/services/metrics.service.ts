@@ -18,7 +18,7 @@ import {
   AdvancedMetricSummary,
   AdvancedMetricSummaryInput,
 } from '../generated/graphql';
-import { MetricsPluginOptions } from '../metrics.plugin';
+import type { MetricsPluginOptions } from '../metrics.plugin';
 import { MetricStrategy } from './metric-strategy';
 import {
   DataPointsPerLegend,

@@ -8,7 +8,7 @@ import { Storage } from '@google-cloud/storage';
 import { AssetStorageStrategy } from '@vendure/core';
 import { Request } from 'express';
 import * as tmp from 'tmp';
-import { GoogleStorageAssetsPlugin } from '../google-storage-assets-plugin';
+import { googleStorageAssetConfig } from '../config';
 
 export class GoogleStorageStrategy implements AssetStorageStrategy {
   storage: Storage;
@@ -17,7 +17,7 @@ export class GoogleStorageStrategy implements AssetStorageStrategy {
   readonly useAssetServerForAdminUi: boolean;
 
   constructor() {
-    const config = GoogleStorageAssetsPlugin?.config;
+    const config = googleStorageAssetConfig.current;
     if (!config) {
       throw new Error(
         'GoogleStorageAssetsPlugin.config is not set. Did you include the "GoogleStorageAssetsPlugin" in your Vendure config?',

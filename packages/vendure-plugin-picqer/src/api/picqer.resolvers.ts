@@ -3,7 +3,7 @@ import { Mutation, Resolver } from '@nestjs/graphql';
 import { Allow, Ctx, Logger, RequestContext } from '@vendure/core';
 import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
 import { picqerPermission } from '../custom-fields';
-import { PicqerOptions } from '../picqer.plugin';
+import type { PicqerOptions } from '../picqer.plugin';
 import { PicqerService } from './picqer.service';
 
 @Resolver()

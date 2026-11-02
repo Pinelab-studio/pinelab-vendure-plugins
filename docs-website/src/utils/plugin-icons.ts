@@ -22,7 +22,6 @@ export const pluginIcons: Record<string, PluginVisual> = {
   },
   'vendure-plugin-address-lookup': { icon: 'magnifier', color: '#34d399' },
   'vendure-plugin-admin-social-auth': { icon: 'padlock', color: '#a78bfa' },
-  'vendure-plugin-admin-ui-helpers': { icon: 'window', color: '#38bdf8' },
   'vendure-plugin-alerting': { icon: 'warning', color: '#fbbf24' },
   'vendure-plugin-anonymized-order': { icon: 'padlock', color: '#94a3b8' },
   'vendure-plugin-better-search': { icon: 'magnifier', color: '#38bdf8' },

@@ -1,5 +1,6 @@
 import { PluginCommonModule, VendurePlugin } from '@vendure/core';
-import { DefaultSubscriptionStrategy, SubscriptionStrategy } from './';
+import { DefaultSubscriptionStrategy } from '../../util/src/subscription/default-subscription-strategy';
+import type { SubscriptionStrategy } from '../../util/src/subscription/subscription-strategy';
 import { adminApiSchemaExtensions } from './api/admin-graphql';
 import { shopApiSchemaExtensions } from './api/shop-graphql';
 import { StripeSubscriptionController } from './api/stripe-subscription.controller';

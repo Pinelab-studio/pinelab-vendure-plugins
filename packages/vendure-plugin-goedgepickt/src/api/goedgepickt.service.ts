@@ -113,7 +113,6 @@ export class GoedgepicktService
   implements OnApplicationBootstrap, OnModuleInit
 {
   readonly queryLimit: number;
-  //@ts-expect-error -- For some reason nested props are not allowed in job data, while they are stringifyable
   jobQueue!: JobQueue<JobData>;
 
   constructor(

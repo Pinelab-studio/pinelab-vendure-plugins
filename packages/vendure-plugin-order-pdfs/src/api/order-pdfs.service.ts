@@ -22,7 +22,7 @@ import {
   MutationUpdatePdfTemplateArgs,
   PdfTemplateListOptions,
 } from '../generated/graphql';
-import { PDFTemplatePluginOptions } from '../order-pdfs-plugin';
+import type { PDFTemplatePluginOptions } from '../order-pdfs-plugin';
 import {
   createTempFile,
   safeRemoveFile,

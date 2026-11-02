@@ -295,16 +295,16 @@ export class XeroUKExportStrategy implements AccountingExportStrategy {
         customer.emailAddress,
       );
     }
-    if ((contacts.body?.contacts?.length ?? 0) > 1) {
-      const contact = contacts.body.contacts?.[0];
+    const contact = contacts.body.contacts?.[0];
+    if (contact && (contacts.body.contacts?.length ?? 0) > 1) {
       Logger.info(
         `Found multiple contacts in Xero with email address "${customer.emailAddress}". Using ${contact.contactID}`,
         loggerCtx,
       );
       return contact;
-    } else if ((contacts.body?.contacts?.length ?? 0) === 1) {
+    } else if (contact) {
       // Return only contact
-      return contacts.body.contacts?.[0];
+      return contact;
     }
     // Else, create a new contact
     const createdContacts = await this.xero.accountingApi.createContacts(
@@ -321,11 +321,14 @@ export class XeroUKExportStrategy implements AccountingExportStrategy {
       },
     );
     const createdContact = createdContacts.body.contacts?.[0];
+    if (!createdContact) {
+      throw new Error('Xero did not return the created contact');
+    }
     Logger.info(
       `No contact found with name '${contactName}' or email '${customer.emailAddress}'. Created new contact with email "${createdContact?.emailAddress}" (${createdContact?.contactID})`,
       loggerCtx,
     );
-    return createdContacts.body.contacts?.[0];
+    return createdContact;
   }
 
   /**

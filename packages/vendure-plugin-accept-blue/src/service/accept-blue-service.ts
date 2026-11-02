@@ -218,7 +218,7 @@ export class AcceptBlueService implements OnApplicationBootstrap {
       );
       if (
         !foundMethod ||
-        foundMethod.customer_id !== String(acceptBlueCustomerId)
+        String(foundMethod.customer_id) !== String(acceptBlueCustomerId)
       ) {
         throw new UserInputError(
           `No Accept Blue payment method found with id ${
@@ -608,7 +608,7 @@ export class AcceptBlueService implements OnApplicationBootstrap {
       }
       const acceptBlueCustomerId = await this.getAcceptBlueCustomerId(ctx);
       const schedule = await client.getRecurringSchedules([scheduleId]);
-      if (schedule?.[0].customer_id !== acceptBlueCustomerId) {
+      if (String(schedule?.[0].customer_id) !== String(acceptBlueCustomerId)) {
         throw new ForbiddenError();
       }
     }
@@ -679,7 +679,7 @@ export class AcceptBlueService implements OnApplicationBootstrap {
         throw new ForbiddenError();
       }
       const customerId = await this.getAcceptBlueCustomerId(ctx);
-      if (existingMethod.customer_id !== String(customerId)) {
+      if (String(existingMethod.customer_id) !== String(customerId)) {
         // Given ID is not a payment method of the customer
         throw new ForbiddenError();
       }

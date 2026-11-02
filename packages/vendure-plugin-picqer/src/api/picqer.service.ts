@@ -39,7 +39,7 @@ import {
 import { StockAdjustment } from '@vendure/core/dist/entity/stock-movement/stock-adjustment.entity';
 import currency from 'currency.js';
 import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
-import { PicqerOptions } from '../picqer.plugin';
+import type { PicqerOptions } from '../picqer.plugin';
 import { PicqerClient, PicqerClientInput } from './picqer.client';
 import { picqerHandler } from './picqer.handler';
 import {

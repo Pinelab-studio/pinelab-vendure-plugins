@@ -18,8 +18,9 @@ import {
   UserInputError,
 } from '@vendure/core';
 import { filter } from 'rxjs';
+import { Not } from 'typeorm';
 import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
-import { ModifyCustomerOrdersPluginOptions } from '../modify-customer-orders.plugin';
+import type { ModifyCustomerOrdersPluginOptions } from '../modify-customer-orders.plugin';
 
 @Injectable()
 export class ModifyCustomerOrderService implements OnApplicationBootstrap {
@@ -105,11 +106,17 @@ export class ModifyCustomerOrderService implements OnApplicationBootstrap {
       );
       return;
     }
-    // Get current active order
-    const currentActiveOrder = await this.orderService.getActiveOrderForUser(
-      ctx,
-      draftOrder.customer.user.id,
-    );
+    // Completing a draft makes it active too, so exclude it from this lookup.
+    const currentActiveOrder = await this.connection
+      .getRepository(ctx, Order)
+      .findOne({
+        where: {
+          id: Not(draftOrder.id),
+          active: true,
+          customer: { id: draftOrder.customer.id },
+          channels: { id: ctx.channelId },
+        },
+      });
     if (currentActiveOrder) {
       // Move current active order to Draft, because a customer should not have multiple active orders
       await this.transitionToDraftState(ctx, currentActiveOrder.id);

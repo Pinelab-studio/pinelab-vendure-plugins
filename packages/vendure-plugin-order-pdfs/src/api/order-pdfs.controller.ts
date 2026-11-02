@@ -22,7 +22,7 @@ import {
 } from '@vendure/core';
 import { Response } from 'express';
 import { PLUGIN_INIT_OPTIONS } from '../constants';
-import { PDFTemplatePluginOptions } from '../order-pdfs-plugin';
+import type { PDFTemplatePluginOptions } from '../order-pdfs-plugin';
 import { OrderPDFsService } from './order-pdfs.service';
 import { pdfDownloadPermission } from './pdf-template-admin-resolver';
 
