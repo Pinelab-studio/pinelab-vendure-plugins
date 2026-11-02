@@ -19,9 +19,12 @@ export default defineConfig({
       filter: (page) => new URL(page).pathname !== '/design-system/',
     }),
     starlight({
-      title: 'Pinelab Vendure Plugins',
+      title: 'Pinelab Engineering',
       favicon: '/pinelab-sticker.png',
-      logo: { src: './public/pinelab-plugins-logo.png', replacesTitle: true },
+      logo: {
+        src: './public/pinelab-engineering-logo.png',
+        replacesTitle: true,
+      },
       customCss: ['./src/styles/pinelab.css'],
       components: {
         Header: './src/components/Header.astro',

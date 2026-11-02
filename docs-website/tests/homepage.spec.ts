@@ -1,5 +1,15 @@
 import { expect, test } from '@playwright/test';
 
+test('homepage presents Pinelab Engineering branding', async ({ page }) => {
+  await page.goto('/');
+  await expect(page).toHaveTitle(/Pinelab Engineering/);
+  await expect(
+    page
+      .locator('header')
+      .getByRole('link', { name: 'Pinelab Engineering', exact: true })
+  ).toBeVisible();
+});
+
 test('search is case-insensitive, trims whitespace, and supports clearing without fuzzy matching', async ({
   page,
 }) => {
