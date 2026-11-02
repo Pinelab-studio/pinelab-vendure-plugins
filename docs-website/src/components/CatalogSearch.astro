@@ -1,0 +1,142 @@
+<div class="catalog-search-wrapper">
+  <label class="catalog-search">
+    <input
+      type="search"
+      aria-label="Search plugins and recipes"
+      placeholder="Search plugins and recipes"
+      aria-controls="catalog-suggestions"
+      aria-expanded="false"
+      autocomplete="off"
+    />
+  </label>
+  <ul id="catalog-suggestions" aria-label="Suggested keywords" hidden></ul>
+</div>
+<p id="catalog-no-results" role="status" hidden>No plugins or recipes found.</p>
+
+<script>
+  const input = document.querySelector<HTMLInputElement>(
+    '.catalog-search input'
+  )!;
+  const cards = document.querySelectorAll<HTMLElement>('[data-catalog-search]');
+  const noResults = document.querySelector<HTMLElement>('#catalog-no-results')!;
+
+  const suggestions = document.querySelector<HTMLUListElement>(
+    '#catalog-suggestions'
+  )!;
+  const wrapper = input.closest<HTMLElement>('.catalog-search-wrapper')!;
+  const keywords = Array.from(
+    new Set(
+      Array.from(cards).flatMap((card) =>
+        (JSON.parse(card.dataset.catalogKeywords ?? '[]') as string[])
+          .map((keyword) => keyword.trim().toLowerCase())
+          .filter(Boolean)
+      )
+    )
+  );
+
+  /** Close suggestions without changing the current filter. */
+  function closeSuggestions() {
+    suggestions.hidden = true;
+    input.setAttribute('aria-expanded', 'false');
+  }
+
+  /** Show at most five unique plugin keywords matching the query. */
+  function updateSuggestions() {
+    suggestions.replaceChildren();
+    if (!input.value.trim()) return closeSuggestions();
+    const query = input.value.trim().toLowerCase();
+    for (const keyword of keywords
+      .filter((keyword) => keyword.includes(query))
+      .slice(0, 5)) {
+      const item = document.createElement('li');
+      const suggestion = document.createElement('button');
+      suggestion.type = 'button';
+      suggestion.textContent = keyword;
+      suggestion.addEventListener('click', () => {
+        input.value = keyword;
+        input.dispatchEvent(new Event('input'));
+        input.focus();
+        closeSuggestions();
+      });
+      item.append(suggestion);
+      suggestions.append(item);
+    }
+    suggestions.hidden = suggestions.childElementCount === 0;
+    input.setAttribute('aria-expanded', String(!suggestions.hidden));
+  }
+
+  input.addEventListener('focus', updateSuggestions);
+  wrapper.addEventListener('focusout', (event) => {
+    if (!wrapper.contains(event.relatedTarget as Node | null))
+      closeSuggestions();
+  });
+  wrapper.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') closeSuggestions();
+    if (
+      event.key === 'ArrowDown' &&
+      event.target === input &&
+      !suggestions.hidden
+    ) {
+      event.preventDefault();
+      suggestions.querySelector<HTMLButtonElement>('button')?.focus();
+    }
+  });
+
+  input.addEventListener('input', () => {
+    const query = input.value.trim().toLowerCase();
+    let matches = 0;
+    for (const card of cards) {
+      card.hidden = !card.dataset.catalogSearch!.toLowerCase().includes(query);
+      if (!card.hidden) matches++;
+    }
+    noResults.hidden = matches > 0;
+    updateSuggestions();
+    const pluginsHeading = document
+      .querySelector<HTMLElement>('#plugins')!
+      .closest<HTMLElement>('.sl-heading-wrapper')!;
+    pluginsHeading.hidden = !Array.from(cards).some(
+      (card) => !card.hidden && card.querySelector('a[href^="/plugin/"]')
+    );
+  });
+</script>
+
+<style>
+  .catalog-search-wrapper {
+    position: relative;
+  }
+  #catalog-suggestions {
+    position: absolute;
+    z-index: 10;
+    inset-inline: 0;
+    top: 100%;
+    margin: 0;
+    padding: 0.5rem;
+    list-style: none;
+    background: var(--page);
+    border: 1px solid var(--line);
+    border-radius: 0.5rem;
+    box-shadow: var(--shadow);
+  }
+  #catalog-suggestions :global(li) {
+    margin: 0;
+  }
+  #catalog-suggestions :global(button) {
+    display: block;
+    margin: 0;
+    width: 100%;
+    border: 0;
+    background: transparent;
+    font: inherit;
+    text-align: start;
+    cursor: pointer;
+    padding: 0.5rem 0.75rem;
+    border-radius: 0.25rem;
+    color: var(--ink);
+    text-decoration: none;
+  }
+  #catalog-suggestions :global(button:hover),
+  #catalog-suggestions :global(button:focus-visible) {
+    background: transparent;
+    color: var(--brand);
+  }
+</style>

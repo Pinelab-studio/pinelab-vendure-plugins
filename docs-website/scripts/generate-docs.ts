@@ -1,4 +1,4 @@
-import { mkdir, rm, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { getPlugins } from '../src/utils/plugins.ts';
 import {
   getEngineeringDocs,
@@ -25,6 +25,7 @@ async function generatePluginDocs() {
         description: plugin.description,
         pluginReadmeUrl: `https://github.com/Pinelab-studio/pinelab-vendure-plugins/blob/main/packages/${plugin.directory}/README.md`,
         pluginMonthlyDownloads: plugin.monthlyDownloads,
+        pluginSearchTerms: [plugin.name, ...(plugin.keywords ?? [])],
         pluginMetadata: {
           npmUrl: `https://www.npmjs.com/package/${plugin.name}`,
           changelogUrl: `/plugin/${plugin.slug}/changelog/`,
@@ -124,5 +125,29 @@ async function generateRecipeDocs() {
   );
 }
 
+/** Publish the canonical philosophy with website-local plugin documentation links. */
+async function generatePhilosophyDocs() {
+  const markdown = await readFile(
+    new URL('../../PHILISOPHY.md', import.meta.url),
+    'utf8'
+  );
+  const body = markdown
+    .replace(/^#\s+.+\r?\n/, '')
+    .replace(
+      /\]\(\.\/packages\/([^/]+)\/README\.md(#[^)]*)?\)/g,
+      '](/plugin/$1/$2)'
+    );
+  await writeFile(
+    new URL('../src/content/docs/philosophy.md', import.meta.url),
+    frontmatter({
+      title: 'Pinelab Plugin Philosophy',
+      description: 'How Pinelab designs reusable, extensible Vendure plugins.',
+      editUrl:
+        'https://github.com/Pinelab-studio/pinelab-vendure-plugins/edit/main/PHILISOPHY.md',
+    }) + body
+  );
+}
+
+await generatePhilosophyDocs();
 await generatePluginDocs();
 await generateRecipeDocs();

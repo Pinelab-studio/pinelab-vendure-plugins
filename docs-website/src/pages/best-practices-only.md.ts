@@ -2,7 +2,7 @@ import type { APIRoute } from 'astro';
 import { getCollection } from 'astro:content';
 import {
   markdownLabel,
-  repository,
+  rawRepository,
   stripFrontmatter,
 } from '../utils/engineering-docs';
 
@@ -18,14 +18,18 @@ export const GET: APIRoute = async () => {
     a.data.engineeringPath!.localeCompare(b.data.engineeringPath!)
   );
   if (!entries.length)
-    throw new Error('Cannot publish best-practices.md: no source documents.');
+    throw new Error(
+      'Cannot publish best-practices-only.md: no source documents.'
+    );
   const sections = entries.map((entry) => {
     const body = stripFrontmatter(entry.body ?? '');
     if (!body)
       throw new Error(
         `Empty best-practices source: ${entry.data.engineeringPath}`
       );
-    return `## [${markdownLabel(entry.data.title)}](${repository}/blob/main/${
+    return `## [${markdownLabel(
+      entry.data.title
+    )}](${rawRepository}/refs/heads/main/${
       entry.data.engineeringPath
     })\n\n${body}`;
   });

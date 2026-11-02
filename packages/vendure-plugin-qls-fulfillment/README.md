@@ -2,7 +2,7 @@
 
 Vendure plugin to fulfill orders via QLS. This uses QLS as fulfillment center and does not support shipments only via QLS.
 
-[Official documentation here](https://plugins.pinelab.studio/plugin/vendure-plugin-qls-fulfillment)
+[Official documentation here](https://engineering.pinelab.studio/plugin/vendure-plugin-qls-fulfillment)
 
 This plugin contains:
 

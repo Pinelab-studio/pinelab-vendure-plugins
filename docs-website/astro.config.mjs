@@ -7,7 +7,7 @@ import sitemap from '@astrojs/sitemap';
 const plugins = await getPlugins();
 
 export default defineConfig({
-  site: 'https://plugins.pinelab.studio',
+  site: 'https://engineering.pinelab.studio',
   trailingSlash: 'always',
   vite: {
     preview: {
@@ -19,9 +19,12 @@ export default defineConfig({
       filter: (page) => new URL(page).pathname !== '/design-system/',
     }),
     starlight({
-      title: 'Pinelab Vendure Plugins',
+      title: 'Pinelab Engineering',
       favicon: '/pinelab-sticker.png',
-      logo: { src: './public/pinelab-plugins-logo.png', replacesTitle: true },
+      logo: {
+        src: './public/pinelab-engineering-logo.png',
+        replacesTitle: true,
+      },
       customCss: ['./src/styles/pinelab.css'],
       components: {
         Header: './src/components/Header.astro',
@@ -34,6 +37,7 @@ export default defineConfig({
         shiki: { langAlias: { Dockerfile: 'dockerfile', env: 'dotenv' } },
       },
       sidebar: [
+        { label: 'Plugin philosophy', slug: 'philosophy' },
         { label: 'AI integration', slug: 'ai-integration' },
         {
           label: 'Recipes',

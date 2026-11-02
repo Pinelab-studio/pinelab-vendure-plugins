@@ -3,7 +3,7 @@
   "version": "1.5.0",
   "description": "Determines if a customer group is publicly visible",
   "author": "Surafel Melese Tariku <surafelmelese09@gmail.com>",
-  "homepage": "https://plugins.pinelab.studio/",
+  "homepage": "https://engineering.pinelab.studio/",
   "repository": "https://github.com/Pinelab-studio/pinelab-vendure-plugins",
   "license": "MIT",
   "private": false,
