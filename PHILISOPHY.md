@@ -1,41 +1,25 @@
 # Pinelab Plugin Philosophy
 
-In the AI age, implementation becomes cheaper. What remains valuable is a reliable, battle-tested framework. Pinelab plugins should provide simple frameworks for building features on Vendure, rather than tightly coupled implementations of a single project's requirements.
+Writing code is getting easier. Building something that works reliably in production still takes time. Our plugins provide the tested building blocks, so each project doesn't have to start from scratch.
 
 ## Open for extension, closed for modification
 
-Consumers should be able to adapt a plugin through its public configuration, strategies, and hooks without modifying the plugin itself. Adding a project-specific field, changing a payload format, or choosing a different provider should not require a new plugin release.
+You should be able to adapt a plugin without changing its source code. Configuration, strategies, and hooks let the **consumer**—the project using the plugin—add its own behavior.
 
-Think **"a plugin to send orders to a fulfillment platform"**, not **"a plugin to send orders to MyParcel."** The framework owns the reusable workflow; the consumer supplies the platform-specific integration. Changes to that platform's API or the consumer's custom fields belong in that integration, not in the framework.
+Think **"send orders to a fulfillment platform"**, not **"send orders to MyParcel."**
 
-Prefer existing Vendure capabilities and small, well-defined extension points. Do not build speculative abstractions for every imaginable use case. Extensibility does not remove the need for bug fixes, security fixes, compatibility updates, or improvements to the framework itself.
+- The plugin handles the shared workflow: background jobs, retries, tracking progress, and showing results in the Dashboard.
+- The consumer maps a Vendure order to the object the platform expects and sends it using its own API credentials.
+- If the platform changes its API or the project adds a custom field, the consumer updates that mapping or integration. The plugin stays the same.
 
-## Separate infrastructure from business rules
+The goal is fewer plugin upgrades. A change to your business rules or an external API shouldn't require a new plugin version. Upgrade when the framework itself needs a bug fix, security fix, Vendure compatibility update, or an improvement you need.
 
-A plugin owns the reusable infrastructure its feature needs, such as scheduling, background jobs, state tracking, error handling, and Dashboard visibility. The consumer owns project-specific business rules, field selection, formatting, external providers, and credentials supplied through configuration.
+## Keep it simple
 
-The [Content Automation Plugin](https://plugins.pinelab.studio/plugin/vendure-plugin-content-automation/) illustrates this separation. It orchestrates content generation and enrichment, detects changed inputs, processes jobs per channel and language, and reports results. Consumer-defined strategies decide which inputs matter, how content is generated, and where it is saved. The plugin does not prescribe an AI provider, prompt, or set of output fields.
+- Reuse what Vendure already provides.
+- Keep project-specific rules, field mappings, and provider choices in the consumer.
+- Add extension points for real needs, not every possible future use case. A strategy supplies replaceable behavior; a hook runs your code at a defined point in the workflow.
+- Test the shared workflow independently of any one project's integration.
+- Explain what the plugin does, how to use it, and how to extend it. Include working examples and make failure behavior clear.
 
-Most plugins are building blocks, not complete features on their own. Document how consumers compose those blocks into working features, with clear setup instructions and examples. See the [Pinelab recipes](https://plugins.pinelab.studio/recipes/) for application-level guidance.
-
-## Terminology
-
-These terms describe patterns already used in this repository:
-
-- **Plugin:** A reusable Vendure extension that provides infrastructure and documented public extension points. For example, the [Content Automation Plugin](./packages/vendure-plugin-content-automation/README.md) coordinates work while delegating content generation to strategies.
-- **Consumer:** The project or developer using a plugin, configuring it, and supplying project-specific behavior. The [Store Credit README](./packages/vendure-plugin-store-credit/README.md#gift-card-code-security) illustrates a consuming project's responsibility for generating secure gift card codes.
-- **Strategy:** A replaceable implementation of a defined behavior, supplied through plugin configuration. A strategy can be an object, class, or function according to its public contract. Examples include [content automation strategies](./packages/vendure-plugin-content-automation/README.md#writing-a-strategy) and [address lookup strategies](./packages/vendure-plugin-address-lookup/README.md#custom-lookup-strategies).
-- **Hook:** A consumer-supplied callback invoked at a documented point in a plugin's workflow. For example, Store Credit's [`createGiftCardWallet` hook](./packages/vendure-plugin-store-credit/README.md#gift-cards) lets consumers decide whether and how to create a gift card wallet. Here, "hook" means a workflow callback, not an HTTP webhook or React hook.
-
-Strategies and hooks can overlap in implementation. Use a strategy to describe replaceable behavior and a hook to describe a callback at a particular workflow point; neither requires introducing a class hierarchy.
-
-## Design checklist
-
-When designing a new plugin:
-
-- Identify the reusable workflow and separate it from consumer-specific decisions.
-- Reuse Vendure's built-in capabilities before introducing custom infrastructure.
-- Expose the configuration, strategies, or hooks consumers need to control business rules, field mapping, formatting, and external integrations.
-- Document extension-point inputs, outputs, invocation timing, and failure behavior.
-- Test the framework's observable behavior independently of one consumer's implementation.
-- Start the README with a human-readable paragraph or bullet points explaining what the plugin does and how to use it.
+Plugins are building blocks, not always complete features. Our [recipes](https://engineering.pinelab.studio/recipes/) show how to put them together.

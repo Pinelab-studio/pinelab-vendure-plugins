@@ -1,8 +1,8 @@
 # Vendure Metrics plugin
 
-Calculates your shop's key metrics through the Admin API. Register `MetricsPlugin` in your Vendure configuration and query `advancedMetricSummaries`. The legacy Angular widget has been removed; this package does not currently register a React Dashboard extension.
+[Official documentation here](https://engineering.pinelab.studio/plugin/vendure-plugin-metrics)
 
-[Official documentation here](https://plugins.pinelab.studio/plugin/vendure-plugin-metrics)
+A plugin to visualize your shops most important metrics.
 
 ![image](https://raw.githubusercontent.com/Pinelab-studio/pinelab-vendure-plugins/96ed9d15e7a2908e0620a8a1e92b1d8c9fe381a4/docs-website/public/plugin-images/metrics.png)
 
@@ -19,12 +19,22 @@ plugins: [
       // Consider displaying fewer months for shops with a lot of orders
       displayPastMonths: 13
     }),
+    AdminUiPlugin.init({
+      port: 3002,
+      route: 'admin',
+      app: compileUiExtensions({
+        outputPath: path.join(__dirname, '__admin-ui'),
+        extensions: [MetricsPlugin.ui],
+      }),
+    }),
   ...
 ]
 ```
 
-2. Run a database migration to add the necessary tables to your database.
-3. Start your Vendure server and authenticate as an administrator to query metrics through the Admin API.
+2. Rebuild your Admin UI
+3. Run a database migration to add the necessary tables to your database.
+4. Start your Vendure server and login as administrator
+5. You should now be able to add the widget `Advanced Metrics` to your dashboard.
 
 Metric results are cached in memory to prevent heavy database queries every time a user opens its dashboard.
 

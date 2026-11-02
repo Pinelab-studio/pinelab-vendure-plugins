@@ -1,8 +1,9 @@
 # Vendure Webhook plugin
 
-Triggers outgoing webhooks for events configured in `vendure-config`. Register `WebhookPlugin` and configure webhooks per channel through the Admin API. The legacy Angular configuration page has been removed; this package does not currently register a React Dashboard extension.
+[Official documentation here](https://engineering.pinelab.studio/plugin/vendure-plugin-webhook)
 
-[Official documentation here](https://plugins.pinelab.studio/plugin/vendure-plugin-webhook)
+Triggers an outgoing webhook based on configured events. Events are specified in `vendure-config` and webhooks are configured per
+channel via the admin UI.
 
 YOu can use this plugin for example to trigger builds when ProductEvents or CollectionEvents occur, or send notifications to external
 platforms when orders are placed by subscribing to OrderPlacedEvents!
@@ -38,12 +39,21 @@ plugins: [
      */
     requestTransformers: [],
   }),
+  AdminUiPlugin.init({
+    port: 3002,
+    route: 'admin',
+    app: compileUiExtensions({
+      outputPath: path.join(__dirname, '__admin-ui'),
+      // Add the WebhookPlugin's UI to the admin
+      extensions: [WebhookPlugin.ui],
+    }),
+  }),
 ];
 ```
 
 3. Run a DB migration to create the custom entities.
 4. Start the server and assign the permission `SetWebhook` to administrators who should be able to configure webhooks.
-5. Configure webhooks with the Admin API's `setWebhooks` mutation.
+5. Go to `settings > webhook` to configure webhooks
 
 ### Custom transformers
 

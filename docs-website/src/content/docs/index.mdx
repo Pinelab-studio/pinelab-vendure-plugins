@@ -1,20 +1,19 @@
 ---
-title: Pinelab Vendure Plugins
-description: Production-tested Vendure plugins and practical recipes from Pinelab Studio.
+title: Pinelab Engineering
+description: Battle-tested engineering knowledge, practical recipes, and Vendure plugins from Pinelab Studio.
 template: splash
 hero:
-  title: Battle-tested Vendure plugins
-  tagline: Vendure plugins built by Pinelab, used for solving real problems for our clients. Licensed under MIT, free to use, forever.
+  title: Battle-tested Vendure knowledge
+  tagline: 'Knowledge is worth more when shared: Explore our engineering practices, recipes and plugins, built from solving real-world challenges for our clients. MIT licensed and free forever.'
   image:
     file: ../../../public/vendure-conf.webp
     alt: Vendure conference
   actions:
-    - text: Build me a custom plugin
-      link: https://pinelab.studio/contact/?q=I+would+like+a+custom+plugin
+    - text: Let us help you
+      link: https://pinelab.studio/contact/
       icon: right-arrow
-    - text: Plugins
-      link: '#plugins'
-      icon: down-arrow
+    - text: AI integration
+      link: '/ai-integration/'
       variant: minimal
 ---
 
@@ -22,8 +21,17 @@ import { getCollection } from 'astro:content';
 import { CardGrid, Icon } from '@astrojs/starlight/components';
 import { pluginIcons } from '../../utils/plugin-icons';
 import { getContributors } from '../../utils/plugins';
+import CatalogSearch from '../../components/CatalogSearch.astro';
 
-Enjoying our free knowledge and plugins? [Consider leaving us a review](https://www.trustpilot.com/review/pinelab.studio).
+<div id="resources"></div>
+
+<CatalogSearch />
+
+<div className="catalog-review">
+
+_Enjoying our free knowledge and plugins? [Consider leaving us a review.](https://www.trustpilot.com/review/pinelab.studio)_
+
+</div>
 
 ## Plugins
 
@@ -43,6 +51,11 @@ Enjoying our free knowledge and plugins? [Consider leaving us a review](https://
     .map((plugin) => (
       <article
         className="card plugin-card"
+        data-catalog-keywords={JSON.stringify(plugin.data.pluginSearchTerms)}
+        data-catalog-search={[
+          plugin.data.title,
+          ...plugin.data.pluginSearchTerms,
+        ].join(' ')}
         style={{ '--plugin-color': pluginIcons[plugin.id.slice(7)].color }}
       >
         <div className="plugin-card-icon" aria-hidden="true">
@@ -68,8 +81,6 @@ Enjoying our free knowledge and plugins? [Consider leaving us a review](https://
 
 ## Recipes
 
-Practical recipes and best practices from our engineering documentation, updated from GitHub on every build.
-
 <CardGrid>
   {(await getCollection('docs', ({ id }) => id.startsWith('recipes/')))
     .sort(
@@ -80,6 +91,9 @@ Practical recipes and best practices from our engineering documentation, updated
     .map((recipe) => (
       <article
         className="card plugin-card"
+        data-catalog-search={`${recipe.data.title} ${
+          recipe.data.description ?? ''
+        }`}
         style={{ '--plugin-color': 'var(--brand)' }}
       >
         <div className="plugin-card-icon" aria-hidden="true">
@@ -93,12 +107,14 @@ Practical recipes and best practices from our engineering documentation, updated
     ))}
 </CardGrid>
 
-## Contributors
+export const contributors = await getContributors();
 
-Thanks to everyone who contributed to our plugins!
+{contributors.length > 0 && <>
 
+<h2 id="contributors">Contributors</h2>
+<p>Thanks to everyone who contributed to our plugins!</p>
 <div className="contributors">
-  {(await getContributors()).map((contributor) => (
+  {contributors.map((contributor) => (
     <a
       className="contributor"
       href={contributor.html_url}
@@ -128,3 +144,4 @@ Thanks to everyone who contributed to our plugins!
     </a>
   ))}
 </div>
+</>}

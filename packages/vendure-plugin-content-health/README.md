@@ -1,6 +1,6 @@
 # Vendure content / SEO monitor plugin
 
-[Official documentation here](https://plugins.pinelab.studio/plugin/vendure-plugin-content-health)
+[Official documentation here](https://engineering.pinelab.studio/plugin/vendure-plugin-content-health)
 
 Monitor Vendure products and collections for storefront SEO and content issues.
 

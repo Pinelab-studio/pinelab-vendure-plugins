@@ -11,17 +11,25 @@ export async function getContributors() {
     avatar_url: string;
     contributions: number;
   }> = [];
-  for (let page = 1; ; page++) {
-    const response = await fetch(
-      `https://api.github.com/repos/Pinelab-studio/pinelab-vendure-plugins/contributors?per_page=100&page=${page}`,
-      { signal: AbortSignal.timeout(30_000) },
-    );
-    if (!response.ok) {
-      throw new Error(`Unable to fetch contributors (${response.status})`);
+  try {
+    for (let page = 1; ; page++) {
+      const response = await fetch(
+        `https://api.github.com/repos/Pinelab-studio/pinelab-vendure-plugins/contributors?per_page=100&page=${page}`,
+        { signal: AbortSignal.timeout(30_000) },
+      );
+      if (!response.ok) {
+        throw new Error(`Unable to fetch contributors (${response.status})`);
+      }
+      const batch = (await response.json()) as typeof contributors;
+      contributors.push(...batch);
+      if (batch.length < 100) return contributors;
     }
-    const batch = (await response.json()) as typeof contributors;
-    contributors.push(...batch);
-    if (batch.length < 100) return contributors;
+  } catch (error) {
+    console.warn(
+      'Unable to fetch contributors; hiding contributors section.',
+      error,
+    );
+    return [];
   }
 }
 
@@ -50,6 +58,7 @@ export async function getPlugins() {
           name: string;
           description: string;
           version: string;
+          keywords?: string[];
         };
         const sourceFiles = await readdir(new URL('src/', base));
         const pluginFile = sourceFiles.find((file) =>

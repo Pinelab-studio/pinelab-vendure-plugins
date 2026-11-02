@@ -2,7 +2,7 @@
 
 A plugin for channel-aware store credit wallets with ledger tracking. Customers can use wallet balance as a payment method at checkout.
 
-![Store Credit Wallets](https://plugins.pinelab.studio/plugin-images/store-credit-wallets.png)
+![Store Credit Wallets](https://engineering.pinelab.studio/plugin-images/store-credit-wallets.png)
 
 ## Installation
 

@@ -1,7 +1,10 @@
 node_modules/
 .astro/
 dist/
+test-results/
+playwright-report/
 # Disposable Starlight inputs generated from ../packages; never edit these copies.
 src/content/docs/plugin/
+src/content/docs/philosophy.md
 # Disposable Markdown fetched from the engineering repository.
 src/content/docs/recipes/
