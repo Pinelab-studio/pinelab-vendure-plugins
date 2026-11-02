@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <pattern id="grid" width="60" height="60" patternUnits="userSpaceOnUse">
+      <path d="M60 0H0V60" fill="none" stroke="#bcf660" stroke-opacity=".07"/>
+    </pattern>
+    <radialGradient id="glow">
+      <stop stop-color="#bcf660" stop-opacity=".16"/>
+      <stop offset="1" stop-color="#bcf660" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1200" height="630" fill="#10150f"/>
+  <rect width="1200" height="630" fill="url(#grid)"/>
+  <ellipse cx="1050" cy="230" rx="570" ry="520" fill="url(#glow)"/>
+  <path d="M80 76H128" stroke="#bcf660" stroke-width="6"/>
+  <text x="80" y="158" fill="#bcf660" font-family="Ubuntu, Arial, sans-serif" font-size="30" font-weight="700" letter-spacing="5">PINELAB</text>
+  <text x="74" y="294" fill="#f1f7eb" font-family="Ubuntu, Arial, sans-serif" font-size="100" font-weight="700" letter-spacing="-4">Engineering.</text>
+  <text x="80" y="365" fill="#b1bfaa" font-family="Ubuntu, Arial, sans-serif" font-size="32">Practical knowledge. Better commerce.</text>
+  <g font-family="Ubuntu, Arial, sans-serif" font-size="23" fill="#f1f7eb">
+    <rect x="80" y="419" width="206" height="54" rx="27" fill="#192117" stroke="#33412d"/>
+    <text x="183" y="454" text-anchor="middle">Vendure plugins</text>
+    <rect x="302" y="419" width="134" height="54" rx="27" fill="#192117" stroke="#33412d"/>
+    <text x="369" y="454" text-anchor="middle">Recipes</text>
+    <rect x="452" y="419" width="198" height="54" rx="27" fill="#192117" stroke="#33412d"/>
+    <text x="551" y="454" text-anchor="middle">Best practices</text>
+  </g>
+  <path d="M80 523H1120" stroke="#33412d"/>
+  <text x="80" y="572" fill="#b1bfaa" font-family="Ubuntu, Arial, sans-serif" font-size="24">engineering.pinelab.studio</text>
+  <g fill="none" stroke="#bcf660" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="m1004 425-23 22 23 22m69-44 23 22-23 22m-34-53-14 66"/>
+  </g>
+</svg>

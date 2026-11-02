@@ -1,0 +1,16 @@
+---
+import DefaultHead from '@astrojs/starlight/components/Head.astro';
+import ogImage from '../assets/og-image.png';
+
+const imageUrl = new URL(ogImage.src, Astro.site).href;
+const imageAlt = 'Pinelab Engineering — Vendure plugins, recipes, and best practices';
+---
+
+<DefaultHead />
+<meta property="og:image" content={imageUrl} />
+<meta property="og:image:type" content="image/png" />
+<meta property="og:image:width" content={String(ogImage.width)} />
+<meta property="og:image:height" content={String(ogImage.height)} />
+<meta property="og:image:alt" content={imageAlt} />
+<meta name="twitter:image" content={imageUrl} />
+<meta name="twitter:image:alt" content={imageAlt} />
