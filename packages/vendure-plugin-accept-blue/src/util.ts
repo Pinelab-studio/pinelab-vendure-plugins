@@ -3,9 +3,9 @@ import { AcceptBlueRefundResult } from './api/generated/graphql';
 import {
   AcceptBlueTransaction,
   AccountType,
+  AppleOrGooglePayInput,
   CheckPaymentMethodInput,
   Frequency,
-  AppleOrGooglePayInput,
   NoncePaymentMethodInput,
   SavedPaymentMethodInput,
 } from './types';
@@ -34,7 +34,7 @@ interface ObfuscatedCheck {
 
 export function isSameCard(
   card1: MaskedCardInput,
-  card2: MaskedCardInput
+  card2: MaskedCardInput,
 ): boolean {
   if (!card1.last4 || !card2.last4) {
     // if no last4 given, we always assume they are different
@@ -85,7 +85,7 @@ export function toAcceptBlueFrequency(subscription: Subscription): Frequency {
     return 'biannually';
   }
   throw new Error(
-    `Subscription interval '${interval}' and intervalCount '${intervalCount}' cannot be mapped to any of these frequencies: weekly, biweekly, monthly, bimonthly, quarterly, annually or biannually`
+    `Subscription interval '${interval}' and intervalCount '${intervalCount}' cannot be mapped to any of these frequencies: weekly, biweekly, monthly, bimonthly, quarterly, annually or biannually`,
   );
 }
 
@@ -112,7 +112,7 @@ export function toSubscriptionInterval(frequency: Frequency): {
     return { interval: 'year', intervalCount: 2 };
   } else {
     throw Error(
-      `Frequency '${frequency}' cannot be mapped to an interval and interval count`
+      `Frequency '${frequency}' cannot be mapped to an interval and interval count`,
     );
   }
 }
@@ -123,12 +123,12 @@ export function toSubscriptionInterval(frequency: Frequency): {
 export function getNrOfBillingCyclesLeft(
   startDate: Date,
   endDate: Date,
-  frequency: Frequency
+  frequency: Frequency,
 ): number {
   const diff = endDate.getTime() - startDate.getTime();
   const diffInDays = diff / (1000 * 3600 * 24);
   const nrOfBillingCyclesLeft = Math.ceil(
-    diffInDays / getDaysBetweenBillingCycles(frequency)
+    diffInDays / getDaysBetweenBillingCycles(frequency),
   );
   return nrOfBillingCyclesLeft;
 }
@@ -185,7 +185,7 @@ export function isCheckPaymentMethod(input: CheckPaymentMethodInput): boolean {
 }
 
 export function isGooglePayPaymentMethod(
-  input: AppleOrGooglePayInput
+  input: AppleOrGooglePayInput,
 ): boolean {
   return !!(input.source === 'googlepay' && input.amount && input.token);
 }
@@ -195,7 +195,7 @@ export function isSavedPaymentMethod(input: SavedPaymentMethodInput): boolean {
 }
 
 export function toGraphqlRefundStatus(
-  status: AcceptBlueTransaction['status']
+  status: AcceptBlueTransaction['status'],
 ): AcceptBlueRefundResult['status'] {
   switch (status) {
     case 'Partially Approved':

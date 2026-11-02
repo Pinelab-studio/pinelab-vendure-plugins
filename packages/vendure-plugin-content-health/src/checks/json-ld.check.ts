@@ -17,7 +17,7 @@ export const COLLECTION_REQUIRED_TYPES = ['BreadcrumbList'];
  */
 export function checkJsonLdTypes(
   entityType: ContentCheckEntityType,
-  foundTypes: string[]
+  foundTypes: string[],
 ): ContentCheckMessage[] {
   const messages: ContentCheckMessage[] = [];
   const found = new Set(foundTypes);
@@ -46,7 +46,7 @@ export function checkJsonLdTypes(
         severity: 'error',
         code: 'JSON_LD_MISSING_ORGANIZATION_OR_ONLINE_STORE',
         message: `Required JSON-LD type '${PRODUCT_ALTERNATIVE_TYPES.join(
-          "' or '"
+          "' or '",
         )}' was not found on the page (at least one is required).`,
       });
     }

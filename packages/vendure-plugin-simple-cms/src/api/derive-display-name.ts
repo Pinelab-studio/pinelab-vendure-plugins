@@ -1,6 +1,6 @@
 import { LanguageCode } from '@vendure/core';
-import { TypeDefinition } from '../types';
 import { ContentEntry } from '../entities/content-entry.entity';
+import { TypeDefinition } from '../types';
 
 /**
  * Derives the human-readable display name for a content entry.
@@ -23,13 +23,13 @@ import { ContentEntry } from '../entities/content-entry.entity';
 export function deriveDisplayName(
   entry: ContentEntry,
   def: TypeDefinition | undefined,
-  activeLanguage: LanguageCode
+  activeLanguage: LanguageCode,
 ): string | null {
   if (!def) {
     return null;
   }
   const stringField = def.fields.find(
-    (f) => f.type === 'string' || f.type === 'text'
+    (f) => f.type === 'string' || f.type === 'text',
   );
   if (!stringField) {
     return null;
@@ -42,7 +42,7 @@ export function deriveDisplayName(
     const chosen = active ?? fallback;
     value = chosen?.fields?.[stringField.name];
   } else {
-    value = (entry.fields ?? {})[stringField.name];
+    value = entry.fields?.[stringField.name];
   }
   if (typeof value !== 'string' || value.length === 0) {
     return null;

@@ -1,6 +1,4 @@
-import { PluginCommonModule, Type, VendurePlugin } from '@vendure/core';
-import { AdminUiExtension } from '@vendure/ui-devkit/compiler';
-import path from 'path';
+import { PluginCommonModule, type Type, VendurePlugin } from '@vendure/core';
 import { adminApiExtensions, shopApiExtensions } from './api/api-extensions';
 import { QlsAdminResolver } from './api/qls-admin.resolver';
 import { QlsShopResolver } from './api/qls-shop.resolver';
@@ -11,10 +9,10 @@ import {
 } from './config/permissions';
 import { PLUGIN_INIT_OPTIONS } from './constants';
 import { getVariantCustomFields, orderCustomFields } from './custom-fields';
+import { QlsOrderEntity } from './entities/qls-order-entity.entity';
 import { QlsOrderService } from './services/qls-order.service';
 import { QlsProductService } from './services/qls-product.service';
-import { QlsPluginOptions } from './types';
-import { QlsOrderEntity } from './entities/qls-order-entity.entity';
+import type { QlsPluginOptions } from './types';
 
 @VendurePlugin({
   imports: [PluginCommonModule],
@@ -33,8 +31,8 @@ import { QlsOrderEntity } from './entities/qls-order-entity.entity';
     config.authOptions.customPermissions.push(qlsPushOrderPermission);
     config.customFields.ProductVariant.push(
       ...getVariantCustomFields(
-        QlsPlugin.options?.productSync?.qlsProductIdUiTab
-      )
+        QlsPlugin.options?.productSync?.qlsProductIdUiTab,
+      ),
     );
     config.customFields.Order.push(...orderCustomFields);
     return config;
@@ -54,7 +52,7 @@ export class QlsPlugin {
   static options: QlsPluginOptions;
 
   static init(options: QlsPluginOptions): Type<QlsPlugin> {
-    this.options = {
+    QlsPlugin.options = {
       ...options,
       orderSync: {
         autoPushOrders: true,
@@ -68,10 +66,4 @@ export class QlsPlugin {
     };
     return QlsPlugin;
   }
-
-  static ui: AdminUiExtension = {
-    extensionPath: path.join(__dirname, 'ui'),
-    id: 'qls-fulfillment-ui',
-    providers: ['providers.ts'],
-  };
 }

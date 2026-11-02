@@ -9,7 +9,7 @@ import { PLUGIN_INIT_OPTIONS } from '../constants';
 export class LoginController {
   constructor(
     @Inject(PLUGIN_INIT_OPTIONS)
-    private readonly options: AdminSocialAuthPluginOptions
+    private readonly options: AdminSocialAuthPluginOptions,
   ) {}
 
   @Get('social-auth/config')

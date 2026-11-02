@@ -1,14 +1,14 @@
 import { PluginCommonModule, Type, VendurePlugin } from '@vendure/core';
+import { AdminResolver } from './api/admin.resolver';
+import { adminSchemaExtensions, shopApiExtensions } from './api/api-extensions';
+import {
+  ContentEntryInterfaceResolver,
+  createShopResolver,
+} from './api/shop.resolver';
+import { PLUGIN_INIT_OPTIONS } from './constants';
 import { ContentEntry } from './entities/content-entry.entity';
 import { ContentEntryTranslation } from './entities/content-entry-translation.entity';
 import { ContentEntryService } from './services/content-entry.service';
-import { adminSchemaExtensions, shopApiExtensions } from './api/api-extensions';
-import { AdminResolver } from './api/admin.resolver';
-import {
-  createShopResolver,
-  ContentEntryInterfaceResolver,
-} from './api/shop.resolver';
-import { PLUGIN_INIT_OPTIONS } from './constants';
 import { SimpleCmsPluginOptions } from './types';
 
 @VendurePlugin({
@@ -41,10 +41,10 @@ export class SimpleCmsPlugin {
 
   /** Configures the plugin with content type definitions. Resets any cached shop resolver. */
   static init(options: SimpleCmsPluginOptions): Type<SimpleCmsPlugin> {
-    this.options = {
+    SimpleCmsPlugin.options = {
       ...options,
     };
-    this.shopResolver = undefined;
+    SimpleCmsPlugin.shopResolver = undefined;
     return SimpleCmsPlugin;
   }
 
@@ -53,9 +53,11 @@ export class SimpleCmsPlugin {
    * the resolver is generated after `init()` has been called.
    */
   static getShopResolver(): Type<unknown> {
-    if (!this.shopResolver) {
-      this.shopResolver = createShopResolver(this.options);
+    if (!SimpleCmsPlugin.shopResolver) {
+      SimpleCmsPlugin.shopResolver = createShopResolver(
+        SimpleCmsPlugin.options,
+      );
     }
-    return this.shopResolver;
+    return SimpleCmsPlugin.shopResolver;
   }
 }

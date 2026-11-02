@@ -1,5 +1,5 @@
+import fs from 'node:fs/promises';
 import { Logger } from '@vendure/core';
-import fs from 'fs/promises';
 import * as tmp from 'tmp';
 import { loggerCtx } from '../constants';
 
@@ -45,7 +45,7 @@ export function safeRemove(path: string): void {
       `Could not remove file ${path}: ${err?.message}`,
       loggerCtx,
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-      JSON.stringify(err?.stack)
+      JSON.stringify(err?.stack),
     );
   });
 }

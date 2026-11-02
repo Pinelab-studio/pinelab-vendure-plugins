@@ -1,5 +1,5 @@
+import { describe, expect, it } from 'vitest';
 import { getNrOfBillingCyclesLeft } from './util';
-import { describe, it, expect } from 'vitest';
 
 describe('getNrOfBillingCyclesLeft', () => {
   it('Starts on monday and ends the next tuesday  with frequency weekly', () => {

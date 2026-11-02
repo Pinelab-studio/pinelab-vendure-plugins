@@ -12,7 +12,7 @@ export const picqerHandler = new FulfillmentHandler({
   init: () => {},
   createFulfillment: () => {
     throw Error(
-      `Don't use fulfillment with Picqer. Directly transition to Shipped or Delivered instead.`
+      `Don't use fulfillment with Picqer. Directly transition to Shipped or Delivered instead.`,
     );
   },
 });

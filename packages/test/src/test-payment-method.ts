@@ -6,7 +6,7 @@ export const testPaymentMethod = new PaymentMethodHandler({
     { languageCode: LanguageCode.en, value: 'Test Payment Method' },
   ],
   args: {},
-  createPayment: (ctx, order, amount, args, metadata) => {
+  createPayment: (_ctx, _order, amount, _args, metadata) => {
     return {
       amount,
       state: 'Settled',

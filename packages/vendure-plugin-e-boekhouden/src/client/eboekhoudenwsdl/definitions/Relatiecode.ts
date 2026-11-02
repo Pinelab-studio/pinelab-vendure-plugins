@@ -1,2 +1,2 @@
 /** Relatiecode */
-export interface Relatiecode {}
+export type Relatiecode = {};

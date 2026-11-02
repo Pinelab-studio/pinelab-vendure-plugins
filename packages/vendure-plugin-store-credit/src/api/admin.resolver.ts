@@ -9,21 +9,21 @@ import {
   RequestContext,
   Transaction,
 } from '@vendure/core';
+import { Wallet } from '../entities/wallet.entity';
 import { WalletService } from '../services/wallet.service';
 import {
   MutationAdjustBalanceForWalletArgs,
   MutationCreateWalletArgs,
   MutationRefundPaymentToStoreCreditArgs,
-  WalletAdjustment,
   QueryGiftCardWalletsArgs,
+  WalletAdjustment,
 } from './generated/graphql';
-import { Wallet } from '../entities/wallet.entity';
 
 @Resolver()
 export class AdminResolver {
   constructor(
     private walletService: WalletService,
-    private paymentService: PaymentService
+    private paymentService: PaymentService,
   ) {}
 
   @Transaction()
@@ -31,12 +31,12 @@ export class AdminResolver {
   @Allow(Permission.UpdateCustomer)
   createWallet(
     @Ctx() ctx: RequestContext,
-    @Args() args: MutationCreateWalletArgs
+    @Args() args: MutationCreateWalletArgs,
   ): Promise<Wallet> {
     return this.walletService.create(
       ctx,
       args.input,
-      args.input.code ?? undefined
+      args.input.code ?? undefined,
     );
   }
 
@@ -45,13 +45,13 @@ export class AdminResolver {
   @Allow(Permission.UpdateCustomer)
   async adjustBalanceForWallet(
     @Ctx() ctx: RequestContext,
-    @Args() args: MutationAdjustBalanceForWalletArgs
+    @Args() args: MutationAdjustBalanceForWalletArgs,
   ): Promise<Wallet> {
     const [wallet] = await this.walletService.adjustBalanceForWallet(
       ctx,
       args.input.amount,
       args.input.walletId,
-      args.input.description
+      args.input.description,
     );
     return wallet;
   }
@@ -61,12 +61,12 @@ export class AdminResolver {
   @Allow(Permission.UpdateOrder)
   async refundPaymentToStoreCredit(
     @Ctx() ctx: RequestContext,
-    @Args() args: MutationRefundPaymentToStoreCreditArgs
+    @Args() args: MutationRefundPaymentToStoreCreditArgs,
   ): Promise<WalletAdjustment> {
     const payment = await this.paymentService.findOneOrThrow(
       ctx,
       args.input.paymentId,
-      ['order']
+      ['order'],
     );
     return this.walletService.refundToStoreCredit(ctx, {
       order: payment.order,
@@ -83,12 +83,12 @@ export class AdminResolver {
   giftCardWallets(
     @Ctx() ctx: RequestContext,
     @Args() args: QueryGiftCardWalletsArgs,
-    @Relations({ entity: Wallet }) relations: RelationPaths<Wallet>
+    @Relations({ entity: Wallet }) relations: RelationPaths<Wallet>,
   ) {
     return this.walletService.getGiftCardWallets(
       ctx,
       args.options ?? undefined,
-      relations
+      relations,
     );
   }
 }

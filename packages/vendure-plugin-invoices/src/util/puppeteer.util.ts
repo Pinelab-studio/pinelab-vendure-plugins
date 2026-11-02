@@ -5,7 +5,7 @@ import { PuppeteerLaunchOptions } from 'puppeteer';
  * user-supplied config, and the `PUPPETEER_EXECUTABLE_PATH` env var.
  */
 export function buildLaunchOptions(
-  configOptions: PuppeteerLaunchOptions | undefined
+  configOptions: PuppeteerLaunchOptions | undefined,
 ): PuppeteerLaunchOptions {
   const defaults: PuppeteerLaunchOptions = {
     headless: true,

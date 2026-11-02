@@ -10,7 +10,7 @@ export const META_DESCRIPTION_RECOMMENDED = '140-160';
  * that range produces a warning recommending 140-160 characters.
  */
 export function checkMetaDescriptionLength(
-  description: string | undefined
+  description: string | undefined,
 ): ContentCheckMessage[] {
   if (description === undefined) {
     return [

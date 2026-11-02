@@ -14,16 +14,16 @@ import {
   TransactionalConnection,
   UserInputError,
 } from '@vendure/core';
+import {
+  ContentEntryInput,
+  ContentEntryTranslationInput,
+} from '../api/generated/graphql';
+import { PLUGIN_INIT_OPTIONS } from '../constants';
 import { ContentEntry } from '../entities/content-entry.entity';
 import { ContentEntryTranslation } from '../entities/content-entry-translation.entity';
-import { PLUGIN_INIT_OPTIONS } from '../constants';
-import { TypeDefinition, SimpleCmsPluginOptions } from '../types';
-import {
-  ContentEntryTranslationInput,
-  ContentEntryInput,
-} from '../api/generated/graphql';
-import { validateContentEntryInput } from './validate-content-entry-input';
 import { SimpleCmsContentEntryEvent } from '../events/simple-cms-content-entry-event';
+import { SimpleCmsPluginOptions, TypeDefinition } from '../types';
+import { validateContentEntryInput } from './validate-content-entry-input';
 
 @Injectable()
 export class ContentEntryService {
@@ -36,14 +36,14 @@ export class ContentEntryService {
     private readonly configService: ConfigService,
     private readonly eventBus: EventBus,
     @Inject(PLUGIN_INIT_OPTIONS)
-    private readonly options: SimpleCmsPluginOptions
+    private readonly options: SimpleCmsPluginOptions,
   ) {}
 
   /** Returns a paginated list of all content entries in the current channel. */
   findAll(
     ctx: RequestContext,
     options?: ListQueryOptions<ContentEntry>,
-    relations?: RelationPaths<ContentEntry>
+    relations?: RelationPaths<ContentEntry>,
   ): Promise<PaginatedList<ContentEntry>> {
     return this.listQueryBuilder
       .build(ContentEntry, options, {
@@ -61,13 +61,13 @@ export class ContentEntryService {
   /** Finds a single content entry by ID, scoped to the current channel. */
   async findOne(
     ctx: RequestContext,
-    id: ID
+    id: ID,
   ): Promise<ContentEntry | undefined> {
     return this.connection.findOneInChannel(
       ctx,
       ContentEntry,
       id,
-      ctx.channelId
+      ctx.channelId,
     );
   }
 
@@ -76,7 +76,7 @@ export class ContentEntryService {
    */
   async findByContentTypeCode(
     ctx: RequestContext,
-    contentTypeCode: string
+    contentTypeCode: string,
   ): Promise<ContentEntry[]> {
     return this.connection
       .getRepository(ctx, ContentEntry)
@@ -91,7 +91,7 @@ export class ContentEntryService {
   /** Creates a new content entry with validation, channel assignment, and event publishing. */
   async create(
     ctx: RequestContext,
-    input: ContentEntryInput
+    input: ContentEntryInput,
   ): Promise<ContentEntry> {
     const contentType = this.getContentType(input.contentTypeCode);
     await this.validateAllowMultiple(ctx, input.contentTypeCode);
@@ -110,14 +110,14 @@ export class ContentEntryService {
       ctx,
       ContentEntry,
       savedEntry.id,
-      unique([defaultChannel.id, ctx.channel.id])
+      unique([defaultChannel.id, ctx.channel.id]),
     );
     const result = await this.findOne(ctx, savedEntry.id);
     if (!result) {
       throw new Error('ContentEntry not found after creation');
     }
     await this.eventBus.publish(
-      new SimpleCmsContentEntryEvent(result, 'created', ctx, input)
+      new SimpleCmsContentEntryEvent(result, 'created', ctx, input),
     );
     return result;
   }
@@ -126,7 +126,7 @@ export class ContentEntryService {
   async update(
     ctx: RequestContext,
     id: ID,
-    input: ContentEntryInput
+    input: ContentEntryInput,
   ): Promise<ContentEntry> {
     const contentType = this.getContentType(input.contentTypeCode);
     const existing = await this.connection.findOneInChannel(
@@ -134,11 +134,11 @@ export class ContentEntryService {
       ContentEntry,
       id,
       ctx.channelId,
-      { relations: ['translatableFields'] }
+      { relations: ['translatableFields'] },
     );
     if (!existing) {
       throw new UserInputError(
-        `ContentEntry with id '${String(id)}' not found`
+        `ContentEntry with id '${String(id)}' not found`,
       );
     }
     if (existing.contentTypeCode !== input.contentTypeCode) {
@@ -161,7 +161,7 @@ export class ContentEntryService {
       throw new Error('ContentEntry not found after update');
     }
     await this.eventBus.publish(
-      new SimpleCmsContentEntryEvent(result, 'updated', ctx, input)
+      new SimpleCmsContentEntryEvent(result, 'updated', ctx, input),
     );
     return result;
   }
@@ -172,16 +172,16 @@ export class ContentEntryService {
       ctx,
       ContentEntry,
       id,
-      ctx.channelId
+      ctx.channelId,
     );
     if (!existing) {
       throw new UserInputError(
-        `ContentEntry with id '${String(id)}' not found`
+        `ContentEntry with id '${String(id)}' not found`,
       );
     }
     await this.connection.getRepository(ctx, ContentEntry).softRemove(existing);
     await this.eventBus.publish(
-      new SimpleCmsContentEntryEvent(existing, 'deleted', ctx, id)
+      new SimpleCmsContentEntryEvent(existing, 'deleted', ctx, id),
     );
   }
 
@@ -191,7 +191,7 @@ export class ContentEntryService {
   private async saveTranslations(
     ctx: RequestContext,
     entry: ContentEntry,
-    translations?: ContentEntryTranslationInput[] | null
+    translations?: ContentEntryTranslationInput[] | null,
   ): Promise<void> {
     if (!translations?.length) {
       return;
@@ -215,8 +215,8 @@ export class ContentEntryService {
     if (!contentType) {
       throw new UserInputError(
         `Unknown content type '${contentTypeCode}'. Available types: ${Object.keys(
-          this.options.contentTypes
-        ).join(', ')}`
+          this.options.contentTypes,
+        ).join(', ')}`,
       );
     }
     return contentType;
@@ -227,7 +227,7 @@ export class ContentEntryService {
    */
   private async validateAllowMultiple(
     ctx: RequestContext,
-    contentTypeCode: string
+    contentTypeCode: string,
   ): Promise<void> {
     const contentType = this.options.contentTypes[contentTypeCode];
     if (!contentType || contentType.allowMultiple) {
@@ -242,7 +242,7 @@ export class ContentEntryService {
       .getCount();
     if (existing > 0) {
       throw new UserInputError(
-        `Content type '${contentTypeCode}' only allows a single entry and one already exists`
+        `Content type '${contentTypeCode}' only allows a single entry and one already exists`,
       );
     }
   }
@@ -261,23 +261,35 @@ export class ContentEntryService {
    */
   private decodeRelationIds(
     contentType: TypeDefinition,
-    input: ContentEntryInput
+    input: ContentEntryInput,
   ): ContentEntryInput {
     const strategy = this.configService.entityOptions.entityIdStrategy!;
     const fields = this.decodeRelationIdsInFields(
       contentType.fields,
       input.fields,
-      strategy
+      strategy,
     );
     const translations = input.translations?.map((t) => ({
       ...t,
       fields: this.decodeRelationIdsInFields(
         contentType.fields,
         t.fields,
-        strategy
+        strategy,
       ),
     }));
     return { ...input, fields, translations };
+  }
+
+  /** Identifies a single relation reference without treating arrays as relations. */
+  private isSingleRelationValue(
+    value: unknown,
+  ): value is Record<string, unknown> {
+    return (
+      !!value &&
+      typeof value === 'object' &&
+      !Array.isArray(value) &&
+      'id' in value
+    );
   }
 
   /**
@@ -287,7 +299,7 @@ export class ContentEntryService {
   private decodeRelationIdsInFields(
     fieldDefs: TypeDefinition['fields'],
     fieldsInput: unknown,
-    strategy: { decodeId: (id: string) => string | number }
+    strategy: { decodeId: (id: string) => string | number },
   ): Record<string, unknown> {
     const fields = { ...((fieldsInput ?? {}) as Record<string, unknown>) };
     for (const def of fieldDefs) {
@@ -309,12 +321,7 @@ export class ContentEntryService {
         });
         continue;
       }
-      if (
-        value &&
-        typeof value === 'object' &&
-        !Array.isArray(value) &&
-        'id' in value
-      ) {
+      if (this.isSingleRelationValue(value)) {
         const obj = value as Record<string, unknown>;
         const raw = obj.id;
         if (typeof raw === 'string') {

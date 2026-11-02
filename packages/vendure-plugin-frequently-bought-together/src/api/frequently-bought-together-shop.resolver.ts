@@ -9,20 +9,20 @@ import { PluginInitOptions } from '../types';
 export class FrequentlyBoughtTogetherShopResolver {
   constructor(
     @Inject(FREQUENTLY_BOUGHT_TOGETHER_PLUGIN_OPTIONS)
-    private options: PluginInitOptions,
-    private frequentlyBoughtTogetherService: FrequentlyBoughtTogetherService
+    _options: PluginInitOptions,
+    private frequentlyBoughtTogetherService: FrequentlyBoughtTogetherService,
   ) {}
 
   @ResolveField('frequentlyBoughtWith')
   @Resolver('Product')
   async frequentlyBoughtWith(
     @Ctx() ctx: RequestContext,
-    @Parent() product: Product
+    @Parent() product: Product,
   ): Promise<Product[]> {
     const products =
       await this.frequentlyBoughtTogetherService.getSortedProducts(
         ctx,
-        product
+        product,
       );
     return products;
   }

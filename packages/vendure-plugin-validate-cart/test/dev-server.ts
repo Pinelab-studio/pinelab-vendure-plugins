@@ -1,5 +1,4 @@
 // This import is needed to accept custom field types
-import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
 import {
   DefaultLogger,
   DefaultSearchPlugin,
@@ -38,14 +37,7 @@ import { ValidateCartPlugin } from '../src/validate-cart.plugin';
       adminApiPlayground: {},
       shopApiPlayground: {},
     },
-    plugins: [
-      ValidateCartPlugin.init({}),
-      DefaultSearchPlugin,
-      AdminUiPlugin.init({
-        port: 3002,
-        route: 'admin',
-      }),
-    ],
+    plugins: [ValidateCartPlugin.init({}), DefaultSearchPlugin],
   });
   const { server, shopClient, adminClient } = createTestEnvironment(config);
   await server.init({

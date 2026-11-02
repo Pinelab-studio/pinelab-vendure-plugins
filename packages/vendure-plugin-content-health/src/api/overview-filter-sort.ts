@@ -48,7 +48,7 @@ export interface FilterableOverviewItem {
 function matchesStringOperator(value: string, op: StringOperatorsArg): boolean {
   if (op.regex !== undefined) {
     throw new UserInputError(
-      'The `regex` string filter operator is not supported on contentCheckOverview.'
+      'The `regex` string filter operator is not supported on contentCheckOverview.',
     );
   }
   if (op.eq !== undefined) {
@@ -71,7 +71,7 @@ function matchesStringOperator(value: string, op: StringOperatorsArg): boolean {
 
 function matchesBooleanOperator(
   value: boolean,
-  op: BooleanOperatorsArg
+  op: BooleanOperatorsArg,
 ): boolean {
   return op.eq === undefined || value === op.eq;
 }
@@ -85,7 +85,7 @@ function matchesBooleanOperator(
 export function applyOverviewFilter<T extends FilterableOverviewItem>(
   items: T[],
   filter: ContentCheckOverviewFilterArg | undefined,
-  filterOperator: 'AND' | 'OR' | undefined
+  filterOperator: 'AND' | 'OR' | undefined,
 ): T[] {
   if (!filter) {
     return items;
@@ -96,17 +96,17 @@ export function applyOverviewFilter<T extends FilterableOverviewItem>(
   }
   if (filter.entityType) {
     predicates.push((item) =>
-      matchesStringOperator(item.entityType, filter.entityType!)
+      matchesStringOperator(item.entityType, filter.entityType!),
     );
   }
   if (filter.hasError) {
     predicates.push((item) =>
-      matchesBooleanOperator(item.hasError, filter.hasError!)
+      matchesBooleanOperator(item.hasError, filter.hasError!),
     );
   }
   if (filter.hasWarning) {
     predicates.push((item) =>
-      matchesBooleanOperator(item.hasWarning, filter.hasWarning!)
+      matchesBooleanOperator(item.hasWarning, filter.hasWarning!),
     );
   }
   if (predicates.length === 0) {
@@ -119,7 +119,7 @@ export function applyOverviewFilter<T extends FilterableOverviewItem>(
 
 export function applyOverviewSort<T extends FilterableOverviewItem>(
   items: T[],
-  sort: Record<string, 'ASC' | 'DESC'> | undefined
+  sort: Record<string, 'ASC' | 'DESC'> | undefined,
 ): T[] {
   const entries = sort ? Object.entries(sort) : [];
   if (entries.length === 0) {
@@ -154,7 +154,7 @@ export function applyOverviewSort<T extends FilterableOverviewItem>(
 export function paginateOverview<T>(
   items: T[],
   skip: number | undefined,
-  take: number | undefined
+  take: number | undefined,
 ): { items: T[]; totalItems: number } {
   const effectiveSkip = skip ?? 0;
   const effectiveTake = take ?? 25;

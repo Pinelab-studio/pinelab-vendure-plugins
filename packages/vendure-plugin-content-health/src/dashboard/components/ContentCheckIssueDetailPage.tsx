@@ -1,3 +1,5 @@
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { AnyRoute, Link } from '@tanstack/react-router';
 import {
   api,
   Button,
@@ -9,18 +11,19 @@ import {
   PageLayout,
   PageTitle,
 } from '@vendure/dashboard';
-import { graphql } from '@/gql';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { AnyRoute, Link } from '@tanstack/react-router';
 import { ExternalLinkIcon, RefreshCwIcon } from 'lucide-react';
 import { toast } from 'sonner';
+import { graphql } from '@/gql';
 import { entityTypeLabel, isCoreEntityType } from '../entity-type-label';
 import {
   contentCheckResultsDocument,
   runContentCheckForCollectionDocument,
   runContentCheckForProductDocument,
 } from '../queries';
-import { ContentCheckFindingsList } from './ContentCheckFindingsList';
+import {
+  ContentCheckFindingsList,
+  ContentCheckFindingsListMessage,
+} from './ContentCheckFindingsList';
 
 const productForIssueDetailDocument = graphql(`
   query ProductForContentCheckIssueDetail($id: ID!) {
@@ -112,7 +115,7 @@ export function ContentCheckIssueDetailPage({ route }: { route: AnyRoute }) {
         return;
       }
       throw new Error(
-        'This entity type has no manual re-check — it is only checked as part of a full scan.'
+        'This entity type has no manual re-check — it is only checked as part of a full scan.',
       );
     },
     onSuccess: async () => {
@@ -135,7 +138,7 @@ export function ContentCheckIssueDetailPage({ route }: { route: AnyRoute }) {
         <PageTitle>SEO / content issue</PageTitle>
         <PageLayout>
           <PageBlock column="main" blockId="missing-id">
-            <p className="text-sm text-muted-foreground">Missing entity id.</p>
+            <p className="text-muted-foreground text-sm">Missing entity id.</p>
           </PageBlock>
         </PageLayout>
       </Page>
@@ -160,27 +163,18 @@ export function ContentCheckIssueDetailPage({ route }: { route: AnyRoute }) {
   // identifiable placeholder instead of an empty page title.
   const rawName = (isCustomEntity ? storedLabel : entity?.name)?.trim();
   const label = entityTypeLabel(entityType).toLowerCase();
-  const displayName =
-    rawName && rawName.length > 0 ? rawName : `Untitled ${label} #${entityId}`;
+  const displayName = rawName || `Untitled ${label} #${entityId}`;
 
   const allMessages = results.flatMap((r) =>
-    r.messages.map((m) => ({ ...m, languageCode: r.languageCode }))
+    r.messages.map((m) => ({ ...m, languageCode: r.languageCode })),
   );
 
-  const editEntityHref = isProduct
-    ? `/products/${entityId}`
-    : isCollection
-    ? `/collections/${entityId}`
-    : storedUrl;
+  const editEntityHref = getEntityHref(entityType, entityId, storedUrl);
 
   return (
     <Page pageId="content-health-issue-detail">
       <PageTitle>
-        {entityQuery.isLoading
-          ? 'Loading…'
-          : entityNotFound
-          ? 'Not found'
-          : displayName}
+        {getIssueTitle(entityQuery.isLoading, entityNotFound, displayName)}
       </PageTitle>
       <PageActionBar>
         <PageActionBarRight>
@@ -190,7 +184,7 @@ export function ContentCheckIssueDetailPage({ route }: { route: AnyRoute }) {
               variant="outline"
               render={<Link to={editEntityHref} />}
             >
-              <ExternalLinkIcon className="h-4 w-4 mr-2" />
+              <ExternalLinkIcon className="mr-2 h-4 w-4" />
               Go to {label}
             </Button>
           )}
@@ -201,7 +195,7 @@ export function ContentCheckIssueDetailPage({ route }: { route: AnyRoute }) {
               onClick={() => checkNowMutation.mutate()}
             >
               <RefreshCwIcon
-                className={`h-4 w-4 mr-2 ${
+                className={`mr-2 h-4 w-4 ${
                   checkNowMutation.isPending ? 'animate-spin' : ''
                 }`}
               />
@@ -212,30 +206,81 @@ export function ContentCheckIssueDetailPage({ route }: { route: AnyRoute }) {
       </PageActionBar>
       <PageLayout>
         <PageBlock column="main" blockId="content-health-issue-findings">
-          {entityNotFound ? (
-            <p className="text-sm text-muted-foreground">
-              This {label} could not be found — it may have been deleted since
-              it was last checked.
-            </p>
-          ) : resultsQuery.isLoading ? (
-            <div className="animate-pulse space-y-2">
-              <div className="h-8 bg-muted rounded-md" />
-              <div className="h-8 bg-muted rounded-md" />
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {isCustomEntity && (
-                <p className="text-sm text-muted-foreground">
-                  This is a custom entity type ({entityType}), checked as part
-                  of the full scan. It has no manual re-check.
-                </p>
-              )}
-              <ContentCheckFindingsList messages={allMessages} />
-            </div>
-          )}
+          <IssueFindings
+            entityNotFound={entityNotFound}
+            loading={resultsQuery.isLoading}
+            isCustomEntity={isCustomEntity}
+            entityType={entityType}
+            label={label}
+            messages={allMessages}
+          />
         </PageBlock>
       </PageLayout>
     </Page>
+  );
+}
+
+/** Resolves the built-in edit route or the custom entity's stored URL. */
+function getEntityHref(
+  entityType: string,
+  id: string,
+  storedUrl: string | undefined,
+) {
+  if (entityType === 'PRODUCT') return `/products/${id}`;
+  if (entityType === 'COLLECTION') return `/collections/${id}`;
+  return storedUrl;
+}
+
+/** Selects the title for the current entity-loading state. */
+function getIssueTitle(
+  loading: boolean,
+  notFound: boolean,
+  name: string,
+): string {
+  if (loading) return 'Loading…';
+  return notFound ? 'Not found' : name;
+}
+
+/** Renders findings and their loading, missing, and custom-entity states. */
+function IssueFindings({
+  entityNotFound,
+  loading,
+  isCustomEntity,
+  entityType,
+  label,
+  messages,
+}: {
+  entityNotFound: boolean;
+  loading: boolean;
+  isCustomEntity: boolean;
+  entityType: string;
+  label: string;
+  messages: ContentCheckFindingsListMessage[];
+}) {
+  if (entityNotFound)
+    return (
+      <p className="text-muted-foreground text-sm">
+        This {label} could not be found — it may have been deleted since it was
+        last checked.
+      </p>
+    );
+  if (loading)
+    return (
+      <div className="animate-pulse space-y-2">
+        <div className="h-8 rounded-md bg-muted" />
+        <div className="h-8 rounded-md bg-muted" />
+      </div>
+    );
+  return (
+    <div className="space-y-3">
+      {isCustomEntity && (
+        <p className="text-muted-foreground text-sm">
+          This is a custom entity type ({entityType}), checked as part of the
+          full scan. It has no manual re-check.
+        </p>
+      )}
+      <ContentCheckFindingsList messages={messages} />
+    </div>
   );
 }
 

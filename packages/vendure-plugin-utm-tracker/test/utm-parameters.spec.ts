@@ -16,12 +16,12 @@ import { testPaymentMethod } from '../../test/src/test-payment-method';
 import {
   FirstClickAttribution,
   NoopAttribution,
-  UtmOrderParameter,
   UTMTrackerPlugin,
   UTMTrackerService,
+  UtmOrderParameter,
 } from '../src';
 
-describe('UTM parameters plugin', function () {
+describe('UTM parameters plugin', () => {
   let server: TestServer;
   let adminClient: SimpleGraphQLClient;
   let shopClient: SimpleGraphQLClient;
@@ -36,8 +36,8 @@ describe('UTM parameters plugin', function () {
           attributionModel: new FirstClickAttribution(),
           maxParametersPerOrder: 3,
           maxAttributionAgeInDays: 30,
-          getCampaignDisplayName: (ctx, utmParameters) => {
-            return utmParameters.source + '_customSuffix'; // Testing custom display name
+          getCampaignDisplayName: (_ctx, utmParameters) => {
+            return `${utmParameters.source}_customSuffix`; // Testing custom display name
           },
         }),
       ],
@@ -73,7 +73,7 @@ describe('UTM parameters plugin', function () {
   it('Fails when no active order', async () => {
     await shopClient.asUserWithCredentials(
       'hayden.zieme12@hotmail.com',
-      'test'
+      'test',
     );
     const addUTMParametersToOrderPromise = shopClient.query(
       ADD_UTM_PARAMETERS,
@@ -81,10 +81,10 @@ describe('UTM parameters plugin', function () {
         inputs: [
           { connectedAt: new Date('2025-01-01'), source: 'test-source' },
         ],
-      }
+      },
     );
     await expect(addUTMParametersToOrderPromise).rejects.toThrow(
-      /No active order found|error\.no-active-session/
+      /No active order found|error\.no-active-session/,
     );
   });
 
@@ -93,7 +93,7 @@ describe('UTM parameters plugin', function () {
   it('Adds UTM parameters to order', async () => {
     await shopClient.asUserWithCredentials(
       'hayden.zieme12@hotmail.com',
-      'test'
+      'test',
     );
     activeOrder = await addItem(shopClient, 'T_1', 1);
     const { addUTMParametersToOrder } = await shopClient.query(
@@ -110,7 +110,7 @@ describe('UTM parameters plugin', function () {
             clid: 'standalone-client-id',
           },
         ],
-      }
+      },
     );
     expect(addUTMParametersToOrder).toBe(true);
     await adminClient.asSuperAdmin();
@@ -143,7 +143,7 @@ describe('UTM parameters plugin', function () {
   it('Adds the same UTM parameter to order again with a newer connectedAt date', async () => {
     await shopClient.asUserWithCredentials(
       'hayden.zieme12@hotmail.com',
-      'test'
+      'test',
     );
     const { addUTMParametersToOrder } = await shopClient.query(
       ADD_UTM_PARAMETERS,
@@ -155,7 +155,7 @@ describe('UTM parameters plugin', function () {
             connectedAt: new Date('2025-01-07'),
           },
         ],
-      }
+      },
     );
     await expect(addUTMParametersToOrder).toBe(true);
     await adminClient.asSuperAdmin();
@@ -165,7 +165,7 @@ describe('UTM parameters plugin', function () {
     expect(order.utmParameters.length).toBe(2);
     expect(order.utmParameters[0].utmSource).toBe('test-source1');
     expect(order.utmParameters[0].campaignDisplayName).toBe(
-      'test-source1_customSuffix'
+      'test-source1_customSuffix',
     );
     expect(order.utmParameters[0].connectedAt).toBe('2025-01-07T00:00:00.000Z');
     expect(order.utmParameters[0].clid).toBe('combined-client-id');
@@ -186,7 +186,7 @@ describe('UTM parameters plugin', function () {
             clid: 'combined-client-id-3',
           },
         ],
-      }
+      },
     );
     await expect(addUTMParametersToOrder).toBe(true);
     await adminClient.asSuperAdmin();
@@ -214,7 +214,7 @@ describe('UTM parameters plugin', function () {
             connectedAt: new Date('2025-01-09'),
           },
         ],
-      }
+      },
     );
     await expect(addUTMParametersToOrder).toBe(true);
     await adminClient.asSuperAdmin();
@@ -253,7 +253,7 @@ describe('UTM parameters plugin', function () {
             connectedAt: new Date(Date.now() - 1), // Newest (first click)
           },
         ],
-      }
+      },
     );
     await expect(addUTMParametersToOrder).toBe(true);
     await adminClient.asSuperAdmin();
@@ -276,7 +276,7 @@ describe('UTM parameters plugin', function () {
       });
       if (
         order.utmParameters.find(
-          (p: UtmOrderParameter) => p.attributedPercentage === 1
+          (p: UtmOrderParameter) => p.attributedPercentage === 1,
         )
       ) {
         // Return as soon as a parameter is attributed 100%
@@ -285,13 +285,13 @@ describe('UTM parameters plugin', function () {
     });
     // We use first click attribution model, so the oldest parameter should be attributed 100% (1)
     const recent2 = utmParameters.find(
-      (p: UtmOrderParameter) => p.utmSource === 'recent2'
+      (p: UtmOrderParameter) => p.utmSource === 'recent2',
     );
     const recent3 = utmParameters.find(
-      (p: UtmOrderParameter) => p.utmSource === 'recent3'
+      (p: UtmOrderParameter) => p.utmSource === 'recent3',
     );
     const recent5 = utmParameters.find(
-      (p: UtmOrderParameter) => p.utmSource === 'recent5'
+      (p: UtmOrderParameter) => p.utmSource === 'recent5',
     );
     expect(recent2.attributedPercentage).toBe(1); // 1, because it's the first click
     expect(recent2.attributedValue).toBe(540100); // 100, because it's the first click
@@ -325,7 +325,7 @@ describe('UTM parameters plugin', function () {
         order.utmParameters.find(
           (p: UtmOrderParameter) =>
             p.utmSource === 'eligible-for-attribution' &&
-            p.attributedPercentage === 1
+            p.attributedPercentage === 1,
         )
       ) {
         return order.utmParameters;
@@ -334,13 +334,13 @@ describe('UTM parameters plugin', function () {
 
     expect(
       utmParameters.find(
-        (p: UtmOrderParameter) => p.utmSource === 'too-old-for-attribution'
-      )?.attributedPercentage
+        (p: UtmOrderParameter) => p.utmSource === 'too-old-for-attribution',
+      )?.attributedPercentage,
     ).toBeNull();
     expect(
       utmParameters.find(
-        (p: UtmOrderParameter) => p.utmSource === 'eligible-for-attribution'
-      )?.attributedPercentage
+        (p: UtmOrderParameter) => p.utmSource === 'eligible-for-attribution',
+      )?.attributedPercentage,
     ).toBe(1);
   });
 });
@@ -373,7 +373,7 @@ const GET_ORDER_WITH_UTM_PARAMETERS = gql`
   }
 `;
 
-describe('UTM parameters plugin with no-op attribution', function () {
+describe('UTM parameters plugin with no-op attribution', () => {
   let server: TestServer;
   let adminClient: SimpleGraphQLClient;
   let shopClient: SimpleGraphQLClient;
@@ -416,7 +416,7 @@ describe('UTM parameters plugin with no-op attribution', function () {
   it('Keeps standalone and combined client IDs unattributed after placement', async () => {
     await shopClient.asUserWithCredentials(
       'hayden.zieme12@hotmail.com',
-      'test'
+      'test',
     );
     const activeOrder = await addItem(shopClient, 'T_1', 1);
     await shopClient.query(ADD_UTM_PARAMETERS, {
@@ -487,7 +487,7 @@ describe('UTM parameters plugin with no-op attribution', function () {
           attributedPercentage: null,
           attributedValue: null,
         }),
-      ])
+      ]),
     );
   });
 });

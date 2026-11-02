@@ -1,5 +1,6 @@
 require('dotenv').config();
 
+import path from 'node:path';
 import {
   DefaultLogger,
   DefaultSchedulerPlugin,
@@ -11,9 +12,8 @@ import {
   ProductService,
   VendureConfig,
 } from '@vendure/core';
-import { testConfig } from '@vendure/testing';
 import { DashboardPlugin } from '@vendure/dashboard/plugin';
-import path from 'path';
+import { testConfig } from '@vendure/testing';
 import { ContentAutomationPlugin, ContentAutomationStrategy } from '../src';
 
 /**
@@ -24,7 +24,7 @@ import { ContentAutomationPlugin, ContentAutomationStrategy } from '../src';
 function createDemoStrategy(
   name: string,
   getResultMessage: (productName: string) => string,
-  linkToEntity = true
+  linkToEntity = true,
 ): ContentAutomationStrategy<{ id: ID; name: string }> {
   return {
     name,
@@ -64,62 +64,62 @@ function createDemoStrategy(
 const demoStrategies = [
   createDemoStrategy(
     'product-meta-title',
-    (n) => `Updated meta title of '${n}'`
+    (n) => `Updated meta title of '${n}'`,
   ),
   createDemoStrategy(
     'product-meta-description',
-    (n) => `Updated meta description of '${n}'`
+    (n) => `Updated meta description of '${n}'`,
   ),
   createDemoStrategy(
     'product-description',
-    (n) => `Rewrote product description of '${n}'`
+    (n) => `Rewrote product description of '${n}'`,
   ),
   createDemoStrategy(
     'product-usage-instructions',
-    (n) => `Added usage instructions to '${n}'`
+    (n) => `Added usage instructions to '${n}'`,
   ),
   createDemoStrategy('product-faq', (n) => `Generated 5 FAQ items for '${n}'`),
   createDemoStrategy(
     'collection-description',
-    (n) => `Updated collection description based on '${n}'`
+    (n) => `Updated collection description based on '${n}'`,
   ),
   createDemoStrategy(
     'collection-meta-tags',
-    (n) => `Updated collection meta tags based on '${n}'`
+    (n) => `Updated collection meta tags based on '${n}'`,
   ),
   createDemoStrategy(
     'category-intro',
-    (n) => `Wrote category intro featuring '${n}'`
+    (n) => `Wrote category intro featuring '${n}'`,
   ),
   createDemoStrategy(
     'variant-usage',
-    (n) => `Added variant usage tips to '${n}'`
+    (n) => `Added variant usage tips to '${n}'`,
   ),
   createDemoStrategy(
     'variant-specs',
-    (n) => `Summarized variant specifications of '${n}'`
+    (n) => `Summarized variant specifications of '${n}'`,
   ),
   createDemoStrategy(
     'seo-alt-texts',
-    (n) => `Generated image alt texts for '${n}'`
+    (n) => `Generated image alt texts for '${n}'`,
   ),
   createDemoStrategy(
     'seo-keywords',
-    (n) => `Suggested 8 SEO keywords for '${n}'`
+    (n) => `Suggested 8 SEO keywords for '${n}'`,
   ),
   createDemoStrategy(
     'social-media-caption',
-    (n) => `Wrote social media caption for '${n}'`
+    (n) => `Wrote social media caption for '${n}'`,
   ),
   createDemoStrategy(
     'search-synonyms',
     (n) => `Added search synonyms for '${n}'`,
-    false
+    false,
   ),
   createDemoStrategy(
     'blog-teaser',
     (n) => `Drafted blog teaser about '${n}'`,
-    false
+    false,
   ),
 ];
 

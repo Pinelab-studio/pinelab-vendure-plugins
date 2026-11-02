@@ -22,7 +22,7 @@ describe('SitemapFetcher', () => {
       .intercept({ path: '/sitemap.xml', method: 'GET' })
       .reply(
         200,
-        `<?xml version="1.0"?><urlset><url><loc>https://shop.example.com/a</loc></url><url><loc>https://shop.example.com/b</loc></url></urlset>`
+        `<?xml version="1.0"?><urlset><url><loc>https://shop.example.com/a</loc></url><url><loc>https://shop.example.com/b</loc></url></urlset>`,
       );
 
     const result = await fetcher.fetch('https://shop.example.com/sitemap.xml');
@@ -61,13 +61,13 @@ describe('SitemapFetcher', () => {
       .intercept({ path: '/sitemap.xml', method: 'GET' })
       .reply(
         200,
-        `<?xml version="1.0"?><sitemapindex><sitemap><loc>https://shop.example.com/sitemap-a.xml</loc></sitemap><sitemap><loc>https://shop.example.com/sitemap-b.xml</loc></sitemap></sitemapindex>`
+        `<?xml version="1.0"?><sitemapindex><sitemap><loc>https://shop.example.com/sitemap-a.xml</loc></sitemap><sitemap><loc>https://shop.example.com/sitemap-b.xml</loc></sitemap></sitemapindex>`,
       );
     client
       .intercept({ path: '/sitemap-a.xml', method: 'GET' })
       .reply(
         200,
-        `<?xml version="1.0"?><urlset><url><loc>https://shop.example.com/a</loc></url></urlset>`
+        `<?xml version="1.0"?><urlset><url><loc>https://shop.example.com/a</loc></url></urlset>`,
       );
     client.intercept({ path: '/sitemap-b.xml', method: 'GET' }).reply(500);
 

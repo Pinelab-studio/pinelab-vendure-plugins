@@ -1,6 +1,6 @@
 import { DeepPartial, ID, VendureEntity } from '@vendure/core';
 import { Column, Entity } from 'typeorm';
-import { AdvancedMetricSummary } from '../ui/generated/graphql';
+import { AdvancedMetricSummary } from '../generated/graphql';
 
 @Entity()
 export class MetricSummary extends VendureEntity {

@@ -1,7 +1,7 @@
 import { LanguageCode } from '@vendure/common/lib/generated-types';
 import { Injector, RequestContext, ShippingCalculator } from '@vendure/core';
-import { getHighestTaxRateOfOrder } from './shipping-util';
 import { ShippingExtensionsPlugin } from '../../shipping-extensions.plugin';
+import { getHighestTaxRateOfOrder } from './shipping-util';
 
 export enum TaxSetting {
   include = 'include',

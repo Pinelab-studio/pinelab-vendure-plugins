@@ -1,7 +1,6 @@
 import {
   Injector,
   LanguageCode,
-  Order,
   PaymentMethodEligibilityChecker,
 } from '@vendure/core';
 import { StripeSubscriptionService } from '../stripe-subscription.service';
@@ -21,11 +20,11 @@ export const hasStripeSubscriptionProductsPaymentChecker =
     init: (injector: Injector) => {
       stripeSubscriptionService = injector.get(StripeSubscriptionService);
     },
-    check: async (ctx, order, args) => {
+    check: async (ctx, order, _args) => {
       if (
         await stripeSubscriptionService.subscriptionHelper.hasSubscriptions(
           ctx,
-          order
+          order,
         )
       ) {
         return true;

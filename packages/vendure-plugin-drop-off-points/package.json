@@ -21,7 +21,7 @@
     "start": "ts-node test/dev-server.ts",
     "build": "rimraf dist && tsc",
     "test": "vitest run",
-    "lint": "eslint .",
+    "lint": "biome check .",
     "codegen": "graphql-codegen"
   }
 }

@@ -1,12 +1,12 @@
 import { DefaultLogger, LogLevel, mergeConfig } from '@vendure/core';
 import {
-  SqljsInitializer,
   createTestEnvironment,
   registerInitializer,
+  SqljsInitializer,
 } from '@vendure/testing';
+import dotenv from 'dotenv';
 import { initialData } from './initial-data';
 import { testPaymentMethod } from './test-payment-method';
-import dotenv from 'dotenv';
 
 // eslint-disable-next-line @typescript-eslint/no-floating-promises
 (async () => {

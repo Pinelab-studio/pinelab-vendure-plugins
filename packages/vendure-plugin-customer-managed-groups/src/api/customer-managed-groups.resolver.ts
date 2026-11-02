@@ -29,7 +29,7 @@ export class CustomerManagedGroupsAdminResolver {
   @Allow(Permission.Authenticated)
   ordersForCustomerManagedGroup(
     @Ctx() ctx: RequestContext,
-    @Args() args: QueryOrdersForCustomerManagedGroupArgs
+    @Args() args: QueryOrdersForCustomerManagedGroupArgs,
   ): Promise<PaginatedList<Order>> {
     return this.service.getOrdersForCustomer(ctx, args.customerManagedGroupId);
   }
@@ -38,7 +38,7 @@ export class CustomerManagedGroupsAdminResolver {
   @Allow(Permission.Authenticated)
   createCustomerManagedGroup(
     @Ctx() ctx: RequestContext,
-    @Args() args: MutationCreateCustomerManagedGroupArgs
+    @Args() args: MutationCreateCustomerManagedGroupArgs,
   ): Promise<CustomerManagedGroup | undefined> {
     return this.service.createCustomerManagedGroup(ctx, args.customerId);
   }
@@ -47,13 +47,13 @@ export class CustomerManagedGroupsAdminResolver {
   @Allow(Permission.Authenticated)
   makeCustomerAdminOfCustomerManagedGroup(
     @Ctx() ctx: RequestContext,
-    @Args() args: MutationMakeCustomerAdminOfCustomerManagedGroupArgs
+    @Args() args: MutationMakeCustomerAdminOfCustomerManagedGroupArgs,
   ): Promise<CustomerManagedGroup> {
     return this.service.makeAdminOfGroup(
       ctx,
       args.groupId,
       args.customerId,
-      true
+      true,
     );
   }
 }
@@ -65,7 +65,7 @@ export class CustomerManagedGroupsShopResolver {
   @Query()
   @Allow(Permission.Authenticated)
   ordersForMyCustomerManagedGroup(
-    @Ctx() ctx: RequestContext
+    @Ctx() ctx: RequestContext,
   ): Promise<PaginatedList<Order>> {
     return this.service.getOrdersForCustomer(ctx);
   }
@@ -73,7 +73,7 @@ export class CustomerManagedGroupsShopResolver {
   @Query()
   @Allow(Permission.Authenticated)
   activeCustomerManagedGroupMember(
-    @Ctx() ctx: RequestContext
+    @Ctx() ctx: RequestContext,
   ): Promise<CustomerManagedGroupMember | undefined> {
     return this.service.getActiveMember(ctx);
   }
@@ -81,7 +81,7 @@ export class CustomerManagedGroupsShopResolver {
   @Query()
   @Allow(Permission.Authenticated)
   myCustomerManagedGroup(
-    @Ctx() ctx: RequestContext
+    @Ctx() ctx: RequestContext,
   ): Promise<CustomerManagedGroup | undefined> {
     return this.service.myCustomerManagedGroup(ctx);
   }
@@ -89,7 +89,7 @@ export class CustomerManagedGroupsShopResolver {
   @Mutation()
   @Allow(Permission.Authenticated)
   createCustomerManagedGroup(
-    @Ctx() ctx: RequestContext
+    @Ctx() ctx: RequestContext,
   ): Promise<CustomerManagedGroup | undefined> {
     return this.service.createCustomerManagedGroup(ctx);
   }
@@ -99,7 +99,7 @@ export class CustomerManagedGroupsShopResolver {
   makeCustomerAdminOfCustomerManagedGroup(
     @Ctx() ctx: RequestContext,
     @Args('groupId') groupId: ID,
-    @Args('customerId') customerId: ID
+    @Args('customerId') customerId: ID,
   ): Promise<CustomerManagedGroup> {
     return this.service.makeAdminOfGroup(ctx, groupId, customerId);
   }
@@ -108,7 +108,7 @@ export class CustomerManagedGroupsShopResolver {
   @Allow(Permission.Authenticated)
   addCustomerToMyCustomerManagedGroup(
     @Ctx() ctx: RequestContext,
-    @Args('input') input: AddCustomerToMyCustomerManagedGroupInput
+    @Args('input') input: AddCustomerToMyCustomerManagedGroupInput,
   ): Promise<CustomerManagedGroup> {
     return this.service.addToGroup(ctx, input);
   }
@@ -117,7 +117,7 @@ export class CustomerManagedGroupsShopResolver {
   @Allow(Permission.Authenticated)
   updateCustomerManagedGroupMember(
     @Ctx() ctx: RequestContext,
-    @Args('input') input: UpdateCustomerManagedGroupMemberInput
+    @Args('input') input: UpdateCustomerManagedGroupMemberInput,
   ): Promise<CustomerManagedGroup> {
     return this.service.updateGroupMember(ctx, input);
   }
@@ -126,7 +126,7 @@ export class CustomerManagedGroupsShopResolver {
   @Allow(Permission.Authenticated)
   removeCustomerFromMyCustomerManagedGroup(
     @Ctx() ctx: RequestContext,
-    @Args('customerId') customerId: ID
+    @Args('customerId') customerId: ID,
   ): Promise<CustomerManagedGroup> {
     return this.service.removeFromGroup(ctx, customerId);
   }

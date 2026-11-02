@@ -1,9 +1,4 @@
 import {
-  createTestEnvironment,
-  registerInitializer,
-  SqljsInitializer,
-} from '@vendure/testing';
-import {
   AutoIncrementIdStrategy,
   DefaultLogger,
   DefaultSearchPlugin,
@@ -11,8 +6,12 @@ import {
   LogLevel,
   mergeConfig,
 } from '@vendure/core';
+import {
+  createTestEnvironment,
+  registerInitializer,
+  SqljsInitializer,
+} from '@vendure/testing';
 import { initialData } from '../../test/src/initial-data';
-import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
 import { ShippingExtensionsPlugin } from '../src/shipping-extensions.plugin';
 import { UKPostalCodeToGelocationConversionStrategy } from '../src/strategies/uk-postalcode-to-geolocation-strategy';
 
@@ -50,15 +49,6 @@ import { UKPostalCodeToGelocationConversionStrategy } from '../src/strategies/uk
     },
     plugins: [
       DefaultSearchPlugin,
-      AdminUiPlugin.init({
-        port: 3002,
-        route: 'admin',
-        // app: compileUiExtensions({
-        //   outputPath: path.join(__dirname, '__admin-ui'),
-        //   extensions: [ShippingExtensionsPlugin.ui],
-        //   devMode: true,
-        // }),
-      }),
       ShippingExtensionsPlugin.init({
         weightUnit: 'kg',
         customFieldsTab: 'Physical properties',

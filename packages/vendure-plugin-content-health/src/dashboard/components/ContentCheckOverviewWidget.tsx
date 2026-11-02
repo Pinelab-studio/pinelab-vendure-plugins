@@ -1,3 +1,5 @@
+import { useQuery } from '@tanstack/react-query';
+import { Link } from '@tanstack/react-router';
 import {
   api,
   DashboardBaseWidget,
@@ -6,8 +8,6 @@ import {
   TableCell,
   TableRow,
 } from '@vendure/dashboard';
-import { Link } from '@tanstack/react-router';
-import { useQuery } from '@tanstack/react-query';
 import { entityTypeLabel } from '../entity-type-label';
 import { contentCheckOverviewForWidgetDocument } from '../queries';
 
@@ -38,11 +38,11 @@ export function ContentCheckOverviewWidget() {
     >
       {isLoading ? (
         <div className="animate-pulse space-y-2">
-          <div className="h-8 bg-muted rounded-md" />
-          <div className="h-8 bg-muted rounded-md" />
+          <div className="h-8 rounded-md bg-muted" />
+          <div className="h-8 rounded-md bg-muted" />
         </div>
       ) : items.length === 0 ? (
-        <p className="text-sm text-muted-foreground">
+        <p className="text-muted-foreground text-sm">
           No products or collections currently have SEO/content issues.
         </p>
       ) : (
@@ -64,7 +64,7 @@ export function ContentCheckOverviewWidget() {
                         item.name
                       )}
                     </TableCell>
-                    <TableCell className="text-right text-xs text-muted-foreground">
+                    <TableCell className="text-right text-muted-foreground text-xs">
                       {entityTypeLabel(item.entityType)}
                     </TableCell>
                   </TableRow>
@@ -74,7 +74,7 @@ export function ContentCheckOverviewWidget() {
           </div>
           <Link
             to="/content-health/issues"
-            className="text-sm text-muted-foreground hover:underline"
+            className="text-muted-foreground text-sm hover:underline"
           >
             {hasMore ? `View all ${totalItems} issues →` : 'View all issues →'}
           </Link>

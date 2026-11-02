@@ -7,9 +7,9 @@ import {
   translateDeep,
 } from '@vendure/core';
 import { loggerCtx } from '../constants';
+import { mapToProfile } from '../util/map-to-profile';
 import { toKlaviyoMoney } from '../util/to-klaviyo-money';
 import { KlaviyoOrderPlacedEventHandler } from './klaviyo-event-handler';
-import { mapToProfile } from '../util/map-to-profile';
 
 export const defaultOrderPlacedEventHandler: KlaviyoOrderPlacedEventHandler = {
   vendureEvent: OrderPlacedEvent,
@@ -29,14 +29,14 @@ export const defaultOrderPlacedEventHandler: KlaviyoOrderPlacedEventHandler = {
     if (!order?.customer) {
       Logger.error(
         `Can not send Order placed Event to Klaviyo, because order ${code} has no customer`,
-        loggerCtx
+        loggerCtx,
       );
       return false;
     }
     order.lines.forEach((line) => {
       line.productVariant = translateDeep(
         line.productVariant,
-        ctx.languageCode
+        ctx.languageCode,
       );
     });
     let address: Address | OrderAddress | undefined =

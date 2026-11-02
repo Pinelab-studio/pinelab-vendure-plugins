@@ -1,3 +1,4 @@
+import { ModuleRef } from '@nestjs/core';
 import {
   ID,
   Injector,
@@ -8,7 +9,6 @@ import {
   RequestContext,
   UserInputError,
 } from '@vendure/core';
-import { ModuleRef } from '@nestjs/core';
 import { Subscription, SubscriptionStrategy } from './subscription-strategy';
 
 export interface SubscriptionWithVariantId extends Subscription {
@@ -21,10 +21,10 @@ export interface SubscriptionWithVariantId extends Subscription {
 export class SubscriptionHelper {
   injector: Injector;
   constructor(
-    private loggerCtx: string,
+    _loggerCtx: string,
     private moduleRef: ModuleRef,
     private productVariantService: ProductVariantService,
-    private strategy: SubscriptionStrategy
+    private strategy: SubscriptionStrategy,
   ) {
     this.injector = new Injector(moduleRef);
   }
@@ -32,15 +32,15 @@ export class SubscriptionHelper {
   async previewSubscription(
     ctx: RequestContext,
     productVariantId: ID,
-    customInputs?: any
+    customInputs?: any,
   ): Promise<SubscriptionWithVariantId[]> {
     const variant = await this.productVariantService.findOne(
       ctx,
-      productVariantId
+      productVariantId,
     );
     if (!variant) {
       throw new UserInputError(
-        `No product variant with id '${productVariantId}' found`
+        `No product variant with id '${productVariantId}' found`,
       );
     }
 
@@ -51,7 +51,7 @@ export class SubscriptionHelper {
       ctx,
       this.injector,
       variant,
-      customInputs
+      customInputs,
     );
     if (Array.isArray(subscriptions)) {
       return subscriptions.map((sub) => ({
@@ -74,7 +74,7 @@ export class SubscriptionHelper {
   async previewSubscriptionsForProduct(
     ctx: RequestContext,
     productId: ID,
-    customInputs?: any
+    customInputs?: any,
   ): Promise<SubscriptionWithVariantId[]> {
     const { items: variants } =
       await this.productVariantService.getVariantsByProductId(ctx, productId);
@@ -82,7 +82,7 @@ export class SubscriptionHelper {
       throw new UserInputError(`No variants for product '${productId}' found`);
     }
     const subscriptions = await Promise.all(
-      variants.map((v) => this.previewSubscription(ctx, v.id, customInputs))
+      variants.map((v) => this.previewSubscription(ctx, v.id, customInputs)),
     );
     return subscriptions.flat();
   }
@@ -93,12 +93,12 @@ export class SubscriptionHelper {
    */
   async getSubscriptionsForOrder(
     ctx: RequestContext,
-    order: Order
+    order: Order,
   ): Promise<(SubscriptionWithVariantId & { orderLineId: ID })[]> {
     // Only define subscriptions for orderlines with a subscription product variant
     const subscriptionOrderLines = await this.getSubscriptionOrderLines(
       ctx,
-      order
+      order,
     );
     const subscriptions = await Promise.all(
       subscriptionOrderLines.map(async (line) => {
@@ -109,7 +109,7 @@ export class SubscriptionHelper {
           variantId: line.productVariant.id,
           ...sub,
         }));
-      })
+      }),
     );
     const flattenedSubscriptionsArray = subscriptions.flat();
     return flattenedSubscriptionsArray;
@@ -118,7 +118,7 @@ export class SubscriptionHelper {
   async hasSubscriptions(ctx: RequestContext, order: Order): Promise<boolean> {
     const subscriptionOrderLines = await this.getSubscriptionOrderLines(
       ctx,
-      order
+      order,
     );
     return subscriptionOrderLines.length > 0;
   }
@@ -129,7 +129,7 @@ export class SubscriptionHelper {
    */
   async getSubscriptionOrderLines(
     ctx: RequestContext,
-    order: Order
+    order: Order,
   ): Promise<OrderLine[]> {
     const subscriptionOrderLines: OrderLine[] = [];
     await Promise.all(
@@ -138,12 +138,12 @@ export class SubscriptionHelper {
           await this.strategy.isSubscription(
             ctx,
             l.productVariant,
-            new Injector(this.moduleRef)
+            new Injector(this.moduleRef),
           )
         ) {
           subscriptionOrderLines.push(l);
         }
-      })
+      }),
     );
     return subscriptionOrderLines;
   }
@@ -154,7 +154,7 @@ export class SubscriptionHelper {
   async getSubscriptionsForOrderLine(
     ctx: RequestContext,
     orderLine: OrderLine,
-    order: Order
+    order: Order,
   ): Promise<Subscription[]> {
     if (!(await this.isSubscription(ctx, orderLine.productVariant))) {
       return [];
@@ -165,7 +165,7 @@ export class SubscriptionHelper {
       orderLine.productVariant,
       order,
       orderLine.customFields,
-      orderLine.quantity
+      orderLine.quantity,
     );
     if (Array.isArray(subs)) {
       return subs;
@@ -175,7 +175,7 @@ export class SubscriptionHelper {
 
   async isSubscription(
     ctx: RequestContext,
-    variant: ProductVariant
+    variant: ProductVariant,
   ): Promise<boolean> {
     return this.strategy.isSubscription(ctx, variant, this.injector);
   }
@@ -185,7 +185,7 @@ export class SubscriptionHelper {
     productVariant: ProductVariant,
     order: Order,
     orderLineCustomFields: { [key: string]: any },
-    quantity: number
+    quantity: number,
   ):
     | Promise<Subscription>
     | Subscription
@@ -197,7 +197,7 @@ export class SubscriptionHelper {
       productVariant,
       order,
       orderLineCustomFields,
-      quantity
+      quantity,
     );
   }
 }

@@ -3,8 +3,6 @@ import {
   ParcelDropOffPoint,
   ParcelDropOffPointSearchInput,
 } from './types-generated-graphql';
-// eslint-disable-next-line @typescript-eslint/no-unused-vars -- required for correct type resolution
-import { CustomOrderFields } from '@vendure/core/dist/entity/custom-entity-fields';
 
 export interface PluginInitOptions {
   /**
@@ -23,11 +21,11 @@ export interface PluginInitOptions {
     setDropOffPointOnOrder?: (
       ctx: RequestContext,
       activeOrder: Order,
-      dropOffPoint: SavedDropOffPoint
+      dropOffPoint: SavedDropOffPoint,
     ) => Promise<Order> | Order;
     unsetDropOffPoint?: (
       ctx: RequestContext,
-      activeOrder: Order
+      activeOrder: Order,
     ) => Promise<Order> | Order;
   };
 }
@@ -41,7 +39,7 @@ export interface DropOffPointCarrier {
   name: string;
   getDropOffPoints: (
     ctx: RequestContext,
-    input: ParcelDropOffPointSearchInput
+    input: ParcelDropOffPointSearchInput,
   ) => Promise<DropOffPoint[]>;
 }
 

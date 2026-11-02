@@ -1,12 +1,12 @@
 import { PluginCommonModule, Type, VendurePlugin } from '@vendure/core';
 import { adminApiExtensions, shopApiExtensions } from './api/api-extensions';
+import { UTMTrackerAdminResolver } from './api/utm-tracker.admin-resolver';
+import { UTMTrackerShopResolver } from './api/utm-tracker.shop-resolver';
+import { FirstClickAttribution } from './config/first-click-attribution';
 import { UTM_TRACKER_PLUGIN_OPTIONS } from './constants';
 import { UtmOrderParameter } from './entities/utm-order-parameter.entity';
 import { UTMTrackerService } from './services/utm-tracker.service';
 import { UTMTrackerPluginInitOptions } from './types';
-import { UTMTrackerShopResolver } from './api/utm-tracker.shop-resolver';
-import { FirstClickAttribution } from './config/first-click-attribution';
-import { UTMTrackerAdminResolver } from './api/utm-tracker.admin-resolver';
 
 @VendurePlugin({
   imports: [PluginCommonModule],
@@ -37,10 +37,10 @@ export class UTMTrackerPlugin {
   };
 
   static init(
-    options: Partial<UTMTrackerPluginInitOptions>
+    options: Partial<UTMTrackerPluginInitOptions>,
   ): Type<UTMTrackerPlugin> {
-    this.options = {
-      ...this.options,
+    UTMTrackerPlugin.options = {
+      ...UTMTrackerPlugin.options,
       ...options,
     };
     return UTMTrackerPlugin;

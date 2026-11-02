@@ -16,7 +16,7 @@ import {
 } from '@vendure/core';
 import { asError } from 'catch-unknown';
 import { Brackets } from 'typeorm';
-import { ORDER_CLEANUP_OPTIONS, loggerCtx } from '../constants';
+import { loggerCtx, ORDER_CLEANUP_OPTIONS } from '../constants';
 import { NormalizedOrderCleanupPluginOptions } from '../order-cleanup.plugin';
 import {
   getNextPageSize,
@@ -53,7 +53,7 @@ export class OrderCleanupService {
     private configService: ConfigService,
     private eventBus: EventBus,
     @Inject(ORDER_CLEANUP_OPTIONS)
-    private options: NormalizedOrderCleanupPluginOptions
+    private options: NormalizedOrderCleanupPluginOptions,
   ) {}
 
   /**
@@ -62,7 +62,7 @@ export class OrderCleanupService {
   async emptyStaleOrders(
     ctx: RequestContext,
     olderThanDays: number = this.options.olderThanDays,
-    batchSize: number = this.options.batchSize
+    batchSize: number = this.options.batchSize,
   ): Promise<OrderCleanupResult> {
     const cutoff = new Date(Date.now() - olderThanDays * 24 * 60 * 60 * 1000);
     const defaultChannel = await this.channelService.getDefaultChannel(ctx);
@@ -77,7 +77,7 @@ export class OrderCleanupService {
 
     Logger.info(
       `Emptying active orders older than ${olderThanDays} days`,
-      loggerCtx
+      loggerCtx,
     );
 
     while (result.processed < ORDER_CLEANUP_PROCESSING_LIMIT) {
@@ -91,7 +91,7 @@ export class OrderCleanupService {
       const toDate = toReadableDate(orders[orders.length - 1].updatedAt);
       Logger.info(
         `Processing ${orders.length} stale orders between '${fromDate}' and '${toDate}'`,
-        loggerCtx
+        loggerCtx,
       );
 
       const lastOrder = orders[orders.length - 1];
@@ -99,7 +99,7 @@ export class OrderCleanupService {
 
       for (const batch of toBatches(orders, batchSize)) {
         const outcomes = await Promise.all(
-          batch.map((order) => this.emptyOrder(defaultChannel, order, cutoff))
+          batch.map((order) => this.emptyOrder(defaultChannel, order, cutoff)),
         );
         for (const outcome of outcomes) {
           result.processed++;
@@ -116,12 +116,12 @@ export class OrderCleanupService {
       result.reachedProcessingLimit = true;
       Logger.warn(
         `Processed ${result.processed} orders. More eligible orders will be processed in the next run.`,
-        loggerCtx
+        loggerCtx,
       );
     }
     Logger.info(
       `Emptied ${result.emptied} stale orders; ${result.failed} failed and ${result.skipped} were skipped`,
-      loggerCtx
+      loggerCtx,
     );
     return result;
   }
@@ -133,7 +133,7 @@ export class OrderCleanupService {
     ctx: RequestContext,
     cutoff: Date,
     cursor: CleanupCursor | undefined,
-    take: number
+    take: number,
   ): Promise<Order[]> {
     const query = this.connection
       .getRepository(ctx, Order)
@@ -157,9 +157,9 @@ export class OrderCleanupService {
             {
               cursorUpdatedAt: cursor.updatedAt,
               cursorId: cursor.id,
-            }
+            },
           );
-        })
+        }),
       );
     }
     return query.getMany();
@@ -171,12 +171,12 @@ export class OrderCleanupService {
   private async emptyOrder(
     defaultChannel: Channel,
     candidate: Order,
-    cutoff: Date
+    cutoff: Date,
   ): Promise<EmptyOrderOutcome> {
     try {
       const channel = resolveOrderCleanupChannel(
         candidate.channels,
-        defaultChannel
+        defaultChannel,
       );
       const orderContext = await this.requestContextService.create({
         apiType: 'admin',
@@ -188,29 +188,17 @@ export class OrderCleanupService {
         async (transactionContext) => {
           const order = await this.orderService.findOne(
             transactionContext,
-            candidate.id
+            candidate.id,
           );
           if (!order || !this.isEligible(order, cutoff)) {
             return 'skipped';
           }
 
           const originalState = order.state;
-          for (const line of order.lines) {
-            for (const interceptor of this.configService.orderOptions
-              .orderInterceptors) {
-              const error = await interceptor.willRemoveItemFromOrder?.(
-                transactionContext,
-                order,
-                line
-              );
-              if (error) {
-                throw new Error(error);
-              }
-            }
-          }
+          await this.checkRemovalInterceptors(transactionContext, order);
 
           const deletedOrderLines = order.lines.map(
-            (line) => new OrderLine(line)
+            (line) => new OrderLine(line),
           );
           await this.connection
             .getRepository(transactionContext, OrderLine)
@@ -218,11 +206,11 @@ export class OrderCleanupService {
           order.lines = [];
           const updatedOrder = await this.orderService.applyPriceAdjustments(
             transactionContext,
-            order
+            order,
           );
           if (updatedOrder.state !== originalState) {
             throw new Error(
-              `Order state changed from '${originalState}' to '${updatedOrder.state}' while emptying`
+              `Order state changed from '${originalState}' to '${updatedOrder.state}' while emptying`,
             );
           }
           for (const deletedOrderLine of deletedOrderLines) {
@@ -231,23 +219,41 @@ export class OrderCleanupService {
                 transactionContext,
                 updatedOrder,
                 deletedOrderLine,
-                'deleted'
-              )
+                'deleted',
+              ),
             );
           }
           Logger.debug(
             `Emptied order ${updatedOrder.code} (${updatedOrder.id}) in state ${updatedOrder.state}`,
-            loggerCtx
+            loggerCtx,
           );
           return 'emptied';
-        }
+        },
       );
     } catch (error) {
       Logger.error(
         `Error emptying order ${candidate.id}: ${asError(error).message}`,
-        loggerCtx
+        loggerCtx,
       );
       return 'failed';
+    }
+  }
+
+  /** Applies item-removal interceptors before deleting any order lines. */
+  private async checkRemovalInterceptors(
+    ctx: RequestContext,
+    order: Order,
+  ): Promise<void> {
+    for (const line of order.lines) {
+      for (const interceptor of this.configService.orderOptions
+        .orderInterceptors) {
+        const error = await interceptor.willRemoveItemFromOrder?.(
+          ctx,
+          order,
+          line,
+        );
+        if (error) throw new Error(error);
+      }
     }
   }
 
@@ -257,7 +263,7 @@ export class OrderCleanupService {
   private isEligible(order: Order, cutoff: Date): boolean {
     return (
       ELIGIBLE_STATES.includes(
-        order.state as (typeof ELIGIBLE_STATES)[number]
+        order.state as (typeof ELIGIBLE_STATES)[number],
       ) &&
       order.updatedAt < cutoff &&
       order.lines.length > 0

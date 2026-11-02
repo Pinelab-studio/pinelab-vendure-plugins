@@ -11,7 +11,7 @@ export const goedgepicktHandler = new FulfillmentHandler({
   args: {},
   createFulfillment: () => {
     throw Error(
-      `Don't use fulfillment with GoedGepickt. Directly transition to Shipped or Delivered instead.`
+      `Don't use fulfillment with GoedGepickt. Directly transition to Shipped or Delivered instead.`,
     );
   },
 });

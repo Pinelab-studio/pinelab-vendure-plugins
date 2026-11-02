@@ -1,12 +1,12 @@
+import { promises as fs } from 'node:fs';
+import { DEFAULT_CHANNEL_CODE } from '@vendure/common/lib/shared-constants';
+import { Channel, Logger, Product } from '@vendure/core';
 import { QueryRunner } from 'typeorm';
-import { promises as fs } from 'fs';
+import { loggerCtx } from '../constants';
 import {
   EXPORTED_PRIMARY_COLLECTIONS_FILE,
   ExportedPrimaryCollectionData,
 } from './export-primary-collections';
-import { Channel, Logger, Product } from '@vendure/core';
-import { DEFAULT_CHANNEL_CODE } from '@vendure/common/lib/shared-constants';
-import { loggerCtx } from '../constants';
 
 export async function updatePrimaryCollections(queryRunner: QueryRunner) {
   try {
@@ -21,10 +21,10 @@ export async function updatePrimaryCollections(queryRunner: QueryRunner) {
     }
     const jsonData = await fs.readFile(
       EXPORTED_PRIMARY_COLLECTIONS_FILE,
-      'utf8'
+      'utf8',
     );
     const primaryCollections: ExportedPrimaryCollectionData[] = JSON.parse(
-      jsonData
+      jsonData,
     ) as ExportedPrimaryCollectionData[];
     const data: Partial<Product>[] = [];
     for (const primaryCollectionData of primaryCollections) {
@@ -44,7 +44,7 @@ export async function updatePrimaryCollections(queryRunner: QueryRunner) {
   } catch (e) {
     Logger.error(
       `Error saving Product primary Collections: ${JSON.stringify(e)}`,
-      loggerCtx
+      loggerCtx,
     );
     process.exit(1);
   }

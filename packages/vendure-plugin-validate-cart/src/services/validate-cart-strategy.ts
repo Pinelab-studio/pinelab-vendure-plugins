@@ -1,10 +1,10 @@
 import {
   Injector,
   Order,
+  OrderLine,
+  ProductVariantService,
   RelationPaths,
   RequestContext,
-  ProductVariantService,
-  OrderLine,
 } from '@vendure/core';
 import { ActiveOrderValidationError } from '../api/generated/graphql';
 
@@ -20,7 +20,7 @@ export interface ValidateCartStrategy {
   validate(
     ctx: RequestContext,
     activeOrder: Order,
-    injector: Injector
+    injector: Injector,
   ): Promise<ActiveOrderValidationError[]> | ActiveOrderValidationError[];
 }
 
@@ -36,7 +36,7 @@ export class DefaultStockValidationStrategy implements ValidateCartStrategy {
   async validate(
     ctx: RequestContext,
     activeOrder: Order,
-    injector: Injector
+    injector: Injector,
   ): Promise<ActiveOrderValidationError[]> {
     // Get order lines with insufficient saleable stock
     const variantService = injector.get(ProductVariantService);
@@ -48,12 +48,12 @@ export class DefaultStockValidationStrategy implements ValidateCartStrategy {
         }
         const availableStock = await variantService.getSaleableStockLevel(
           ctx,
-          line.productVariant
+          line.productVariant,
         );
         if (line.quantity > availableStock) {
           orderLinesWithInsufficientStock.push(line);
         }
-      })
+      }),
     );
     if (orderLinesWithInsufficientStock.length > 0) {
       // Return a single error for all order lines with insufficient stock
@@ -64,7 +64,7 @@ export class DefaultStockValidationStrategy implements ValidateCartStrategy {
             .join(', ')}`,
           errorCode: ValidationErrorCodes.ITEM_UNAVAILABLE,
           relatedOrderLineIds: orderLinesWithInsufficientStock.map(
-            (line) => line.id
+            (line) => line.id,
           ),
         },
       ];

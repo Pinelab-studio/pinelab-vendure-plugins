@@ -6,8 +6,8 @@ import {
   CreatePromotionMutation,
   CreatePromotionMutationVariables,
 } from '../../test/src/generated/admin-graphql';
-import { distanceBasedShippingCalculator } from '../src/config/shipping/distance-based-shipping-calculator';
 import { flatRateItemBasedShippingCalculator } from '../src';
+import { distanceBasedShippingCalculator } from '../src/config/shipping/distance-based-shipping-calculator';
 
 const CREATE_SHIPPING_METHOD = gql`
   mutation CreateShippingMethod($input: CreateShippingMethodInput!) {
@@ -31,7 +31,7 @@ interface CountryAndWeightOptions {
 
 export async function createShippingMethodForCountriesAndWeight(
   adminClient: SimpleGraphQLClient,
-  options: CountryAndWeightOptions
+  options: CountryAndWeightOptions,
 ) {
   const res = await adminClient.query(CREATE_SHIPPING_METHOD, {
     input: {
@@ -94,7 +94,7 @@ interface CountryAndFacetOptions {
 
 export async function createShippingMethodForCountriesAndFacets(
   adminClient: SimpleGraphQLClient,
-  options: CountryAndFacetOptions
+  options: CountryAndFacetOptions,
 ) {
   const res = await adminClient.query(CREATE_SHIPPING_METHOD, {
     input: {
@@ -154,7 +154,7 @@ export interface DistanceBasedShippingCalculatorOptions {
 
 export async function createDistanceBasedShippingMethod(
   adminClient: SimpleGraphQLClient,
-  options: DistanceBasedShippingCalculatorOptions
+  options: DistanceBasedShippingCalculatorOptions,
 ) {
   const res = await adminClient.query(CREATE_SHIPPING_METHOD, {
     input: {
@@ -205,7 +205,7 @@ export async function createDistanceBasedShippingMethod(
  */
 export async function createFlatRateShippingMethod(
   adminClient: SimpleGraphQLClient,
-  amount: number
+  amount: number,
 ) {
   const res = await adminClient.query(CREATE_SHIPPING_METHOD, {
     input: {
@@ -244,7 +244,7 @@ export async function createFlatRateShippingMethod(
 
 export async function createPromotion(
   adminClient: SimpleGraphQLClient,
-  input: CreatePromotionMutationVariables
+  input: CreatePromotionMutationVariables,
 ): Promise<Promotion> {
   const { createPromotion } = await adminClient.query<
     CreatePromotionMutation,

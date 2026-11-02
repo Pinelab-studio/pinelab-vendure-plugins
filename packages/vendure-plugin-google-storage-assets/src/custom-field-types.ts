@@ -1,7 +1,4 @@
-import {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  CustomAssetFields,
-} from '@vendure/core/dist/entity/custom-entity-fields';
+export {};
 
 declare module '@vendure/core' {
   interface CustomAssetFields {

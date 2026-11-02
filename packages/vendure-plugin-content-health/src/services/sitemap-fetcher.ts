@@ -32,7 +32,7 @@ export class SitemapFetcher {
   private async fetchRecursive(
     url: string,
     timeoutMs: number,
-    visited: Set<string>
+    visited: Set<string>,
   ): Promise<SitemapFetchResult> {
     if (visited.has(url)) {
       return { ok: true, urls: new Set() };
@@ -85,24 +85,7 @@ export class SitemapFetcher {
     }
 
     if (parsed?.sitemapindex) {
-      const childEntries = toArray(parsed.sitemapindex.sitemap);
-      const urls = new Set<string>();
-      for (const entry of childEntries) {
-        const childUrl = entry?.loc;
-        if (typeof childUrl !== 'string') {
-          continue;
-        }
-        const childResult = await this.fetchRecursive(
-          childUrl,
-          timeoutMs,
-          visited
-        );
-        if (childResult.ok) {
-          childResult.urls.forEach((u) => urls.add(u));
-        }
-        // A broken child sitemap is isolated: skip it, keep the rest.
-      }
-      return { ok: true, urls };
+      return this.fetchChildren(parsed.sitemapindex, timeoutMs, visited);
     }
 
     if (parsed?.urlset) {
@@ -120,6 +103,24 @@ export class SitemapFetcher {
       ok: false,
       error: `Sitemap '${url}' is not a valid <urlset> or <sitemapindex> document.`,
     };
+  }
+  /** Collects child sitemap URLs while isolating failures to each child. */
+  private async fetchChildren(
+    index: ParsedSitemapIndex['sitemapindex'],
+    timeoutMs: number,
+    visited: Set<string>,
+  ): Promise<SitemapFetchResult> {
+    const urls = new Set<string>();
+    for (const entry of toArray(index.sitemap)) {
+      if (typeof entry?.loc !== 'string') continue;
+      const result = await this.fetchRecursive(entry.loc, timeoutMs, visited);
+      if (result.ok) {
+        result.urls.forEach((url) => {
+          urls.add(url);
+        });
+      }
+    }
+    return { ok: true, urls };
   }
 }
 

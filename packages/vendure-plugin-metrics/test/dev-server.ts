@@ -1,21 +1,18 @@
 import {
-  createTestEnvironment,
-  registerInitializer,
-  SqljsInitializer,
-} from '@vendure/testing';
-import {
   DefaultLogger,
   DefaultSearchPlugin,
   LogLevel,
   mergeConfig,
 } from '@vendure/core';
+import {
+  createTestEnvironment,
+  registerInitializer,
+  SqljsInitializer,
+} from '@vendure/testing';
 import { initialData } from '../../test/src/initial-data';
-import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
-import path from 'path';
-import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
-import { MetricsPlugin } from '../src/';
-import { testPaymentMethod } from '../../test/src/test-payment-method';
 import { addItem, createSettledOrder } from '../../test/src/shop-utils';
+import { testPaymentMethod } from '../../test/src/test-payment-method';
+import { MetricsPlugin } from '../src/';
 
 (async () => {
   require('dotenv').config();
@@ -35,15 +32,6 @@ import { addItem, createSettledOrder } from '../../test/src/shop-utils';
         displayPastMonths: 19,
       }),
       DefaultSearchPlugin,
-      AdminUiPlugin.init({
-        port: 3002,
-        route: 'admin',
-        app: compileUiExtensions({
-          outputPath: path.join(__dirname, '__admin-ui'),
-          extensions: [MetricsPlugin.ui],
-          devMode: true,
-        }),
-      }),
     ],
   });
   const { server, shopClient } = createTestEnvironment(config);

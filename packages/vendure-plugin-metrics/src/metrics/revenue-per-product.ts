@@ -1,13 +1,5 @@
-import {
-  Injector,
-  Logger,
-  Order,
-  OrderLine,
-  ProductVariant,
-  RequestContext,
-  TransactionalConnection,
-} from '@vendure/core';
-import { AdvancedMetricType } from '../ui/generated/graphql';
+import { Order, ProductVariant, RequestContext } from '@vendure/core';
+import { AdvancedMetricType } from '../generated/graphql';
 import { MetricStrategy, NamedDatapoint } from '../services/metric-strategy';
 
 /**
@@ -19,14 +11,14 @@ export class RevenuePerProduct implements MetricStrategy {
   readonly code = 'revenue-per-product';
   readonly allowProductSelection = true;
 
-  getTitle(ctx: RequestContext): string {
+  getTitle(_ctx: RequestContext): string {
     return `Revenue`;
   }
 
   calculateDataPoints(
     ctx: RequestContext,
     orders: Order[],
-    variants: ProductVariant[]
+    variants: ProductVariant[],
   ): NamedDatapoint[] {
     if (!variants.length) {
       // Return total revenue
@@ -41,7 +33,7 @@ export class RevenuePerProduct implements MetricStrategy {
         : 'total';
       const totalRevenue = orders.reduce(
         (total, current) => total + current[totalFieldName],
-        0
+        0,
       );
       return [
         {
@@ -52,12 +44,12 @@ export class RevenuePerProduct implements MetricStrategy {
     }
     // Else calculate revenue per variant
     // Map orders to lines, but st the order object on each line
-    const lines = orders
-      .map((order) => {
-        order.lines.forEach((l) => (l.order = order));
-        return order.lines;
-      })
-      .flat();
+    const lines = orders.flatMap((order) => {
+      order.lines.forEach((l) => {
+        l.order = order;
+      });
+      return order.lines;
+    });
     const dataPoints: NamedDatapoint[] = [];
     const totalFieldName = ctx.channel.pricesIncludeTax
       ? 'proratedLinePriceWithTax'
@@ -65,13 +57,13 @@ export class RevenuePerProduct implements MetricStrategy {
     variants.forEach((variant) => {
       // Find order lines per variant id
       const linesForVariant = lines.filter(
-        (line) => line.productVariant.id === variant.id
+        (line) => line.productVariant.id === variant.id,
       );
       // Sum of order lines with this variant
 
       const revenue = linesForVariant.reduce(
         (total, current) => total + current[totalFieldName],
-        0
+        0,
       );
       dataPoints.push({
         legendLabel: variant.name,

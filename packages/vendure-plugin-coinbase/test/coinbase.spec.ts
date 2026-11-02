@@ -5,24 +5,24 @@ import {
   registerInitializer,
   SimpleGraphQLClient,
   SqljsInitializer,
-  testConfig,
   TestServer,
+  testConfig,
 } from '@vendure/testing';
-
-import { initialData } from '../../test/src/initial-data';
-import { CoinbasePlugin } from '../src/coinbase.plugin';
-import { coinbaseHandler } from '../src/coinbase.handler';
+import axios, { AxiosInstance } from 'axios';
+import nock from 'nock';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { getOrder } from '../../test/src/admin-utils';
 import {
   CreatePaymentMethod,
   LanguageCode,
 } from '../../test/src/generated/admin-graphql';
+import { initialData } from '../../test/src/initial-data';
 import { addItem, setAddressAndShipping } from '../../test/src/shop-utils';
-import nock from 'nock';
-import axios, { AxiosInstance } from 'axios';
+import { coinbaseHandler } from '../src/coinbase.handler';
+import { CoinbasePlugin } from '../src/coinbase.plugin';
 import { ChargeInput, ChargeResult } from '../src/coinbase.types';
-import { getOrder } from '../../test/src/admin-utils';
 import { CreatePaymentIntentMutation } from './queries';
-import { expect, describe, beforeAll, afterAll, it, vi, test } from 'vitest';
+
 const mockData = {
   redirectUrl: 'https://my-storefront/order',
   apiKey: 'myApiKey',
@@ -58,7 +58,7 @@ describe('Coinbase payments', () => {
     await adminClient.asSuperAdmin();
     await shopClient.asUserWithCredentials(
       'hayden.zieme12@hotmail.com',
-      'test'
+      'test',
     );
   }, 60000);
 
@@ -92,7 +92,7 @@ describe('Coinbase payments', () => {
             },
           ],
         },
-      }
+      },
     );
     expect(createPaymentMethod.code).toBe(mockData.methodCode);
   });
@@ -117,16 +117,16 @@ describe('Coinbase payments', () => {
       });
     await setAddressAndShipping(shopClient, 'T_1');
     const { createCoinbasePaymentIntent } = await shopClient.query(
-      CreatePaymentIntentMutation
+      CreatePaymentIntentMutation,
     );
     expect(createCoinbasePaymentIntent).toBe(
-      'https://mock-hosted-checkout/charges'
+      'https://mock-hosted-checkout/charges',
     );
     const adminOrder = await getOrder(adminClient, order.id as string);
-    expect(payload!.metadata.channelToken).toBe(E2E_DEFAULT_CHANNEL_TOKEN);
-    expect(payload!.metadata.orderCode).toBe(adminOrder!.code);
-    expect(payload!.local_price.amount).toBe(
-      (adminOrder!.totalWithTax / 100).toFixed(2)
+    expect(payload?.metadata.channelToken).toBe(E2E_DEFAULT_CHANNEL_TOKEN);
+    expect(payload?.metadata.orderCode).toBe(adminOrder?.code);
+    expect(payload?.local_price.amount).toBe(
+      (adminOrder?.totalWithTax / 100).toFixed(2),
     );
   });
 

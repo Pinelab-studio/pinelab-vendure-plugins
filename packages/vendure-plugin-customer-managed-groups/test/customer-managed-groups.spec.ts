@@ -1,5 +1,3 @@
-import fs from 'fs';
-import path from 'path';
 import { DefaultLogger, LogLevel, mergeConfig } from '@vendure/core';
 import {
   createTestEnvironment,
@@ -9,35 +7,35 @@ import {
   testConfig,
 } from '@vendure/testing';
 import { TestServer } from '@vendure/testing/lib/test-server';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { Address } from '../../test/src/generated/shop-graphql';
 import { initialData } from '../../test/src/initial-data';
+import { createSettledOrder } from '../../test/src/shop-utils';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
 import { CustomerManagedGroupsPlugin } from '../src';
 import {
   activeCustomerManagedGroupMemberQuery,
-  adminCreateCustomerManagedGroupMutation,
   addCustomer,
+  addCustomerToMyCustomerManagedGroupMutation,
+  adminAddCustomersToGroupMutation,
+  adminCreateCustomerManagedGroupMutation,
+  adminCustomerManagedGroupQuery,
+  adminGetOrdersForCustomerManagedGroup,
+  adminMakeCustomerAdminOfGroupMutation,
   createCustomerManagedGroupMutation,
+  customers,
   getOrdersForMyCustomerManagedGroup,
   makeCustomerAdminOfCustomerManagedGroupMutation,
   myCustomerManagedGroupQuery,
   removeCustomerFromGroupMutation,
   updateCustomerManagedGroupMemberMutation,
-  adminCustomerManagedGroupQuery,
-  adminMakeCustomerAdminOfGroupMutation,
-  addCustomerToMyCustomerManagedGroupMutation,
-  adminAddCustomersToGroupMutation,
-  customers,
-  adminGetOrdersForCustomerManagedGroup,
 } from './test-helpers';
-import { createSettledOrder } from '../../test/src/shop-utils';
-import { Address } from '../../test/src/generated/shop-graphql';
-import { expect, describe, beforeAll, afterAll, it, vi, test } from 'vitest';
 
-describe('Customer managed groups', function () {
+describe('Customer managed groups', () => {
   let server: TestServer;
   let adminClient: SimpleGraphQLClient;
   let shopClient: SimpleGraphQLClient;
-  let serverStarted = false;
+  const _serverStarted = false;
 
   beforeAll(async () => {
     registerInitializer('sqljs', new SqljsInitializer('__data__'));
@@ -91,7 +89,7 @@ describe('Customer managed groups', function () {
   function authorizeAsGroupAdmin(): Promise<void> {
     return shopClient.asUserWithCredentials(
       'hayden.zieme12@hotmail.com',
-      'test'
+      'test',
     );
   }
 
@@ -113,7 +111,7 @@ describe('Customer managed groups', function () {
       });
     } catch (e) {
       expect((e as any).response.errors[0].message).toBe(
-        'You are not currently authorized to perform this action'
+        'You are not currently authorized to perform this action',
       );
     }
   });
@@ -122,7 +120,7 @@ describe('Customer managed groups', function () {
     await authorizeAsGroupAdmin();
 
     const { myCustomerManagedGroup: group } = await shopClient.query(
-      myCustomerManagedGroupQuery
+      myCustomerManagedGroupQuery,
     );
     expect(group).toBe(null);
   });
@@ -130,7 +128,7 @@ describe('Customer managed groups', function () {
   it('Returns undefined for activeCustomerManagedGroupMember when not in a group', async () => {
     await authorizeAsGroupAdmin();
     const { activeCustomerManagedGroupMember: member } = await shopClient.query(
-      activeCustomerManagedGroupMemberQuery
+      activeCustomerManagedGroupMemberQuery,
     );
     expect(member).toBe(null);
   });
@@ -144,10 +142,10 @@ describe('Customer managed groups', function () {
         },
       });
     const hayden = group.customers.find(
-      (c: any) => c.emailAddress === 'hayden.zieme12@hotmail.com'
+      (c: any) => c.emailAddress === 'hayden.zieme12@hotmail.com',
     );
     const marques = group.customers.find(
-      (c: any) => c.emailAddress === 'marques.sawayn@hotmail.com'
+      (c: any) => c.emailAddress === 'marques.sawayn@hotmail.com',
     );
     expect(group.name).toBe("Zieme's Group");
     expect(hayden.isGroupAdministrator).toBe(true);
@@ -157,7 +155,7 @@ describe('Customer managed groups', function () {
   it('Returns active member when in a group', async () => {
     await authorizeAsGroupAdmin();
     const { activeCustomerManagedGroupMember: member } = await shopClient.query(
-      activeCustomerManagedGroupMemberQuery
+      activeCustomerManagedGroupMemberQuery,
     );
     expect(member.isGroupAdministrator).toBe(true);
   });
@@ -165,7 +163,7 @@ describe('Customer managed groups', function () {
   it('Returns my group', async () => {
     await authorizeAsGroupAdmin();
     const { myCustomerManagedGroup: group } = await shopClient.query(
-      myCustomerManagedGroupQuery
+      myCustomerManagedGroupQuery,
     );
     expect(group.name).toBe("Zieme's Group");
   });
@@ -179,10 +177,10 @@ describe('Customer managed groups', function () {
         },
       });
     const marques = group.customers.find(
-      (c: any) => c.emailAddress === 'marques.sawayn@hotmail.com'
+      (c: any) => c.emailAddress === 'marques.sawayn@hotmail.com',
     );
     const eliezer = group.customers.find(
-      (c: any) => c.emailAddress === 'eliezer56@yahoo.com'
+      (c: any) => c.emailAddress === 'eliezer56@yahoo.com',
     );
     expect(marques.isGroupAdministrator).toBe(false);
     expect(eliezer.isGroupAdministrator).toBe(false);
@@ -195,7 +193,7 @@ describe('Customer managed groups', function () {
       await shopClient.query(createCustomerManagedGroupMutation);
     } catch (e) {
       expect((e as any).response.errors[0].message).toBe(
-        'You are already in a customer managed group'
+        'You are already in a customer managed group',
       );
     }
   });
@@ -211,7 +209,7 @@ describe('Customer managed groups', function () {
       });
     } catch (e) {
       expect((e as any).response.errors[0].message).toBe(
-        'You are not administrator of your group'
+        'You are not administrator of your group',
       );
     }
   });
@@ -235,7 +233,7 @@ describe('Customer managed groups', function () {
       await shopClient.query(getOrdersForMyCustomerManagedGroup);
     } catch (e) {
       expect((e as any).response.errors[0].message).toBe(
-        'You are not currently authorized to perform this action'
+        'You are not currently authorized to perform this action',
       );
     }
   });
@@ -247,13 +245,13 @@ describe('Customer managed groups', function () {
     expect(orders.ordersForMyCustomerManagedGroup.items[0].code).toBeDefined();
     expect(orders.ordersForMyCustomerManagedGroup.items[1].code).toBeDefined();
     expect(
-      orders.ordersForMyCustomerManagedGroup.items[1].lines.length
+      orders.ordersForMyCustomerManagedGroup.items[1].lines.length,
     ).toBeGreaterThan(0);
     expect(
-      orders.ordersForMyCustomerManagedGroup.items[1].payments.length
+      orders.ordersForMyCustomerManagedGroup.items[1].payments.length,
     ).toBeGreaterThan(0);
     expect(
-      orders.ordersForMyCustomerManagedGroup.items[1].customFields.testing
+      orders.ordersForMyCustomerManagedGroup.items[1].customFields.testing,
     ).toBe('just a test');
   });
 
@@ -272,7 +270,7 @@ describe('Customer managed groups', function () {
       });
     } catch (e) {
       expect((e as any).response.errors[0].message).toBe(
-        'You are not administrator of your group'
+        'You are not administrator of your group',
       );
     }
   });
@@ -284,7 +282,7 @@ describe('Customer managed groups', function () {
         customerId: '3', // marques.sawayn@hotmail.com
       });
     const marques = group.customers.find(
-      (c: any) => c.emailAddress === 'marques.sawayn@hotmail.com'
+      (c: any) => c.emailAddress === 'marques.sawayn@hotmail.com',
     );
     expect(marques).toBeUndefined();
   });
@@ -298,7 +296,7 @@ describe('Customer managed groups', function () {
       });
     } catch (e) {
       expect((e as any).response.errors[0].message).toBe(
-        'You cannot remove yourself from your group'
+        'You cannot remove yourself from your group',
       );
     }
   });
@@ -313,7 +311,7 @@ describe('Customer managed groups', function () {
         },
       });
     const marques = group.customers.find(
-      (c: any) => c.emailAddress === 'marques.sawayn@hotmail.com'
+      (c: any) => c.emailAddress === 'marques.sawayn@hotmail.com',
     );
     expect(marques.isGroupAdministrator).toBe(true);
   });
@@ -325,7 +323,7 @@ describe('Customer managed groups', function () {
         customerId: '3', // marques.sawayn@hotmail.com
       });
     const marques = group.customers.find(
-      (c: any) => c.emailAddress === 'marques.sawayn@hotmail.com'
+      (c: any) => c.emailAddress === 'marques.sawayn@hotmail.com',
     );
     expect(marques).toBeUndefined();
   });
@@ -333,10 +331,10 @@ describe('Customer managed groups', function () {
   it('Members can update their own profiles with this query', async () => {
     await authorizeAsGroupParticipant();
     const { myCustomerManagedGroup: group } = await shopClient.query(
-      myCustomerManagedGroupQuery
+      myCustomerManagedGroupQuery,
     );
     const authorizedCustomer = group.customers.find(
-      (c: any) => c.emailAddress === 'eliezer56@yahoo.com'
+      (c: any) => c.emailAddress === 'eliezer56@yahoo.com',
     );
     const { updateCustomerManagedGroupMember: newGroup } =
       await shopClient.query(updateCustomerManagedGroupMemberMutation, {
@@ -346,7 +344,7 @@ describe('Customer managed groups', function () {
         },
       });
     const authorizedCustomerUpdated = newGroup.customers.find(
-      (c: any) => c.emailAddress === 'eliezer56@yahoo.com'
+      (c: any) => c.emailAddress === 'eliezer56@yahoo.com',
     );
     expect(authorizedCustomerUpdated.lastName).toBe('Teklu');
   });
@@ -354,10 +352,10 @@ describe('Customer managed groups', function () {
   it('Members can not update any other profiles ', async () => {
     await authorizeAsGroupParticipant();
     const { myCustomerManagedGroup: group } = await shopClient.query(
-      myCustomerManagedGroupQuery
+      myCustomerManagedGroupQuery,
     );
     const unAuthorizedCustomer = group.customers.find(
-      (c: any) => c.emailAddress === 'hayden.zieme12@hotmail.com'
+      (c: any) => c.emailAddress === 'hayden.zieme12@hotmail.com',
     );
     try {
       const { updateCustomerManagedGroupMember: newGroup } =
@@ -369,7 +367,7 @@ describe('Customer managed groups', function () {
         });
     } catch (e) {
       expect((e as any).response.errors[0].message).toBe(
-        `You are not allowed to update other member's details`
+        `You are not allowed to update other member's details`,
       );
     }
   });
@@ -385,7 +383,7 @@ describe('Customer managed groups', function () {
         });
     } catch (e) {
       expect((e as any).response.errors[0].message).toBe(
-        `You are not currently authorized to perform this action`
+        `You are not currently authorized to perform this action`,
       );
     }
   });
@@ -393,7 +391,7 @@ describe('Customer managed groups', function () {
   it('Administrators can update their own profiles ', async () => {
     await authorizeAsGroupAdmin();
     const { myCustomerManagedGroup: group } = await shopClient.query(
-      myCustomerManagedGroupQuery
+      myCustomerManagedGroupQuery,
     );
     const groupAdmin = group.customers.find((c: any) => c.isGroupAdministrator);
     const { updateCustomerManagedGroupMember: newGroup } =
@@ -404,7 +402,7 @@ describe('Customer managed groups', function () {
         },
       });
     const authorizedCustomerUpdated = newGroup.customers.find(
-      (c: any) => c.isGroupAdministrator
+      (c: any) => c.isGroupAdministrator,
     );
     expect(authorizedCustomerUpdated.firstName).toBe('Semahegn');
   });
@@ -412,10 +410,10 @@ describe('Customer managed groups', function () {
   it('Administrators can update members of their group ', async () => {
     await authorizeAsGroupAdmin();
     const { myCustomerManagedGroup: group } = await shopClient.query(
-      myCustomerManagedGroupQuery
+      myCustomerManagedGroupQuery,
     );
     const groupMember = group.customers.find(
-      (c: any) => c.emailAddress === 'eliezer56@yahoo.com'
+      (c: any) => c.emailAddress === 'eliezer56@yahoo.com',
     );
     const { updateCustomerManagedGroupMember: newGroup } =
       await shopClient.query(updateCustomerManagedGroupMemberMutation, {
@@ -425,7 +423,7 @@ describe('Customer managed groups', function () {
         },
       });
     const updatedGroupMember = newGroup.customers.find(
-      (c: any) => c.customerId === groupMember.customerId
+      (c: any) => c.customerId === groupMember.customerId,
     );
     expect(updatedGroupMember.emailAddress).toBe('mohammed.salah@gmail.com');
   });
@@ -433,10 +431,10 @@ describe('Customer managed groups', function () {
   it('Administrators can not update members of other groups ', async () => {
     await shopClient.asUserWithCredentials(
       'stewart.lindgren@gmail.com',
-      'test'
+      'test',
     );
     const { createCustomerManagedGroup: groupData } = await shopClient.query(
-      createCustomerManagedGroupMutation
+      createCustomerManagedGroupMutation,
     );
     try {
       const { updateCustomerManagedGroupMember: newGroup } =
@@ -448,7 +446,7 @@ describe('Customer managed groups', function () {
         });
     } catch (e) {
       expect((e as any).response.errors[0].message).toBe(
-        `No customer with id 1 exists in '${groupData.name}' customer managed group`
+        `No customer with id 1 exists in '${groupData.name}' customer managed group`,
       );
     }
   });
@@ -456,7 +454,7 @@ describe('Customer managed groups', function () {
   it('Administrators can assign other members as administrators ', async () => {
     await authorizeAsGroupAdmin();
     const { myCustomerManagedGroup: group } = await shopClient.query(
-      myCustomerManagedGroupQuery
+      myCustomerManagedGroupQuery,
     );
     const { makeCustomerAdminOfCustomerManagedGroup: updatedGroup } =
       await shopClient.query(makeCustomerAdminOfCustomerManagedGroupMutation, {
@@ -464,7 +462,7 @@ describe('Customer managed groups', function () {
         customerId: 4,
       });
     const updatedCustomer = updatedGroup.customers.find(
-      (c: any) => c.customerId === 'T_4'
+      (c: any) => c.customerId === 'T_4',
     );
     expect(updatedCustomer.isGroupAdministrator).toBe(true);
   });
@@ -472,10 +470,10 @@ describe('Customer managed groups', function () {
   it('Administrators can also update other administrators in their group ', async () => {
     await authorizeAsGroupAdmin();
     const { myCustomerManagedGroup: group } = await shopClient.query(
-      myCustomerManagedGroupQuery
+      myCustomerManagedGroupQuery,
     );
     const updatedCustomer = group.customers.find(
-      (c: any) => c.customerId === 'T_4'
+      (c: any) => c.customerId === 'T_4',
     );
     expect(updatedCustomer.isGroupAdministrator).toBe(true);
     const { updateCustomerManagedGroupMember: newGroup } =
@@ -486,7 +484,7 @@ describe('Customer managed groups', function () {
         },
       });
     const updatedGroupMember = newGroup.customers.find(
-      (c: any) => c.customerId === updatedCustomer.customerId
+      (c: any) => c.customerId === updatedCustomer.customerId,
     );
     expect(updatedGroupMember.emailAddress).toBe('selam.lalem@gmail.com');
   });
@@ -494,7 +492,7 @@ describe('Customer managed groups', function () {
   it('Administrators can create new addresses for themselves', async () => {
     await authorizeAsGroupAdmin();
     const { myCustomerManagedGroup: group } = await shopClient.query(
-      myCustomerManagedGroupQuery
+      myCustomerManagedGroupQuery,
     );
     const groupAdmin = group.customers.find((c: any) => c.isGroupAdministrator);
     const { updateCustomerManagedGroupMember: newGroup } =
@@ -510,21 +508,21 @@ describe('Customer managed groups', function () {
         },
       });
     const authorizedCustomerUpdated = newGroup.customers.find(
-      (c: any) => c.isGroupAdministrator
+      (c: any) => c.isGroupAdministrator,
     );
     expect(authorizedCustomerUpdated.addresses).toBeDefined();
     expect(
       authorizedCustomerUpdated.addresses.find(
         (a: Address) =>
-          a.streetLine1 === 'Selam Street' && a.country.code === 'US'
-      )
+          a.streetLine1 === 'Selam Street' && a.country.code === 'US',
+      ),
     ).toBeDefined();
   });
 
   it('Administrators can update their addresses', async () => {
     await authorizeAsGroupAdmin();
     const { myCustomerManagedGroup: group } = await shopClient.query(
-      myCustomerManagedGroupQuery
+      myCustomerManagedGroupQuery,
     );
     const groupAdmin = group.customers.find((c: any) => c.isGroupAdministrator);
     const addressTobeUpdated: Address = groupAdmin.addresses[0];
@@ -542,7 +540,7 @@ describe('Customer managed groups', function () {
         },
       });
     const authorizedCustomerUpdated = newGroup.customers.find(
-      (c: any) => c.isGroupAdministrator
+      (c: any) => c.isGroupAdministrator,
     );
     expect(authorizedCustomerUpdated.addresses?.length).toBe(2);
     expect(
@@ -559,15 +557,16 @@ describe('Customer managed groups', function () {
           a.postalCode === addressTobeUpdated.postalCode &&
           a.defaultBillingAddress ===
             addressTobeUpdated.defaultBillingAddress &&
-          a.defaultShippingAddress === addressTobeUpdated.defaultShippingAddress
-      )
+          a.defaultShippingAddress ===
+            addressTobeUpdated.defaultShippingAddress,
+      ),
     ).toBeDefined();
   });
 
   it('Administrators can update custom fields', async () => {
     await authorizeAsGroupAdmin();
     const { myCustomerManagedGroup: group } = await shopClient.query(
-      myCustomerManagedGroupQuery
+      myCustomerManagedGroupQuery,
     );
     const groupAdmin = group.customers.find((c: any) => c.isGroupAdministrator);
     const adminBirthDay = new Date().toISOString();
@@ -581,7 +580,7 @@ describe('Customer managed groups', function () {
         },
       });
     const authorizedCustomerUpdated = newGroup.customers.find(
-      (c: any) => c.isGroupAdministrator
+      (c: any) => c.isGroupAdministrator,
     );
     expect(authorizedCustomerUpdated.customFields.birthday).toBe(adminBirthDay);
   });
@@ -600,10 +599,10 @@ describe('Customer managed groups', function () {
       adminCreateCustomerManagedGroupMutation,
       {
         customerId: createCustomer.id,
-      }
+      },
     );
     const customer = group.customers.find(
-      (c: any) => c.customerId === createCustomer.id
+      (c: any) => c.customerId === createCustomer.id,
     );
 
     expect(customer).toBeDefined();
@@ -624,14 +623,14 @@ describe('Customer managed groups', function () {
       adminCreateCustomerManagedGroupMutation,
       {
         customerId: createCustomer.id,
-      }
+      },
     );
 
     const { customerGroup } = await adminClient.query(
       adminCustomerManagedGroupQuery,
       {
         id: group.id,
-      }
+      },
     );
 
     expect(customerGroup).toMatchObject({
@@ -665,7 +664,7 @@ describe('Customer managed groups', function () {
       adminCreateCustomerManagedGroupMutation,
       {
         customerId: createCustomer.id,
-      }
+      },
     );
 
     const { addCustomersToGroup: updatedGroup } = await adminClient.query(
@@ -673,7 +672,7 @@ describe('Customer managed groups', function () {
       {
         customerGroupId: group.id,
         customerIds: [customer2.id],
-      }
+      },
     );
 
     expect(updatedGroup.customers.items).toHaveLength(2);
@@ -706,7 +705,7 @@ describe('Customer managed groups', function () {
       adminCreateCustomerManagedGroupMutation,
       {
         customerId: createCustomer.id,
-      }
+      },
     );
 
     await adminClient.query(adminAddCustomersToGroupMutation, {
@@ -721,7 +720,7 @@ describe('Customer managed groups', function () {
       });
 
     const updatedCustomer = updatedGroup.customers.find(
-      (c: any) => c.customerId === customer2.id
+      (c: any) => c.customerId === customer2.id,
     );
     expect(updatedCustomer).toBeDefined();
     expect(updatedCustomer.isGroupAdministrator).toBeTruthy();
@@ -739,26 +738,26 @@ describe('Customer managed groups', function () {
     const hayden = customersRes.customers.items[0];
     expect(hayden).toBeDefined();
     const group = hayden.groups.find(
-      (g: any) => g.customFields.isCustomerManaged
+      (g: any) => g.customFields.isCustomerManaged,
     );
     expect(group).toBeDefined();
     const { ordersForCustomerManagedGroup } = await adminClient.query(
       adminGetOrdersForCustomerManagedGroup,
       {
         customerManagedGroupId: group.id,
-      }
+      },
     );
     // This is dependent on earlier unit tests
     expect(ordersForCustomerManagedGroup.totalItems).toBe(2);
     expect(ordersForCustomerManagedGroup.items[0].code).toBeDefined();
     expect(ordersForCustomerManagedGroup.items[0].lines.length).toBeGreaterThan(
-      0
+      0,
     );
     expect(
-      ordersForCustomerManagedGroup.items[0].payments.length
+      ordersForCustomerManagedGroup.items[0].payments.length,
     ).toBeGreaterThan(0);
     expect(ordersForCustomerManagedGroup.items[0].customFields.testing).toBe(
-      'just a test'
+      'just a test',
     );
   });
 

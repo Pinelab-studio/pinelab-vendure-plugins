@@ -1,10 +1,4 @@
 import {
-  createTestEnvironment,
-  registerInitializer,
-  SqljsInitializer,
-  testConfig,
-} from '@vendure/testing';
-import {
   DefaultLogger,
   DefaultSearchPlugin,
   InitialData,
@@ -12,18 +6,23 @@ import {
   mergeConfig,
   ProductVariantPrice,
 } from '@vendure/core';
-import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
-import { initialData } from '../../test/src/initial-data';
-import { CoinbasePlugin } from '../src/coinbase.plugin';
+import {
+  createTestEnvironment,
+  registerInitializer,
+  SqljsInitializer,
+  testConfig,
+} from '@vendure/testing';
 import { Connection } from 'typeorm';
-import { addItem, setAddressAndShipping } from '../../test/src/shop-utils';
-import { CreatePaymentIntentMutation } from './queries';
+import { addShippingMethod } from '../../test/src/admin-utils';
 import {
   CreatePaymentMethod,
   LanguageCode,
 } from '../../test/src/generated/admin-graphql';
+import { initialData } from '../../test/src/initial-data';
+import { addItem, setAddressAndShipping } from '../../test/src/shop-utils';
 import { coinbaseHandler } from '../src/coinbase.handler';
-import { addShippingMethod } from '../../test/src/admin-utils';
+import { CoinbasePlugin } from '../src/coinbase.plugin';
+import { CreatePaymentIntentMutation } from './queries';
 
 require('dotenv').config();
 
@@ -35,14 +34,7 @@ require('dotenv').config();
       shopApiPlayground: true,
       adminApiPlayground: true,
     },
-    plugins: [
-      CoinbasePlugin,
-      DefaultSearchPlugin,
-      AdminUiPlugin.init({
-        port: 3002,
-        route: 'admin',
-      }),
-    ],
+    plugins: [CoinbasePlugin, DefaultSearchPlugin],
   });
   const { server, shopClient, adminClient } = createTestEnvironment(config);
   await server.init({
@@ -82,11 +74,11 @@ require('dotenv').config();
   console.log('Created shippingMethod with $0');
   // Create order
   await shopClient.asUserWithCredentials('hayden.zieme12@hotmail.com', 'test');
-  let order = await addItem(shopClient, 'T_1', 1);
+  const _order = await addItem(shopClient, 'T_1', 1);
   await setAddressAndShipping(shopClient, 'T_3');
   console.log('Created order with item and shipping');
   const { createCoinbasePaymentIntent } = await shopClient.query(
-    CreatePaymentIntentMutation
+    CreatePaymentIntentMutation,
   );
   console.log(`Pay with crypto on ${createCoinbasePaymentIntent}`);
 })();

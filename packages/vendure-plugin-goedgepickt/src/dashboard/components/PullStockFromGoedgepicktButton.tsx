@@ -1,8 +1,8 @@
-import { Button, api, useQueryClient } from '@vendure/dashboard';
-import { graphql } from '@/gql';
 import { useMutation } from '@tanstack/react-query';
-import { toast } from 'sonner';
+import { api, Button, useQueryClient } from '@vendure/dashboard';
 import { ArrowDownToLine } from 'lucide-react';
+import { toast } from 'sonner';
+import { graphql } from '@/gql';
 
 const pullGoedgepicktStockDocument = graphql(`
   mutation PullGoedgepicktStock($productId: ID!) {
@@ -44,7 +44,7 @@ export function PullStockFromGoedgepicktButton({
           .map((e) => `${e.sku}: ${e.message}`)
           .join(', ');
         toast.error(
-          `Updated ${result.updatedVariants} variants, but some failed: ${errorMessages}`
+          `Updated ${result.updatedVariants} variants, but some failed: ${errorMessages}`,
         );
       } else {
         const errorMessages = result.errors

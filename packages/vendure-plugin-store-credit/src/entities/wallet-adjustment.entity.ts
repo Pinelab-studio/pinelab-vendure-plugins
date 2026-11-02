@@ -8,10 +8,14 @@ export class WalletAdjustment extends VendureEntity {
     super(input);
   }
 
-  @ManyToOne(() => Wallet, (w) => w.adjustments, {
-    onDelete: 'CASCADE',
-    nullable: false,
-  })
+  @ManyToOne(
+    () => Wallet,
+    (w) => w.adjustments,
+    {
+      onDelete: 'CASCADE',
+      nullable: false,
+    },
+  )
   @Index()
   wallet!: Wallet;
 

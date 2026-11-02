@@ -30,9 +30,9 @@ export class StockMonitoringPlugin {
   static options: StockMonitoringPluginOptions;
 
   static init(
-    options: StockMonitoringPluginOptions
+    options: StockMonitoringPluginOptions,
   ): typeof StockMonitoringPlugin {
-    this.options = options;
+    StockMonitoringPlugin.options = options;
     return StockMonitoringPlugin;
   }
 }

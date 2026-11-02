@@ -10,7 +10,7 @@ export const META_TITLE_RECOMMENDED = '50-60';
  * range produces a warning recommending 50-60 characters.
  */
 export function checkMetaTitleLength(
-  title: string | undefined
+  title: string | undefined,
 ): ContentCheckMessage[] {
   if (title === undefined) {
     return [

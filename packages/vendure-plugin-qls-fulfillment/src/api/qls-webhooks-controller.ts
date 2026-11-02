@@ -15,15 +15,15 @@ import {
 } from '@vendure/core';
 import { asError } from 'catch-unknown';
 import { Request } from 'express';
-import { QlsProductService } from '../services/qls-product.service';
 import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
-import { QlsPluginOptions } from '../types';
-import { QlsOrderService } from '../services/qls-order.service';
 import {
   IncomingOrderWebhook,
   IncomingShipmentWebhook,
   IncomingStockWebhook,
 } from '../lib/client-types';
+import { QlsOrderService } from '../services/qls-order.service';
+import { QlsProductService } from '../services/qls-product.service';
+import { QlsPluginOptions } from '../types';
 
 @Controller('qls')
 export class QlsWebhooksController {
@@ -31,7 +31,7 @@ export class QlsWebhooksController {
     private channelService: ChannelService,
     private qlsProductService: QlsProductService,
     private qlsOrderService: QlsOrderService,
-    @Inject(PLUGIN_INIT_OPTIONS) private options: QlsPluginOptions
+    @Inject(PLUGIN_INIT_OPTIONS) private options: QlsPluginOptions,
   ) {}
 
   /**
@@ -43,12 +43,12 @@ export class QlsWebhooksController {
     @Query('secret') webhookSecret: string,
     @Req() request: Request,
     @Body()
-    body: IncomingStockWebhook | IncomingOrderWebhook | IncomingShipmentWebhook
+    body: IncomingStockWebhook | IncomingOrderWebhook | IncomingShipmentWebhook,
   ) {
     if (webhookSecret !== this.options.webhookSecret) {
       Logger.warn(
         `Incoming webhook with invalid secret for channel '${channelToken}' to '${request.url}'`,
-        loggerCtx
+        loggerCtx,
       );
       throw new ForbiddenError();
     }
@@ -58,7 +58,7 @@ export class QlsWebhooksController {
         return Logger.error(
           `Incoming webhook with invalid channel token for channel '${channelToken}' to '${request.url}'`,
           loggerCtx,
-          JSON.stringify(body)
+          JSON.stringify(body),
         );
       }
       if (isStockWebhook(body)) {
@@ -77,7 +77,7 @@ export class QlsWebhooksController {
   }
 
   private async getCtxForChannel(
-    token: string
+    token: string,
   ): Promise<RequestContext | undefined> {
     const channel = await this.channelService.getChannelFromToken(token);
     if (token !== channel.token) {
@@ -94,19 +94,19 @@ export class QlsWebhooksController {
 }
 
 function isStockWebhook(
-  body: IncomingStockWebhook | IncomingOrderWebhook | IncomingShipmentWebhook
+  body: IncomingStockWebhook | IncomingOrderWebhook | IncomingShipmentWebhook,
 ): body is IncomingStockWebhook {
   return 'amount_available' in body;
 }
 
 function isOrderWebhook(
-  body: IncomingStockWebhook | IncomingOrderWebhook | IncomingShipmentWebhook
+  body: IncomingStockWebhook | IncomingOrderWebhook | IncomingShipmentWebhook,
 ): body is IncomingOrderWebhook {
   return 'customer_reference' in body && 'status' in body;
 }
 
 function isShipmentWebhook(
-  body: IncomingStockWebhook | IncomingOrderWebhook | IncomingShipmentWebhook
+  body: IncomingStockWebhook | IncomingOrderWebhook | IncomingShipmentWebhook,
 ): body is IncomingShipmentWebhook {
   return 'carrier_id' in body && 'reference' in body;
 }

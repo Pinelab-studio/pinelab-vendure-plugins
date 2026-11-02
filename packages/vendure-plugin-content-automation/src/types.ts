@@ -22,7 +22,7 @@ export interface ContentAutomationResult {
  * product description strategy and a variant 'usage' content strategy.
  */
 export interface ContentAutomationStrategy<
-  TInput extends { id: ID } = { id: ID }
+  TInput extends { id: ID } = { id: ID },
 > {
   /**
    * Stable, unique key, e.g. "product-description-ai".
@@ -56,7 +56,7 @@ export interface ContentAutomationStrategy<
   generateAndSaveContent(
     ctx: RequestContext,
     injector: Injector,
-    input: TInput
+    input: TInput,
   ): Promise<ContentAutomationResult | false>;
 }
 

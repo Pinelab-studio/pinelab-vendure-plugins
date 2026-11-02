@@ -1,7 +1,7 @@
 import { defineDashboardExtension } from '@vendure/dashboard';
 import { FileText } from 'lucide-react';
-import { ContentEntryList } from './components/ContentEntryList';
 import { ContentEntryDetail } from './components/ContentEntryDetail';
+import { ContentEntryList } from './components/ContentEntryList';
 
 defineDashboardExtension({
   routes: [

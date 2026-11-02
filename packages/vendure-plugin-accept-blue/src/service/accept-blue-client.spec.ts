@@ -1,7 +1,7 @@
-import { it, expect } from 'vitest';
-import { AcceptBlueClient } from './accept-blue-client';
+import { expect, it } from 'vitest';
 import { AcceptBluePaymentMethodType } from '../api/generated/graphql';
 import { AllowedPaymentMethodInput } from '../types';
+import { AcceptBlueClient } from './accept-blue-client';
 
 const API_KEY = 'test-api-key';
 const PIN = 'test-pin';
@@ -26,7 +26,7 @@ it('should enable all payment methods when all are allowed', () => {
     'ApplePay',
   ];
   expect(client.enabledPaymentMethods).toEqual(
-    expect.arrayContaining(expected)
+    expect.arrayContaining(expected),
   );
 });
 
@@ -91,8 +91,8 @@ it.each([
   });
   expect(() =>
     client.throwIfPaymentMethodNotAllowed(
-      paymentMethod as AllowedPaymentMethodInput
-    )
+      paymentMethod as AllowedPaymentMethodInput,
+    ),
   ).not.toThrow();
 });
 
@@ -130,8 +130,8 @@ it.each([
   });
   expect(() =>
     client.throwIfPaymentMethodNotAllowed(
-      paymentMethod as AllowedPaymentMethodInput
-    )
+      paymentMethod as AllowedPaymentMethodInput,
+    ),
   ).toThrow();
 });
 
@@ -147,7 +147,7 @@ it('should use production endpoint when testMode is false', () => {
     {
       allowECheck: true,
     },
-    false
+    false,
   );
   expect(client.endpoint).toBe('https://api.accept.blue/api/v2/');
 });

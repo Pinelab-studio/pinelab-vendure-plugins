@@ -1,5 +1,7 @@
 require('dotenv').config();
 
+import path from 'node:path';
+import { AssetServerPlugin } from '@vendure/asset-server-plugin';
 import {
   DefaultLogger,
   DefaultSchedulerPlugin,
@@ -8,12 +10,10 @@ import {
   mergeConfig,
   VendureConfig,
 } from '@vendure/core';
-import { testConfig } from '@vendure/testing';
 import { DashboardPlugin } from '@vendure/dashboard/plugin';
-import { AssetServerPlugin } from '@vendure/asset-server-plugin';
-import path from 'path';
-import { GoedgepicktPlugin } from '../src';
+import { testConfig } from '@vendure/testing';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
+import { GoedgepicktPlugin } from '../src';
 
 export const config: VendureConfig = mergeConfig(testConfig, {
   logger: new DefaultLogger({ level: LogLevel.Debug }),
@@ -34,7 +34,7 @@ export const config: VendureConfig = mergeConfig(testConfig, {
     GoedgepicktPlugin.init({
       vendureHost: process.env.WEBHOOK_ENDPOINT!,
       setWebhook: true,
-      determineOrderStatus: async (ctx, order) => 'on_hold' as const,
+      determineOrderStatus: async (_ctx, _order) => 'on_hold' as const,
     }),
     DefaultSearchPlugin,
     DefaultSchedulerPlugin.init({}),

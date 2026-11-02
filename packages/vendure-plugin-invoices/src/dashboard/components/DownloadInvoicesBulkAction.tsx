@@ -2,9 +2,9 @@ import {
   BulkActionComponent,
   DataTableBulkActionItem,
 } from '@vendure/dashboard';
-import { toast } from 'sonner';
 import { DownloadIcon } from 'lucide-react';
-import { getAuthHeaders, getServerBaseUrl, downloadBlob } from '../utils';
+import { toast } from 'sonner';
+import { downloadBlob, getAuthHeaders, getServerBaseUrl } from '../utils';
 
 export function DownloadInvoicesBulkAction({
   selection,

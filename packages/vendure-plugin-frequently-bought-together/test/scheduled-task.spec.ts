@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { buildFrequentlyBoughtTogetherTask } from '../src/config/frequently-bought-together-task';
 
 const TASK_ID = 'frequently-bought-together-calculation';

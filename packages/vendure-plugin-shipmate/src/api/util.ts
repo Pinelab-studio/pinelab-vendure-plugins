@@ -1,6 +1,6 @@
-import type { Order, Customer, OrderLine } from '@vendure/core';
-import type { Shipment, ShipmateAddress, Parcels, Items } from '../types';
 import type { OrderAddress } from '@vendure/common/lib/generated-types';
+import type { Customer, Order, OrderLine } from '@vendure/core';
+import type { Items, Parcels, ShipmateAddress, Shipment } from '../types';
 
 export function parseOrder(order: Order, shipmateReference?: string): Shipment {
   return {
@@ -16,13 +16,13 @@ export function parseOrder(order: Order, shipmateReference?: string): Shipment {
 
 export function parseAddress(
   address: OrderAddress,
-  customer?: Customer
+  customer?: Customer,
 ): ShipmateAddress {
   return {
     name: getRecepientName(
       address.fullName,
       customer?.firstName,
-      customer?.lastName
+      customer?.lastName,
     ),
     company_name: address.company?.substring(0, 40) ?? '',
     telephone: customer?.phoneNumber?.substring(0, 40) ?? '',
@@ -55,7 +55,7 @@ export function parseOrderLine(line: OrderLine): Items {
     item_value: line.proratedUnitPriceWithTax / 100,
     full_description: line.productVariant?.product?.description?.substring(
       0,
-      40
+      40,
     ),
     short_description: line.productVariant?.name?.substring(0, 40),
   };
@@ -64,7 +64,7 @@ export function parseOrderLine(line: OrderLine): Items {
 export function getRecepientName(
   fullName?: string,
   customerFirstName?: string,
-  customerLastName?: string
+  customerLastName?: string,
 ) {
   if (fullName) {
     return fullName.substring(0, 40);

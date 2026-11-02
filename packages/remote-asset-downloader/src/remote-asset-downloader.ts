@@ -1,4 +1,4 @@
-import fs from 'fs';
+import fs from 'node:fs';
 import fetch from 'node-fetch';
 
 interface DownloadConfig {
@@ -59,13 +59,13 @@ interface AssetOptions {
 export class RemoteAssetDownloader {
   constructor(private readonly config: DownloadConfig) {
     config.publicAssetDirectory = this.stripTrailingAndLeadingSlash(
-      config.publicAssetDirectory
+      config.publicAssetDirectory,
     );
     config.subDirectory = this.stripTrailingAndLeadingSlash(
-      config.subDirectory
+      config.subDirectory,
     );
     config.cacheDirectory = this.stripTrailingAndLeadingSlash(
-      config.cacheDirectory
+      config.cacheDirectory,
     );
   }
 
@@ -76,7 +76,7 @@ export class RemoteAssetDownloader {
    */
   async getAsset(
     assetId: string,
-    { fileName, transformationArguments }: AssetOptions
+    { fileName, transformationArguments }: AssetOptions,
   ): Promise<string> {
     let remoteUrl = this.config.getRemoteUrl(assetId);
     if (transformationArguments) {
@@ -88,13 +88,13 @@ export class RemoteAssetDownloader {
     }
     const assetDir = `${this.config.publicAssetDirectory}/${this.config.subDirectory}`;
     const downloadedFileName = this.stripUnsafeCharacters(
-      `${assetId}_${fileName}`
+      `${assetId}_${fileName}`,
     );
     const destinationPath = `${assetDir}/${downloadedFileName}`;
     // Construct the public storefront path, e.g. "/subdirectory/asset123.webp"
     const storefrontUrl = destinationPath.replace(
       this.config.publicAssetDirectory,
-      ''
+      '',
     );
     const cachedAsset = `${this.config.cacheDirectory}/${downloadedFileName}`;
     fs.mkdirSync(this.config.cacheDirectory, { recursive: true });
@@ -109,7 +109,7 @@ export class RemoteAssetDownloader {
       // File doesn't exist
     }
     console.log(
-      `No cached asset found in ${cachedAsset}, downloading asset ${remoteUrl}`
+      `No cached asset found in ${cachedAsset}, downloading asset ${remoteUrl}`,
     );
     fs.mkdirSync(assetDir, { recursive: true });
     const response = await fetch(remoteUrl);

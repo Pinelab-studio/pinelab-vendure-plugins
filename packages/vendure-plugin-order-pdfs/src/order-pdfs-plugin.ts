@@ -4,17 +4,17 @@ import {
   Type,
   VendurePlugin,
 } from '@vendure/core';
+import { OrderPDFsController } from './api/order-pdfs.controller';
 import { OrderPDFsService } from './api/order-pdfs.service';
+import { PDFTemplateEntity } from './api/pdf-template.entity';
 import {
   PDFTemplateAdminResolver,
   pdfDownloadPermission,
 } from './api/pdf-template-admin-resolver';
-import { adminSchema, shopSchema } from './api/schema.graphql';
-import { OrderPDFsController } from './api/order-pdfs.controller';
-import { LoadDataFn, defaultLoadDataFn } from './load-data-fn';
-import { PLUGIN_INIT_OPTIONS } from './constants';
-import { PDFTemplateEntity } from './api/pdf-template.entity';
 import { PDFTemplateShopResolver } from './api/pdf-template-shop-resolver';
+import { adminSchema, shopSchema } from './api/schema.graphql';
+import { PLUGIN_INIT_OPTIONS } from './constants';
+import { defaultLoadDataFn, LoadDataFn } from './load-data-fn';
 
 export interface PDFTemplatePluginOptions {
   /**
@@ -71,7 +71,7 @@ export class OrderPDFsPlugin {
 
   static init(options: PDFTemplatePluginOptions): Type<OrderPDFsPlugin> {
     OrderPDFsPlugin.options = {
-      ...this.options,
+      ...OrderPDFsPlugin.options,
       ...options,
     };
     return OrderPDFsPlugin;

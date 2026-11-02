@@ -1,3 +1,4 @@
+import { useQuery } from '@tanstack/react-query';
 import {
   api,
   Badge,
@@ -7,14 +8,13 @@ import {
   MultiSelect,
   useFormContext,
 } from '@vendure/dashboard';
-import { graphql } from '@/gql';
-import { useQuery } from '@tanstack/react-query';
 import {
   AlertTriangleIcon,
   CheckCircle2Icon,
   ChevronDownIcon,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { graphql } from '@/gql';
 
 const getRequiredFacetsDocument = graphql(`
   query GetRequiredFacets {
@@ -58,7 +58,7 @@ export function SuggestedFacetsBlock() {
   const possiblyRequiredFacets = (data?.requiredFacets ?? []).filter(
     (facet) =>
       facet.customFields?.showOnProductDetail === true ||
-      (facet.customFields?.showOnProductDetailIf?.length ?? 0) > 0
+      (facet.customFields?.showOnProductDetailIf?.length ?? 0) > 0,
   );
 
   const requiredFacets = possiblyRequiredFacets
@@ -66,13 +66,13 @@ export function SuggestedFacetsBlock() {
       (facet) =>
         facet.customFields?.showOnProductDetail === true ||
         facet.customFields?.showOnProductDetailIf?.some((f) =>
-          selectedFacetValueIds.includes(f.id)
-        )
+          selectedFacetValueIds.includes(f.id),
+        ),
     )
     .map((facet) => ({
       facet,
       selectedValues: facet.values.filter((v) =>
-        selectedFacetValueIds.includes(v.id)
+        selectedFacetValueIds.includes(v.id),
       ),
     }));
 
@@ -90,7 +90,7 @@ export function SuggestedFacetsBlock() {
   /** Replaces the selected values for one facet without changing other facets. */
   const setSelectedFacetValues = (
     facetValueIds: string[],
-    selectedValueIds: string[]
+    selectedValueIds: string[],
   ) => {
     const current: string[] = watch('facetValueIds') ?? [];
     const facetValueIdSet = new Set(facetValueIds);
@@ -127,14 +127,14 @@ export function SuggestedFacetsBlock() {
               key={facet.id}
               className="grid gap-2 sm:grid-cols-[8rem_minmax(0,1fr)] sm:items-center"
             >
-              <span className="text-sm font-medium">{facet.name}</span>
+              <span className="font-medium text-sm">{facet.name}</span>
               <MultiSelect
                 multiple
                 value={selectedValues.map((value) => value.id)}
                 onChange={(valueIds) =>
                   setSelectedFacetValues(
                     facet.values.map((value) => value.id),
-                    valueIds
+                    valueIds,
                   )
                 }
                 items={facet.values.map((value) => ({

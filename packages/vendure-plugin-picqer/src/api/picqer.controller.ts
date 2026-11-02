@@ -1,16 +1,16 @@
+import util from 'node:util';
 import {
+  BadRequestException,
   Controller,
   ForbiddenException,
+  Get,
   Headers,
   Param,
   Post,
   Req,
-  BadRequestException,
-  Get,
 } from '@nestjs/common';
 import { ChannelService, Logger, RequestContext } from '@vendure/core';
 import { Request } from 'express';
-import util from 'util';
 import { loggerCtx } from '../constants';
 import { PicqerService } from './picqer.service';
 import { IncomingWebhook } from './types';
@@ -19,14 +19,14 @@ import { IncomingWebhook } from './types';
 export class PicqerController {
   constructor(
     private picqerService: PicqerService,
-    private channelService: ChannelService
+    private channelService: ChannelService,
   ) {}
 
   @Post('hooks/:channelToken')
   async webhook(
     @Req() request: Request,
     @Headers('X-Picqer-Signature') signature: string,
-    @Param('channelToken') channelToken: string
+    @Param('channelToken') channelToken: string,
   ): Promise<void> {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
     const body = JSON.parse(request.body.toString()) as IncomingWebhook;
@@ -34,7 +34,7 @@ export class PicqerController {
     const rawBody = (request as any).rawBody as string;
     Logger.info(
       `Incoming hook ${body.event} for channel ${channelToken}`,
-      loggerCtx
+      loggerCtx,
     );
     try {
       await this.picqerService.handleHook({
@@ -51,7 +51,7 @@ export class PicqerController {
         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         `Error handling incoming hook '${body.event}' (order code: ${orderCode}): ${e.message}`,
         loggerCtx,
-        util.inspect(e)
+        util.inspect(e),
       );
       throw e;
     }
@@ -60,7 +60,7 @@ export class PicqerController {
   @Get('pull-stock-levels/:channelToken')
   async pullStockLevels(
     @Headers('Authorization') authHeader: string,
-    @Param('channelToken') channelToken: string
+    @Param('channelToken') channelToken: string,
   ): Promise<void> {
     if (!authHeader) {
       throw new ForbiddenException('No bearer token provided');
@@ -68,7 +68,7 @@ export class PicqerController {
     const channel = await this.channelService.getChannelFromToken(channelToken);
     if (!channel) {
       throw new BadRequestException(
-        `No channel found for token ${channelToken}`
+        `No channel found for token ${channelToken}`,
       );
     }
     const apiKey = authHeader.replace('Bearer ', '').replace('bearer ', '');

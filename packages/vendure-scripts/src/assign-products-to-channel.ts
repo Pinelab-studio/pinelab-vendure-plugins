@@ -18,14 +18,14 @@ export async function assignAllProductsToChannel(
   targetChannelId: ID,
   injector: Injector,
   ctx: RequestContext,
-  batch: number = 10
+  batch: number = 10,
 ): Promise<void> {
   await assignProductsInBatch(
     targetChannelId,
     sourceChannelId,
     injector,
     ctx,
-    batch
+    batch,
   );
 }
 
@@ -34,7 +34,7 @@ async function assignProductsInBatch(
   sourceChannelId: ID,
   injector: Injector,
   ctx: RequestContext,
-  batch: number = 10
+  batch: number = 10,
 ): Promise<void> {
   let totalCount = 0;
   let products: Product[];
@@ -45,7 +45,7 @@ async function assignProductsInBatch(
 
   const ctxInTargetChannel = await getSuperadminContextInChannel(
     injector,
-    targetChannel!
+    targetChannel!,
   );
   const searchService = injector.get(SearchService);
   await conn.startTransaction(ctx);
@@ -59,7 +59,7 @@ async function assignProductsInBatch(
         deletedAt: IsNull(),
       },
       batch,
-      totalCount
+      totalCount,
     );
     totalCount += products.length;
     // assign them to target channel
@@ -76,16 +76,16 @@ export async function assignProductsToChannel(
   targetChannelId: ID,
   injector: Injector,
   products: Product[],
-  ctx: RequestContext
+  ctx: RequestContext,
 ): Promise<void> {
   // Assign all assets to target channel
   const assetService = injector.get(AssetService);
-  const productAssetIds = products
-    .map((product) => (product.assets ?? []).map((asset) => asset.id))
-    .flat();
-  const variantAssetIds = products
-    .map((p) => p.variants.map((v) => (v.assets ?? []).map((a) => a.id)).flat())
-    .flat();
+  const productAssetIds = products.flatMap((product) =>
+    (product.assets ?? []).map((asset) => asset.id),
+  );
+  const variantAssetIds = products.flatMap((p) =>
+    p.variants.flatMap((v) => (v.assets ?? []).map((a) => a.id)),
+  );
   const assetIds = [...productAssetIds, ...variantAssetIds];
   await assetService.assignToChannel(ctx, {
     assetIds,
@@ -93,9 +93,9 @@ export async function assignProductsToChannel(
   });
   // Assign all variants to channel
   const productVariantService = injector.get(ProductVariantService);
-  const variantIds = products
-    .map((product) => (product.variants ?? []).map((variant) => variant.id))
-    .flat();
+  const variantIds = products.flatMap((product) =>
+    (product.variants ?? []).map((variant) => variant.id),
+  );
   await productVariantService.assignProductVariantsToChannel(ctx, {
     channelId: targetChannelId,
     productVariantIds: variantIds,
@@ -115,7 +115,7 @@ async function getProductsWithRelations(
     | FindOptionsWhere<Product>[]
     | undefined,
   take: number = 10,
-  skip: number = 0
+  skip: number = 0,
 ) {
   const conn = injector.get(TransactionalConnection);
   const productRepo = conn.getRepository(ctx, Product);

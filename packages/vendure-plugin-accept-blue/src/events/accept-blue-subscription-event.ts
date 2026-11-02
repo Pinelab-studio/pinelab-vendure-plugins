@@ -9,10 +9,10 @@ import {
  */
 export class AcceptBlueSubscriptionEvent extends VendureEvent {
   constructor(
-    ctx: RequestContext,
+    _ctx: RequestContext,
     public subscription: AcceptBlueSubscription,
     public type: 'created' | 'updated' | 'deleted',
-    public input?: UpdateAcceptBlueSubscriptionInput
+    public input?: UpdateAcceptBlueSubscriptionInput,
   ) {
     super();
   }

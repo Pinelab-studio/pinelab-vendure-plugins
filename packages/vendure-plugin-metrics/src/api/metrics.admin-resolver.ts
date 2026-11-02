@@ -3,8 +3,7 @@ import { Allow, Ctx, Permission, RequestContext } from '@vendure/core';
 import {
   AdvancedMetricSummary,
   AdvancedMetricSummaryInput,
-  AdvancedMetricType,
-} from '../ui/generated/graphql';
+} from '../generated/graphql';
 import { MetricsService } from '../services/metrics.service';
 
 @Resolver()
@@ -15,7 +14,7 @@ export class MetricsAdminResolver {
   @Allow(Permission.ReadOrder)
   async advancedMetricSummaries(
     @Ctx() ctx: RequestContext,
-    @Args('input') input: AdvancedMetricSummaryInput
+    @Args('input') input: AdvancedMetricSummaryInput,
   ): Promise<AdvancedMetricSummary[]> {
     return await this.metricsService.getMetrics(ctx, input);
   }

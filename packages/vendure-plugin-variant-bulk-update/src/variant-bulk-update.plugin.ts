@@ -1,3 +1,4 @@
+import { OnApplicationBootstrap } from '@nestjs/common';
 import {
   LanguageCode,
   PLUGIN_INIT_OPTIONS,
@@ -5,7 +6,6 @@ import {
   VendurePlugin,
 } from '@vendure/core';
 import { BulkUpdateService } from './bulk-update-service';
-import { OnApplicationBootstrap } from '@nestjs/common';
 
 export interface BulkUpdateOptions {
   /**
@@ -60,14 +60,14 @@ export class VariantBulkUpdatePlugin implements OnApplicationBootstrap {
   static options: BulkUpdateOptions;
 
   static init(options: BulkUpdateOptions): typeof VariantBulkUpdatePlugin {
-    this.options = options;
+    VariantBulkUpdatePlugin.options = options;
     return VariantBulkUpdatePlugin;
   }
 
   onApplicationBootstrap() {
     if (!VariantBulkUpdatePlugin.options) {
       throw Error(
-        'Please use VariantBulkUpdatePlugin.init({ // options }) to initialize this plugin. See the README for more information'
+        'Please use VariantBulkUpdatePlugin.init({ // options }) to initialize this plugin. See the README for more information',
       );
     }
   }

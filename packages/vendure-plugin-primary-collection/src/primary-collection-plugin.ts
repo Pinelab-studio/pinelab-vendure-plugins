@@ -1,15 +1,13 @@
 import {
   LanguageCode,
   PluginCommonModule,
-  RuntimeVendureConfig,
-  Type,
+  type RuntimeVendureConfig,
+  type Type,
   VendurePlugin,
 } from '@vendure/core';
-import { PrimaryCollectionPluginResolver } from './api/primary-collection.resolver';
-import { AdminUiExtension } from '@vendure/ui-devkit/compiler';
-import path from 'path';
-import { PrimaryCollectionHelperService } from './api/primary-collections-helper.service';
 import { apiExtensions } from './api/api-extensions';
+import { PrimaryCollectionPluginResolver } from './api/primary-collection.resolver';
+import { PrimaryCollectionHelperService } from './api/primary-collections-helper.service';
 
 export interface PrimaryCollectionPluginConfig {
   /**
@@ -35,10 +33,6 @@ export interface PrimaryCollectionPluginConfig {
     config.customFields.Product.push({
       name: 'primaryCollection',
       type: 'string',
-      ui: {
-        component: 'select-primary-collection',
-        tab: PrimaryCollectionPlugin?.config?.customFieldUITabName,
-      },
       label: [{ languageCode: LanguageCode.en, value: 'Primary Collection' }],
     });
     return config;
@@ -46,21 +40,10 @@ export interface PrimaryCollectionPluginConfig {
 })
 export class PrimaryCollectionPlugin {
   static config: PrimaryCollectionPluginConfig;
-  static ui: AdminUiExtension = {
-    extensionPath: path.join(__dirname, 'ui'),
-    ngModules: [
-      {
-        type: 'shared',
-        ngModuleFileName: 'shared.module.ts',
-        ngModuleName: 'PrimaryCollectionSharedExtensionModule',
-      },
-    ],
-  };
-
   static init(
-    config: PrimaryCollectionPluginConfig
+    config: PrimaryCollectionPluginConfig,
   ): Type<PrimaryCollectionPlugin> {
-    this.config = config;
-    return this;
+    PrimaryCollectionPlugin.config = config;
+    return PrimaryCollectionPlugin;
   }
 }

@@ -24,7 +24,7 @@ export class QlsOrderFailedEvent extends VendureEvent {
     /**
      * The full error response JSON from QLS.
      */
-    public fullError: unknown
+    public fullError: unknown,
   ) {
     super();
     this.errorCode = getQLSErrorCode(fullError);

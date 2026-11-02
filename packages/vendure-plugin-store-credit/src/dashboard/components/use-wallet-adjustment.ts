@@ -1,6 +1,6 @@
-import { graphql } from '@/vdb/graphql/graphql.js';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { api } from '@/vdb/graphql/api.js';
+import { graphql } from '@/vdb/graphql/graphql.js';
 import { Wallet } from '../../api/generated/graphql';
 
 export const GET_WALLET_WITH_ADJUSTMENTS = graphql(`

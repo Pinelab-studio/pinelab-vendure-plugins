@@ -1,6 +1,6 @@
 import { RequestContext, VendureEntityEvent } from '@vendure/core';
-import { ContentEntry } from '../entities/content-entry.entity';
 import { ContentEntryInput } from '../api/generated/graphql';
+import { ContentEntry } from '../entities/content-entry.entity';
 
 /**
  * Input shape passed alongside the event.
@@ -34,7 +34,7 @@ export class SimpleCmsContentEntryEvent extends VendureEntityEvent<
     entity: ContentEntry,
     type: 'created' | 'updated' | 'deleted',
     ctx: RequestContext,
-    input?: SimpleCmsContentEntryEventInput
+    input?: SimpleCmsContentEntryEventInput,
   ) {
     super(entity, type, ctx, input);
   }

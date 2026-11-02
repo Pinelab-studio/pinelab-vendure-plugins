@@ -4,7 +4,7 @@ import { AttributionModel, AttributionResult } from '../types';
 export class FirstClickAttribution implements AttributionModel {
   name = 'First Click';
   calculateAttribution(
-    utmParameters: UtmOrderParameter[]
+    utmParameters: UtmOrderParameter[],
   ): AttributionResult[] {
     if (utmParameters.length === 0) {
       return [];

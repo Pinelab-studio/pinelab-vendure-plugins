@@ -1,6 +1,6 @@
+import { join, relative, resolve } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { vendureDashboardPlugin } from '@vendure/dashboard/vite';
-import { join, relative, resolve } from 'path';
-import { pathToFileURL } from 'url';
 import { defineConfig } from 'vite';
 
 const monorepoRoot = resolve(__dirname, '../..');
@@ -28,7 +28,7 @@ export default defineConfig({
         }) => {
           const relPath = relative(
             join(monorepoRoot, 'packages'),
-            inputRootDir
+            inputRootDir,
           );
           return join(outputPath, relPath, configFileName);
         },

@@ -1,7 +1,7 @@
 import { defineDashboardExtension } from '@vendure/dashboard';
+import { giftCardWalletList } from './components/WalletGiftCardList';
 import WalletList from './components/WalletList';
 import WalletsHeader from './components/WalletsHeader';
-import { giftCardWalletList } from './components/WalletGiftCardList';
 
 defineDashboardExtension({
   pageBlocks: [

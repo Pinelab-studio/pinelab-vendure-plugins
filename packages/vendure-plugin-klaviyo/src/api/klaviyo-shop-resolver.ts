@@ -9,7 +9,7 @@ import { KlaviyoService } from '../service/klaviyo.service';
 export class KlaviyoShopResolver {
   constructor(
     private readonly klaviyoService: KlaviyoService,
-    @Inject(PLUGIN_INIT_OPTIONS) private readonly options: KlaviyoPluginOptions
+    @Inject(PLUGIN_INIT_OPTIONS) private readonly options: KlaviyoPluginOptions,
   ) {}
 
   @Mutation()
@@ -24,7 +24,7 @@ export class KlaviyoShopResolver {
     @Args('emailAddress') emailAddress: string,
     @Args('listId') list: string,
     @Args('firstName') firstName?: string | null,
-    @Args('lastName') lastName?: string | null
+    @Args('lastName') lastName?: string | null,
   ): Promise<boolean> {
     this.checkForSessionExistance(ctx);
     await this.klaviyoService.subscribeToList(
@@ -32,7 +32,7 @@ export class KlaviyoShopResolver {
       emailAddress,
       list,
       firstName,
-      lastName
+      lastName,
     );
     return true;
   }
@@ -41,13 +41,13 @@ export class KlaviyoShopResolver {
   async subscribeToKlaviyoBackInStock(
     @Ctx() ctx: RequestContext,
     @Args('emailAddress') emailAddress: string,
-    @Args('catalogItemId') catalogItemId: string
+    @Args('catalogItemId') catalogItemId: string,
   ): Promise<boolean> {
     this.checkForSessionExistance(ctx);
     await this.klaviyoService.subscribeToBackInStock(
       ctx,
       emailAddress,
-      catalogItemId
+      catalogItemId,
     );
     return true;
   }
@@ -55,7 +55,7 @@ export class KlaviyoShopResolver {
   @Query()
   async klaviyoProductFeed(
     @Ctx() ctx: RequestContext,
-    @Args('password') password: string
+    @Args('password') password: string,
   ): Promise<unknown> {
     // Basic protection - check if password is configured and matches
     const configuredPassword = this.options.feed?.password;

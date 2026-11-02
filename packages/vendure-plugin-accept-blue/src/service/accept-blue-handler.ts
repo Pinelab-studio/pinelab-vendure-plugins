@@ -12,22 +12,22 @@ import {
   SettlePaymentResult,
   UserInputError,
 } from '@vendure/core';
+import { asError } from 'catch-unknown';
 import { loggerCtx } from '../constants';
 import {
-  CheckPaymentMethodInput,
   AppleOrGooglePayInput,
+  CheckPaymentMethodInput,
   NoncePaymentMethodInput,
   SavedPaymentMethodInput,
 } from '../types';
 import {
-  isCheckPaymentMethod,
   isGooglePayPaymentMethod as isAppleOrGooglePay,
+  isCheckPaymentMethod,
   isNoncePaymentMethod,
   isSavedPaymentMethod,
 } from '../util';
 import { AcceptBlueClient } from './accept-blue-client';
 import { AcceptBlueService } from './accept-blue-service';
-import { asError } from 'catch-unknown';
 
 let service: AcceptBlueService;
 export const acceptBluePaymentHandler = new PaymentMethodHandler({
@@ -159,7 +159,7 @@ export const acceptBluePaymentHandler = new PaymentMethodHandler({
     order,
     amount,
     args,
-    metadata
+    metadata,
   ): Promise<CreatePaymentResult> {
     if (
       !isNoncePaymentMethod(metadata as NoncePaymentMethodInput) &&
@@ -168,7 +168,7 @@ export const acceptBluePaymentHandler = new PaymentMethodHandler({
       !isSavedPaymentMethod(metadata as SavedPaymentMethodInput)
     ) {
       throw new UserInputError(
-        `You either need to provide Nonce, Check or GooglePay input, or a saved payment method ID`
+        `You either need to provide Nonce, Check or GooglePay input, or a saved payment method ID`,
       );
     }
     const input = metadata as
@@ -180,7 +180,7 @@ export const acceptBluePaymentHandler = new PaymentMethodHandler({
       args.apiKey,
       args.pin,
       args,
-      args.testMode
+      args.testMode,
     );
     try {
       if (isAppleOrGooglePay(input as AppleOrGooglePayInput)) {
@@ -189,7 +189,7 @@ export const acceptBluePaymentHandler = new PaymentMethodHandler({
           order,
           amount,
           client,
-          input as AppleOrGooglePayInput
+          input as AppleOrGooglePayInput,
         );
       } else {
         return await service.handleTraditionalPaymentForOrder(
@@ -197,7 +197,7 @@ export const acceptBluePaymentHandler = new PaymentMethodHandler({
           order,
           amount,
           client,
-          input as NoncePaymentMethodInput | CheckPaymentMethodInput
+          input as NoncePaymentMethodInput | CheckPaymentMethodInput,
         );
       }
     } catch (e) {
@@ -205,7 +205,7 @@ export const acceptBluePaymentHandler = new PaymentMethodHandler({
       Logger.error(
         `Error settling payment for order '${order.code}': ${error.message}`,
         loggerCtx,
-        error.stack
+        error.stack,
       );
       return {
         amount,
@@ -223,9 +223,9 @@ export const acceptBluePaymentHandler = new PaymentMethodHandler({
   async createRefund(
     ctx: RequestContext,
     input: RefundOrderInput,
-    amount: number,
-    order: Order,
-    payment: Payment
+    _amount: number,
+    _order: Order,
+    payment: Payment,
   ): Promise<CreateRefundResult> {
     const transactionId = Number(payment.transactionId); // All AC transactions are numbers
     const refundResult = await service.refund(ctx, transactionId, input.amount);

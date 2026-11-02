@@ -11,7 +11,7 @@ export function getAuthHeaders(): Record<string, string> {
   const headers: Record<string, string> = {};
   const sessionToken = localStorage.getItem(LS_SESSION_TOKEN);
   if (sessionToken) {
-    headers['Authorization'] = `Bearer ${sessionToken}`;
+    headers.Authorization = `Bearer ${sessionToken}`;
   }
   const channelToken = localStorage.getItem(LS_CHANNEL_TOKEN);
   if (channelToken) {
@@ -29,7 +29,7 @@ export function getServerBaseUrl(): string {
 export function downloadBlob(
   blob: Blob,
   fileName: string,
-  openInNewTab = false
+  openInNewTab = false,
 ): void {
   const blobUrl = window.URL.createObjectURL(blob);
   const a = document.createElement('a');

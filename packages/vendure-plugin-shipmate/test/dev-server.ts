@@ -1,12 +1,12 @@
+import { ChannelService, RequestContext, VendureConfig } from '@vendure/core';
 import {
   createTestEnvironment,
   registerInitializer,
   SqljsInitializer,
 } from '@vendure/testing';
-import { ChannelService, RequestContext, VendureConfig } from '@vendure/core';
 import { initialData } from '../../test/src/initial-data';
-import { testPaymentMethod } from '../../test/src/test-payment-method';
 import { createSettledOrder } from '../../test/src/shop-utils';
+import { testPaymentMethod } from '../../test/src/test-payment-method';
 import { config } from './vendure-config';
 
 (async () => {
@@ -19,7 +19,7 @@ import { config } from './vendure-config';
   };
 
   const { server, shopClient } = createTestEnvironment(
-    config as Required<VendureConfig>
+    config as Required<VendureConfig>,
   );
   await server.init({
     initialData: {
@@ -69,7 +69,7 @@ import { config } from './vendure-config';
         postalCode: 'SA35 0AE',
         countryCode: 'GB',
       },
-    }
+    },
   );
   console.log(`Placed order ${res.code}`);
 })();

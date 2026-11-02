@@ -1,12 +1,4 @@
 import { CustomFieldConfig, LanguageCode } from '@vendure/core';
-import {
-  // Note: we are using a deep import here, rather than importing from `@vendure/core` due to
-  // a possible bug in TypeScript (https://github.com/microsoft/TypeScript/issues/46617) which
-  // causes issues when multiple plugins extend the same custom fields interface.
-  /* eslint-disable @typescript-eslint/no-unused-vars */
-  CustomProductVariantFields,
-  CustomOrderFields,
-} from '@vendure/core/dist/entity/custom-entity-fields';
 
 declare module '@vendure/core' {
   interface CustomProductVariantFields {
@@ -24,7 +16,7 @@ declare module '@vendure/core' {
 
 /** Returns variant custom fields with the given Admin UI tab name. */
 export function getVariantCustomFields(
-  uiTab?: string | null
+  uiTab?: string | null,
 ): CustomFieldConfig[] {
   return [
     {

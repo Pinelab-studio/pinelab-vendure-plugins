@@ -1,3 +1,4 @@
+import { useQuery } from '@tanstack/react-query';
 import {
   api,
   Button,
@@ -16,12 +17,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@vendure/dashboard';
-import { graphql } from '@/gql';
-import { getApiBaseUrl } from '@/vdb/utils/config-utils.js';
-import { useQuery } from '@tanstack/react-query';
 import { endOfDay, startOfMonth } from 'date-fns';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
+import { graphql } from '@/gql';
+import { getApiBaseUrl } from '@/vdb/utils/config-utils.js';
 
 const StrategiesQuery = graphql(`
   query availableOrderExportStrategies {
@@ -65,11 +65,11 @@ export function OrderExportComponent() {
       const channelToken = localStorage.getItem(LS_KEY_SELECTED_CHANNEL_TOKEN);
       if (channelToken) headers['vendure-token'] = channelToken;
       const sessionToken = localStorage.getItem(LS_KEY_SESSION_TOKEN);
-      if (sessionToken) headers['Authorization'] = `Bearer ${sessionToken}`;
+      if (sessionToken) headers.Authorization = `Bearer ${sessionToken}`;
 
       const url =
         `${getApiBaseUrl()}/export-orders/export/${encodeURIComponent(
-          strategy
+          strategy,
         )}` +
         `?startDate=${dateRange.from.toISOString()}&endDate=${dateRange.to.toISOString()}`;
 

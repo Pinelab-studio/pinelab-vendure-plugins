@@ -1,6 +1,6 @@
 import { Order, RequestContext } from '@vendure/core';
+import { AdvancedMetricType } from '../generated/graphql';
 import { MetricStrategy, NamedDatapoint } from '../services/metric-strategy';
-import { AdvancedMetricType } from '../ui/generated/graphql';
 
 /**
  * Calculates the average order value per month
@@ -10,11 +10,11 @@ export class AverageOrderValueMetric implements MetricStrategy {
   readonly code = 'aov';
   readonly allowProductSelection = false;
 
-  getTitle(ctx: RequestContext): string {
+  getTitle(_ctx: RequestContext): string {
     return `Average order value`;
   }
 
-  calculateDataPoints(ctx: RequestContext, orders: Order[]): NamedDatapoint[] {
+  calculateDataPoints(_ctx: RequestContext, orders: Order[]): NamedDatapoint[] {
     let averageInclTax = 0;
     let averageExclTax = 0;
     if (orders.length) {

@@ -1,10 +1,10 @@
+import { AnyRoute, Link } from '@tanstack/react-router';
 import {
   Badge,
   Button,
   DashboardRouteDefinition,
   ListPage,
 } from '@vendure/dashboard';
-import { AnyRoute, Link } from '@tanstack/react-router';
 import { ExternalLinkIcon, SparklesIcon } from 'lucide-react';
 import { contentAutomationUpdateListDocument } from '../queries';
 
@@ -36,7 +36,7 @@ function ContentAutomationUpdateListPage({ route }: { route: AnyRoute }) {
           header: 'Result',
           cell: ({ row }) => (
             <span
-              className="block max-w-md truncate text-sm text-muted-foreground"
+              className="block max-w-md truncate text-muted-foreground text-sm"
               title={row.original.resultMessage ?? undefined}
             >
               {row.original.resultMessage ?? '—'}

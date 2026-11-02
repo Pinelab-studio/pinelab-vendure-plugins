@@ -11,10 +11,10 @@ import {
   RequestContext,
   TransactionalConnection,
 } from '@vendure/core';
-import { coinbaseHandler } from './coinbase.handler';
-import { loggerCtx } from './constants';
 import { CoinbaseClient } from './coinbase.client';
+import { coinbaseHandler } from './coinbase.handler';
 import { ChargeConfirmedWebhookEvent } from './coinbase.types';
+import { loggerCtx } from './constants';
 
 @Injectable()
 export class CoinbaseService {
@@ -24,7 +24,7 @@ export class CoinbaseService {
     private channelService: ChannelService,
     private paymentMethodService: PaymentMethodService,
     private entityHydrator: EntityHydrator,
-    private connection: TransactionalConnection
+    private connection: TransactionalConnection,
   ) {}
 
   async createPaymentIntent(ctx: RequestContext): Promise<string> {
@@ -43,7 +43,7 @@ export class CoinbaseService {
     }
     if (!order.shippingLines?.length) {
       throw Error(
-        'Cannot create payment intent for order without shippingMethod'
+        'Cannot create payment intent for order without shippingMethod',
       );
     }
     const { apiKey, redirectUrl } = await this.getCoinbasePaymentMethod(ctx);
@@ -66,12 +66,12 @@ export class CoinbaseService {
   }
 
   async settlePayment(
-    event: ChargeConfirmedWebhookEvent['event']
+    event: ChargeConfirmedWebhookEvent['event'],
   ): Promise<void> {
     if (event?.type !== 'charge:confirmed') {
       Logger.info(
         `Incoming webhook is of type ${event?.type} for order ${event?.data?.metadata?.orderCode}, not processing this event.`,
-        loggerCtx
+        loggerCtx,
       );
       return;
     }
@@ -82,8 +82,8 @@ export class CoinbaseService {
     ) {
       throw Error(
         `Incoming Coinbase webhook is missing metadata.orderCode, metadata.channelToken or code field: ${JSON.stringify(
-          event.data?.metadata
-        )}`
+          event.data?.metadata,
+        )}`,
       );
     }
     const orderCode = event.data.metadata.orderCode;
@@ -91,7 +91,7 @@ export class CoinbaseService {
       apiType: 'admin',
       isAuthorized: true,
       channel: await this.channelService.getChannelFromToken(
-        event.data.metadata.channelToken
+        event.data.metadata.channelToken,
       ),
       authorizedAsOwnerOnly: false,
     });
@@ -101,25 +101,25 @@ export class CoinbaseService {
     if (!charge.data.confirmed_at) {
       Logger.error(
         `Requested charge ${event.data.code} does not have 'confirmed_at' on Coinbase. This payment will not be settled.`,
-        loggerCtx
+        loggerCtx,
       );
       return;
     }
     const order = await this.orderService.findOneByCode(ctx, orderCode);
     if (!order) {
       throw Error(
-        `Unable to find order ${orderCode}, unable to settle payment ${event.data.code}!`
+        `Unable to find order ${orderCode}, unable to settle payment ${event.data.code}!`,
       );
     }
     if (order.state !== 'ArrangingPayment') {
       const transitionToStateResult = await this.orderService.transitionToState(
         ctx,
         order.id,
-        'ArrangingPayment'
+        'ArrangingPayment',
       );
       if (transitionToStateResult instanceof OrderStateTransitionError) {
         throw Error(
-          `Error transitioning order ${order.code} from ${transitionToStateResult.fromState} to ${transitionToStateResult.toState}: ${transitionToStateResult.message}`
+          `Error transitioning order ${order.code} from ${transitionToStateResult.fromState} to ${transitionToStateResult.toState}: ${transitionToStateResult.message}`,
         );
       }
     }
@@ -135,13 +135,13 @@ export class CoinbaseService {
             addresses: event.data?.addresses,
             metadata: event.data?.metadata,
           },
-        }
+        },
       );
       if ((addPaymentToOrderResult as ErrorResult).errorCode) {
         throw Error(
           `Error adding payment to order ${orderCode}: ${
             (addPaymentToOrderResult as ErrorResult).message
-          }`
+          }`,
         );
       }
       Logger.info(`Payment for order ${orderCode} settled`, loggerCtx);
@@ -149,26 +149,26 @@ export class CoinbaseService {
   }
 
   private async getCoinbasePaymentMethod(ctx: RequestContext) {
-    let { items } = await this.paymentMethodService.findAll(ctx);
+    const { items } = await this.paymentMethodService.findAll(ctx);
     const method = items.find(
-      (item) => item.handler.code === coinbaseHandler.code
+      (item) => item.handler.code === coinbaseHandler.code,
     );
     if (!method) {
       throw Error(
-        `No paymentMethod configured with handler ${coinbaseHandler.code}`
+        `No paymentMethod configured with handler ${coinbaseHandler.code}`,
       );
     }
     const apiKey = method.handler.args.find((arg) => arg.name === 'apiKey');
     const redirectUrl = method.handler.args.find(
-      (arg) => arg.name === 'redirectUrl'
+      (arg) => arg.name === 'redirectUrl',
     );
     if (!apiKey || !redirectUrl) {
       Logger.error(
         `CreatePaymentIntent failed, because no apiKey or redirect is configured for ${method.code}`,
-        loggerCtx
+        loggerCtx,
       );
       throw Error(
-        `Paymentmethod ${method.code} has no apiKey, sharedSecret or redirectUrl configured`
+        `Paymentmethod ${method.code} has no apiKey, sharedSecret or redirectUrl configured`,
       );
     }
     return {

@@ -1,10 +1,10 @@
+import { assertFound, Logger, OrderService } from '@vendure/core';
+import { loggerCtx } from '../constants';
 import {
   KlaviyoEventHandler,
   KlaviyoGenericEvent,
 } from '../event-handler/klaviyo-event-handler';
-import { assertFound, Logger, OrderService } from '@vendure/core';
 import { CheckoutStartedEvent } from '../service/events';
-import { loggerCtx } from '../constants';
 import { mapToProfile } from '../util/map-to-profile';
 
 /**
@@ -21,7 +21,7 @@ export const startedCheckoutHandler: KlaviyoEventHandler<CheckoutStartedEvent> =
             'customer',
             'lines',
             'lines.productVariant',
-          ])
+          ]),
       );
       if (!hydratedOrder.customer?.emailAddress) {
         return false;
@@ -31,8 +31,7 @@ export const startedCheckoutHandler: KlaviyoEventHandler<CheckoutStartedEvent> =
         : hydratedOrder.shippingAddress;
       const event: KlaviyoGenericEvent = {
         eventName: 'Checkout Started',
-        uniqueId:
-          hydratedOrder.code + `_${new Date().toISOString().split('T')[0]}`, // Make checkout event unique per day: If chckout started again tomorrow, this is a new event
+        uniqueId: `${hydratedOrder.code}_${new Date().toISOString().split('T')[0]}`, // Make checkout event unique per day: If chckout started again tomorrow, this is a new event
         customProperties: {
           orderCode: hydratedOrder.code,
           orderItems: hydratedOrder.lines.map((line) => ({
@@ -53,7 +52,7 @@ export const startedCheckoutHandler: KlaviyoEventHandler<CheckoutStartedEvent> =
       };
       Logger.info(
         `Sent '${event.eventName}' to Klaviyo for order ${hydratedOrder.code}`,
-        loggerCtx
+        loggerCtx,
       );
       return event;
     },

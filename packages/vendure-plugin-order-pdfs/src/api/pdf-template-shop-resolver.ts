@@ -9,10 +9,10 @@ export class PDFTemplateShopResolver {
 
   @Query()
   async availablePDFTemplates(
-    @Ctx() ctx: RequestContext
+    @Ctx() ctx: RequestContext,
   ): Promise<PdfTemplate[]> {
     return (await this.service.getTemplates(ctx)).filter(
-      (t) => t.enabled && t.public
+      (t) => t.enabled && t.public,
     );
   }
 }

@@ -1,6 +1,5 @@
 import {
   DefaultLogger,
-  Facet,
   InitialData,
   LogLevel,
   mergeConfig,
@@ -13,9 +12,9 @@ import {
   testConfig,
 } from '@vendure/testing';
 import { TestServer } from '@vendure/testing/lib/test-server';
+import gql from 'graphql-tag';
 import nock from 'nock';
 import { afterAll, afterEach, beforeAll, expect, it } from 'vitest';
-import gql from 'graphql-tag';
 import { initialData } from '../../test/src/initial-data';
 import { FacetSuggestionsPlugin } from '../src';
 

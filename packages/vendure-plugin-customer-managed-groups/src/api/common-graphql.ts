@@ -1,7 +1,7 @@
 import { gql } from 'graphql-tag';
 
 // This is just to enable static codegen, without starting a server
-const scalars = gql`
+const _scalars = gql`
   scalar DateTime
   scalar OrderList
   scalar LanguageCode

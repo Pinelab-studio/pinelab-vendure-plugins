@@ -1,13 +1,4 @@
 import {
-  createTestEnvironment,
-  E2E_DEFAULT_CHANNEL_TOKEN,
-  registerInitializer,
-  SimpleGraphQLClient,
-  SqljsInitializer,
-  testConfig,
-} from '@vendure/testing';
-import { initialData } from '../../test/src/initial-data';
-import {
   ChannelService,
   DefaultLogger,
   LogLevel,
@@ -16,15 +7,24 @@ import {
   RequestContext,
   TaxRateService,
 } from '@vendure/core';
+import {
+  createTestEnvironment,
+  E2E_DEFAULT_CHANNEL_TOKEN,
+  registerInitializer,
+  SimpleGraphQLClient,
+  SqljsInitializer,
+  testConfig,
+} from '@vendure/testing';
 import { TestServer } from '@vendure/testing/lib/test-server';
+import nock from 'nock';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
+import { initialData } from '../../test/src/initial-data';
+import { createSettledOrder } from '../../test/src/shop-utils';
+import { testPaymentMethod } from '../../test/src/test-payment-method';
 import { EBoekhoudenPlugin } from '../src';
 import { EBoekhoudenService } from '../src/api/e-boekhouden.service';
-import nock from 'nock';
-import { testPaymentMethod } from '../../test/src/test-payment-method';
-import { createSettledOrder } from '../../test/src/shop-utils';
-import { expect, describe, beforeAll, afterAll, it, vi, test } from 'vitest';
 
-describe('E-boekhouden plugin', function () {
+describe('E-boekhouden plugin', () => {
   let server: TestServer;
   let adminClient: SimpleGraphQLClient;
   let shopClient: SimpleGraphQLClient;
@@ -115,19 +115,19 @@ describe('E-boekhouden plugin', function () {
       .getChannelFromToken(E2E_DEFAULT_CHANNEL_TOKEN);
     expect(channel.customFields.eBoekhoudenEnabled).toBe(true);
     expect(channel.customFields.eBoekhoudenSecret1).toBe(
-      eBoekhoudenConfig.eBoekhoudenSecret1
+      eBoekhoudenConfig.eBoekhoudenSecret1,
     );
     expect(channel.customFields.eBoekhoudenSecret2).toBe(
-      eBoekhoudenConfig.eBoekhoudenSecret2
+      eBoekhoudenConfig.eBoekhoudenSecret2,
     );
     expect(channel.customFields.eBoekhoudenUsername).toBe(
-      eBoekhoudenConfig.eBoekhoudenUsername
+      eBoekhoudenConfig.eBoekhoudenUsername,
     );
     expect(channel.customFields.eBoekhoudenContraAccount).toBe(
-      eBoekhoudenConfig.eBoekhoudenContraAccount
+      eBoekhoudenConfig.eBoekhoudenContraAccount,
     );
     expect(channel.customFields.eBoekhoudenAccount).toBe(
-      eBoekhoudenConfig.eBoekhoudenAccount
+      eBoekhoudenConfig.eBoekhoudenAccount,
     );
   });
 

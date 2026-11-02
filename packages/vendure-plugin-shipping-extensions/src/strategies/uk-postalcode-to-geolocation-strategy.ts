@@ -1,21 +1,21 @@
-import {
-  OrderAddressToGeolocationConversionStrategy,
-  GeoLocation,
-} from './order-address-to-geolocation-strategy';
 import { OrderAddress } from '@vendure/common/lib/generated-shop-types';
+import {
+  GeoLocation,
+  OrderAddressToGeolocationConversionStrategy,
+} from './order-address-to-geolocation-strategy';
 
 export const POSTCODES_URL = `https://postcodes.io/postcodes`;
 export class UKPostalCodeToGelocationConversionStrategy
   implements OrderAddressToGeolocationConversionStrategy
 {
   async getGeoLocationForAddress(
-    orderAddress: OrderAddress
+    orderAddress: OrderAddress,
   ): Promise<GeoLocation | undefined> {
     if (!orderAddress?.postalCode) {
       return undefined;
     }
     const url = `${POSTCODES_URL}/${encodeURIComponent(
-      orderAddress.postalCode
+      orderAddress.postalCode,
     )}`;
     const response = await fetch(url);
     if (response.status === 404) {

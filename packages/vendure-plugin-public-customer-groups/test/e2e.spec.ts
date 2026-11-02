@@ -7,9 +7,9 @@ import {
   testConfig,
 } from '@vendure/testing';
 import { TestServer } from '@vendure/testing/lib/test-server';
+import { beforeAll, describe, expect, it } from 'vitest';
 import { initialData } from '../../test/src/initial-data';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
-import { describe, beforeAll, it, expect } from 'vitest';
 import { PublicCustomerGroupsPlugin } from '../src/public-customer-groups.plugin';
 import {
   CREATE_CUSTOMER_GROUP,
@@ -18,13 +18,13 @@ import {
   publicCustomerGroupInput,
 } from './test-helpers';
 
-describe('Public Customer Groups', function () {
+describe('Public Customer Groups', () => {
   let server: TestServer;
   let shopClient: SimpleGraphQLClient;
   let adminClient: SimpleGraphQLClient;
   let serverStarted = false;
-  let publicCustomerGroupId;
-  let nonPublicCustomerGroupId;
+  let publicCustomerGroupId: string;
+  let nonPublicCustomerGroupId: string;
 
   beforeAll(async () => {
     registerInitializer('sqljs', new SqljsInitializer('__data__'));
@@ -73,22 +73,22 @@ describe('Public Customer Groups', function () {
   it('Should fetch only public customer groups for customer and activeCustomer.customerGroups.customers should also be empty', async () => {
     await shopClient.asUserWithCredentials(
       'hayden.zieme12@hotmail.com',
-      'test'
+      'test',
     );
     const {
       activeCustomer: { customerGroups },
     } = await shopClient.query(getActiveCustomer);
     expect(
       customerGroups.find(
-        (customerGroup) => customerGroup.id === publicCustomerGroupId
-      )
+        (customerGroup) => customerGroup.id === publicCustomerGroupId,
+      ),
     ).toBeDefined();
     expect(
       customerGroups.find(
-        (customerGroup) => customerGroup.id === nonPublicCustomerGroupId
-      )
+        (customerGroup) => customerGroup.id === nonPublicCustomerGroupId,
+      ),
     ).not.toBeDefined();
-    for (let customerGroup of customerGroups) {
+    for (const customerGroup of customerGroups) {
       expect(customerGroup.customers.items.length).toBe(0);
     }
   });

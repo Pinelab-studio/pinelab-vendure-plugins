@@ -1,24 +1,23 @@
 import {
-  CustomOrderFields,
   PluginCommonModule,
   RuntimeVendureConfig,
   VendurePlugin,
 } from '@vendure/core';
-import { GoedgepicktService } from './api/goedgepickt.service';
 import { GoedgepicktController } from './api/goedgepickt.controller';
 import { goedgepicktHandler } from './api/goedgepickt.handler';
-import { GoedgepicktPluginConfig } from './api/goedgepickt.types';
 import {
   GoedgepicktResolver,
   goedgepicktPermission,
 } from './api/goedgepickt.resolver';
-import { PLUGIN_INIT_OPTIONS } from './constants';
+import { GoedgepicktService } from './api/goedgepickt.service';
+import { GoedgepicktPluginConfig } from './api/goedgepickt.types';
 import { schema } from './api/schema.graphql';
-import { channelCustomFields, orderCustomFields } from './custom-fields';
 import {
   goedgepicktPushProductsTask,
   goedgepicktSyncStockTask,
 } from './config/goedgepickt-scheduled-task';
+import { PLUGIN_INIT_OPTIONS } from './constants';
+import { channelCustomFields, orderCustomFields } from './custom-fields';
 
 @VendurePlugin({
   imports: [PluginCommonModule],
@@ -51,9 +50,9 @@ export class GoedgepicktPlugin {
   static config: GoedgepicktPluginConfig;
 
   static init(config: GoedgepicktPluginConfig): typeof GoedgepicktPlugin {
-    this.config = config;
-    if (this.config.setWebhook !== false) {
-      this.config.setWebhook = true; // If not explicitly set to false, set to true
+    GoedgepicktPlugin.config = config;
+    if (GoedgepicktPlugin.config.setWebhook !== false) {
+      GoedgepicktPlugin.config.setWebhook = true; // If not explicitly set to false, set to true
     }
     return GoedgepicktPlugin;
   }

@@ -21,7 +21,7 @@ import { config } from './vendure-config';
   };
 
   const { server, shopClient, adminClient } = createTestEnvironment(
-    config as Required<VendureConfig>
+    config as Required<VendureConfig>,
   );
   await server.init({
     initialData: {
@@ -56,7 +56,7 @@ import { config } from './vendure-config';
     },
   });
 
-  const order = await createSettledOrder(shopClient, 3, true, [
+  const _order = await createSettledOrder(shopClient, 3, true, [
     { id: 'T_1', quantity: 3 },
   ]);
 })();

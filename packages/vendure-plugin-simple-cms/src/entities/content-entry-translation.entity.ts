@@ -1,4 +1,4 @@
-import { VendureEntity, LanguageCode } from '@vendure/core';
+import { LanguageCode, VendureEntity } from '@vendure/core';
 import { Column, Entity, Index, ManyToOne } from 'typeorm';
 import { ContentEntry } from './content-entry.entity';
 
@@ -15,8 +15,12 @@ export class ContentEntryTranslation extends VendureEntity {
   fields!: Record<string, unknown>;
 
   @Index()
-  @ManyToOne(() => ContentEntry, (base) => base.translatableFields, {
-    onDelete: 'CASCADE',
-  })
+  @ManyToOne(
+    () => ContentEntry,
+    (base) => base.translatableFields,
+    {
+      onDelete: 'CASCADE',
+    },
+  )
   base!: ContentEntry;
 }

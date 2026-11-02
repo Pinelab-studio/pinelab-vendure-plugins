@@ -33,7 +33,7 @@ export class WebhookNotifier implements Notifier {
     });
     if (!res.ok) {
       throw new Error(
-        `Webhook ${this.name} returned ${res.status}: ${await res.text()}`
+        `Webhook ${this.name} returned ${res.status}: ${await res.text()}`,
       );
     }
   }

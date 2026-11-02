@@ -1,11 +1,11 @@
 import { PluginCommonModule, Type, VendurePlugin } from '@vendure/core';
 
 import { shopApiExtensions } from './api/api-extensions';
+import { ValidateCartResolver } from './api/validate-cart.resolver';
 import { VALIDATE_CART_PLUGIN_OPTIONS } from './constants';
 import { ValidateCartService } from './services/validate-cart.service';
-import { ValidateCartResolver } from './api/validate-cart.resolver';
-import { ValidateCartInitOptions } from './types';
 import { DefaultStockValidationStrategy } from './services/validate-cart-strategy';
+import { ValidateCartInitOptions } from './types';
 
 @VendurePlugin({
   imports: [PluginCommonModule],
@@ -32,8 +32,8 @@ export class ValidateCartPlugin {
   };
 
   static init(options: ValidateCartInitOptions): Type<ValidateCartPlugin> {
-    this.options = {
-      ...this.options,
+    ValidateCartPlugin.options = {
+      ...ValidateCartPlugin.options,
       ...options,
     };
     return ValidateCartPlugin;

@@ -25,7 +25,7 @@
     "dev:dashboard": "vite --clearScreen false",
     "generate": "graphql-codegen",
     "test": "vitest --bail 1 run",
-    "lint": "eslint ."
+    "lint": "biome check ."
   },
   "dependencies": {
     "adm-zip": "0.5.9",

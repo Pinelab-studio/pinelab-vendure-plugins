@@ -12,12 +12,12 @@ import {
   testConfig,
 } from '@vendure/testing';
 import { initialData } from '../../test/src/initial-data';
+import { createSettledOrder } from '../../test/src/shop-utils';
+import { testPaymentMethod } from '../../test/src/test-payment-method';
 import {
   FrequentlyBoughtTogetherPlugin,
   frequentlyBoughtTogetherTask,
 } from '../src';
-import { createSettledOrder } from '../../test/src/shop-utils';
-import { testPaymentMethod } from '../../test/src/test-payment-method';
 
 require('dotenv').config();
 

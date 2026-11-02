@@ -1,9 +1,8 @@
-import { CMutatieRegel, OMut } from '../client';
-import { Logger, Order, RequestContext } from '@vendure/core';
-import { EBoekhoudenChannelConfig } from './e-boekhouden.service';
-import { loggerCtx } from '../constants';
 import { OrderTaxSummary } from '@vendure/common/lib/generated-types';
+import { Order, RequestContext } from '@vendure/core';
+import { CMutatieRegel, OMut } from '../client';
 import { EBoekhoudenPlugin } from '../e-boekhouden.plugin';
+import { EBoekhoudenChannelConfig } from './e-boekhouden.service';
 
 const toPrice = (price: number) => (Math.round(price) / 100).toFixed(2);
 
@@ -33,15 +32,17 @@ export class EBoekhoudenAdapter {
   static toMutation(
     ctx: RequestContext,
     order: Order,
-    config: EBoekhoudenChannelConfig
+    config: EBoekhoudenChannelConfig,
   ): OMut {
     const description = `Order ${order.code} - ${order.customer?.firstName} ${order.customer?.lastName} (${order.customer?.emailAddress})`;
     const cMutatieRegel = order.taxSummary.map((summary) =>
-      this.toMutationLine(ctx, summary, order, config)
+      EBoekhoudenAdapter.toMutationLine(ctx, summary, order, config),
     );
     return {
       Soort: 'GeldOntvangen',
-      Datum: this.toDateString(order.orderPlacedAt || order.updatedAt),
+      Datum: EBoekhoudenAdapter.toDateString(
+        order.orderPlacedAt || order.updatedAt,
+      ),
       Rekening: config.account,
       Omschrijving: description,
       InExBTW: 'IN',
@@ -55,7 +56,7 @@ export class EBoekhoudenAdapter {
     ctx: RequestContext,
     tax: OrderTaxSummary,
     order: Order,
-    config: EBoekhoudenChannelConfig
+    config: EBoekhoudenChannelConfig,
   ): CMutatieRegel {
     const recalculatedTax = recalculateTaxFromTotalIncVAT(tax);
     return {

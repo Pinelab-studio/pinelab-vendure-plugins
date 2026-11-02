@@ -1,9 +1,4 @@
 import {
-  createTestEnvironment,
-  registerInitializer,
-  SqljsInitializer,
-} from '@vendure/testing';
-import {
   ChannelService,
   InitialData,
   LanguageCode,
@@ -12,13 +7,13 @@ import {
   TaxRateService,
   VendureConfig,
 } from '@vendure/core';
-import { initialData } from '../../test/src/initial-data';
 import {
-  addItem,
-  addPaymentToOrder,
-  proceedToArrangingPayment,
-} from '../../test/src/shop-utils';
-import { testPaymentMethod } from '../../test/src/test-payment-method';
+  createTestEnvironment,
+  registerInitializer,
+  SqljsInitializer,
+} from '@vendure/testing';
+import { initialData } from '../../test/src/initial-data';
+import { addItem, proceedToArrangingPayment } from '../../test/src/shop-utils';
 import { config } from './vendure-config';
 
 (async () => {
@@ -31,7 +26,7 @@ import { config } from './vendure-config';
   };
 
   const { server, shopClient } = createTestEnvironment(
-    config as Required<VendureConfig>
+    config as Required<VendureConfig>,
   );
   await server.init({
     initialData: initialData as InitialData,

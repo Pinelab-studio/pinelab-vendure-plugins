@@ -1,3 +1,4 @@
+import path from 'node:path';
 import {
   DefaultLogger,
   DefaultSearchPlugin,
@@ -6,11 +7,10 @@ import {
   mergeConfig,
   VendureConfig,
 } from '@vendure/core';
-import { testConfig } from '@vendure/testing';
 import { DashboardPlugin } from '@vendure/dashboard/plugin';
-import path from 'path';
-import { MyparcelPlugin } from '../src/myparcel.plugin';
+import { testConfig } from '@vendure/testing';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
+import { MyparcelPlugin } from '../src/myparcel.plugin';
 
 export const config: VendureConfig = mergeConfig(testConfig, {
   logger: new DefaultLogger({ level: LogLevel.Debug }),

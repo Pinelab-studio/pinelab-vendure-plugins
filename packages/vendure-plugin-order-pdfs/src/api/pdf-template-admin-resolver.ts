@@ -1,14 +1,14 @@
 import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
 import {
+  DeletionResponse,
+  DeletionResult,
+} from '@vendure/common/lib/generated-types';
+import {
   Allow,
   Ctx,
   PermissionDefinition,
   RequestContext,
 } from '@vendure/core';
-import {
-  DeletionResponse,
-  DeletionResult,
-} from '@vendure/common/lib/generated-types';
 import {
   MutationCreatePdfTemplateArgs,
   MutationDeletePdfTemplateArgs,
@@ -32,7 +32,7 @@ export class PDFTemplateAdminResolver {
   @Allow(pdfDownloadPermission.Permission)
   async createPDFTemplate(
     @Ctx() ctx: RequestContext,
-    @Args() args: MutationCreatePdfTemplateArgs
+    @Args() args: MutationCreatePdfTemplateArgs,
   ): Promise<PdfTemplate> {
     return await this.service.createPDFTemplate(ctx, args.input);
   }
@@ -41,7 +41,7 @@ export class PDFTemplateAdminResolver {
   @Allow(pdfDownloadPermission.Permission)
   async updatePDFTemplate(
     @Ctx() ctx: RequestContext,
-    @Args() args: MutationUpdatePdfTemplateArgs
+    @Args() args: MutationUpdatePdfTemplateArgs,
   ): Promise<PdfTemplate> {
     return await this.service.updateTemplate(ctx, args.input);
   }
@@ -50,7 +50,7 @@ export class PDFTemplateAdminResolver {
   @Allow(pdfDownloadPermission.Permission)
   async deletePDFTemplate(
     @Ctx() ctx: RequestContext,
-    @Args() args: MutationDeletePdfTemplateArgs
+    @Args() args: MutationDeletePdfTemplateArgs,
   ): Promise<DeletionResponse> {
     await this.service.deletePDFTemplate(ctx, args.id);
     return { result: DeletionResult.DELETED };
@@ -60,7 +60,7 @@ export class PDFTemplateAdminResolver {
   @Allow(pdfDownloadPermission.Permission)
   async pdfTemplates(
     @Ctx() ctx: RequestContext,
-    @Args() args: QueryPdfTemplatesArgs
+    @Args() args: QueryPdfTemplatesArgs,
   ) {
     return await this.service.getTemplatesList(ctx, args.options ?? undefined);
   }
@@ -69,7 +69,7 @@ export class PDFTemplateAdminResolver {
   @Allow(pdfDownloadPermission.Permission)
   async pdfTemplate(
     @Ctx() ctx: RequestContext,
-    @Args() args: QueryPdfTemplateArgs
+    @Args() args: QueryPdfTemplateArgs,
   ): Promise<PdfTemplate | undefined | null> {
     return await this.service.findTemplate(ctx, args.id);
   }

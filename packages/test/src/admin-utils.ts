@@ -38,7 +38,7 @@ import {
 export async function addShippingMethod(
   adminClient: SimpleGraphQLClient,
   fulfillmentHandlerCode: string,
-  price = '500'
+  price = '500',
 ): Promise<any> {
   await adminClient.asSuperAdmin();
   const { createShippingMethod } = await adminClient.query(
@@ -77,7 +77,7 @@ export async function addShippingMethod(
           },
         ],
       },
-    }
+    },
   );
   return createShippingMethod;
 }
@@ -86,7 +86,7 @@ export async function fulfill(
   adminClient: SimpleGraphQLClient,
   handlerCode: string,
   items: Array<[variantId: string, quantity: number]>,
-  args?: Array<{ name: string; value: string }>
+  args?: Array<{ name: string; value: string }>,
 ): Promise<Fulfillment> {
   const lines = items.map((item) => ({
     orderLineId: item[0],
@@ -106,7 +106,7 @@ export async function fulfill(
 
 export async function getOrder(
   adminClient: SimpleGraphQLClient,
-  orderId: ID
+  orderId: ID,
 ): Promise<OrderQuery['order']> {
   const { order } = await adminClient.query(OrderGraphql, { id: orderId });
   return order;
@@ -114,18 +114,18 @@ export async function getOrder(
 
 export async function updateVariants(
   adminClient: SimpleGraphQLClient,
-  input: UpdateProductVariantInput[]
+  input: UpdateProductVariantInput[],
 ): Promise<UpdateProductVariantsMutation['updateProductVariants']> {
   const { updateProductVariants } = await adminClient.query(
     UpdateProductVariants,
-    { input }
+    { input },
   );
   return updateProductVariants;
 }
 
 export async function updateProduct(
   adminClient: SimpleGraphQLClient,
-  input: UpdateProductInput
+  input: UpdateProductInput,
 ): Promise<UpdateProductMutation['updateProduct']> {
   const { updateProduct } = await adminClient.query(UpdateProduct, {
     input,
@@ -135,7 +135,7 @@ export async function updateProduct(
 
 export async function createCollection(
   adminClient: SimpleGraphQLClient,
-  input: CreateCollectionInput
+  input: CreateCollectionInput,
 ): Promise<CreateCollectionMutation['createCollection']> {
   const { createCollection } = await adminClient.query<
     CreateCollectionMutation,
@@ -147,18 +147,17 @@ export async function createCollection(
 }
 
 export async function getAllOrders(
-  adminClient: SimpleGraphQLClient
+  adminClient: SimpleGraphQLClient,
 ): Promise<OrdersQuery['orders']['items']> {
   const { orders } = await adminClient.query(OrdersGraphql);
   return orders.items;
 }
 
 export async function getAllVariants(
-  adminClient: SimpleGraphQLClient
+  adminClient: SimpleGraphQLClient,
 ): Promise<GetVariantsQuery['productVariants']['items']> {
-  const { productVariants } = await adminClient.query<GetVariantsQuery>(
-    GetVariants
-  );
+  const { productVariants } =
+    await adminClient.query<GetVariantsQuery>(GetVariants);
   return productVariants.items;
 }
 
@@ -166,7 +165,7 @@ export async function createPromotion(
   adminClient: SimpleGraphQLClient,
   couponCode: string,
   promotionActionCode: string,
-  args: ConfigArgInput[]
+  args: ConfigArgInput[],
 ): Promise<Promotion> {
   const { createPromotion } = await adminClient.query<
     CreatePromotionMutation,
@@ -199,7 +198,10 @@ export async function createPromotion(
  */
 export async function cancelOrder(
   adminClient: SimpleGraphQLClient,
-  orderWithLines: { id: string; lines: Array<{ id: string; quantity: number }> }
+  orderWithLines: {
+    id: string;
+    lines: Array<{ id: string; quantity: number }>;
+  },
 ): Promise<CancelOrderMutation['cancelOrder']> {
   const { cancelOrder } = await adminClient.query<
     CancelOrderMutation,

@@ -1,6 +1,5 @@
-import fetch from 'node-fetch';
-import { Response } from 'node-fetch';
 import { Logger } from '@vendure/core';
+import fetch, { Response } from 'node-fetch';
 import { loggerCtx } from './constants';
 import { Parcel, ParcelInput } from './types/sendcloud-api.types';
 
@@ -8,7 +7,10 @@ export class SendcloudClient {
   endpoint = 'https://panel.sendcloud.sc/api/v2';
   headers: { [key: string]: string };
 
-  constructor(private publicKey: string, private secret: string) {
+  constructor(
+    private publicKey: string,
+    private secret: string,
+  ) {
     this.headers = {
       'Content-Type': 'application/json',
       Authorization:
@@ -26,7 +28,7 @@ export class SendcloudClient {
     const json = (await res.json()) as any;
     Logger.info(
       `Created parcel in SendCloud with for order ${parcelInput.order_number}  with id ${json.parcel?.id}`,
-      loggerCtx
+      loggerCtx,
     );
     return json.parcel;
   }

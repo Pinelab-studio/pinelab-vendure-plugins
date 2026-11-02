@@ -11,21 +11,21 @@ export class AlertingLogger implements VendureLogger {
   private static onLogHandler?: (log: LogAlertContext) => void;
 
   static setHandler(handler: (log: LogAlertContext) => void): void {
-    this.onLogHandler = handler;
-    this.isReady = true;
+    AlertingLogger.onLogHandler = handler;
+    AlertingLogger.isReady = true;
     // Flush buffered logs
-    while (this.logBuffer.length > 0) {
-      const log = this.logBuffer.shift()!;
+    while (AlertingLogger.logBuffer.length > 0) {
+      const log = AlertingLogger.logBuffer.shift()!;
       handler(log);
     }
   }
 
   static pushLog(level: AlertLogLevel, message: string, ctx?: string): void {
     const log: LogAlertContext = { level, message, loggerCtx: ctx };
-    if (this.isReady && this.onLogHandler) {
-      this.onLogHandler(log);
+    if (AlertingLogger.isReady && AlertingLogger.onLogHandler) {
+      AlertingLogger.onLogHandler(log);
     } else {
-      this.logBuffer.push(log);
+      AlertingLogger.logBuffer.push(log);
     }
   }
 

@@ -4,8 +4,8 @@ import { ContentHealthResolver } from './api/content-health.resolver';
 import { buildContentHealthScanTask } from './config/content-health-scheduled-task';
 import { PLUGIN_INIT_OPTIONS } from './constants';
 import { ContentCheckResult } from './entities/content-check-result.entity';
-import { ContentCheckResultService } from './services/content-check-result.service';
 import { ContentCheckService } from './services/content-check.service';
+import { ContentCheckResultService } from './services/content-check-result.service';
 import { SitemapFetcher } from './services/sitemap-fetcher';
 import { StorefrontPageFetcher } from './services/storefront-page-fetcher';
 import { ContentHealthPluginOptions } from './types';
@@ -38,7 +38,7 @@ import { ContentHealthPluginOptions } from './types';
   },
   configuration: (config) => {
     config.schedulerOptions.tasks.push(
-      buildContentHealthScanTask(ContentHealthPlugin.options?.scheduledTask)
+      buildContentHealthScanTask(ContentHealthPlugin.options?.scheduledTask),
     );
     return config;
   },
@@ -49,7 +49,7 @@ export class ContentHealthPlugin {
   static options: ContentHealthPluginOptions;
 
   static init(options: ContentHealthPluginOptions): typeof ContentHealthPlugin {
-    this.options = options;
+    ContentHealthPlugin.options = options;
     return ContentHealthPlugin;
   }
 }

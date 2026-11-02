@@ -1,9 +1,9 @@
-import { DropdownMenuItem, api } from '@vendure/dashboard';
-import { graphql } from '@/gql';
 import { useMutation } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
-import { toast } from 'sonner';
+import { api, DropdownMenuItem } from '@vendure/dashboard';
 import { HistoryIcon } from 'lucide-react';
+import { toast } from 'sonner';
+import { graphql } from '@/gql';
 
 const convertOrderToDraftDocument = graphql(`
   mutation ConvertOrderToDraft($id: ID!) {
@@ -24,11 +24,11 @@ export function ConvertToDraftMenuItem({
   context: { entity?: any };
 }) {
   const orderId = context.entity?.id;
-  const navigate = useNavigate();
+  const _navigate = useNavigate();
 
   const { mutate: convertToDraft, isPending } = useMutation({
     mutationFn: () => api.mutate(convertOrderToDraftDocument, { id: orderId! }),
-    onSuccess: async (result: any) => {
+    onSuccess: async (_result: any) => {
       toast.success('Successfully created a Draft order');
       // Reload the page after a short delay to ensure page switches to draft ui
       setTimeout(() => {

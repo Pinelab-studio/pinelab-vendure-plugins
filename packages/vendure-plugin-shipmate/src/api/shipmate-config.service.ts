@@ -46,19 +46,18 @@ export class ShipmateConfigService {
    * Shipmate webhook auth tokens include the given token.
    */
   async getConfigWithWebhookAuthToken(
-    webhookAuthToken: string
+    webhookAuthToken: string,
   ): Promise<ShipmateChannelConfig | null> {
     const channels = await this.connection.rawConnection
       .getRepository(Channel)
       .find();
     const channel = channels.find((c) =>
       (c.customFields.shipmateWebhookAuthTokens ?? []).includes(
-        webhookAuthToken
-      )
+        webhookAuthToken,
+      ),
     );
     if (
-      !channel ||
-      !channel.customFields.shipmateApiKey ||
+      !channel?.customFields.shipmateApiKey ||
       !channel.customFields.shipmateUsername ||
       !channel.customFields.shipmatePassword
     ) {

@@ -36,12 +36,12 @@ export const GET_ORDER_NOTES = gql`
  */
 export async function getSyncSuccessNote(
   adminClient: SimpleGraphQLClient,
-  orderId: string
+  orderId: string,
 ): Promise<{ id: string; data: { note: string } } | undefined> {
   const { order } = await adminClient.query(GET_ORDER_NOTES, { id: orderId });
   return order?.history.items.find(
     (entry: { data: { note?: string } }) =>
-      entry.data.note === 'Successfully synced to SendCloud'
+      entry.data.note === 'Successfully synced to SendCloud',
   );
 }
 
@@ -50,7 +50,7 @@ export async function updateSendCloudConfig(
   channelId: string,
   secret: string,
   publicKey: string,
-  defaultPhoneNr: string
+  defaultPhoneNr: string,
 ): Promise<{
   sendcloudSecret: string;
   sendcloudPublicKey: string;

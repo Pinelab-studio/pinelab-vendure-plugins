@@ -1,4 +1,5 @@
 export * from './api/generated/graphql';
+export * from './config/permissions';
 export * from './config/sync-products-scheduled-task';
 export * from './custom-fields';
 export * from './lib/client-types';
@@ -6,5 +7,4 @@ export * from './lib/qls-client';
 export * from './qls-plugin';
 export * from './services/qls-order.service';
 export * from './services/qls-product.service';
-export * from './config/permissions';
 export * from './types';

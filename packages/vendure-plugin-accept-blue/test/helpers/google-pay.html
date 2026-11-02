@@ -6,7 +6,7 @@
     href="https://pinelab.studio/pinelab-sticker.webp"
   />
 </head>
-<html>
+<html lang="en">
   <body>
     <h1>Google Pay</h1>
     <div id="container"></div>
@@ -152,16 +152,16 @@ Payment response will be print here</pre
        * Display a Google Pay payment button after confirmation of the viewer's
        * ability to pay.
        */
-      function onGooglePayLoaded() {
+      function _onGooglePayLoaded() {
         const paymentsClient = getGooglePaymentsClient();
         paymentsClient
           .isReadyToPay(getGoogleIsReadyToPayRequest())
-          .then(function (response) {
+          .then((response) => {
             if (response.result) {
               addGooglePayButton();
             }
           })
-          .catch(function (err) {
+          .catch((err) => {
             // show error in developer console for debugging
             console.error(err);
           });
@@ -208,11 +208,11 @@ Payment response will be print here</pre
         const paymentsClient = getGooglePaymentsClient();
         paymentsClient
           .loadPaymentData(paymentDataRequest)
-          .then(function (paymentData) {
+          .then((paymentData) => {
             // handle the response
             processPayment(paymentData);
           })
-          .catch(function (err) {
+          .catch((err) => {
             // show error in developer console for debugging
             console.error(err);
           });

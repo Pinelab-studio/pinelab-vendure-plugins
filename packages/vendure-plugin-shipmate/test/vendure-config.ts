@@ -1,5 +1,6 @@
 require('dotenv').config();
 
+import path from 'node:path';
 import {
   DefaultLogger,
   DefaultSearchPlugin,
@@ -9,11 +10,10 @@ import {
   RequestContext,
   VendureConfig,
 } from '@vendure/core';
-import { testConfig } from '@vendure/testing';
 import { DashboardPlugin } from '@vendure/dashboard/plugin';
-import path from 'path';
-import { ShipmatePlugin } from '../src/shipmate.plugin';
+import { testConfig } from '@vendure/testing';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
+import { ShipmatePlugin } from '../src/shipmate.plugin';
 
 export const config: VendureConfig = mergeConfig(testConfig, {
   logger: new DefaultLogger({ level: LogLevel.Debug }),
@@ -27,12 +27,10 @@ export const config: VendureConfig = mergeConfig(testConfig, {
   plugins: [
     ShipmatePlugin.init({
       apiUrl: process.env.SHIPMATE_BASE_URL as any,
-      shouldSendOrder: function (
-        ctx: RequestContext,
-        order: Order
-      ): Promise<boolean> | boolean {
-        return true;
-      },
+      shouldSendOrder: (
+        _ctx: RequestContext,
+        _order: Order,
+      ): Promise<boolean> | boolean => true,
     }),
     DefaultSearchPlugin,
     DashboardPlugin.init({

@@ -1,4 +1,4 @@
-import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
+import path from 'node:path';
 import { AssetServerPlugin } from '@vendure/asset-server-plugin';
 import {
   DefaultLogger,
@@ -12,7 +12,6 @@ import {
   SqljsInitializer,
   testConfig,
 } from '@vendure/testing';
-import path from 'path';
 import { initialData } from '../../test/src/initial-data';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
 import { AnonymizedOrderPlugin } from '../src/plugin';
@@ -29,10 +28,6 @@ require('dotenv').config();
         route: 'assets',
       }),
       AnonymizedOrderPlugin,
-      AdminUiPlugin.init({
-        route: 'admin',
-        port: 3002,
-      }),
       DefaultSearchPlugin,
     ],
     apiOptions: {

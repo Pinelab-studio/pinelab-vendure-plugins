@@ -1,9 +1,3 @@
-import { initialData } from '../../test/src/initial-data';
-import {
-  createTestEnvironment,
-  registerInitializer,
-  SqljsInitializer,
-} from '@vendure/testing';
 import {
   ChannelService,
   LanguageCode,
@@ -12,13 +6,19 @@ import {
   VendureConfig,
 } from '@vendure/core';
 import {
+  createTestEnvironment,
+  registerInitializer,
+  SqljsInitializer,
+} from '@vendure/testing';
+import localtunnel from 'localtunnel';
+import { addShippingMethod } from '../../test/src/admin-utils';
+import { initialData } from '../../test/src/initial-data';
+import {
   addItem,
   addPaymentToOrder,
   proceedToArrangingPayment,
 } from '../../test/src/shop-utils';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
-import { addShippingMethod } from '../../test/src/admin-utils';
-import localtunnel from 'localtunnel';
 import { MyparcelPlugin } from '../src/myparcel.plugin';
 import { config } from './vendure-config';
 
@@ -37,7 +37,7 @@ require('dotenv').config();
   };
 
   const { server, adminClient, shopClient } = createTestEnvironment(
-    config as Required<VendureConfig>
+    config as Required<VendureConfig>,
   );
   await server.init({
     initialData,

@@ -10,12 +10,12 @@ import {
   Logger,
   PaginatedList,
 } from '@vendure/core';
+import { generatePublicId } from '@vendure/core/dist/common/generate-public-id';
 import { JobRecord } from '@vendure/core/dist/plugin/default-job-queue-plugin/job-record.entity';
+import { asError } from 'catch-unknown';
 import { DataSource, In, LessThan, Repository } from 'typeorm';
 import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
 import { CloudTaskMessage, CloudTaskOptions } from '../types';
-import { generatePublicId } from '@vendure/core/dist/common/generate-public-id';
-import { asError } from 'catch-unknown';
 import { truncateData } from './cloud-tasks-util';
 
 type QueueProcessFunction = (job: Job) => Promise<any>;
@@ -30,7 +30,7 @@ export class CloudTasksService implements OnApplicationBootstrap {
   constructor(
     private readonly listQueryBuilder: ListQueryBuilder,
     @Inject(PLUGIN_INIT_OPTIONS) private readonly options: CloudTaskOptions,
-    private readonly dataSource: DataSource
+    readonly dataSource: DataSource,
   ) {
     this.jobRecordRepository = dataSource.getRepository(JobRecord);
     this.client = new CloudTasksClient(options.clientOptions);
@@ -40,13 +40,13 @@ export class CloudTasksService implements OnApplicationBootstrap {
     // Remove all jobs older than `clearStaleJobsAfterDays` on startup
     if (this.options.clearStaleJobsAfterDays) {
       const daysAgo = new Date(
-        Date.now() - this.options.clearStaleJobsAfterDays * 24 * 60 * 60 * 1000
+        Date.now() - this.options.clearStaleJobsAfterDays * 24 * 60 * 60 * 1000,
       );
       this.removeStaleJobs(daysAgo).catch((e: any) => {
         Logger.error(
           `Failed to remove stale jobs: ${e?.message}`,
           loggerCtx,
-          e?.stack
+          e?.stack,
         );
       });
     }
@@ -61,7 +61,7 @@ export class CloudTasksService implements OnApplicationBootstrap {
   }
 
   async findJobs(
-    options?: JobListOptions | undefined
+    options?: JobListOptions | undefined,
   ): Promise<PaginatedList<Job<any>>> {
     return this.listQueryBuilder
       .build(JobRecord, options)
@@ -80,7 +80,7 @@ export class CloudTasksService implements OnApplicationBootstrap {
 
   async removeSettledJobs(
     queueNames: string[],
-    olderThan?: Date | undefined
+    olderThan?: Date | undefined,
   ): Promise<number> {
     const result = await this.jobRecordRepository.delete({
       ...(0 < queueNames.length ? { queueName: In(queueNames) } : {}),
@@ -104,7 +104,7 @@ export class CloudTasksService implements OnApplicationBootstrap {
       `Removed '${
         result.affected
       }' stale jobs older than ${olderThan.toLocaleDateString()}`,
-      loggerCtx
+      loggerCtx,
     );
   }
 
@@ -114,7 +114,7 @@ export class CloudTasksService implements OnApplicationBootstrap {
   }
 
   async add<Data extends JobData<Data> = {}>(
-    job: Job<Data>
+    job: Job<Data>,
   ): Promise<Job<Data>> {
     const queueName = this.getQueueName(job.queueName);
     if (!this.LIVE_QUEUES.has(queueName)) {
@@ -134,7 +134,7 @@ export class CloudTasksService implements OnApplicationBootstrap {
         isSettled: false,
         retries,
         progress: 0,
-      })
+      }),
     );
     const cloudTaskMessage: CloudTaskMessage = {
       id: jobRecord.id,
@@ -164,14 +164,14 @@ export class CloudTasksService implements OnApplicationBootstrap {
       try {
         Logger.debug(
           `Adding job (${cloudTaskMessage.id}) with retries=${cloudTaskMessage.maxRetries} to queue ${queueName} for ${task.httpRequest?.url}`,
-          loggerCtx
+          loggerCtx,
         );
         await this.client.createTask(request, {
           maxRetries: cloudTaskMessage.maxRetries,
         });
         Logger.debug(
           `Added job (${cloudTaskMessage.id}) with retries=${cloudTaskMessage.maxRetries} to queue ${queueName} for ${task.httpRequest.url}`,
-          loggerCtx
+          loggerCtx,
         );
         return new Job<any>(jobRecord);
       } catch (e: any) {
@@ -180,18 +180,18 @@ export class CloudTasksService implements OnApplicationBootstrap {
           Logger.error(
             `Failed to add task to queue ${queueName} in ${currentAttempt} attempts. Not retrying anymore! Error: ${e?.message}`,
             loggerCtx,
-            (e as Error)?.stack
+            (e as Error)?.stack,
           );
           throw e;
         }
         Logger.warn(
           `Failed to add task to queue ${queueName} in attempt nr ${currentAttempt}: ${e?.message}`,
-          loggerCtx
+          loggerCtx,
         );
         // Exponential backoff after first 3 subsequent attempts
         if (currentAttempt > 3) {
           await new Promise((resolve) =>
-            setTimeout(resolve, 1000 * 2 ** currentAttempt)
+            setTimeout(resolve, 1000 * 2 ** currentAttempt),
           );
         }
       }
@@ -205,7 +205,7 @@ export class CloudTasksService implements OnApplicationBootstrap {
    */
   async start<Data extends JobData<Data> = {}>(
     originalQueueName: string,
-    process: (job: Job<Data>) => Promise<any>
+    process: (job: Job<Data>) => Promise<any>,
   ) {
     const queueName = this.getQueueName(originalQueueName);
     this.PROCESS_MAP.set(queueName, process);
@@ -221,18 +221,18 @@ export class CloudTasksService implements OnApplicationBootstrap {
    */
   async handleIncomingJob(
     message: CloudTaskMessage,
-    attemptsHeader?: string
+    attemptsHeader?: string,
   ): Promise<200 | 500> {
     Logger.debug(`Received Cloud Task message ${message.id}`, loggerCtx);
     const processFn = this.PROCESS_MAP.get(message.queueName);
     if (!processFn) {
       Logger.error(
         `No process function found for queue ${message.queueName}`,
-        loggerCtx
+        loggerCtx,
       );
       return 500;
     }
-    const attempts = attemptsHeader ? parseInt(attemptsHeader) : 0;
+    const attempts = attemptsHeader ? parseInt(attemptsHeader, 10) : 0;
     const job = new Job({
       id: message.id,
       queueName: message.queueName,
@@ -248,7 +248,7 @@ export class CloudTasksService implements OnApplicationBootstrap {
       // The job was completed successfully
       Logger.debug(
         `Successfully handled ${message.id} after ${attempts} attempts`,
-        loggerCtx
+        loggerCtx,
       );
       await this.saveJob(
         new JobRecord({
@@ -263,7 +263,7 @@ export class CloudTasksService implements OnApplicationBootstrap {
           isSettled: true,
           settledAt: new Date(),
           progress: 100,
-        })
+        }),
       );
       return 200;
     } catch (e: any) {
@@ -280,7 +280,7 @@ export class CloudTasksService implements OnApplicationBootstrap {
         Logger.error(
           `Failed to handle message ${message.id} after final attempt (${attempts} attempts made). Marking with status 200 to prevent retries: ${error}`,
           loggerCtx,
-          e.stack
+          e.stack,
         );
         // Log failed job in DB
         await this.saveJob(
@@ -297,8 +297,8 @@ export class CloudTasksService implements OnApplicationBootstrap {
             settledAt: new Date(),
             progress: 0,
             result: error.message as any,
-          })
-        ).catch((e: any) => {
+          }),
+        ).catch((_e: any) => {
           Logger.error(`Failed `, loggerCtx);
         });
         return 200; // Return 200 to prevent more retries
@@ -306,7 +306,7 @@ export class CloudTasksService implements OnApplicationBootstrap {
         // More attempts remain, so return 500 to trigger a retry
         Logger.warn(
           `Failed to handle message ${message.id} after ${attempts} attempts. Retrying... ${error}`,
-          loggerCtx
+          loggerCtx,
         );
         return 500;
       }
@@ -318,7 +318,7 @@ export class CloudTasksService implements OnApplicationBootstrap {
    */
   async stop<Data extends JobData<Data> = {}>(
     queueName: string,
-    _process: (job: Job<Data>) => Promise<any>
+    _process: (job: Job<Data>) => Promise<any>,
   ) {
     this.PROCESS_MAP.delete(this.getQueueName(queueName));
     Logger.info(`Stopped queue ${this.getQueueName(queueName)}`, loggerCtx);
@@ -347,7 +347,7 @@ export class CloudTasksService implements OnApplicationBootstrap {
       Logger.error(
         `Failed to save job record: ${error.message}`,
         loggerCtx,
-        error.stack
+        error.stack,
       );
       // Retry saving without data
       const savedJobRecord = await this.jobRecordRepository.save({
@@ -384,7 +384,7 @@ export class CloudTasksService implements OnApplicationBootstrap {
     return this.client.queuePath(
       this.options.projectId,
       this.options.location,
-      queueName
+      queueName,
     );
   }
 
@@ -400,7 +400,7 @@ export class CloudTasksService implements OnApplicationBootstrap {
       await this.client.createQueue({
         parent: this.client.locationPath(
           this.options.projectId,
-          this.options.location
+          this.options.location,
         ),
         queue: { name: this.getQueuePath(queueName) },
       });

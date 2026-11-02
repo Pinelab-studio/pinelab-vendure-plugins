@@ -74,7 +74,7 @@ export interface AmountDetails {
   tip: Tip;
 }
 
-export interface Tip {}
+export type Tip = {};
 
 export interface Charges {
   object: string;
@@ -150,7 +150,7 @@ export interface Address {
   state: any;
 }
 
-export interface FraudDetails {}
+export type FraudDetails = {};
 
 export interface Outcome {
   network_status: string;

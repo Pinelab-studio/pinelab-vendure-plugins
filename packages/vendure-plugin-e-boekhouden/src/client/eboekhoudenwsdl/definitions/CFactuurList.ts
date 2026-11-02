@@ -1,5 +1,5 @@
-import { Relatiecode } from './Relatiecode';
 import { Regels } from './Regels';
+import { Relatiecode } from './Relatiecode';
 
 /**
  * cFactuurList

@@ -45,7 +45,7 @@ export interface GoogleSheetDataStrategy {
    */
   validateSheetData: (
     ctx: RequestContext,
-    sheets: SheetContent[]
+    sheets: SheetContent[],
   ) => Promise<boolean | string> | boolean | string;
 
   /**
@@ -55,6 +55,6 @@ export interface GoogleSheetDataStrategy {
   handleSheetData: (
     ctx: RequestContext,
     injector: Injector,
-    sheets: SheetContent[]
+    sheets: SheetContent[],
   ) => Promise<string>;
 }

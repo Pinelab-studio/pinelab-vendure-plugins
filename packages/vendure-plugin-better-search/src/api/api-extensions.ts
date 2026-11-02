@@ -4,7 +4,7 @@ import { BetterSearchPlugin } from '../better-search.plugin';
 export const shopApiExtensions = () => {
   // Map the custom fields to the graphql schema. E.g. "facetValueNames: [String!]!"
   const customFields = Object.entries(
-    BetterSearchPlugin.options.indexableFields
+    BetterSearchPlugin.options.indexableFields,
   )
     // Only include fields that have a graphqlFieldType
     .filter(([, value]) => value.graphqlFieldType)

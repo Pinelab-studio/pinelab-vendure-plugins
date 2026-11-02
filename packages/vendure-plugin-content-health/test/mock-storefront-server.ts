@@ -1,4 +1,4 @@
-import * as http from 'http';
+import * as http from 'node:http';
 
 export const MOCK_STOREFRONT_PORT = 3055;
 
@@ -18,7 +18,7 @@ function hreflangLinks(kind: 'products' | 'collections', slug: string): string {
   const links = languages
     .map(
       (lang) =>
-        `<link rel="alternate" hreflang="${lang}" href="${baseUrl()}/${lang}/${kind}/${slug}" />`
+        `<link rel="alternate" hreflang="${lang}" href="${baseUrl()}/${lang}/${kind}/${slug}" />`,
     )
     .join('\n    ');
   return `${links}\n    <link rel="alternate" hreflang="x-default" href="${baseUrl()}/en/${kind}/${slug}" />`;
@@ -30,7 +30,7 @@ function jsonLdScript(json: unknown[]): string {
 
 function renderGoodPage(
   kind: 'products' | 'collections',
-  slug: string
+  slug: string,
 ): string {
   const pageUrl = `${baseUrl()}/en/${kind}/${slug}`;
   const jsonLd =
@@ -137,7 +137,7 @@ export function startMockStorefrontServer(): Promise<void> {
         .join('\n  ');
       res.writeHead(200, { 'Content-Type': 'application/xml' });
       res.end(
-        `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n  ${urls}\n</urlset>`
+        `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n  ${urls}\n</urlset>`,
       );
       return;
     }

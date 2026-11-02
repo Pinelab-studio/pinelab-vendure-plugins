@@ -35,20 +35,20 @@ export class PrimaryCollectionHelperService {
     for (const product of allProducts) {
       const primaryCollections = parseProductPrimaryCollectionCustomField(
         // eslint-disable-next-line  @typescript-eslint/no-explicit-any,@typescript-eslint/no-unsafe-argument,@typescript-eslint/no-unsafe-member-access
-        (product.customFields as any)?.primaryCollection
+        (product.customFields as any)?.primaryCollection,
       );
       const updatedPrimaryCollectionList: ProductPrimaryCollection[] = [];
 
       for (const channel of product.channels) {
         const primaryCollection = this.getVariantCollectionInChannel(
           product,
-          channel
+          channel,
         );
         if (!primaryCollection) {
           continue;
         }
         const primaryCollectionDetailInChannel = primaryCollections.find(
-          (primaryCollection) => primaryCollection.channelId === channel.id
+          (primaryCollection) => primaryCollection.channelId === channel.id,
         );
         if (primaryCollectionDetailInChannel) {
           updatedPrimaryCollectionList.push(primaryCollectionDetailInChannel);
@@ -73,8 +73,8 @@ export class PrimaryCollectionHelperService {
     for (const variant of product.variants) {
       for (const collection of variant.collections) {
         if (
-          !!collection.channels.find(
-            (collectionChannel) => collectionChannel.id === channel.id
+          collection.channels.find(
+            (collectionChannel) => collectionChannel.id === channel.id,
           ) &&
           !collection.isPrivate
         ) {

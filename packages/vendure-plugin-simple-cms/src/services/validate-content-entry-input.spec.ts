@@ -1,8 +1,8 @@
 import { Asset, LanguageCode } from '@vendure/core';
 import { describe, expect, it } from 'vitest';
+import { ContentEntryInput } from '../api/generated/graphql';
 import { TypeDefinition } from '../types';
 import { validateContentEntryInput } from './validate-content-entry-input';
-import { ContentEntryInput } from '../api/generated/graphql';
 
 const featuredProduct: TypeDefinition = {
   displayName: 'Featured Product',
@@ -47,7 +47,7 @@ const banner: TypeDefinition = {
 
 /** Builds a default `featuredProduct` ContentEntryInput for tests. */
 function fpInput(
-  overrides: Partial<ContentEntryInput> = {}
+  overrides: Partial<ContentEntryInput> = {},
 ): ContentEntryInput {
   return {
     contentTypeCode: 'featuredProduct',
@@ -67,7 +67,7 @@ function fpInput(
 
 /** Builds a default `banner` ContentEntryInput for tests. */
 function bannerInput(
-  overrides: Partial<ContentEntryInput> = {}
+  overrides: Partial<ContentEntryInput> = {},
 ): ContentEntryInput {
   return {
     contentTypeCode: 'banner',
@@ -82,13 +82,13 @@ function bannerInput(
 describe('validateContentEntryInput', () => {
   it('Accepts a valid singleton input', () => {
     expect(() =>
-      validateContentEntryInput(featuredProduct, fpInput())
+      validateContentEntryInput(featuredProduct, fpInput()),
     ).not.toThrow();
   });
 
   it('Accepts a valid multi-instance input with translations', () => {
     expect(() =>
-      validateContentEntryInput(banner, bannerInput())
+      validateContentEntryInput(banner, bannerInput()),
     ).not.toThrow();
   });
 
@@ -96,8 +96,8 @@ describe('validateContentEntryInput', () => {
     expect(() =>
       validateContentEntryInput(
         banner,
-        bannerInput({ fields: { image: { id: 1 } } })
-      )
+        bannerInput({ fields: { image: { id: 1 } } }),
+      ),
     ).not.toThrow();
   });
 
@@ -105,8 +105,8 @@ describe('validateContentEntryInput', () => {
     expect(() =>
       validateContentEntryInput(
         banner,
-        bannerInput({ fields: { image: { id: 1 }, bogus: 'x' } })
-      )
+        bannerInput({ fields: { image: { id: 1 }, bogus: 'x' } }),
+      ),
     ).toThrow(/Unknown field 'bogus'/);
   });
 
@@ -114,14 +114,14 @@ describe('validateContentEntryInput', () => {
     expect(() =>
       validateContentEntryInput(
         banner,
-        bannerInput({ fields: { image: { id: 1 }, title: 'Hello' } })
-      )
+        bannerInput({ fields: { image: { id: 1 }, title: 'Hello' } }),
+      ),
     ).toThrow(/translatable/);
   });
 
   it('Rejects missing required non-nullable relation', () => {
     expect(() =>
-      validateContentEntryInput(banner, bannerInput({ fields: {} }))
+      validateContentEntryInput(banner, bannerInput({ fields: {} })),
     ).toThrow(/Required field 'image' is missing/);
   });
 
@@ -129,8 +129,8 @@ describe('validateContentEntryInput', () => {
     expect(() =>
       validateContentEntryInput(
         banner,
-        bannerInput({ fields: { image: { id: 1 }, priority: 1.5 } })
-      )
+        bannerInput({ fields: { image: { id: 1 }, priority: 1.5 } }),
+      ),
     ).toThrow(/integer/);
   });
 
@@ -147,13 +147,13 @@ describe('validateContentEntryInput', () => {
       validateContentEntryInput(def, {
         contentTypeCode: 'x',
         fields: { flag: 'true', when: '2024-01-01' },
-      })
+      }),
     ).toThrow(/boolean/);
     expect(() =>
       validateContentEntryInput(def, {
         contentTypeCode: 'x',
         fields: { flag: true, when: 'not a date' },
-      })
+      }),
     ).toThrow(/ISO 8601/);
   });
 
@@ -168,8 +168,8 @@ describe('validateContentEntryInput', () => {
               fields: { title: 'Hi', seo: { metaTitle: 'Only' } },
             },
           ],
-        })
-      )
+        }),
+      ),
     ).toThrow(/metaDescription/);
   });
 
@@ -187,8 +187,8 @@ describe('validateContentEntryInput', () => {
               },
             },
           ],
-        })
-      )
+        }),
+      ),
     ).toThrow(/bogus/);
   });
 
@@ -196,14 +196,14 @@ describe('validateContentEntryInput', () => {
     expect(() =>
       validateContentEntryInput(
         banner,
-        bannerInput({ fields: { image: 1 as never } })
-      )
+        bannerInput({ fields: { image: 1 as never } }),
+      ),
     ).toThrow(/object with an 'id'/);
     expect(() =>
       validateContentEntryInput(
         banner,
-        bannerInput({ fields: { image: { name: 'no id' } as never } })
-      )
+        bannerInput({ fields: { image: { name: 'no id' } as never } }),
+      ),
     ).toThrow(/'id'/);
   });
 
@@ -216,8 +216,8 @@ describe('validateContentEntryInput', () => {
             { languageCode: LanguageCode.en, fields: { title: 'A' } },
             { languageCode: LanguageCode.en, fields: { title: 'B' } },
           ],
-        })
-      )
+        }),
+      ),
     ).toThrow(/Duplicate translation/);
   });
 
@@ -232,8 +232,8 @@ describe('validateContentEntryInput', () => {
               fields: { title: 'A', bogus: 'x' },
             },
           ],
-        })
-      )
+        }),
+      ),
     ).toThrow(/Unknown translatable field 'bogus'/);
   });
 
@@ -243,8 +243,8 @@ describe('validateContentEntryInput', () => {
         banner,
         bannerInput({
           translations: [{ languageCode: LanguageCode.en, fields: {} }],
-        })
-      )
+        }),
+      ),
     ).toThrow(/Required translatable field 'title'/);
   });
 });

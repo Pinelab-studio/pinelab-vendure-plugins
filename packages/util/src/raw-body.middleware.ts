@@ -1,5 +1,5 @@
+import * as http from 'node:http';
 import { raw } from 'body-parser';
-import * as http from 'http';
 import type { Request } from 'express';
 
 export interface RequestWithRawBody extends Request {
@@ -13,9 +13,9 @@ export const rawBodyMiddleware = raw({
   type: '*/*',
   verify(
     req: RequestWithRawBody,
-    res: http.ServerResponse,
+    _res: http.ServerResponse,
     buf: Buffer,
-    encoding: string
+    _encoding: string,
   ) {
     if (Buffer.isBuffer(buf)) {
       req.rawBody = Buffer.from(buf);

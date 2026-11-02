@@ -1,6 +1,6 @@
 import { api, defineDashboardExtension } from '@vendure/dashboard';
-import { graphql } from '@/gql';
 import { useEffect, useRef, useState } from 'react';
+import { graphql } from '@/gql';
 
 const authenticateWithGoogleDocument = graphql(`
   mutation AuthenticateWithGoogle($token: String!) {
@@ -32,7 +32,7 @@ function GoogleLoginButton() {
 
         if (
           !document.querySelector(
-            'script[src*="accounts.google.com/gsi/client"]'
+            'script[src*="accounts.google.com/gsi/client"]',
           )
         ) {
           const script = document.createElement('script');
@@ -64,7 +64,7 @@ function GoogleLoginButton() {
                 size: 'large',
                 logo_alignment: 'left',
                 width: containerRef.current.offsetWidth,
-              }
+              },
             );
           }
         }, 100);
@@ -92,9 +92,9 @@ function GoogleLoginButton() {
   }
 
   return (
-    <div className="flex flex-col items-center gap-2 w-full mt-2">
+    <div className="mt-2 flex w-full flex-col items-center gap-2">
       <div ref={containerRef} />
-      {error && <p className="text-sm text-destructive">{error}</p>}
+      {error && <p className="text-destructive text-sm">{error}</p>}
     </div>
   );
 }

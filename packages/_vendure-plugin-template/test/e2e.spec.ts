@@ -4,17 +4,17 @@ import {
   registerInitializer,
   SimpleGraphQLClient,
   SqljsInitializer,
-  testConfig,
   TestServer,
+  testConfig,
 } from '@vendure/testing';
 import { beforeAll, expect, it } from 'vitest';
 import { initialData } from '../../test/src/initial-data';
-import { TEMPLATEPlugin } from '../src';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
+import { TEMPLATEPlugin } from '../src';
 
 let server: TestServer;
-let adminClient: SimpleGraphQLClient;
-let shopClient: SimpleGraphQLClient;
+let _adminClient: SimpleGraphQLClient;
+let _shopClient: SimpleGraphQLClient;
 let serverStarted = false;
 
 beforeAll(async () => {
@@ -31,7 +31,7 @@ beforeAll(async () => {
       paymentMethodHandlers: [testPaymentMethod],
     },
   });
-  ({ server, adminClient, shopClient } = createTestEnvironment(config));
+  ({ server, _adminClient, _shopClient } = createTestEnvironment(config));
   await server.init({
     initialData: {
       ...initialData,
@@ -52,15 +52,3 @@ it('Should start successfully', async () => {
 });
 
 // FIXME implement tests
-
-// FIXME only if this plugin has an admin UI
-//
-// if (process.env.TEST_ADMIN_UI) {
-//   it('Should compile admin', async () => {
-//     const files = await getFilesInAdminUiFolder(
-//       __dirname,
-//       TEMPLATEPlugin.ui
-//     );
-//     expect(files?.length).toBeGreaterThan(0);
-//   }, 200000);
-// }

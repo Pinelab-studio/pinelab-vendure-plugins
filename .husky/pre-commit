@@ -1,6 +1,4 @@
 #!/bin/sh
 . "$(dirname "$0")/_/husky.sh"
 
-yarn prettier:fix
-yarn lint-staged -v
-git add .
+yarn lint-staged

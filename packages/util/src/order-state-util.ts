@@ -1,4 +1,9 @@
 import {
+  AddFulfillmentToOrderResult,
+  ConfigurableOperationInput,
+  ItemsAlreadyFulfilledError,
+} from '@vendure/common/lib/generated-types';
+import {
   ErrorResult,
   FulfillmentStateTransitionError,
   Logger,
@@ -6,11 +11,6 @@ import {
   OrderService,
   RequestContext,
 } from '@vendure/core';
-import {
-  AddFulfillmentToOrderResult,
-  ConfigurableOperationInput,
-  ItemsAlreadyFulfilledError,
-} from '@vendure/common/lib/generated-types';
 import { Fulfillment } from '@vendure/core/dist/entity/fulfillment/fulfillment.entity';
 
 export const loggerCtx = 'OrderStateUtil';
@@ -22,7 +22,7 @@ export async function fulfillAll(
   ctx: RequestContext,
   orderService: OrderService,
   order: Order,
-  handler: ConfigurableOperationInput
+  handler: ConfigurableOperationInput,
 ): Promise<Fulfillment> {
   const lines = order.lines.map((line) => ({
     orderLineId: line.id,
@@ -44,7 +44,7 @@ export async function fulfillAll(
       }. Returning fulfillment '${
         fulfillment.id
       }'. Existing fulfillments: ${fulfillments.map((f) => f.id).join(', ')}`,
-      loggerCtx
+      loggerCtx,
     );
     return fulfillment;
   }
@@ -59,13 +59,13 @@ export async function transitionToShipped(
   orderService: OrderService,
   ctx: RequestContext,
   order: Order,
-  handler: ConfigurableOperationInput
+  handler: ConfigurableOperationInput,
 ): Promise<Fulfillment | FulfillmentStateTransitionError> {
   const fulfillment = await fulfillAll(ctx, orderService, order, handler);
   const result = await orderService.transitionFulfillmentToState(
     ctx,
     fulfillment.id,
-    'Shipped'
+    'Shipped',
   );
   throwIfTransitionFailed(result);
   return result;
@@ -78,13 +78,13 @@ export async function transitionToDelivered(
   orderService: OrderService,
   ctx: RequestContext,
   order: Order,
-  handler: ConfigurableOperationInput
+  handler: ConfigurableOperationInput,
 ): Promise<(Fulfillment | FulfillmentStateTransitionError)[]> {
   const shippedResult = await transitionToShipped(
     orderService,
     ctx,
     order,
-    handler
+    handler,
   );
   let fulfillments: Fulfillment[] = [];
   if ((shippedResult as FulfillmentStateTransitionError).errorCode) {
@@ -98,7 +98,7 @@ export async function transitionToDelivered(
     const result = await orderService.transitionFulfillmentToState(
       ctx,
       fulfillment.id,
-      'Delivered'
+      'Delivered',
     );
     throwIfTransitionFailed(result);
     results.push(result);
@@ -115,7 +115,7 @@ export function throwIfTransitionFailed(
   result:
     | FulfillmentStateTransitionError
     | Fulfillment
-    | AddFulfillmentToOrderResult
+    | AddFulfillmentToOrderResult,
 ): void {
   const stateError = result as FulfillmentStateTransitionError;
   if (

@@ -5,7 +5,7 @@ import gql from 'graphql-tag';
 export async function updateCollectionParent(
   adminClient: SimpleGraphQLClient,
   id: ID,
-  parentId: ID
+  parentId: ID,
 ): Promise<{ id: string; parent: { id: string } }> {
   const { updateCollection } = await adminClient.query(
     gql`
@@ -21,13 +21,13 @@ export async function updateCollectionParent(
     {
       id,
       parentId,
-    }
+    },
   );
   return updateCollection;
 }
 
 export async function getRootCollection(
-  adminClient: SimpleGraphQLClient
+  adminClient: SimpleGraphQLClient,
 ): Promise<{ id: string; customFields: { popularityScore: number } }> {
   const { collection: rootCollection } = await adminClient.query(
     gql`
@@ -39,7 +39,7 @@ export async function getRootCollection(
           }
         }
       }
-    `
+    `,
   );
   return rootCollection;
 }

@@ -56,7 +56,7 @@ function fieldTypeSDL(
     | StructFieldDefinition
     | StructSubFieldDefinition
     | RelationFieldDefinition,
-  parentTypeName: string
+  parentTypeName: string,
 ): string {
   const isNullable = field.nullable === true;
   let typeName: string;
@@ -79,7 +79,7 @@ function fieldTypeSDL(
 function assertValidIdentifier(value: string, label: string): void {
   if (!GRAPHQL_IDENTIFIER.test(value)) {
     throw new Error(
-      `[SimpleCmsPlugin] Invalid ${label} '${value}': must match ${GRAPHQL_IDENTIFIER}`
+      `[SimpleCmsPlugin] Invalid ${label} '${value}': must match ${GRAPHQL_IDENTIFIER}`,
     );
   }
 }
@@ -89,7 +89,7 @@ function assertValidIdentifier(value: string, label: string): void {
  */
 function generateStructType(
   parentTypeName: string,
-  field: StructFieldDefinition
+  field: StructFieldDefinition,
 ): string {
   const typeName = `${parentTypeName}${toPascalCase(field.name)}`;
   const lines = field.fields.map((f) => {
@@ -104,7 +104,7 @@ function generateStructType(
  */
 function generateContentType(
   contentTypeKey: string,
-  def: TypeDefinition
+  def: TypeDefinition,
 ): { mainType: string; nestedTypes: string[] } {
   const typeName = toPascalCase(contentTypeKey);
   const nestedTypes: string[] = [];
@@ -121,7 +121,7 @@ function generateContentType(
     }
   }
   const mainType = `type ${typeName} implements ContentEntry {\n${fieldLines.join(
-    '\n'
+    '\n',
   )}\n}`;
   return { mainType, nestedTypes };
 }
@@ -134,7 +134,7 @@ function generateContentType(
  */
 function generateQueryFields(
   contentTypeKey: string,
-  def: TypeDefinition
+  def: TypeDefinition,
 ): string[] {
   const typeName = toPascalCase(contentTypeKey);
   if (def.allowMultiple) {
@@ -168,7 +168,7 @@ export function generateShopSchema(options: SimpleCmsPluginOptions): string {
     const typeName = toPascalCase(key);
     if (seenTypeNames.has(typeName)) {
       throw new Error(
-        `[SimpleCmsPlugin] Duplicate GraphQL type name '${typeName}' produced by content type key '${key}'`
+        `[SimpleCmsPlugin] Duplicate GraphQL type name '${typeName}' produced by content type key '${key}'`,
       );
     }
     seenTypeNames.add(typeName);

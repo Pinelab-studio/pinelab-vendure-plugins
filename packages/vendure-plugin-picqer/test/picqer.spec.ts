@@ -19,16 +19,10 @@ import {
   testConfig,
 } from '@vendure/testing';
 import { TestServer } from '@vendure/testing/lib/test-server';
+import gql from 'graphql-tag';
 import nock from 'nock';
-import {
-  afterAll,
-  afterEach,
-  beforeAll,
-  beforeEach,
-  describe,
-  expect,
-  it,
-} from 'vitest';
+import { filter } from 'rxjs';
+import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 import {
   addShippingMethod,
   getAllVariants,
@@ -41,13 +35,11 @@ import {
 } from '../../test/src/generated/admin-graphql';
 import { initialData } from '../../test/src/initial-data';
 import { createSettledOrder } from '../../test/src/shop-utils';
+import { waitFor } from '../../test/src/test-helpers';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
 import { IncomingOrderStatusWebhook, PicqerPlugin, VatGroup } from '../src';
 import { picqerHandler } from '../src/api/picqer.handler';
 import { createSignature } from './test-helpers';
-import { filter } from 'rxjs';
-import { waitFor } from '../../test/src/test-helpers';
-import gql from 'graphql-tag';
 
 const FULL_SYNC = gql`
   mutation triggerPicqerFullSync {
@@ -77,17 +69,17 @@ beforeAll(async () => {
           barcode: variant.sku,
           height: (variant.customFields as any).height,
         }),
-        pullPicqerProductFields: (picqerProd) => ({
+        pullPicqerProductFields: (_picqerProd) => ({
           outOfStockThreshold: 123,
         }),
-        pushPicqerOrderFields: (order) => ({
+        pushPicqerOrderFields: (_order) => ({
           customer_remarks: 'test note',
           pickup_point_data: {
             carrier: 'dhl',
             id: '901892834',
           },
         }),
-        pushPicqerOrderLineFields: (ctx, orderLine, order) => ({
+        pushPicqerOrderLineFields: (_ctx, orderLine, order) => ({
           remarks: `Test note on line ${orderLine.id} for order '${order.code}`,
         }),
         shouldSyncOnProductVariantCustomFields: ['height'],
@@ -133,7 +125,7 @@ it('Should start successfully', async () => {
   expect(server.app.getHttpServer).toBeDefined();
 });
 
-describe('Plugin setup', function () {
+describe('Plugin setup', () => {
   it('Should track inventory of all variants', async () => {
     await adminClient.asSuperAdmin();
     const variants = await updateVariants(adminClient, [
@@ -143,7 +135,7 @@ describe('Plugin setup', function () {
       { id: 'T_4', trackInventory: GlobalFlag.True },
     ]);
     const everyVariantHasStockTracking = variants.every(
-      (v) => v!.trackInventory === GlobalFlag.True
+      (v) => v?.trackInventory === GlobalFlag.True,
     );
     expect(everyVariantHasStockTracking).toBe(true);
   });
@@ -185,7 +177,7 @@ describe('Plugin setup', function () {
     expect(channel.customFields.picqerEnabled).toBe(true);
     expect(channel.customFields.picqerApiKey).toBe('test-api-key');
     expect(channel.customFields.picqerApiEndpoint).toBe(
-      'https://test-picqer.io/'
+      'https://test-picqer.io/',
     );
     expect(channel.customFields.picqerStorefrontUrl).toBe('mystore.io');
     expect(channel.customFields.picqerSupportEmail).toBe('support@mystore.io');
@@ -199,13 +191,13 @@ describe('Plugin setup', function () {
     await expect(createdHooks.length).toBe(3);
     await expect(createdHooks[0].event).toBe('orders.status_changed');
     await expect(createdHooks[0].address).toBe(
-      `https://example-vendure.io/picqer/hooks/${E2E_DEFAULT_CHANNEL_TOKEN}`
+      `https://example-vendure.io/picqer/hooks/${E2E_DEFAULT_CHANNEL_TOKEN}`,
     );
     await expect(createdHooks[0].secret).toBeDefined();
     await expect(createdHooks[0].name).toBeDefined();
     await expect(createdHooks[1].event).toBe('products.free_stock_changed');
     await expect(createdHooks[2].event).toBe(
-      'products.assembled_stock_changed'
+      'products.assembled_stock_changed',
     );
   });
 
@@ -214,7 +206,7 @@ describe('Plugin setup', function () {
   });
 });
 
-describe('Order placement', function () {
+describe('Order placement', () => {
   let createdOrder: Order | undefined;
 
   it('Should push order to Picqer on order placement', async () => {
@@ -241,7 +233,7 @@ describe('Order placement', function () {
       })
       .reply(200, { idorder: 'mockOrderId' });
     nock(nockBaseUrl)
-      .post('/orders/mockOrderId/process', (reqBody) => {
+      .post('/orders/mockOrderId/process', (_reqBody) => {
         isOrderInProcessing = true;
         return true;
       })
@@ -262,17 +254,17 @@ describe('Order placement', function () {
           postalCode: '1111AB',
           countryCode: 'NL',
         },
-      }
+      },
     )) as any;
 
     // Wait until picqerOrderRequest is intercepted, because this is done in a job queue
     // and we need to wait for it to finish
     await waitFor(() => picqerOrderRequest);
     const variant = (await getAllVariants(adminClient)).find(
-      (v) => v.id === 'T_1'
+      (v) => v.id === 'T_1',
     );
-    expect(variant!.stockOnHand).toBe(100);
-    expect(variant!.stockAllocated).toBe(3);
+    expect(variant?.stockOnHand).toBe(100);
+    expect(variant?.stockAllocated).toBe(3);
     expect(picqerOrderRequest.reference).toBe(createdOrder?.code);
     expect(picqerOrderRequest.deliveryname).toBeDefined();
     expect(picqerOrderRequest.deliverycontactname).toBeUndefined();
@@ -296,7 +288,7 @@ describe('Order placement', function () {
       id: '901892834',
     });
     expect(picqerOrderRequest.products[0].remarks).toContain(
-      'Test note on line'
+      'Test note on line',
     );
     expect(picqerOrderRequest.products[0].remarks).not.toContain('undefined'); // Undefined in string means some argument was not passed
   });
@@ -323,10 +315,10 @@ describe('Order placement', function () {
         filter(
           (event) =>
             event.order.code === createdOrder?.code &&
-            event.toState === 'Shipped'
-        )
+            event.toState === 'Shipped',
+        ),
       )
-      .subscribe((event) => {
+      .subscribe((_event) => {
         eventFired = true;
       });
     await adminClient.fetch(
@@ -337,15 +329,15 @@ describe('Order placement', function () {
         headers: {
           'X-Picqer-Signature': createSignature(
             mockIncomingWebhook,
-            'test-api-key'
+            'test-api-key',
           ),
         },
-      }
+      },
     );
     await waitFor(() => eventFired === true);
     expect(eventFired).toBe(true);
     const order = await getOrder(adminClient, createdOrder?.id as string);
-    expect(order!.state).toBe('Delivered');
+    expect(order?.state).toBe('Delivered');
   });
 
   it('Should not update to "Canceled" when "cancelOrdersOnPicqerCancellation = false"', async () => {
@@ -365,13 +357,13 @@ describe('Order placement', function () {
         headers: {
           'X-Picqer-Signature': createSignature(
             mockIncomingWebhook,
-            'test-api-key'
+            'test-api-key',
           ),
         },
-      }
+      },
     );
     const order = await getOrder(adminClient, createdOrder?.id as string);
-    expect(order!.state).toBe('Delivered');
+    expect(order?.state).toBe('Delivered');
   });
 
   it('Should update to "Canceled" on incoming order status "cancelled" and "cancelOrdersOnPicqerCancellation = true"', async () => {
@@ -391,21 +383,21 @@ describe('Order placement', function () {
         headers: {
           'X-Picqer-Signature': createSignature(
             mockIncomingWebhook,
-            'test-api-key'
+            'test-api-key',
           ),
         },
-      }
+      },
     );
     const order = await getOrder(adminClient, createdOrder?.id as string);
-    expect(order!.state).toBe('Cancelled');
+    expect(order?.state).toBe('Cancelled');
   });
 });
 
-describe('Product synchronization', function () {
+describe('Product synchronization', () => {
   /**
    * Request payloads of products that have been created or updated in Picqer
    */
-  let pushProductPayloads: any[] = [];
+  const pushProductPayloads: any[] = [];
 
   it('Should push all products to Picqer on full sync', async () => {
     // Mock vatgroups GET
@@ -460,7 +452,7 @@ describe('Product synchronization', function () {
 
   it('Should push custom fields to Picqer based on configured "pushFieldsToPicqer()"', async () => {
     const pushedProduct = pushProductPayloads.find(
-      (p) => p.productcode === 'L2201516'
+      (p) => p.productcode === 'L2201516',
     );
     // Expect the barcode to be the same as SKU, because thats what we configure in the plugin.init()
     expect(pushedProduct?.barcode).toBe('L2201516');
@@ -491,7 +483,7 @@ describe('Product synchronization', function () {
     ]);
     await waitFor(() => updatedProduct);
     expect(variant?.price).toBe(12345);
-    expect(updatedProduct!.price).toBe(123.45);
+    expect(updatedProduct?.price).toBe(123.45);
   });
 
   it('Should push product to Picqer when custom field updated in Vendure', async () => {
@@ -512,11 +504,11 @@ describe('Product synchronization', function () {
         return true;
       })
       .reply(200, { idproduct: 'mockId' });
-    const [variant] = await updateVariants(adminClient, [
+    const [_variant] = await updateVariants(adminClient, [
       { id: 'T_1', customFields: { height: 100 } },
     ]);
     await waitFor(() => updatedProduct);
-    expect(updatedProduct!.height).toBe(100);
+    expect(updatedProduct?.height).toBe(100);
   });
 
   it('Should update stock level on incoming "free_stock" webhook', async () => {
@@ -535,7 +527,7 @@ describe('Product synchronization', function () {
         headers: {
           'X-Picqer-Signature': createSignature(body, 'test-api-key'),
         },
-      }
+      },
     );
     const variants = await getAllVariants(adminClient);
     const variant = variants.find((v) => v.sku === 'L2201308');
@@ -559,7 +551,7 @@ describe('Product synchronization', function () {
         headers: {
           'X-Picqer-Signature': createSignature(body, 'test-api-key'),
         },
-      }
+      },
     );
     const variants = await getAllVariants(adminClient);
     const variant = variants.find((v) => v.sku === 'L2201308');
@@ -576,13 +568,13 @@ describe('Product synchronization', function () {
         headers: {
           'X-Picqer-Signature': 'invalid signature',
         },
-      }
+      },
     );
     expect(res.status).toBe(403);
   });
 });
 
-describe('Periodical stock updates', function () {
+describe('Periodical stock updates', () => {
   it('Throws forbidden for invalid api key', async () => {
     const res = await adminClient.fetch(
       `http://localhost:3050/picqer/pull-stock-levels/${E2E_DEFAULT_CHANNEL_TOKEN}`,
@@ -591,7 +583,7 @@ describe('Periodical stock updates', function () {
         headers: {
           Authorization: 'Bearer this is not right',
         },
-      }
+      },
     );
     expect(res.status).toBe(403);
   });
@@ -604,7 +596,7 @@ describe('Periodical stock updates', function () {
         headers: {
           Authorization: 'Bearer test-api-key',
         },
-      }
+      },
     );
     expect(res.status).toBe(200);
   });

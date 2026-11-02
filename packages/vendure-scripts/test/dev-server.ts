@@ -5,19 +5,17 @@ import {
   registerInitializer,
   SimpleGraphQLClient,
   SqljsInitializer,
-  testConfig,
   TestServer,
+  testConfig,
 } from '@vendure/testing';
-import { testPaymentMethod } from '../../test/src/test-payment-method';
 import { initialData } from '../../test/src/initial-data';
+import { testPaymentMethod } from '../../test/src/test-payment-method';
 import { populateEuZonesAndTaxRates } from '../src';
-import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
-import { EBoekhoudenResolver } from '../../vendure-plugin-e-boekhouden/src/api/e-boekhouden.resolver';
 
 (async () => {
   let server: TestServer;
-  let adminClient: SimpleGraphQLClient;
-  let shopClient: SimpleGraphQLClient;
+  let _adminClient: SimpleGraphQLClient;
+  let _shopClient: SimpleGraphQLClient;
 
   registerInitializer('sqljs', new SqljsInitializer('__data__'));
   const config = mergeConfig(testConfig, {
@@ -28,16 +26,10 @@ import { EBoekhoudenResolver } from '../../vendure-plugin-e-boekhouden/src/api/e
     paymentOptions: {
       paymentMethodHandlers: [testPaymentMethod],
     },
-    plugins: [
-      DefaultSearchPlugin,
-      AdminUiPlugin.init({
-        port: 3002,
-        route: 'admin',
-      }),
-    ],
+    plugins: [DefaultSearchPlugin],
   });
 
-  ({ server, adminClient, shopClient } = createTestEnvironment(config));
+  ({ server, _adminClient, _shopClient } = createTestEnvironment(config));
   await server.init({
     initialData: {
       ...initialData,
@@ -55,6 +47,6 @@ import { EBoekhoudenResolver } from '../../vendure-plugin-e-boekhouden/src/api/e
   await populateEuZonesAndTaxRates(
     server.app,
     { standard: 1, reduced: 2, zero: 3 },
-    E2E_DEFAULT_CHANNEL_TOKEN
+    E2E_DEFAULT_CHANNEL_TOKEN,
   );
 })();

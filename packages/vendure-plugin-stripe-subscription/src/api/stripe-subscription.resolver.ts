@@ -16,20 +16,19 @@ import {
   Permission,
   ProductPriceApplicator,
   RequestContext,
-  UserInputError,
 } from '@vendure/core';
 import { Request } from 'express';
-import {
-  Mutation as GraphqlShopMutation,
-  Query as GraphqlQuery,
-  QueryPreviewStripeSubscriptionsArgs,
-  QueryPreviewStripeSubscriptionsForProductArgs,
-  StripeSubscription,
-} from './generated/shop-graphql';
 import {
   Mutation as GraphqlAdminMutation,
   MutationCreateStripeSubscriptionIntentArgs,
 } from './generated/admin-graphql';
+import {
+  Query as GraphqlQuery,
+  Mutation as GraphqlShopMutation,
+  QueryPreviewStripeSubscriptionsArgs,
+  QueryPreviewStripeSubscriptionsForProductArgs,
+  StripeSubscription,
+} from './generated/shop-graphql';
 import { StripeSubscriptionService } from './stripe-subscription.service';
 
 export type RequestWithRawBody = Request & { rawBody: any };
@@ -41,19 +40,19 @@ export class StripeSubscriptionCommonResolver {
     private stripeSubscriptionService: StripeSubscriptionService,
     private paymentMethodService: PaymentMethodService,
     private entityHydrator: EntityHydrator,
-    private productPriceApplicator: ProductPriceApplicator
+    private productPriceApplicator: ProductPriceApplicator,
   ) {}
 
   @Query()
   async previewStripeSubscriptions(
     @Ctx() ctx: RequestContext,
     @Args()
-    { productVariantId, customInputs }: QueryPreviewStripeSubscriptionsArgs
+    { productVariantId, customInputs }: QueryPreviewStripeSubscriptionsArgs,
   ): Promise<GraphqlQuery['previewStripeSubscriptions']> {
     return this.stripeSubscriptionService.subscriptionHelper.previewSubscription(
       ctx,
       productVariantId,
-      customInputs
+      customInputs,
     );
   }
 
@@ -61,12 +60,12 @@ export class StripeSubscriptionCommonResolver {
   async previewStripeSubscriptionsForProduct(
     @Ctx() ctx: RequestContext,
     @Args()
-    { productId, customInputs }: QueryPreviewStripeSubscriptionsForProductArgs
+    { productId, customInputs }: QueryPreviewStripeSubscriptionsForProductArgs,
   ): Promise<GraphqlQuery['previewStripeSubscriptionsForProduct']> {
     return this.stripeSubscriptionService.subscriptionHelper.previewSubscriptionsForProduct(
       ctx,
       productId,
-      customInputs
+      customInputs,
     );
   }
 
@@ -74,11 +73,11 @@ export class StripeSubscriptionCommonResolver {
   @Resolver('PaymentMethodQuote')
   async stripeSubscriptionPublishableKey(
     @Ctx() ctx: RequestContext,
-    @Parent() paymentMethodQuote: PaymentMethodQuote
+    @Parent() paymentMethodQuote: PaymentMethodQuote,
   ): Promise<string | undefined> {
     const paymentMethod = await this.paymentMethodService.findOne(
       ctx,
-      paymentMethodQuote.id
+      paymentMethodQuote.id,
     );
     return paymentMethod?.handler.args.find((a) => a.name === 'publishableKey')
       ?.value;
@@ -88,7 +87,7 @@ export class StripeSubscriptionCommonResolver {
   @Resolver('OrderLine')
   async stripeSubscriptions(
     @Ctx() ctx: RequestContext,
-    @Parent() orderLine: OrderLine
+    @Parent() orderLine: OrderLine,
   ): Promise<StripeSubscription[] | undefined> {
     await this.entityHydrator.hydrate(ctx, orderLine, {
       relations: ['order', 'productVariant'],
@@ -99,13 +98,13 @@ export class StripeSubscriptionCommonResolver {
     await this.productPriceApplicator.applyChannelPriceAndTax(
       orderLine.productVariant,
       ctx,
-      orderLine.order
+      orderLine.order,
     );
     const subscriptionsForOrderLine =
       await this.stripeSubscriptionService.subscriptionHelper.getSubscriptionsForOrderLine(
         ctx,
         orderLine,
-        orderLine.order
+        orderLine.order,
       );
     return subscriptionsForOrderLine.map((s) => ({
       ...s,
@@ -121,14 +120,14 @@ export class StripeSubscriptionShopApiResolver {
   @Mutation()
   @Allow(Permission.Owner)
   async createStripeSubscriptionIntent(
-    @Ctx() ctx: RequestContext
+    @Ctx() ctx: RequestContext,
   ): Promise<GraphqlShopMutation['createStripeSubscriptionIntent']> {
     const stripePaymentMethods = ['card']; // TODO make configurable per channel
     const setupFutureUsage = 'off_session'; // TODO make configurable per channel
     const res = await this.stripeSubscriptionService.createIntent(
       ctx,
       stripePaymentMethods,
-      setupFutureUsage
+      setupFutureUsage,
     );
     return res;
   }
@@ -142,7 +141,7 @@ export class StripeSubscriptionAdminApiResolver {
   @Allow(Permission.Owner)
   async createStripeSubscriptionIntent(
     @Ctx() ctx: RequestContext,
-    @Args() args: MutationCreateStripeSubscriptionIntentArgs
+    @Args() args: MutationCreateStripeSubscriptionIntentArgs,
   ): Promise<GraphqlAdminMutation['createStripeSubscriptionIntent']> {
     const stripePaymentMethods = ['card']; // TODO make configurable per channel
     const setupFutureUsage = 'off_session'; // TODO make configurable per channel
@@ -150,7 +149,7 @@ export class StripeSubscriptionAdminApiResolver {
       ctx,
       args.orderId,
       stripePaymentMethods,
-      setupFutureUsage
+      setupFutureUsage,
     );
     return res;
   }

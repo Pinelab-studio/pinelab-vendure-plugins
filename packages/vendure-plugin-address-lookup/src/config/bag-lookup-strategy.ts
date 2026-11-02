@@ -24,11 +24,11 @@ export class BAGLookupStrategy implements AddressLookupStrategy {
   }
 
   async lookup(
-    ctx: RequestContext,
-    input: AddressLookupInput
+    _ctx: RequestContext,
+    input: AddressLookupInput,
   ): Promise<OrderAddress[]> {
     const postalCode = normalizePostalCode(input.postalCode!);
-    const houseNumber = parseInt(input.houseNumber!);
+    const houseNumber = parseInt(input.houseNumber!, 10);
     const url = `https://api.bag.kadaster.nl/lvbag/individuelebevragingen/v2/adressen?postcode=${postalCode}&huisnummer=${houseNumber}`;
     const result = await fetch(url, {
       headers: {

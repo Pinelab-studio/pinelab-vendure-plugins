@@ -5,7 +5,10 @@ import { KlaviyoGenericEvent } from '../event-handler/klaviyo-event-handler';
  * Event indicating that a checkout has started for this order
  */
 export class CheckoutStartedEvent extends VendureEvent {
-  constructor(public ctx: RequestContext, public order: Order) {
+  constructor(
+    public ctx: RequestContext,
+    public order: Order,
+  ) {
     super();
   }
 }
@@ -23,7 +26,7 @@ export class FailedToSendToKlaviyoEvent extends VendureEvent {
     /**
      * The error that was thrown when sending the Klaviyo event.
      */
-    public error: unknown
+    public error: unknown,
   ) {
     super();
   }

@@ -1,20 +1,18 @@
-import { initialData } from '../../test/src/initial-data';
+import {
+  DefaultLogger,
+  DefaultSearchPlugin,
+  LogLevel,
+  mergeConfig,
+} from '@vendure/core';
 import {
   createTestEnvironment,
   registerInitializer,
   SqljsInitializer,
   testConfig,
 } from '@vendure/testing';
-import {
-  DefaultLogger,
-  DefaultSearchPlugin,
-  Logger,
-  LogLevel,
-  mergeConfig,
-} from '@vendure/core';
+import { initialData } from '../../test/src/initial-data';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
 import { PublicCustomerGroupsPlugin } from '../src/public-customer-groups.plugin';
-import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
 
 require('dotenv').config();
 
@@ -27,14 +25,7 @@ require('dotenv').config();
       adminApiPlayground: true,
       port: 1234,
     },
-    plugins: [
-      PublicCustomerGroupsPlugin,
-      DefaultSearchPlugin,
-      AdminUiPlugin.init({
-        port: 3002,
-        route: 'admin',
-      }),
-    ],
+    plugins: [PublicCustomerGroupsPlugin, DefaultSearchPlugin],
     paymentOptions: {
       paymentMethodHandlers: [testPaymentMethod],
     },

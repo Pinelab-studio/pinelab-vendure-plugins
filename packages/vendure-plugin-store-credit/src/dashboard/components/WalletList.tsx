@@ -1,8 +1,8 @@
+import { useQuery } from '@tanstack/react-query';
+import { api } from '@/vdb/graphql/api.js';
+import { graphql } from '@/vdb/graphql/graphql';
 import { Wallet } from '../../api/generated/graphql';
 import WalletCard from './WalletCard';
-import { graphql } from '@/vdb/graphql/graphql';
-import { api } from '@/vdb/graphql/api.js';
-import { useQuery } from '@tanstack/react-query';
 
 export const GET_WALLET_WITH_ADJUSTMENTS = graphql(`
   query GetCustomerWithWallets($id: ID!) {
@@ -39,7 +39,7 @@ const WalletList: React.FC<WalletListProps> = ({ customerId }) => {
     ((customerData?.customer?.wallets as any)?.items as Wallet[]) ?? [];
   return isLoading ? (
     <div className="animate-pulse space-y-2">
-      <div className="h-16 bg-muted rounded-md w-87.5" />
+      <div className="h-16 w-87.5 rounded-md bg-muted" />
     </div>
   ) : (
     <div className="flex flex-wrap gap-4">

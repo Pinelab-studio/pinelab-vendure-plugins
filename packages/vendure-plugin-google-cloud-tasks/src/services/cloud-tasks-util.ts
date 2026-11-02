@@ -7,7 +7,7 @@ import { loggerCtx } from '../constants';
 export function truncateData(
   data: any,
   queueName: string,
-  maxSizeInKB = 64 // Default to 64kb
+  maxSizeInKB = 64, // Default to 64kb
 ): any {
   const MAX_BYTES = maxSizeInKB * 1024;
 
@@ -35,7 +35,7 @@ export function truncateData(
   if (!working || typeof working !== 'object' || Array.isArray(working)) {
     Logger.warn(
       `Job data for queue '${queueName}' is not a plain object or too large (${originalBytes} bytes). Returning empty object.`,
-      loggerCtx
+      loggerCtx,
     );
     return {};
   }
@@ -60,14 +60,14 @@ export function truncateData(
   if (finalBytes > MAX_BYTES) {
     Logger.warn(
       `Job data for queue '${queueName}' is too large (${originalBytes} bytes) and could not be reduced below ${MAX_BYTES} bytes by removing top-level keys. Returning empty object.`,
-      loggerCtx
+      loggerCtx,
     );
     return {};
   }
 
   Logger.warn(
     `Truncated job data for queue '${queueName}' from ${originalBytes} bytes to ${finalBytes} bytes by removing top-level keys.`,
-    loggerCtx
+    loggerCtx,
   );
   return working;
 }

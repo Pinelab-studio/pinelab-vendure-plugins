@@ -20,12 +20,12 @@ import {
 import { isAxiosError } from 'axios';
 import {
   ApiKeySession,
+  CatalogsApi,
   EventCreateQueryV2,
   EventsApi,
   ProfilesApi,
-  CatalogsApi,
 } from 'klaviyo-api';
-import { PLUGIN_INIT_OPTIONS, loggerCtx } from '../constants';
+import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
 import {
   EventWithContext,
   KlaviyoEventHandler,
@@ -58,7 +58,7 @@ export class KlaviyoService implements OnApplicationBootstrap {
     private readonly productService: ProductService,
     private readonly activeOrderService: ActiveOrderService,
     private readonly collectionService: CollectionService,
-    private readonly productPriceApplicator: ProductPriceApplicator
+    private readonly productPriceApplicator: ProductPriceApplicator,
   ) {}
 
   async onApplicationBootstrap(): Promise<void> {
@@ -72,17 +72,17 @@ export class KlaviyoService implements OnApplicationBootstrap {
           await this.handleEventJob(ctx, data.event);
           Logger.info(
             `Successfully handled job '${data.event.eventName}'`,
-            loggerCtx
+            loggerCtx,
           );
         } catch (e) {
           Logger.warn(
             `Failed to handle job '${data.event.eventName}': ${
               (e as Error).message
             }. Job data: ${JSON.stringify(data.event)}`,
-            loggerCtx
+            loggerCtx,
           );
           await this.eventBus.publish(
-            new FailedToSendToKlaviyoEvent(ctx, data.event, e)
+            new FailedToSendToKlaviyoEvent(ctx, data.event, e),
           );
           throw e;
         }
@@ -92,7 +92,7 @@ export class KlaviyoService implements OnApplicationBootstrap {
     if (eventHandlers.length === 0) {
       Logger.error(
         `No event handlers configured for Klaviyo. No events will be sent to Klaviyo. This means the plugin isn't doing anything.`,
-        loggerCtx
+        loggerCtx,
       );
       return;
     }
@@ -105,7 +105,7 @@ export class KlaviyoService implements OnApplicationBootstrap {
             // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
             `Error creating job for '${event?.constructor.name}' event: ${err}`,
             loggerCtx,
-            (err as Error)?.stack
+            (err as Error)?.stack,
           );
         });
       });
@@ -114,7 +114,7 @@ export class KlaviyoService implements OnApplicationBootstrap {
       `Listening for events: ${eventHandlers
         .map((e) => e.vendureEvent.name)
         .join(', ')}`,
-      loggerCtx
+      loggerCtx,
     );
   }
 
@@ -124,13 +124,13 @@ export class KlaviyoService implements OnApplicationBootstrap {
   async handleCheckoutStarted(ctx: RequestContext): Promise<boolean> {
     const activeOrder = await this.activeOrderService.getActiveOrder(
       ctx,
-      undefined
+      undefined,
     );
     if (activeOrder) {
       await this.eventBus.publish(new CheckoutStartedEvent(ctx, activeOrder));
       Logger.info(
         `Published CheckoutStartedEvent for order ${activeOrder.code}`,
-        loggerCtx
+        loggerCtx,
       );
       return true;
     }
@@ -145,19 +145,19 @@ export class KlaviyoService implements OnApplicationBootstrap {
   async createEventJob<T extends EventWithContext>(
     vendureEvent: T,
     eventHandler: KlaviyoEventHandler<T>,
-    retries = 10
+    retries = 10,
   ): Promise<void> {
     const session = this.getKlaviyoSession(vendureEvent.ctx);
     if (!session) {
       Logger.debug(
         `No API key provided for Klaviyo, this means klaviyo is not enabled for channel '${vendureEvent.ctx.channel.token};`,
-        loggerCtx
+        loggerCtx,
       );
       return;
     }
     const event = await eventHandler.mapToKlaviyoEvent(
       vendureEvent,
-      new Injector(this.moduleRef)
+      new Injector(this.moduleRef),
     );
     if (event) {
       const jobData: JobData = {
@@ -173,7 +173,7 @@ export class KlaviyoService implements OnApplicationBootstrap {
    */
   async handleEventJob(
     ctx: RequestContext,
-    event: KlaviyoGenericEvent | KlaviyoOrderPlacedEvent
+    event: KlaviyoGenericEvent | KlaviyoOrderPlacedEvent,
   ): Promise<void> {
     const session = this.getKlaviyoSession(ctx);
     if (!session) {
@@ -185,7 +185,7 @@ export class KlaviyoService implements OnApplicationBootstrap {
       await this.createEvent(klaviyoEventsApi, mapToKlaviyoEventInput(event));
       Logger.info(
         `Sent '${event.eventName}' event with event ID '${event.uniqueId}' to Klaviyo.`,
-        loggerCtx
+        loggerCtx,
       );
       return;
     }
@@ -194,11 +194,11 @@ export class KlaviyoService implements OnApplicationBootstrap {
     const orderPlacedEvent = event as KlaviyoOrderPlacedEvent;
     await this.createEvent(
       klaviyoEventsApi,
-      mapToKlaviyoOrderPlacedInput(orderPlacedEvent)
+      mapToKlaviyoOrderPlacedInput(orderPlacedEvent),
     );
     Logger.info(
       `Sent 'Placed Order' event to Klaviyo for order ${orderPlacedEvent.orderId}`,
-      loggerCtx
+      loggerCtx,
     );
     for (const [index, orderItem] of orderPlacedEvent.orderItems.entries()) {
       if (orderItem.excludeFromOrderedProductEvent) {
@@ -208,13 +208,13 @@ export class KlaviyoService implements OnApplicationBootstrap {
       const orderedProductEvent = mapToOrderedProductEvent(
         orderItem,
         index,
-        orderPlacedEvent
+        orderPlacedEvent,
       );
       await this.createEvent(klaviyoEventsApi, orderedProductEvent);
     }
     Logger.info(
       `Sent 'Ordered Product' event to Klaviyo for order ${orderPlacedEvent.orderId} for ${orderPlacedEvent.orderItems.length} order lines`,
-      loggerCtx
+      loggerCtx,
     );
   }
 
@@ -227,7 +227,7 @@ export class KlaviyoService implements OnApplicationBootstrap {
       // Klaviyo is disabled
       Logger.debug(
         `Klaviyo is disabled for channel '${ctx.channel.token}'`,
-        loggerCtx
+        loggerCtx,
       );
       return;
     }
@@ -239,7 +239,7 @@ export class KlaviyoService implements OnApplicationBootstrap {
    */
   async createEvent(
     klaviyoEventsApi: EventsApi,
-    event: EventCreateQueryV2
+    event: EventCreateQueryV2,
   ): Promise<void> {
     try {
       const {
@@ -247,7 +247,7 @@ export class KlaviyoService implements OnApplicationBootstrap {
       } = await klaviyoEventsApi.createEvent(event);
       if (status < 200 || status > 299) {
         throw new Error(
-          `[${loggerCtx}]: Failed to create event '${event.data.attributes.metric.data.attributes.name}': ${statusText} (${status})`
+          `[${loggerCtx}]: Failed to create event '${event.data.attributes.metric.data.attributes.name}': ${statusText} (${status})`,
         );
       }
     } catch (e: unknown) {
@@ -257,7 +257,9 @@ export class KlaviyoService implements OnApplicationBootstrap {
 
         throw Error(
           // eslint-disable-next-line
-          e.response?.data.errors.map((error: any) => error?.detail)?.join(', ')
+          e.response?.data.errors
+            .map((error: any) => error?.detail)
+            ?.join(', '),
         );
       } else {
         throw e;
@@ -273,7 +275,7 @@ export class KlaviyoService implements OnApplicationBootstrap {
     emailAddress: string,
     listId: string,
     firstName?: string | null,
-    lastName?: string | null
+    lastName?: string | null,
   ): Promise<void> {
     const session = this.getKlaviyoSession(ctx);
     if (!session) {
@@ -335,7 +337,7 @@ export class KlaviyoService implements OnApplicationBootstrap {
   async subscribeToBackInStock(
     ctx: RequestContext,
     emailAddress: string,
-    catalogItemId: string
+    catalogItemId: string,
   ): Promise<void> {
     const session = this.getKlaviyoSession(ctx);
     if (!session) {
@@ -368,14 +370,14 @@ export class KlaviyoService implements OnApplicationBootstrap {
       },
     });
     Logger.info(
-      `Subscribed '${emailAddress}' to back in stock for catalog item (usually variant) '${catalogItemId}'`
+      `Subscribed '${emailAddress}' to back in stock for catalog item (usually variant) '${catalogItemId}'`,
     );
   }
 
   async getProductFeed(ctx: RequestContext): Promise<KlaviyoProductFeedItem[]> {
     if (!this.options.feed) {
       throw new Error(
-        'Product feed is not enabled. Set the feed option in the plugin config.'
+        'Product feed is not enabled. Set the feed option in the plugin config.',
       );
     }
     const productFeed: KlaviyoProductFeedItem[] = [];
@@ -389,7 +391,7 @@ export class KlaviyoService implements OnApplicationBootstrap {
         `Fetching product variants from ${skip} to ${
           skip + take
         } for channel '${ctx.channel.token}'`,
-        loggerCtx
+        loggerCtx,
       );
       const { items: products } = await this.productService.findAll(
         ctx,
@@ -408,7 +410,7 @@ export class KlaviyoService implements OnApplicationBootstrap {
           'variants.featuredAsset',
           'variants.taxCategory',
           'featuredAsset',
-        ]
+        ],
       );
       // Map all product.variants to Translated<ProductVariant> with the product attached
       const allVariants = products.flatMap((product) =>
@@ -417,7 +419,7 @@ export class KlaviyoService implements OnApplicationBootstrap {
           .map((variant) => {
             variant.product = product;
             return variant;
-          })
+          }),
       );
       // Transform variants to Klaviyo product feed items
       for (const variant of allVariants) {
@@ -427,7 +429,7 @@ export class KlaviyoService implements OnApplicationBootstrap {
             variant,
             ctx,
             undefined,
-            false
+            false,
           );
         enhancedVariant = translateDeep(enhancedVariant, ctx.languageCode);
         enhancedVariant.collections = enhancedVariant.collections
@@ -455,7 +457,7 @@ export class KlaviyoService implements OnApplicationBootstrap {
             categories: enhancedVariant.collections.map((c) => c.name),
             inventory_quantity: variantStocklevel,
             inventory_policy: 1,
-          }
+          },
         );
         productFeed.push(feedItem);
       }
@@ -465,12 +467,12 @@ export class KlaviyoService implements OnApplicationBootstrap {
 
       Logger.verbose(
         `Processed ${allVariants.length} variants, total feed items: ${productFeed.length}`,
-        loggerCtx
+        loggerCtx,
       );
     }
     Logger.info(
       `Completed Klaviyo product feed with ${productFeed.length} items for channel '${ctx.channel.token}'`,
-      loggerCtx
+      loggerCtx,
     );
 
     return productFeed;
@@ -488,7 +490,7 @@ export class KlaviyoService implements OnApplicationBootstrap {
           skip,
           take,
         },
-        []
+        [],
       );
       allCollections.push(...collections.items);
       skip += take;

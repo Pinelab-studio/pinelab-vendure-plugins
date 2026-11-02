@@ -1,4 +1,3 @@
-import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
 import {
   DefaultLogger,
   DefaultSearchPlugin,
@@ -31,10 +30,6 @@ require('dotenv').config();
         carriers: [new DHLCarrier()],
       }),
       DefaultSearchPlugin,
-      AdminUiPlugin.init({
-        port: 3002,
-        route: 'admin',
-      }),
     ],
   });
   const { server, shopClient, adminClient } = createTestEnvironment(config);

@@ -4,8 +4,8 @@ import {
   registerInitializer,
   SimpleGraphQLClient,
   SqljsInitializer,
-  testConfig,
   TestServer,
+  testConfig,
 } from '@vendure/testing';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { initialData } from '../../test/src/initial-data';
@@ -15,18 +15,19 @@ import { SelectableGiftsPlugin } from '../src';
 import {
   ADD_GIFT_TO_ORDER,
   ADD_ITEM_TO_ORDER,
+  createPromotion,
   GET_VARIANT_PRODUCT,
+  getEligibleGifts,
   UPDATE_PRODUCT_ENABLED,
   UPDATE_PRODUCT_VARIANT_ENABLED,
   UPDATE_PRODUCT_VARIANT_STOCK_ON_HAND,
   VARIANT_STOCK_LOCATIONS,
-  createPromotion,
-  getEligibleGifts,
 } from './helpers';
+
 let server: TestServer;
 let adminClient: SimpleGraphQLClient;
 let shopClient: SimpleGraphQLClient;
-let serverStarted = false;
+const _serverStarted = false;
 
 beforeAll(async () => {
   registerInitializer('sqljs', new SqljsInitializer('__data__'));
@@ -62,7 +63,7 @@ const giftForOrdersAbove0 = 'T_2';
 // Free gifts for customers with >1 placed orders
 const giftForLoyalCustomer = 'T_4';
 
-describe('Gift management via admin UI', function () {
+describe('Gift management via admin UI', () => {
   it('Creates a gift promotion for orders greater than $0', async () => {
     await adminClient.asSuperAdmin();
     const promotion = await createPromotion(
@@ -83,7 +84,7 @@ describe('Gift management via admin UI', function () {
             },
           ],
         },
-      ]
+      ],
     );
     expect(promotion.name).toBe('Free gift for orders above $0');
   });
@@ -107,15 +108,15 @@ describe('Gift management via admin UI', function () {
             },
           ],
         },
-      ]
+      ],
     );
     expect(promotion.name).toBe('Free gift for loyal customers');
   });
 });
 
-describe('Storefront free gift selection', function () {
+describe('Storefront free gift selection', () => {
   it('Should not allow setting gift custom field via shop api', async () => {
-    let error: string | undefined = undefined;
+    let error: string | undefined;
     try {
       await shopClient.query(ADD_ITEM_TO_ORDER, {
         productVariantId: 'T_1',
@@ -134,7 +135,7 @@ describe('Storefront free gift selection', function () {
     // Creates a session
     await shopClient.asUserWithCredentials(
       'hayden.zieme12@hotmail.com',
-      'test'
+      'test',
     );
     const eligibleGifts = await getEligibleGifts(shopClient);
     expect(eligibleGifts.length).toBe(0);
@@ -146,7 +147,7 @@ describe('Storefront free gift selection', function () {
       {
         productVariantId: 'T_1',
         quantity: 1,
-      }
+      },
     );
     expect(order.lines.length).toBe(1);
     expect(order.totalWithTax).toBeGreaterThan(0);
@@ -161,17 +162,17 @@ describe('Storefront free gift selection', function () {
   it('Adds gift to order', async () => {
     const { addSelectedGiftToOrder: order } = await shopClient.query(
       ADD_GIFT_TO_ORDER,
-      { productVariantId: giftForOrdersAbove0 }
+      { productVariantId: giftForOrdersAbove0 },
     );
     const giftLine = order.lines.find(
-      (line) => line.productVariant.id === giftForOrdersAbove0
+      (line) => line.productVariant.id === giftForOrdersAbove0,
     );
     expect(order.lines.length).toBe(2);
     expect(giftLine.customFields.isSelectedAsGift).toBe(true);
     expect(giftLine.discountedUnitPriceWithTax).toBe(0);
     expect(giftLine.discountedLinePriceWithTax).toBe(0);
     expect(order.discounts[0].description).toBe(
-      'Free gift for orders above $0'
+      'Free gift for orders above $0',
     );
   });
 
@@ -181,10 +182,10 @@ describe('Storefront free gift selection', function () {
       {
         productVariantId: giftForOrdersAbove0,
         quantity: 1,
-      }
+      },
     );
     const linesWithGiftVariant = order.lines.filter(
-      (line) => line.productVariant.id === giftForOrdersAbove0
+      (line) => line.productVariant.id === giftForOrdersAbove0,
     );
     expect(linesWithGiftVariant.length).toBe(2);
     expect(linesWithGiftVariant[0].discountedLinePriceWithTax).toBe(0);
@@ -205,20 +206,20 @@ describe('Storefront free gift selection', function () {
     expect(eligibleGifts.length).toBe(2);
     // Both gifts should be eligible
     expect(
-      eligibleGifts.find((g) => g.id === giftForLoyalCustomer)
+      eligibleGifts.find((g) => g.id === giftForLoyalCustomer),
     ).toBeDefined();
     expect(
-      eligibleGifts.find((g) => g.id === giftForOrdersAbove0)
+      eligibleGifts.find((g) => g.id === giftForOrdersAbove0),
     ).toBeDefined();
   });
 
   it('Adds "Loyal customer" gift to order', async () => {
     const { addSelectedGiftToOrder: order } = await shopClient.query(
       ADD_GIFT_TO_ORDER,
-      { productVariantId: giftForLoyalCustomer }
+      { productVariantId: giftForLoyalCustomer },
     );
     const giftLine = order.lines.find(
-      (line) => line.productVariant.id === giftForLoyalCustomer
+      (line) => line.productVariant.id === giftForLoyalCustomer,
     );
     expect(order.lines.length).toBe(2);
     expect(giftLine.customFields.isSelectedAsGift).toBe(true);
@@ -226,20 +227,20 @@ describe('Storefront free gift selection', function () {
     expect(giftLine.discountedLinePriceWithTax).toBe(0);
     // Only 1 discount can be applied
     expect(order.discounts[0].description).toBe(
-      'Free gift for loyal customers'
+      'Free gift for loyal customers',
     );
   });
 
   it('Adds a new gift to order and removes the old gift', async () => {
     const { addSelectedGiftToOrder: order } = await shopClient.query(
       ADD_GIFT_TO_ORDER,
-      { productVariantId: giftForOrdersAbove0 }
+      { productVariantId: giftForOrdersAbove0 },
     );
     const giftLine = order.lines.find(
-      (line) => line.productVariant.id === giftForOrdersAbove0
+      (line) => line.productVariant.id === giftForOrdersAbove0,
     );
     const linesSelectedAsGift = order.lines.filter(
-      (l) => l.customFields.isSelectedAsGift
+      (l) => l.customFields.isSelectedAsGift,
     );
     expect(order.lines.length).toBe(2); // 1 gift, 1 normal item
     expect(linesSelectedAsGift.length).toBe(1);
@@ -276,7 +277,7 @@ describe('Storefront free gift selection', function () {
   it('Should not return disabled variant as eligible gift', async () => {
     const { updateProductVariants } = await adminClient.query(
       UPDATE_PRODUCT_VARIANT_ENABLED,
-      { id: giftForOrdersAbove0, enabled: false }
+      { id: giftForOrdersAbove0, enabled: false },
     );
     expect(updateProductVariants[0].enabled).toBe(false);
     const eligibleGifts = await getEligibleGifts(shopClient);
@@ -318,7 +319,7 @@ describe('Storefront free gift selection', function () {
       id: giftForOrdersAbove0,
     });
     const stockLevelUpdateInput: any[] = [];
-    for (let stockLevel of stockLevels) {
+    for (const stockLevel of stockLevels) {
       stockLevelUpdateInput.push({
         stockLocationId: (stockLevel as any).stockLocation.id,
         stockOnHand: 0,
@@ -326,7 +327,7 @@ describe('Storefront free gift selection', function () {
     }
     const { updateProductVariants } = await adminClient.query(
       UPDATE_PRODUCT_VARIANT_STOCK_ON_HAND,
-      { id: giftForOrdersAbove0, stockLevels: stockLevelUpdateInput }
+      { id: giftForOrdersAbove0, stockLevels: stockLevelUpdateInput },
     );
     expect(updateProductVariants[0].id).toBe(giftForOrdersAbove0);
     expect(updateProductVariants[0].stockLevel).toBe('OUT_OF_STOCK');

@@ -3,8 +3,8 @@ import { ModuleRef } from '@nestjs/core';
 import {
   Channel,
   ChannelService,
-  Injector,
   ID,
+  Injector,
   JobQueue,
   JobQueueService,
   LanguageCode,
@@ -37,7 +37,7 @@ type ChangedInputHandler = (
   ctx: RequestContext,
   strategy: AnyStrategy,
   input: { id: ID },
-  hash: string
+  hash: string,
 ) => Promise<void>;
 
 @Injectable()
@@ -53,7 +53,7 @@ export class ContentAutomationService implements OnApplicationBootstrap {
     private readonly requestContextService: RequestContextService,
     @Inject(PLUGIN_INIT_OPTIONS)
     private readonly options: ContentAutomationPluginOptions,
-    moduleRef: ModuleRef
+    moduleRef: ModuleRef,
   ) {
     this.injector = new Injector(moduleRef);
   }
@@ -61,13 +61,13 @@ export class ContentAutomationService implements OnApplicationBootstrap {
   /** Validates strategy names at startup before registering the job queue. */
   async onApplicationBootstrap(): Promise<void> {
     const duplicates = findDuplicates(
-      this.options.automationStrategies.map((strategy) => strategy.name)
+      this.options.automationStrategies.map((strategy) => strategy.name),
     );
     if (duplicates.length) {
       throw new Error(
         `Content automation strategy names must be unique. Duplicates: ${duplicates.join(
-          ', '
-        )}`
+          ', ',
+        )}`,
       );
     }
     this.jobQueue = await this.jobQueueService.createQueue({
@@ -79,7 +79,7 @@ export class ContentAutomationService implements OnApplicationBootstrap {
               job.data.strategyName
             }': ${asError(e).message}`,
             loggerCtx,
-            asError(e).stack
+            asError(e).stack,
           );
           throw e;
         }),
@@ -95,7 +95,7 @@ export class ContentAutomationService implements OnApplicationBootstrap {
     await this.forEachChangedInput(async (ctx, strategy, input, hash) => {
       await this.jobQueue.add(
         { ctx: ctx.serialize(), strategyName: strategy.name, input, hash },
-        { retries: JOB_RETRIES }
+        { retries: JOB_RETRIES },
       );
       jobsCreated++;
     });
@@ -123,13 +123,13 @@ export class ContentAutomationService implements OnApplicationBootstrap {
             asError(e).message
           }`,
           loggerCtx,
-          asError(e).stack
+          asError(e).stack,
         );
       }
     });
     Logger.info(
       `Initial population finished: ${processed} processed, ${failed} failed`,
-      loggerCtx
+      loggerCtx,
     );
     return { processed, failed };
   }
@@ -140,11 +140,11 @@ export class ContentAutomationService implements OnApplicationBootstrap {
   async handleJob(data: ContentAutomationJobData): Promise<void> {
     const ctx = RequestContext.deserialize(data.ctx);
     const strategy = this.options.automationStrategies.find(
-      (s) => s.name === data.strategyName
+      (s) => s.name === data.strategyName,
     );
     if (!strategy) {
       throw new Error(
-        `No content automation strategy with name '${data.strategyName}' configured`
+        `No content automation strategy with name '${data.strategyName}' configured`,
       );
     }
     await this.generateAndStore(ctx, strategy, data.input, data.hash);
@@ -159,7 +159,7 @@ export class ContentAutomationService implements OnApplicationBootstrap {
     ctx: RequestContext,
     strategy: AnyStrategy,
     input: { id: ID },
-    hash: string
+    hash: string,
   ): Promise<ContentAutomationUpdate | undefined> {
     if (await this.isProcessed(ctx, strategy.name, input.id, hash)) {
       return;
@@ -167,14 +167,14 @@ export class ContentAutomationService implements OnApplicationBootstrap {
     const result = await strategy.generateAndSaveContent(
       ctx,
       this.injector,
-      input
+      input,
     );
     if (result === false) {
       return;
     }
     const repository = this.connection.getRepository(
       ctx,
-      ContentAutomationUpdate
+      ContentAutomationUpdate,
     );
     const key = {
       strategyName: strategy.name,
@@ -190,7 +190,7 @@ export class ContentAutomationService implements OnApplicationBootstrap {
         hash,
         resultMessage: result.resultMessage ?? null,
         entityUrl: result.entityUrl ?? null,
-      })
+      }),
     );
   }
 
@@ -199,7 +199,7 @@ export class ContentAutomationService implements OnApplicationBootstrap {
    */
   async findUpdates(
     ctx: RequestContext,
-    options?: ListQueryOptions<ContentAutomationUpdate>
+    options?: ListQueryOptions<ContentAutomationUpdate>,
   ): Promise<PaginatedList<ContentAutomationUpdate>> {
     const [items, totalItems] = await this.listQueryBuilder
       .build(ContentAutomationUpdate, options, {
@@ -220,7 +220,7 @@ export class ContentAutomationService implements OnApplicationBootstrap {
    * @param handler the callback; either push to job queue or handle syncronously; up to the caller
    */
   private async forEachChangedInput(
-    handler: ChangedInputHandler
+    handler: ChangedInputHandler,
   ): Promise<void> {
     const defaultCtx = await this.requestContextService.create({
       apiType: 'admin',
@@ -236,48 +236,54 @@ export class ContentAutomationService implements OnApplicationBootstrap {
             channelOrToken: channel,
             languageCode,
           });
-          let inputs: Array<{ id: ID }>;
-          let processedHashes: Map<string, string>;
-          try {
-            inputs = await strategy.loadInputData(ctx, this.injector);
-            processedHashes = await this.getProcessedHashes(ctx, strategy.name);
-          } catch (e) {
-            Logger.error(
-              `Failed to load inputs of strategy '${
-                strategy.name
-              }' for channel '${
-                channel.code
-              }' and language '${languageCode}': ${asError(e).message}`,
-              loggerCtx,
-              asError(e).stack
-            );
-            continue;
-          }
-          for (const input of inputs) {
-            try {
-              const hash = normalizeHash(
-                strategy.generateHash
-                  ? strategy.generateHash(ctx, input)
-                  : defaultHash(input)
-              );
-              if (processedHashes.get(String(input.id)) === hash) {
-                // This means the hash for this entity is the same as last time, so we skip it
-                continue;
-              }
-              await handler(ctx, strategy, input, hash);
-            } catch (e) {
-              Logger.error(
-                `Failed to process an input of strategy '${
-                  strategy.name
-                }' for channel '${
-                  channel.code
-                }' and language '${languageCode}': ${asError(e).message}`,
-                loggerCtx,
-                asError(e).stack
-              );
-            }
-          }
+          await this.processChangedInputs(
+            ctx,
+            strategy,
+            channel,
+            languageCode,
+            handler,
+          );
         }
+      }
+    }
+  }
+
+  /** Processes one strategy/channel/language combination, isolating input failures. */
+  private async processChangedInputs(
+    ctx: RequestContext,
+    strategy: AnyStrategy,
+    channel: Channel,
+    languageCode: LanguageCode,
+    handler: ChangedInputHandler,
+  ): Promise<void> {
+    let inputs: Array<{ id: ID }>;
+    let processedHashes: Map<string, string>;
+    try {
+      inputs = await strategy.loadInputData(ctx, this.injector);
+      processedHashes = await this.getProcessedHashes(ctx, strategy.name);
+    } catch (e) {
+      Logger.error(
+        `Failed to load inputs of strategy '${strategy.name}' for channel '${channel.code}' and language '${languageCode}': ${asError(e).message}`,
+        loggerCtx,
+        asError(e).stack,
+      );
+      return;
+    }
+    for (const input of inputs) {
+      try {
+        const hash = normalizeHash(
+          strategy.generateHash
+            ? strategy.generateHash(ctx, input)
+            : defaultHash(input),
+        );
+        if (processedHashes.get(String(input.id)) === hash) continue;
+        await handler(ctx, strategy, input, hash);
+      } catch (e) {
+        Logger.error(
+          `Failed to process an input of strategy '${strategy.name}' for channel '${channel.code}' and language '${languageCode}': ${asError(e).message}`,
+          loggerCtx,
+          asError(e).stack,
+        );
       }
     }
   }
@@ -288,7 +294,7 @@ export class ContentAutomationService implements OnApplicationBootstrap {
    */
   private async getProcessedHashes(
     ctx: RequestContext,
-    strategyName: string
+    strategyName: string,
   ): Promise<Map<string, string>> {
     const updates = await this.connection
       .getRepository(ctx, ContentAutomationUpdate)
@@ -301,7 +307,7 @@ export class ContentAutomationService implements OnApplicationBootstrap {
         },
       });
     return new Map(
-      updates.map((update) => [String(update.entityId), update.hash])
+      updates.map((update) => [String(update.entityId), update.hash]),
     );
   }
 
@@ -313,7 +319,7 @@ export class ContentAutomationService implements OnApplicationBootstrap {
     ctx: RequestContext,
     strategyName: string,
     entityId: ID,
-    hash: string
+    hash: string,
   ): Promise<boolean> {
     const latest = await this.connection
       .getRepository(ctx, ContentAutomationUpdate)

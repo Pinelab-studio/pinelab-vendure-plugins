@@ -17,7 +17,7 @@ export class CloudTasksJobQueueStrategy implements InspectableJobQueueStrategy {
   }
 
   async add<Data extends JobData<Data> = {}>(
-    job: Job<Data>
+    job: Job<Data>,
   ): Promise<Job<Data>> {
     return await this.service.add(job);
   }
@@ -27,7 +27,7 @@ export class CloudTasksJobQueueStrategy implements InspectableJobQueueStrategy {
    */
   async start<Data extends JobData<Data> = {}>(
     originalQueueName: string,
-    process: (job: Job<Data>) => Promise<any>
+    process: (job: Job<Data>) => Promise<any>,
   ) {
     await this.service.start(originalQueueName, process);
   }
@@ -37,7 +37,7 @@ export class CloudTasksJobQueueStrategy implements InspectableJobQueueStrategy {
    */
   async stop<Data extends JobData<Data> = {}>(
     queueName: string,
-    _process: (job: Job<Data>) => Promise<any>
+    _process: (job: Job<Data>) => Promise<any>,
   ) {
     await this.service.stop(queueName, _process);
   }
@@ -47,7 +47,7 @@ export class CloudTasksJobQueueStrategy implements InspectableJobQueueStrategy {
   }
 
   async findMany(
-    options?: JobListOptions | undefined
+    options?: JobListOptions | undefined,
   ): Promise<PaginatedList<Job<any>>> {
     return await this.service.findJobs(options);
   }
@@ -58,7 +58,7 @@ export class CloudTasksJobQueueStrategy implements InspectableJobQueueStrategy {
 
   async removeSettledJobs(
     queueNames?: string[] | undefined,
-    olderThan?: Date | undefined
+    olderThan?: Date | undefined,
   ): Promise<number> {
     return await this.service.removeSettledJobs(queueNames || [], olderThan);
   }

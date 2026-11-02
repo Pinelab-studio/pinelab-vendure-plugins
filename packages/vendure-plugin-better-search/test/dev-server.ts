@@ -5,14 +5,13 @@ import {
   mergeConfig,
 } from '@vendure/core';
 import {
-  SqljsInitializer,
   createTestEnvironment,
   registerInitializer,
+  SqljsInitializer,
 } from '@vendure/testing';
-import { initialData } from '../../test/src/initial-data';
 import dotenv from 'dotenv';
+import { initialData } from '../../test/src/initial-data';
 import { BetterSearchPlugin } from '../src';
-import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
 import { searchConfig } from './search-config';
 
 // eslint-disable-next-line @typescript-eslint/no-floating-promises
@@ -27,14 +26,7 @@ import { searchConfig } from './search-config';
       adminApiPlayground: {},
       shopApiPlayground: {},
     },
-    plugins: [
-      BetterSearchPlugin.init(searchConfig),
-      DefaultSearchPlugin,
-      AdminUiPlugin.init({
-        port: 3002,
-        route: 'admin',
-      }),
-    ],
+    plugins: [BetterSearchPlugin.init(searchConfig), DefaultSearchPlugin],
   });
   const { server } = createTestEnvironment(config);
   await server.init({

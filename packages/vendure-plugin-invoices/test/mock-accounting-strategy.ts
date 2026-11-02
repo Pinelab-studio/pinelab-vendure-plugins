@@ -1,4 +1,4 @@
-import { Injector, RequestContext, Order } from '@vendure/core';
+import { Injector, Order, RequestContext } from '@vendure/core';
 import {
   AccountingExportStrategy,
   ExternalReference,
@@ -8,14 +8,14 @@ import {
 export class MockAccountingStrategy implements AccountingExportStrategy {
   constructor(public channelToken?: string) {}
 
-  init(injector: Injector): void {
+  init(_injector: Injector): void {
     return;
   }
 
   exportInvoice(
-    ctx: RequestContext,
-    invoice: InvoiceEntity,
-    order: Order
+    _ctx: RequestContext,
+    _invoice: InvoiceEntity,
+    _order: Order,
   ): ExternalReference {
     return {
       reference: 'mockReference',
@@ -24,10 +24,10 @@ export class MockAccountingStrategy implements AccountingExportStrategy {
   }
 
   exportCreditInvoice(
-    ctx: RequestContext,
-    invoice: InvoiceEntity,
-    isCreditInvoiceFor: InvoiceEntity,
-    order: Order
+    _ctx: RequestContext,
+    _invoice: InvoiceEntity,
+    _isCreditInvoiceFor: InvoiceEntity,
+    _order: Order,
   ): ExternalReference {
     return {
       reference: 'mockCreditReference',

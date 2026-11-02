@@ -1,4 +1,4 @@
-import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
+import path from 'node:path';
 import { AssetServerPlugin } from '@vendure/asset-server-plugin';
 import {
   DefaultLogger,
@@ -12,13 +12,11 @@ import {
   SqljsInitializer,
   testConfig,
 } from '@vendure/testing';
-import path from 'path';
 import { initialData } from '../../test/src/initial-data';
 import { SelectableGiftsPlugin } from '../src';
 import {
   ADD_ITEM_TO_ORDER,
   createPromotion,
-  ELIGIBLE_GIFTS,
   getEligibleGifts,
 } from './helpers';
 
@@ -36,10 +34,6 @@ require('dotenv').config();
       }),
       SelectableGiftsPlugin,
       DefaultSearchPlugin,
-      AdminUiPlugin.init({
-        port: 3002,
-        route: 'admin',
-      }),
     ],
     apiOptions: {
       shopApiPlayground: true,
@@ -70,7 +64,7 @@ require('dotenv').config();
           },
         ],
       },
-    ]
+    ],
   );
   // Create an active order
   await shopClient.query(ADD_ITEM_TO_ORDER, {

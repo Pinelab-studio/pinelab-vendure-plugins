@@ -1,23 +1,18 @@
 import {
-  createTestEnvironment,
-  registerInitializer,
-  SqljsInitializer,
-  testConfig,
-} from '@vendure/testing';
-import {
   DefaultLogger,
   DefaultSearchPlugin,
   LogLevel,
   mergeConfig,
 } from '@vendure/core';
-import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
-import { initialData } from '../../test/src/initial-data';
-import { AddressLookupPlugin } from '../src/address-lookup.plugin';
 import {
-  GooglePlacesLookupStrategy,
-  PostNLLookupStrategy,
-  BAGLookupStrategy,
-} from '../src';
+  createTestEnvironment,
+  registerInitializer,
+  SqljsInitializer,
+  testConfig,
+} from '@vendure/testing';
+import { initialData } from '../../test/src/initial-data';
+import { BAGLookupStrategy, GooglePlacesLookupStrategy } from '../src';
+import { AddressLookupPlugin } from '../src/address-lookup.plugin';
 
 require('dotenv').config();
 
@@ -44,10 +39,6 @@ require('dotenv').config();
         ],
       }),
       DefaultSearchPlugin,
-      AdminUiPlugin.init({
-        port: 3002,
-        route: 'admin',
-      }),
     ],
     apiOptions: {
       shopApiPlayground: true,

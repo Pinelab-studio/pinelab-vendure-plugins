@@ -4,29 +4,29 @@ import {
   registerInitializer,
   SimpleGraphQLClient,
   SqljsInitializer,
-  testConfig,
   TestServer,
+  testConfig,
 } from '@vendure/testing';
+import gql from 'graphql-tag';
 import { EventCreateQueryV2 } from 'klaviyo-api';
 import nock from 'nock';
-import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { initialData } from '../../test/src/initial-data';
 import { addItem, createSettledOrder } from '../../test/src/shop-utils';
+import { waitFor } from '../../test/src/test-helpers';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
 import {
   createRefundHandler,
   defaultOrderPlacedEventHandler,
   KlaviyoPlugin,
 } from '../src';
-import { mockOrderPlacedHandler } from './mock-order-placed-handler';
-import { mockCustomEventHandler } from './mock-custom-event-handler';
 import {
   CheckoutStartedEvent,
   FailedToSendToKlaviyoEvent,
   startedCheckoutHandler,
 } from '../src/';
-import gql from 'graphql-tag';
-import { waitFor } from '../../test/src/test-helpers';
+import { mockCustomEventHandler } from './mock-custom-event-handler';
+import { mockOrderPlacedHandler } from './mock-order-placed-handler';
 
 let server: TestServer;
 let adminClient: SimpleGraphQLClient;
@@ -50,7 +50,7 @@ beforeAll(async () => {
         ],
         feed: {
           password: 'test',
-          enhanceProductFeedItemFn: (ctx, variant, feedItem) => {
+          enhanceProductFeedItemFn: (_ctx, variant, feedItem) => {
             const asset =
               variant.product.featuredAsset ?? variant.featuredAsset;
             return {
@@ -113,7 +113,7 @@ describe('Klaviyo', () => {
     // Use waitFor to keep trying until the order event is found
     const orderEvent = await waitFor(() => {
       const orderEvent = klaviyoRequests.find(
-        (r) => r.data.attributes.metric.data.attributes.name === 'Placed Order'
+        (r) => r.data.attributes.metric.data.attributes.name === 'Placed Order',
       );
       if (orderEvent) {
         return orderEvent;
@@ -126,10 +126,10 @@ describe('Klaviyo', () => {
       'Laptop 15 inch 8GB',
     ]);
     const time = new Date(attributes.time!).getTime();
-    expect(isNaN(time)).toBe(false); // Should be valid date
+    expect(Number.isNaN(time)).toBe(false); // Should be valid date
     expect(attributes?.value).toBe(4921.4);
     expect(attributes?.unique_id).toBeDefined();
-    const orderItem = (orderEvent?.data.attributes.properties as any).Items[0];
+    const orderItem = (orderEvent.data.attributes.properties as any).Items[0];
     expect(orderItem.ProductID).toBeDefined();
     expect(orderItem.SKU).toBe('L2201308');
     expect(orderItem.ProductName).toBe('Laptop 13 inch 8GB');
@@ -151,7 +151,7 @@ describe('Klaviyo', () => {
     const productEvent = await waitFor(() => {
       const events = klaviyoRequests.filter(
         (r) =>
-          r.data.attributes.metric.data.attributes.name === 'Ordered Product'
+          r.data.attributes.metric.data.attributes.name === 'Ordered Product',
       );
       if (events.length >= 2) return events;
     });
@@ -179,7 +179,7 @@ describe('Klaviyo', () => {
     // Use waitFor to keep trying until the custom order event is found
     const orderEvent = await waitFor(() => {
       const orderEvents = klaviyoRequests.filter(
-        (r) => r.data.attributes.metric.data.attributes.name === 'Placed Order'
+        (r) => r.data.attributes.metric.data.attributes.name === 'Placed Order',
       );
       const lastOrderEvent = orderEvents[orderEvents.length - 1]; // Last one should be our custom event
       if (
@@ -201,7 +201,7 @@ describe('Klaviyo', () => {
       customOrderItemProp: 'my custom order item value',
     });
     expect(properties.Items[0].ProductURL).toBe(
-      'https://pinelab.studio/product/some-product'
+      'https://pinelab.studio/product/some-product',
     );
     expect(properties.Items[0].ImageURL).toBe('custom-image-url.png');
   });
@@ -211,7 +211,7 @@ describe('Klaviyo', () => {
     const orderedProductEvents = klaviyoRequests.filter(
       (r) =>
         r.data.attributes.metric.data.attributes.name === 'Ordered Product' &&
-        r.data
+        r.data,
     );
     // Only expect the 2 events from the default handler, no more
     expect(orderedProductEvents.length).toBe(2);
@@ -223,14 +223,14 @@ describe('Klaviyo', () => {
       const customEvent = klaviyoRequests.find(
         (r) =>
           r.data.attributes.metric.data.attributes.name ===
-          'Custom Testing Event'
+          'Custom Testing Event',
       );
       if (customEvent) {
         return customEvent;
       }
     });
     expect(
-      (customEvent?.data.attributes.properties as any).customTestEventProp
+      (customEvent.data.attributes.properties as any).customTestEventProp,
     ).toEqual('some information');
   });
 
@@ -254,15 +254,15 @@ describe('Klaviyo', () => {
           shipping: 0,
           adjustment: 0,
         },
-      }
+      },
     );
     const refundEvent = await waitFor(
       () =>
         klaviyoRequests.find(
           (r) =>
-            r.data.attributes.metric.data.attributes.name === 'Refund Created'
+            r.data.attributes.metric.data.attributes.name === 'Refund Created',
         ),
-      100
+      100,
     );
     expect(refundEvent).toBeDefined();
     const properties = refundEvent.data.attributes.properties as any;
@@ -275,7 +275,7 @@ describe('Klaviyo', () => {
     // Create active order
     await shopClient.asUserWithCredentials(
       'hayden.zieme12@hotmail.com',
-      'test'
+      'test',
     );
     await addItem(shopClient, 'T_1', 1);
     const events: CheckoutStartedEvent[] = [];
@@ -288,12 +288,12 @@ describe('Klaviyo', () => {
         mutation {
           klaviyoCheckoutStarted
         }
-      `
+      `,
     );
     const checkoutStartedEvent = await waitFor(() => {
       const checkoutStartedEvent = klaviyoRequests.find(
         (r) =>
-          r.data.attributes.metric.data.attributes.name === 'Checkout Started'
+          r.data.attributes.metric.data.attributes.name === 'Checkout Started',
       );
       if (checkoutStartedEvent) {
         return checkoutStartedEvent;
@@ -316,10 +316,10 @@ describe('Klaviyo', () => {
             listId: "test-list-id"
           )
         }
-      `
+      `,
     );
     expect(signUpPromise).rejects.toThrow(
-      'You are not currently authorized to perform this action'
+      'You are not currently authorized to perform this action',
     );
   });
 
@@ -345,10 +345,10 @@ describe('Klaviyo', () => {
             listId: "test-list-id"
           )
         }
-      `
+      `,
     );
     expect(
-      signupRequest.data.attributes.profiles.data[0].attributes.email
+      signupRequest.data.attributes.profiles.data[0].attributes.email,
     ).toBe('testing@pinelab.studio');
     expect(signupRequest.data.relationships.list.data.id).toBe('test-list-id');
   });
@@ -360,10 +360,10 @@ describe('Klaviyo', () => {
         query {
           klaviyoProductFeed(password: "wrong-password")
         }
-      `
+      `,
     );
     expect(promise).rejects.toThrow(
-      'You are not currently authorized to perform this action'
+      'You are not currently authorized to perform this action',
     );
   });
 
@@ -375,7 +375,7 @@ describe('Klaviyo', () => {
         query {
           klaviyoProductFeed(password: "test")
         }
-      `
+      `,
     );
 
     expect(klaviyoProductFeed).toBeDefined();
@@ -429,23 +429,23 @@ describe('Klaviyo', () => {
             catalogItemId: "1"
           )
         }
-      `
+      `,
     );
     // Verify the request body matches the expected structure
     expect(backInStockRequest).toBeDefined();
     expect(backInStockRequest.data.type).toBe('back-in-stock-subscription');
     expect(backInStockRequest.data.attributes.profile.data.type).toBe(
-      'profile'
+      'profile',
     );
     expect(
-      backInStockRequest.data.attributes.profile.data.attributes.email
+      backInStockRequest.data.attributes.profile.data.attributes.email,
     ).toBe('test@example.com');
     expect(backInStockRequest.data.attributes.channels).toEqual(['EMAIL']);
     expect(backInStockRequest.data.relationships.variant.data.type).toBe(
-      'catalog-variant'
+      'catalog-variant',
     );
     expect(backInStockRequest.data.relationships.variant.data.id).toBe(
-      '$custom:::$default:::1'
+      '$custom:::$default:::1',
     );
   });
 
@@ -459,10 +459,10 @@ describe('Klaviyo', () => {
             catalogItemId: "1"
           )
         }
-      `
+      `,
     );
     expect(backInStockPromise).rejects.toThrow(
-      'You are not currently authorized to perform this action'
+      'You are not currently authorized to perform this action',
     );
   });
 

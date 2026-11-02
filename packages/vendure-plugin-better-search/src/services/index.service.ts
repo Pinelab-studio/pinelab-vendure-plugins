@@ -23,11 +23,11 @@ import {
 } from '@vendure/core';
 import { asError } from 'catch-unknown';
 import MiniSearch from 'minisearch';
+import { BetterSearchResult } from '../api/generated/graphql';
 import { BETTER_SEARCH_PLUGIN_OPTIONS, loggerCtx } from '../constants';
 import { BetterSearchDocuments } from '../entities/better-search-documents.entity';
 import { BetterSearchConfig } from '../types';
 import { tokenize } from './util';
-import { BetterSearchResult } from '../api/generated/graphql';
 
 @Injectable()
 export class IndexService implements OnModuleInit, OnApplicationBootstrap {
@@ -45,7 +45,7 @@ export class IndexService implements OnModuleInit, OnApplicationBootstrap {
     private productService: ProductService,
     private productVariantService: ProductVariantService,
     private eventBus: EventBus,
-    private collectionService: CollectionService
+    private collectionService: CollectionService,
   ) {}
 
   onApplicationBootstrap() {
@@ -56,7 +56,7 @@ export class IndexService implements OnModuleInit, OnApplicationBootstrap {
         Logger.error(
           `Failed to rebuild index for ProductEvent (${event.type}): ${error.message}`,
           loggerCtx,
-          error.stack
+          error.stack,
         );
       });
     });
@@ -67,7 +67,7 @@ export class IndexService implements OnModuleInit, OnApplicationBootstrap {
         Logger.error(
           `Failed to rebuild index for ProductVariantEvent (${event.type}): ${error.message}`,
           loggerCtx,
-          error.stack
+          error.stack,
         );
       });
     });
@@ -89,7 +89,7 @@ export class IndexService implements OnModuleInit, OnApplicationBootstrap {
           Logger.error(
             `Failed to build index for channel '${ctx.channel.token} (${ctx.languageCode})': ${error.message}`,
             loggerCtx,
-            error.stack
+            error.stack,
           );
           throw e;
         }
@@ -105,7 +105,7 @@ export class IndexService implements OnModuleInit, OnApplicationBootstrap {
     const start = performance.now();
     Logger.info(
       `Rebuilding index for channel '${ctx.channel.token} (${ctx.languageCode})'...`,
-      loggerCtx
+      loggerCtx,
     );
     // Get all products
     let skip = 0;
@@ -117,7 +117,7 @@ export class IndexService implements OnModuleInit, OnApplicationBootstrap {
         `Fetching products from ${skip} to ${skip + take} for '${
           ctx.channel.token
         } (${ctx.languageCode})'`,
-        loggerCtx
+        loggerCtx,
       );
       const { items: products } = await this.productService.findAll(
         ctx,
@@ -133,7 +133,7 @@ export class IndexService implements OnModuleInit, OnApplicationBootstrap {
             },
           },
         },
-        ['featuredAsset', 'facetValues.translations']
+        ['featuredAsset', 'facetValues.translations'],
       );
       skip += take;
       if (products.length < take) {
@@ -146,7 +146,7 @@ export class IndexService implements OnModuleInit, OnApplicationBootstrap {
             await this.collectionService.getCollectionsByProductId(
               ctx,
               p.id,
-              true
+              true,
             );
           // Get variants
           p.variants = await this.getAllVariantsForProduct(ctx, p.id);
@@ -154,7 +154,7 @@ export class IndexService implements OnModuleInit, OnApplicationBootstrap {
             id: p.id,
             ...this.options.mapToSearchDocument(p, collections),
           };
-        })
+        }),
       );
       searchDocuments.push(...indexableProducts);
     }
@@ -167,7 +167,7 @@ export class IndexService implements OnModuleInit, OnApplicationBootstrap {
     const durationInS = Math.round((performance.now() - start) / 1000);
     Logger.info(
       `Index built for channel '${ctx.channel.token} (${ctx.languageCode})' in ${durationInS}s: Indexed ${minisearch.documentCount} products.`,
-      loggerCtx
+      loggerCtx,
     );
     return minisearch;
   }
@@ -214,7 +214,7 @@ export class IndexService implements OnModuleInit, OnApplicationBootstrap {
           Object.entries(this.options.indexableFields).map(([key, value]) => [
             key,
             value.weight,
-          ])
+          ]),
         ),
         fuzzy: this.options.fuzziness,
         prefix: true,
@@ -235,7 +235,7 @@ export class IndexService implements OnModuleInit, OnApplicationBootstrap {
     this.rebuildIndicesQueue.set(key, ctx);
     // Wait for debounce time, so that more rebuilds can be added to the rebuild queue
     await new Promise((resolve) =>
-      setTimeout(resolve, this.options.debounceIndexRebuildMs)
+      setTimeout(resolve, this.options.debounceIndexRebuildMs),
     );
     // Trigger rebuild for all channels in the queue
     this.rebuildIndicesQueue.forEach((ctx) => {
@@ -244,7 +244,7 @@ export class IndexService implements OnModuleInit, OnApplicationBootstrap {
         Logger.error(
           `Failed to add reindex job to the job queue for '${key}': ${error.message}`,
           loggerCtx,
-          error.stack
+          error.stack,
         );
       });
     });
@@ -254,7 +254,7 @@ export class IndexService implements OnModuleInit, OnApplicationBootstrap {
 
   private async getAllVariantsForProduct(
     ctx: RequestContext,
-    productId: ID
+    productId: ID,
   ): Promise<Translated<ProductVariant>[]> {
     const variants: ProductVariant[] = [];
     let skip = 0;
@@ -267,7 +267,7 @@ export class IndexService implements OnModuleInit, OnApplicationBootstrap {
         {
           take,
           skip,
-        }
+        },
       );
       variants.push(...result.items);
       hasMore = result.items.length === take;

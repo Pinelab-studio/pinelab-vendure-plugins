@@ -10,7 +10,7 @@ import { ContentAutomationService } from './content-automation.service';
  * @returns The number of processed and failed inputs
  */
 export async function runContentAutomationPopulation(
-  app: INestApplicationContext
+  app: INestApplicationContext,
 ): Promise<{ processed: number; failed: number }> {
   return app.get(ContentAutomationService).runInitialPopulation();
 }

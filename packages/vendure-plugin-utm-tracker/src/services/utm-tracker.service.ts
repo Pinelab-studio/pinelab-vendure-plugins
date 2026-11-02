@@ -10,11 +10,11 @@ import {
   TransactionalConnection,
   UserInputError,
 } from '@vendure/core';
+import { asError } from 'catch-unknown';
+import { IsNull } from 'typeorm';
 import { loggerCtx, UTM_TRACKER_PLUGIN_OPTIONS } from '../constants';
 import { UtmOrderParameter } from '../entities/utm-order-parameter.entity';
 import { UTMParameterInput, UTMTrackerPluginInitOptions } from '../types';
-import { asError } from 'catch-unknown';
-import { IsNull } from 'typeorm';
 
 @Injectable()
 export class UTMTrackerService implements OnApplicationBootstrap {
@@ -23,7 +23,7 @@ export class UTMTrackerService implements OnApplicationBootstrap {
     @Inject(UTM_TRACKER_PLUGIN_OPTIONS)
     private readonly options: UTMTrackerPluginInitOptions,
     private readonly activeOrderService: ActiveOrderService,
-    private readonly eventBus: EventBus
+    private readonly eventBus: EventBus,
   ) {}
 
   onApplicationBootstrap() {
@@ -33,7 +33,7 @@ export class UTMTrackerService implements OnApplicationBootstrap {
         Logger.error(
           `Error calculating attribution for order ${event.order.code}: ${e}`,
           loggerCtx,
-          asError(e).stack
+          asError(e).stack,
         );
       });
     });
@@ -41,7 +41,7 @@ export class UTMTrackerService implements OnApplicationBootstrap {
 
   async addMultipleUTMParametersToOrder(
     ctx: RequestContext,
-    inputs: UTMParameterInput[]
+    inputs: UTMParameterInput[],
   ): Promise<boolean> {
     const order = await this.activeOrderService.getActiveOrder(ctx, undefined);
     if (!order) {
@@ -59,7 +59,7 @@ export class UTMTrackerService implements OnApplicationBootstrap {
         Logger.error(
           `Error adding UTM parameter to order ${order.code}: ${e}`,
           loggerCtx,
-          asError(e).stack
+          asError(e).stack,
         );
       });
     }
@@ -69,7 +69,7 @@ export class UTMTrackerService implements OnApplicationBootstrap {
       // Remove oldest parameter
       const oldestParameters = parameters.slice(
         this.options.maxParametersPerOrder,
-        parameters.length
+        parameters.length,
       ); // slice of MAX to END of array
       const oldestParameterIds = oldestParameters.map((p) => p.id);
       await this.connection
@@ -79,7 +79,7 @@ export class UTMTrackerService implements OnApplicationBootstrap {
         `Removed oldest UTM parameters '${oldestParameters
           .map((p) => p.id)
           .join(', ')}' from order ${order.id} (${order.code})`,
-        loggerCtx
+        loggerCtx,
       );
     }
     return true;
@@ -88,7 +88,7 @@ export class UTMTrackerService implements OnApplicationBootstrap {
   async addUTMParameterToOrder(
     ctx: RequestContext,
     input: UTMParameterInput,
-    order: Order
+    order: Order,
   ): Promise<void> {
     input = this.sanitizeInput(input);
     if (
@@ -125,7 +125,7 @@ export class UTMTrackerService implements OnApplicationBootstrap {
       });
       Logger.info(
         `Updated existing UTM parameters '${existingParameter.id}' of order ${order.id} (${order.code})`,
-        loggerCtx
+        loggerCtx,
       );
     } else {
       // Create new parameter
@@ -141,19 +141,20 @@ export class UTMTrackerService implements OnApplicationBootstrap {
         connectedAt: input.connectedAt,
       });
       Logger.info(
-        `Added UTM parameters to order ${order.id} (${order.code}): source=${
-          input.source ?? ''
-        } medium=${input.medium ?? ''} campaign=${input.campaign ?? ''} term=${
-          input.term ?? ''
-        } content=${input.content ?? ''} clid=${input.clid ?? ''}`,
-        loggerCtx
+        `Added UTM parameters to order ${order.id} (${order.code}): ${this.describeUTMInput(input)}`,
+        loggerCtx,
       );
     }
   }
 
+  /** Formats tracking parameters consistently for diagnostic logs. */
+  private describeUTMInput(input: UTMParameterInput): string {
+    return `source=${input.source ?? ''} medium=${input.medium ?? ''} campaign=${input.campaign ?? ''} term=${input.term ?? ''} content=${input.content ?? ''} clid=${input.clid ?? ''}`;
+  }
+
   async getUTMParameters(
     ctx: RequestContext,
-    orderId: ID
+    orderId: ID,
   ): Promise<UtmOrderParameter[]> {
     const utmRepo = this.connection.getRepository(ctx, UtmOrderParameter);
     return await utmRepo.find({
@@ -168,35 +169,35 @@ export class UTMTrackerService implements OnApplicationBootstrap {
    */
   async calculateAttribution(
     ctx: RequestContext,
-    order: Order
+    order: Order,
   ): Promise<UtmOrderParameter[]> {
     let utmParameters = await this.getUTMParameters(ctx, order.id);
     if (this.options.attributionModel.skipAttribution) {
       Logger.info(
         `Skipped attribution for order ${order.id} (${order.code}). Attribution model: ${this.options.attributionModel.name}`,
-        loggerCtx
+        loggerCtx,
       );
       return utmParameters;
     }
     // filter out old parameters
     const maxAttributionAge = new Date(
-      Date.now() - this.options.maxAttributionAgeInDays * 24 * 60 * 60 * 1000
+      Date.now() - this.options.maxAttributionAgeInDays * 24 * 60 * 60 * 1000,
     );
     utmParameters = utmParameters.filter(
-      (param) => param.connectedAt > maxAttributionAge
+      (param) => param.connectedAt > maxAttributionAge,
     );
     const results = this.options.attributionModel.calculateAttribution(
       utmParameters,
-      order
+      order,
     );
     const totalAttribution = results.reduce(
       (acc, result) => acc + result.attributionPercentage,
-      0
+      0,
     );
     if (totalAttribution > 1) {
       Logger.error(
         `Total attribution must be between 0 and 1. Total attribution for order ${order.id} (${order.code}): ${totalAttribution}. Not saving attribution.`,
-        loggerCtx
+        loggerCtx,
       );
       return [];
     }
@@ -210,7 +211,7 @@ export class UTMTrackerService implements OnApplicationBootstrap {
     }
     Logger.info(
       `Saved attribution percentages for order ${order.id} (${order.code}). Attribution model: ${this.options.attributionModel.name}`,
-      loggerCtx
+      loggerCtx,
     );
     return await this.getUTMParameters(ctx, order.id);
   }

@@ -26,13 +26,13 @@ import { assignCustomersToChannel } from '../src/assign-customers-to-channel';
 import { assignOrdersToChannel } from '../src/assign-orders-to-channel';
 import { CREATE_CHANNEL, createChannelInput } from './test-helpers';
 
-describe('Vendure Scripts', function () {
+describe('Vendure Scripts', () => {
   let server: TestServer;
   let adminClient: SimpleGraphQLClient;
   let shopClient: SimpleGraphQLClient;
   let serverStarted = false;
-  let defaultChannelId = 1;
-  let newChannelId = 2;
+  const defaultChannelId = 1;
+  const newChannelId = 2;
   let injector: Injector;
   let sourceChannelCtx: RequestContext;
   let targetChannelCtx: RequestContext;
@@ -76,19 +76,19 @@ describe('Vendure Scripts', function () {
     const channelService = server.app.get(ChannelService);
     const sourceChannel = await channelService.findOne(
       sourceChannelCtx,
-      defaultChannelId
+      defaultChannelId,
     );
     sourceChannelCtx = await getSuperadminContextInChannel(
       injector,
-      sourceChannel!
+      sourceChannel!,
     );
     const targetChannel = await channelService.findOne(
       sourceChannelCtx,
-      newChannelId
+      newChannelId,
     );
     targetChannelCtx = await getSuperadminContextInChannel(
       injector,
-      targetChannel!
+      targetChannel!,
     );
   }, 60000);
 
@@ -101,7 +101,7 @@ describe('Vendure Scripts', function () {
       defaultChannelId,
       newChannelId,
       injector,
-      sourceChannelCtx
+      sourceChannelCtx,
     );
     //test if the assinging worked
     const targetChannelProducts = (
@@ -134,7 +134,7 @@ describe('Vendure Scripts', function () {
       defaultChannelId,
       newChannelId,
       injector,
-      sourceChannelCtx
+      sourceChannelCtx,
     );
     const customersInTargetChannel = (
       await server.app.get(CustomerService).findAll(targetChannelCtx, undefined)
@@ -143,12 +143,12 @@ describe('Vendure Scripts', function () {
       await server.app.get(CustomerService).findAll(sourceChannelCtx, undefined)
     ).items;
     expect(customersInTargetChannel.length).toBe(5);
-    for (let sourceChannelCustomer of customersInSourceChannel) {
+    for (const sourceChannelCustomer of customersInSourceChannel) {
       expect(
         customersInTargetChannel.find(
           (targetChannelCustomer) =>
-            targetChannelCustomer.id === sourceChannelCustomer.id
-        )
+            targetChannelCustomer.id === sourceChannelCustomer.id,
+        ),
       ).toBeDefined();
     }
   });
@@ -160,7 +160,7 @@ describe('Vendure Scripts', function () {
       defaultChannelId,
       newChannelId,
       injector,
-      sourceChannelCtx
+      sourceChannelCtx,
     );
     const ordersInTargetChannel = (
       await server.app.get(OrderService).findAll(targetChannelCtx, undefined)

@@ -1,4 +1,4 @@
-import { DashboardPlugin } from '@vendure/dashboard/plugin';
+import path from 'node:path';
 import {
   configureDefaultOrderProcess,
   DefaultLogger,
@@ -13,18 +13,16 @@ import {
   TransactionalConnection,
   VendureConfig,
 } from '@vendure/core';
+import { DashboardPlugin } from '@vendure/dashboard/plugin';
 import {
   createTestEnvironment,
   registerInitializer,
   SqljsInitializer,
 } from '@vendure/testing';
 import { initialData } from '../../test/src/initial-data';
+import { createSettledOrder } from '../../test/src/shop-utils';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
 import { QlsPlugin, qlsSyncAllProductsTask } from '../src';
-import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
-import path from 'path';
-import { createSettledOrder } from '../../test/src/shop-utils';
-import { convertProcessSignalToExitCode } from 'util';
 
 /**
  * The dev-server is just for development. Feel free to break anything here.
@@ -84,10 +82,10 @@ import { convertProcessSignalToExitCode } from 'util';
             };
           },
           autoPushOrders: true,
-          processOrderFrom: (ctx, order) => {
+          processOrderFrom: (_ctx, _order) => {
             return new Date(Date.now() + 1000 * 60 * 60 * 2); // 2 hours from now
           },
-          addAdditionalOrderItems: async (ctx, injector, order) => {
+          addAdditionalOrderItems: async (_ctx, _injector, _order) => {
             return [
               {
                 // Just a test
@@ -97,7 +95,12 @@ import { convertProcessSignalToExitCode } from 'util';
               },
             ];
           },
-          pullAdditionalOrderFields: async (ctx, injector, order, qlsOrder) => {
+          pullAdditionalOrderFields: async (
+            _ctx,
+            injector,
+            order,
+            qlsOrder,
+          ) => {
             console.log('Order created in QLS:', qlsOrder);
             console.log('Order created in QLS:', order);
             // Example: log or save additional data after order is created in QLS
@@ -105,12 +108,12 @@ import { convertProcessSignalToExitCode } from 'util';
               .get(TransactionalConnection)
               .rawConnection.getRepository(Order)
               .update(order.id, {
-                code: order.code + '-JUST_TESTING_HOOK',
+                code: `${order.code}-JUST_TESTING_HOOK`,
               });
           },
         },
         productSync: {
-          getAdditionalVariantFields: (ctx, variant) => ({
+          getAdditionalVariantFields: (_ctx, variant) => ({
             ean: variant.sku,
             image_url: `https://pinelab.studio/remote-img/6fa890c7-cd4c-4715-ad73-daa99cd6fe7f_pinelab_e-commerce_hero_image_medium.webp`,
           }),
@@ -118,10 +121,10 @@ import { convertProcessSignalToExitCode } from 'util';
             await injector.get(EntityHydrator).hydrate(ctx, variant, {
               relations: ['facetValues'],
             });
-            return variant.id == 1; // Just as a test
+            return variant.id === 1; // Just as a test
           },
           qlsProductIdUiTab: null,
-          saveAdditionalVariantData: async (ctx, injector, qlsProduct) => {
+          saveAdditionalVariantData: async (_ctx, _injector, qlsProduct) => {
             // Just a test implementation
             console.log('Saving additional data for QLS product:', qlsProduct);
           },
@@ -172,6 +175,6 @@ import { convertProcessSignalToExitCode } from 'util';
         city: 'Liwwa',
         postalCode: '8932 BR',
       },
-    }
+    },
   );
 })();

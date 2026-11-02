@@ -4,8 +4,8 @@ import {
   LanguageCode,
   Logger,
 } from '@vendure/core';
-import { MyparcelService } from './myparcel.service';
 import { loggerCtx } from '../constants';
+import { MyparcelService } from './myparcel.service';
 
 let myparcelService: MyparcelService;
 export const myparcelHandler = new FulfillmentHandler({
@@ -73,7 +73,7 @@ export const myparcelHandler = new FulfillmentHandler({
   init: (injector: Injector) => {
     myparcelService = injector.get(MyparcelService);
   },
-  createFulfillment: async (ctx, orders, orderItems, args) => {
+  createFulfillment: async (ctx, orders, _orderItems, args) => {
     const shipmentId = await myparcelService
       .createShipments(ctx, orders, args.customsContents)
       .catch((err) => {

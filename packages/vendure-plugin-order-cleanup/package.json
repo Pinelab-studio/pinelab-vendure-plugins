@@ -20,8 +20,8 @@
     "start": "yarn ts-node test/dev-server.ts",
     "test": "vitest run",
     "test:watch": "vitest watch",
-    "lint": "eslint .",
-    "lint:fix": "eslint . --fix",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write .",
     "dev": "ts-node test/dev-server.ts"
   },
   "dependencies": {

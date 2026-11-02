@@ -5,9 +5,8 @@ import {
   RequestContextService,
   ScheduledTask,
 } from '@vendure/core';
-
-import { QlsProductService } from '../services/qls-product.service';
 import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
+import { QlsProductService } from '../services/qls-product.service';
 import { QlsPluginOptions } from '../types';
 
 /**

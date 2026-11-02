@@ -9,10 +9,10 @@ import {
 } from '@vendure/core';
 import { In } from 'typeorm';
 import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
-import { SimpleCmsPluginOptions } from '../types';
 import { ContentEntryService } from '../services/content-entry.service';
-import { flattenEntry } from './flatten-entry';
+import { RelationFieldDefinition, SimpleCmsPluginOptions } from '../types';
 import { toGraphQLTypeName } from './api-extensions';
+import { flattenEntry } from './flatten-entry';
 
 /**
  * Resolves the concrete `__typename` for the `ContentEntry` interface
@@ -43,7 +43,7 @@ export class ContentEntryInterfaceResolver {
  * passed to `@Query()` is the actual schema name.
  */
 export function createShopResolver(
-  options: SimpleCmsPluginOptions
+  options: SimpleCmsPluginOptions,
 ): Type<unknown> {
   @Resolver()
   @Injectable()
@@ -53,7 +53,7 @@ export function createShopResolver(
       readonly connection: TransactionalConnection,
       readonly translator: TranslatorService,
       @Inject(PLUGIN_INIT_OPTIONS)
-      readonly opts: SimpleCmsPluginOptions
+      readonly opts: SimpleCmsPluginOptions,
     ) {}
 
     /**
@@ -70,7 +70,7 @@ export function createShopResolver(
     async resolveRelationFields(
       entry: Record<string, unknown>,
       typeDef: SimpleCmsPluginOptions['contentTypes'][string],
-      ctx: RequestContext
+      ctx: RequestContext,
     ): Promise<Record<string, unknown>> {
       const result = { ...entry };
       for (const field of typeDef.fields) {
@@ -78,102 +78,91 @@ export function createShopResolver(
           continue;
         }
 
-        if (field.list) {
-          const relationValue = entry[field.name] as
-            | Array<Record<string, unknown>>
-            | undefined;
-          if (!Array.isArray(relationValue) || relationValue.length === 0) {
-            continue;
-          }
-          const ids = relationValue.map((v) => v.id).filter((id) => id != null);
-          if (ids.length === 0) {
-            continue;
-          }
-          try {
-            const repository = this.connection.getRepository(ctx, field.entity);
-            const hasTranslationsRelation = repository.metadata.relations.some(
-              (r) => r.propertyName === 'translations'
-            );
-            const loaded = (await repository.find({
-              where: { id: In(ids as never) },
-              ...(hasTranslationsRelation
-                ? { relations: ['translations'] }
-                : {}),
-            })) as unknown[];
-            // Preserve input order and translate
-            const idMap = new Map(
-              loaded.map((e) => [(e as { id: unknown }).id, e])
-            );
-            const ordered: unknown[] = [];
-            for (const id of ids) {
-              const entity = idMap.get(id);
-              if (!entity) continue;
-              const hasTranslations =
-                Array.isArray(
-                  (entity as { translations?: unknown[] }).translations
-                ) &&
-                (entity as { translations: unknown[] }).translations.length > 0;
-              ordered.push(
-                hasTranslations
-                  ? this.translator.translate(entity as never, ctx)
-                  : entity
-              );
-            }
-            result[field.name] = ordered;
-          } catch (error) {
-            const err =
-              error instanceof Error ? error : new Error(String(error));
-            Logger.error(
-              `Failed to load relation field '${field.name}' for content type '${typeDef.displayName}': ${err.message}`,
-              loggerCtx,
-              err.stack
-            );
-            result[field.name] = relationValue;
-          }
-          continue;
-        }
-
-        // Single relation
-        const relationValue = entry[field.name] as
-          | Record<string, unknown>
-          | undefined;
-        if (!relationValue || relationValue.id == null) {
-          continue;
-        }
         try {
-          const repository = this.connection.getRepository(ctx, field.entity);
-          const hasTranslationsRelation = repository.metadata.relations.some(
-            (r) => r.propertyName === 'translations'
+          const resolved = await this.resolveRelationValue(
+            entry[field.name],
+            field,
+            ctx,
           );
-          const loaded = (await repository.findOne({
-            where: { id: relationValue.id as never },
-            ...(hasTranslationsRelation ? { relations: ['translations'] } : {}),
-          })) as unknown;
-          if (!loaded) {
-            continue;
-          }
-          const hasTranslations =
-            Array.isArray(
-              (loaded as { translations?: unknown[] }).translations
-            ) &&
-            (loaded as { translations: unknown[] }).translations.length > 0;
-          result[field.name] = hasTranslations
-            ? this.translator.translate(loaded as never, ctx)
-            : loaded;
+          if (resolved !== undefined) result[field.name] = resolved;
         } catch (error) {
           const err = error instanceof Error ? error : new Error(String(error));
           Logger.error(
             `Failed to load relation field '${field.name}' for content type '${typeDef.displayName}': ${err.message}`,
             loggerCtx,
-            err.stack
+            err.stack,
           );
-
-          // If loading fails for any reason, keep the original `{ id }` value
-          // so the consumer still receives the relation reference.
-          result[field.name] = relationValue;
+          result[field.name] = entry[field.name];
         }
       }
       return result;
+    }
+
+    /** Dispatches relation resolution according to the configured cardinality. */
+    async resolveRelationValue(
+      value: unknown,
+      field: RelationFieldDefinition,
+      ctx: RequestContext,
+    ): Promise<unknown> {
+      return field.list
+        ? this.resolveRelationList(value, field, ctx)
+        : this.resolveSingleRelation(value, field, ctx);
+    }
+
+    /** Loads relation lists in input order, retaining only entities that still exist. */
+    async resolveRelationList(
+      value: unknown,
+      field: RelationFieldDefinition,
+      ctx: RequestContext,
+    ): Promise<unknown[] | undefined> {
+      if (!Array.isArray(value) || value.length === 0) return;
+      const ids = value.map((v) => v.id).filter((id) => id != null);
+      if (ids.length === 0) return;
+      const repository = this.connection.getRepository(ctx, field.entity);
+      const hasTranslations = repository.metadata.relations.some(
+        (r) => r.propertyName === 'translations',
+      );
+      const loaded = (await repository.find({
+        where: { id: In(ids as never) },
+        ...(hasTranslations ? { relations: ['translations'] } : {}),
+      })) as unknown[];
+      const idMap = new Map(
+        loaded.map((entity) => [(entity as { id: unknown }).id, entity]),
+      );
+      const ordered: unknown[] = [];
+      for (const id of ids) {
+        const entity = idMap.get(id);
+        if (entity) ordered.push(this.translateRelation(entity, ctx));
+      }
+      return ordered;
+    }
+
+    /** Loads one relation while leaving unresolved references unchanged. */
+    async resolveSingleRelation(
+      value: unknown,
+      field: RelationFieldDefinition,
+      ctx: RequestContext,
+    ): Promise<unknown> {
+      const relation = value as Record<string, unknown> | undefined;
+      if (!relation || relation.id == null) return;
+      const repository = this.connection.getRepository(ctx, field.entity);
+      const hasTranslations = repository.metadata.relations.some(
+        (r) => r.propertyName === 'translations',
+      );
+      const loaded = await repository.findOne({
+        where: { id: relation.id as never },
+        ...(hasTranslations ? { relations: ['translations'] } : {}),
+      });
+      if (loaded) return this.translateRelation(loaded, ctx);
+    }
+
+    /** Translates only entities with a nonempty translations relation. */
+    translateRelation(entity: unknown, ctx: RequestContext): unknown {
+      const translations = (entity as { translations?: unknown[] })
+        .translations;
+      return Array.isArray(translations) && translations.length > 0
+        ? this.translator.translate(entity as never, ctx)
+        : entity;
     }
   }
 
@@ -183,7 +172,7 @@ export function createShopResolver(
   >;
 
   for (const [contentTypeKey, def] of Object.entries(
-    options.contentTypes ?? {}
+    options.contentTypes ?? {},
   )) {
     if (def.allowMultiple) {
       const listMethodName = `list_${contentTypeKey}`;
@@ -194,15 +183,15 @@ export function createShopResolver(
       // List query: returns all entries of this content type
       const listResolver = async function (
         this: DynamicShopResolver,
-        ctx: RequestContext
+        ctx: RequestContext,
       ) {
         const items = await this.contentEntryService.findByContentTypeCode(
           ctx,
-          contentTypeKey
+          contentTypeKey,
         );
         const flattened = items.map((e) => flattenEntry(ctx, e, this.opts));
         return Promise.all(
-          flattened.map((entry) => this.resolveRelationFields(entry, def, ctx))
+          flattened.map((entry) => this.resolveRelationFields(entry, def, ctx)),
         );
       };
       proto[listMethodName] = listResolver;
@@ -215,7 +204,7 @@ export function createShopResolver(
       const byIdResolver = async function (
         this: DynamicShopResolver,
         ctx: RequestContext,
-        args: { id: string }
+        args: { id: string },
       ) {
         const entry = await this.contentEntryService.findOne(ctx, args.id);
         if (!entry || entry.contentTypeCode !== contentTypeKey) {
@@ -236,11 +225,11 @@ export function createShopResolver(
 
       const singletonResolver = async function (
         this: DynamicShopResolver,
-        ctx: RequestContext
+        ctx: RequestContext,
       ) {
         const items = await this.contentEntryService.findByContentTypeCode(
           ctx,
-          contentTypeKey
+          contentTypeKey,
         );
         const entry = items[0];
         if (!entry) {

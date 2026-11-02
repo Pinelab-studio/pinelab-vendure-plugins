@@ -1,3 +1,4 @@
+import { useMutation } from '@tanstack/react-query';
 import {
   api,
   Button,
@@ -11,7 +12,6 @@ import {
   Input,
   Label,
 } from '@vendure/dashboard';
-import { useMutation } from '@tanstack/react-query';
 import { QrCode } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';

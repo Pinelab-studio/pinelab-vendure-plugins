@@ -1,8 +1,5 @@
-import * as React from 'react';
 import * as AlertDialogPrimitive from '@radix-ui/react-alert-dialog';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useForm } from 'react-hook-form';
-import { toast } from 'sonner';
 import {
   AlertDialog,
   AlertDialogCancel,
@@ -25,6 +22,9 @@ import {
   useChannel,
   useLocalFormat,
 } from '@vendure/dashboard';
+import * as React from 'react';
+import { useForm } from 'react-hook-form';
+import { toast } from 'sonner';
 
 const CREATE_GIFT_CARD = graphql(`
   mutation CreateGiftCard($input: CreateWalletInput!) {

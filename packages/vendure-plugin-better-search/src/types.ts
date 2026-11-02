@@ -2,7 +2,7 @@ import { Collection, Product } from '@vendure/core';
 import { BetterSearchResult } from './api/generated/graphql';
 
 export type BetterSearchConfigInput<
-  T extends BetterSearchResult = BetterSearchResult
+  T extends BetterSearchResult = BetterSearchResult,
 > = Partial<BetterSearchConfig<T>>;
 
 /**
@@ -10,7 +10,7 @@ export type BetterSearchConfigInput<
  * The plugin can be configured using the following options:
  */
 export interface BetterSearchConfig<
-  T extends BetterSearchResult = BetterSearchResult
+  T extends BetterSearchResult = BetterSearchResult,
 > {
   /**
    * Map a product to a Search Document.
@@ -18,7 +18,7 @@ export interface BetterSearchConfig<
    */
   mapToSearchDocument: (
     product: Product,
-    collectionForThisProduct: Collection[]
+    collectionForThisProduct: Collection[],
   ) => T;
   /**
    * The fields and corresponding weights that should be indexed.

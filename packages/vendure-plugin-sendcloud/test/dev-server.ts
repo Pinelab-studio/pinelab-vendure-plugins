@@ -1,15 +1,15 @@
-import { initialData } from '../../test/src/initial-data';
+import { ChannelService, RequestContext, VendureConfig } from '@vendure/core';
 import {
   createTestEnvironment,
   registerInitializer,
   SqljsInitializer,
 } from '@vendure/testing';
-import { ChannelService, RequestContext, VendureConfig } from '@vendure/core';
+import { addShippingMethod, updateVariants } from '../../test/src/admin-utils';
+import { GlobalFlag } from '../../test/src/generated/admin-graphql';
+import { initialData } from '../../test/src/initial-data';
+import { createSettledOrder } from '../../test/src/shop-utils';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
 import { sendcloudHandler } from '../src';
-import { addShippingMethod, updateVariants } from '../../test/src/admin-utils';
-import { createSettledOrder } from '../../test/src/shop-utils';
-import { GlobalFlag } from '../../test/src/generated/admin-graphql';
 import { config } from './vendure-config';
 
 (async () => {
@@ -22,7 +22,7 @@ import { config } from './vendure-config';
   };
 
   const { server, adminClient, shopClient } = createTestEnvironment(
-    config as Required<VendureConfig>
+    config as Required<VendureConfig>,
   );
   await server.init({
     initialData: {

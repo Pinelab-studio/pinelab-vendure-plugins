@@ -1,18 +1,6 @@
-import React from 'react';
-import { useForm } from 'react-hook-form';
+import * as AlertDialogPrimitive from '@radix-ui/react-alert-dialog';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { toast } from 'sonner';
 import {
-  api,
-  graphql,
-  Button,
-  Input,
-  InputGroup,
-  InputGroupAddon,
-  InputGroupInput,
-  InputGroupText,
-  FormFieldWrapper,
-  Switch,
   AlertDialog,
   AlertDialogCancel,
   AlertDialogContent,
@@ -21,10 +9,22 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
+  api,
+  Button,
+  FormFieldWrapper,
+  graphql,
   handleNestedFormSubmit,
+  Input,
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+  InputGroupText,
+  Switch,
   useLocalFormat,
 } from '@vendure/dashboard';
-import * as AlertDialogPrimitive from '@radix-ui/react-alert-dialog';
+import React from 'react';
+import { useForm } from 'react-hook-form';
+import { toast } from 'sonner';
 
 type AdjustDirection = 'add' | 'subtract';
 
@@ -115,16 +115,16 @@ export const WalletAdjustmentDialog = ({
               }}
               render={({ field }) => (
                 <div className="flex items-center gap-2">
-                  <div className="flex items-center gap-2 shrink-0">
+                  <div className="flex shrink-0 items-center gap-2">
                     <Switch
                       checked={watch('direction') === 'subtract'}
                       onCheckedChange={(checked) =>
                         setValue('direction', checked ? 'subtract' : 'add')
                       }
-                      className="data-[state=unchecked]:bg-green-600 data-[state=unchecked]:dark:bg-green-500 data-[state=checked]:bg-red-600 data-[state=checked]:dark:bg-red-500"
+                      className="data-[state=checked]:bg-red-600 data-[state=unchecked]:bg-green-600 data-[state=checked]:dark:bg-red-500 data-[state=unchecked]:dark:bg-green-500"
                     />
                     <span
-                      className={`text-sm font-semibold ${
+                      className={`font-semibold text-sm ${
                         watch('direction') === 'subtract'
                           ? 'text-red-700 dark:text-red-400'
                           : 'text-green-700 dark:text-green-400'

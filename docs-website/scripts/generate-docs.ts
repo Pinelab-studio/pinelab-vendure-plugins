@@ -1,10 +1,10 @@
 import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
-import { getPlugins } from '../src/utils/plugins.ts';
 import {
   getEngineeringDocs,
-  stripFrontmatter,
   markdownLabel,
+  stripFrontmatter,
 } from '../src/utils/engineering-docs.ts';
+import { getPlugins } from '../src/utils/plugins.ts';
 
 const output = new URL('../src/content/docs/plugin/', import.meta.url);
 
@@ -35,7 +35,7 @@ async function generatePluginDocs() {
       }) +
         metadata +
         '\n\n' +
-        plugin.readme
+        plugin.readme,
     );
     await writeFile(
       new URL('changelog.md', directory),
@@ -46,11 +46,11 @@ async function generatePluginDocs() {
         sidebar: { hidden: true },
       }) +
         `[← Plugin documentation](/plugin/${plugin.slug}/) · [View on npm](https://www.npmjs.com/package/${plugin.name})\n\n` +
-        plugin.changelog
+        plugin.changelog,
     );
   }
   console.log(
-    `Generated Starlight documentation for ${plugins.length} plugins.`
+    `Generated Starlight documentation for ${plugins.length} plugins.`,
   );
 }
 
@@ -102,7 +102,7 @@ async function generateRecipeDocs() {
     await writeFile(
       file,
       metadata.replace(/---\n\n$/, `${recipe.yaml}\n---\n\n`) +
-        stripFrontmatter(recipe.markdown)
+        stripFrontmatter(recipe.markdown),
     );
   }
   await writeFile(
@@ -115,13 +115,13 @@ async function generateRecipeDocs() {
     }) +
       recipes
         .map(
-          ({ title, slug }) => `- [${markdownLabel(title)}](/recipes/${slug}/)`
+          ({ title, slug }) => `- [${markdownLabel(title)}](/recipes/${slug}/)`,
         )
         .join('\n') +
-      '\n'
+      '\n',
   );
   console.log(
-    `Generated Starlight documentation for ${recipes.length} recipes.`
+    `Generated Starlight documentation for ${recipes.length} recipes.`,
   );
 }
 
@@ -129,13 +129,13 @@ async function generateRecipeDocs() {
 async function generatePhilosophyDocs() {
   const markdown = await readFile(
     new URL('../../PHILISOPHY.md', import.meta.url),
-    'utf8'
+    'utf8',
   );
   const body = markdown
     .replace(/^#\s+.+\r?\n/, '')
     .replace(
       /\]\(\.\/packages\/([^/]+)\/README\.md(#[^)]*)?\)/g,
-      '](/plugin/$1/$2)'
+      '](/plugin/$1/$2)',
     );
   await writeFile(
     new URL('../src/content/docs/philosophy.md', import.meta.url),
@@ -144,7 +144,7 @@ async function generatePhilosophyDocs() {
       description: 'How Pinelab designs reusable, extensible Vendure plugins.',
       editUrl:
         'https://github.com/Pinelab-studio/pinelab-vendure-plugins/edit/main/PHILISOPHY.md',
-    }) + body
+    }) + body,
   );
 }
 

@@ -25,7 +25,7 @@
     "dev:dashboard": "vite --clearScreen false",
     "test": "vitest run",
     "generate-soap-client": "rimraf src/client/eboekhoudenwsdl &&  wsdl-tsclient ./src/client/e-boekhouden-wsdl.xml -o ./src/client/",
-    "lint": "echo 'No linting configured'"
+    "lint": "biome check ."
   },
   "dependencies": {
     "soap": "^0.43.0"

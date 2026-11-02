@@ -18,7 +18,7 @@ export function calculateOrderWeight(order: Order): number {
       //eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
       (line.productVariant.customFields as any).weight ??
       //eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
-      (line.productVariant.product?.customFields as any).weight ??
+      (line.productVariant.product?.customFields as any)?.weight ??
       0;
     const lineWeight = weight * line.quantity;
     return acc + lineWeight;
@@ -101,12 +101,12 @@ export const weightAndCountryChecker = new ShippingEligibilityChecker({
     ctx,
     _order,
     { minWeight, maxWeight, countries, excludeCountries },
-    method
+    method,
   ) {
     const isEligibleByCountry = isEligibleForCountry(
       _order,
       countries,
-      excludeCountries
+      excludeCountries,
     );
     if (isEligibleByCountry === false) {
       return false;
@@ -119,7 +119,7 @@ export const weightAndCountryChecker = new ShippingEligibilityChecker({
           'lines',
           'lines.productVariant',
           'lines.productVariant.product',
-        ])
+        ]),
     );
     let totalOrderWeight = 0;
     if (ShippingExtensionsPlugin.options?.weightCalculationFunction) {
@@ -127,7 +127,7 @@ export const weightAndCountryChecker = new ShippingEligibilityChecker({
         await ShippingExtensionsPlugin.options.weightCalculationFunction(
           ctx,
           hydratedOrder,
-          injector
+          injector,
         );
     } else {
       totalOrderWeight = calculateOrderWeight(hydratedOrder);
@@ -143,7 +143,7 @@ export const weightAndCountryChecker = new ShippingEligibilityChecker({
         ctx,
         injector,
         hydratedOrder,
-        method
+        method,
       );
     if (additionalIsEligible === false) {
       return false;

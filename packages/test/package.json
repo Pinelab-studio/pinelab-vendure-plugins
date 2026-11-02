@@ -8,7 +8,7 @@
     "generate": "graphql-codegen --config codegen.yml",
     "start": "ts-node ./src/dev-server.ts",
     "build": "echo 'Not meant to be built'",
-    "lint": "echo 'Not meant to be linted'",
+    "lint": "biome check .",
     "test": "echo 'No test implemented'"
   }
 }

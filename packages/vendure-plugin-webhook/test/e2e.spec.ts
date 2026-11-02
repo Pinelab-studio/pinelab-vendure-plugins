@@ -1,27 +1,28 @@
 import {
   AccountRegistrationEvent,
-  ChannelService,
   DefaultLogger,
   EventBus,
-  InitialData,
+  type InitialData,
   LogLevel,
   mergeConfig,
   ProductEvent,
-  RequestContext,
+  type RequestContext,
 } from '@vendure/core';
 import {
   createTestEnvironment,
   registerInitializer,
-  SimpleGraphQLClient,
+  type SimpleGraphQLClient,
   SqljsInitializer,
   testConfig,
 } from '@vendure/testing';
+import type { TestServer } from '@vendure/testing/lib/test-server';
 import { getSuperadminContext } from '@vendure/testing/lib/utils/get-superadmin-context';
-import { TestServer } from '@vendure/testing/lib/test-server';
 import nock from 'nock';
+import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { initialData } from '../../test/src/initial-data';
+import { waitFor } from '../../test/src/test-helpers';
 import { WebhookPlugin } from '../src';
-import {
+import type {
   AvailableWebhookEventsQuery,
   AvailableWebhookRequestTransformersQuery,
   SetWebhooksMutation,
@@ -33,13 +34,10 @@ import {
   getAvailableWebhookRequestTransformersQuery,
   getWebhooksQuery,
   setWebhooksMutation,
-} from '../src/ui/queries';
+} from './queries';
 import { stringifyProductTransformer } from './test-helpers';
-import { describe, beforeAll, it, expect, afterEach, afterAll } from 'vitest';
-import getFilesInAdminUiFolder from '../../test/src/compile-admin-ui.util';
-import { waitFor } from '../../test/src/test-helpers';
 
-describe('Webhook plugin', function () {
+describe('Webhook plugin', () => {
   let server: TestServer;
   let adminClient: SimpleGraphQLClient;
   let serverStarted = false;
@@ -113,7 +111,7 @@ describe('Webhook plugin', function () {
     await expect(setWebhooks[0].event).toBe('ProductEvent');
     await expect(setWebhooks[0].url).toBe(testProductWebhookUrl);
     await expect(setWebhooks[0].requestTransformer?.supportedEvents[0]).toBe(
-      'ProductEvent'
+      'ProductEvent',
     );
     await expect(setWebhooks[0].requestTransformer?.name).toBeDefined();
     await expect(setWebhooks[1].event).toBe('AccountRegistrationEvent');
@@ -122,14 +120,13 @@ describe('Webhook plugin', function () {
   });
 
   it('Should get all webhooks for current channel', async () => {
-    const { webhooks } = await adminClient.query<WebhooksQuery>(
-      getWebhooksQuery
-    );
+    const { webhooks } =
+      await adminClient.query<WebhooksQuery>(getWebhooksQuery);
     await expect(webhooks.length).toBe(2);
     await expect(webhooks[0].event).toBe('ProductEvent');
     await expect(webhooks[0].url).toBe(testProductWebhookUrl);
     await expect(webhooks[0].requestTransformer?.supportedEvents[0]).toBe(
-      'ProductEvent'
+      'ProductEvent',
     );
     await expect(webhooks[0].requestTransformer?.name).toBeDefined();
   });
@@ -137,13 +134,13 @@ describe('Webhook plugin', function () {
   it('Should get available events', async () => {
     const { availableWebhookEvents } =
       await adminClient.query<AvailableWebhookEventsQuery>(
-        getAvailableWebhookEventsQuery
+        getAvailableWebhookEventsQuery,
       );
     const hasRegistrationEvent = availableWebhookEvents.some(
-      (event) => event === 'AccountRegistrationEvent'
+      (event) => event === 'AccountRegistrationEvent',
     );
     const hasProductEvent = availableWebhookEvents.some(
-      (event) => event === 'ProductEvent'
+      (event) => event === 'ProductEvent',
     );
     await expect(availableWebhookEvents.length).toBe(2);
     await expect(hasRegistrationEvent).toBe(true);
@@ -153,14 +150,14 @@ describe('Webhook plugin', function () {
   it('Should get available request tranformers', async () => {
     const { availableWebhookRequestTransformers } =
       await adminClient.query<AvailableWebhookRequestTransformersQuery>(
-        getAvailableWebhookRequestTransformersQuery
+        getAvailableWebhookRequestTransformersQuery,
       );
     expect(availableWebhookRequestTransformers.length).toBe(1);
     expect(availableWebhookRequestTransformers[0].name).toBe(
-      'Stringify Product events'
+      'Stringify Product events',
     );
     expect(availableWebhookRequestTransformers[0].supportedEvents[0]).toBe(
-      'ProductEvent'
+      'ProductEvent',
     );
   });
 
@@ -201,7 +198,7 @@ describe('Webhook plugin', function () {
   });
 
   it('Should call webhook once with multiple events within 200ms', async () => {
-    let received: any[] = [];
+    const received: any[] = [];
     nock(testProductWebhookUrl)
       .post(/.*/, (body) => !!received.push(body))
       .reply(200, {})
@@ -216,7 +213,7 @@ describe('Webhook plugin', function () {
   });
 
   it('Should call webhook twice when events are apart more than 200ms', async () => {
-    let received: any[] = [];
+    const received: any[] = [];
     nock(testProductWebhookUrl)
       .persist()
       .post(/.*/, (body) => !!received.push(body))
@@ -272,13 +269,6 @@ describe('Webhook plugin', function () {
       'stringify-custom-header',
     ]);
   });
-
-  if (process.env.TEST_ADMIN_UI) {
-    it('Should compile admin', async () => {
-      const files = await getFilesInAdminUiFolder(__dirname, WebhookPlugin.ui);
-      expect(files?.length).toBeGreaterThan(0);
-    }, 200000);
-  }
 
   afterAll(async () => {
     await server.destroy();

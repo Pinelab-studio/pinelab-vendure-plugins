@@ -1,11 +1,10 @@
 import { Logger, ProductEvent } from '@vendure/core';
 import { RequestTransformer } from '../src/api/request-transformer';
-import util from 'util';
 
 export const stringifyProductTransformer = new RequestTransformer({
   name: 'Stringify Product events',
   supportedEvents: [ProductEvent],
-  transform: (event, injector) => {
+  transform: (event, _injector) => {
     if (event instanceof ProductEvent) {
       return {
         body: JSON.stringify({ type: event.type, ctx: event.ctx.serialize() }),
@@ -19,7 +18,7 @@ export const stringifyProductTransformer = new RequestTransformer({
       `This transformer is only for transforming ProductEvents, but got ${
         (event as any).constructor.name
       }. Not handling this event.`,
-      'WebhookStringifyProductTransformer'
+      'WebhookStringifyProductTransformer',
     );
     return {};
   },

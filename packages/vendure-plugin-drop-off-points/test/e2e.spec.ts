@@ -1,23 +1,22 @@
-import { DefaultLogger, LogLevel, mergeConfig } from '@vendure/core';
+import { mergeConfig } from '@vendure/core';
 import {
   createTestEnvironment,
   registerInitializer,
   SimpleGraphQLClient,
   SqljsInitializer,
-  testConfig,
   TestServer,
+  testConfig,
 } from '@vendure/testing';
 import { gql } from 'graphql-tag';
 import { afterAll, beforeAll, expect, it } from 'vitest';
 import { initialData } from '../../test/src/initial-data';
+import { addItem } from '../../test/src/shop-utils';
 import {
   DropOffPointsPlugin,
-  Mutation,
   MutationSetParcelDropOffPointArgs,
   QueryParcelDropOffPointsArgs,
 } from '../src';
 import { MockCarrier } from './mock-carrier';
-import { addItem } from '../../test/src/shop-utils';
 
 let server: TestServer;
 let adminClient: SimpleGraphQLClient;
@@ -90,7 +89,7 @@ it('Set drop off point on order', async () => {
 
 it('Unset drop off point', async () => {
   const { unsetParcelDropOffPoint: order } = await shopClient.query(
-    unsetDropOffPointMutation
+    unsetDropOffPointMutation,
   );
   expect(order.customFields.dropOffPointCarrier).toBeNull();
   expect(order.customFields.dropOffPointName).toBeNull();

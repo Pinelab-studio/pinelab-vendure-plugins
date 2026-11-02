@@ -31,7 +31,7 @@ export function toBatches<T>(array: T[], batchSize: number): T[][] {
 export function getNextPageSize(processedOrders: number): number {
   return Math.min(
     ORDER_CLEANUP_PAGE_SIZE,
-    Math.max(0, ORDER_CLEANUP_PROCESSING_LIMIT - processedOrders)
+    Math.max(0, ORDER_CLEANUP_PROCESSING_LIMIT - processedOrders),
   );
 }
 
@@ -42,16 +42,16 @@ export function getNextPageSize(processedOrders: number): number {
  */
 export function resolveOrderCleanupChannel(
   assignedChannels: Channel[],
-  defaultChannel: Channel
+  defaultChannel: Channel,
 ): Channel {
   const salesChannels = assignedChannels.filter(
-    (channel) => String(channel.id) !== String(defaultChannel.id)
+    (channel) => String(channel.id) !== String(defaultChannel.id),
   );
   if (salesChannels.length > 1) {
     throw new Error(
       `Order is assigned to multiple non-default channels: ${salesChannels
         .map((channel) => channel.id)
-        .join(', ')}`
+        .join(', ')}`,
     );
   }
   return salesChannels[0] ?? defaultChannel;
@@ -64,7 +64,7 @@ export function resolveOrderCleanupChannel(
 export function isCronDue(
   cron: string,
   timezone: string,
-  now: Date = new Date()
+  now: Date = new Date(),
 ): boolean {
   const minute = new Date(now);
   minute.setUTCSeconds(0, 0);
@@ -77,7 +77,7 @@ export function isCronDue(
 export function validateCron(cron: string, timezone: string): void {
   if (cron.trim().split(/\s+/).length !== 5) {
     throw new Error(
-      'Order cleanup schedule.cron must be a five-field cron expression'
+      'Order cleanup schedule.cron must be a five-field cron expression',
     );
   }
   new Cron(cron, { paused: true, timezone });
@@ -91,7 +91,7 @@ export function validateTimezone(timezone: string): void {
     new Intl.DateTimeFormat('en-US', { timeZone: timezone }).format();
   } catch {
     throw new Error(
-      `Order cleanup schedule.timezone must be a valid IANA timezone: ${timezone}`
+      `Order cleanup schedule.timezone must be a valid IANA timezone: ${timezone}`,
     );
   }
 }

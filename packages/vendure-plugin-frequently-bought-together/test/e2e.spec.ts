@@ -1,3 +1,11 @@
+import { ModuleRef } from '@nestjs/core';
+import {
+  ConfigService,
+  DefaultLogger,
+  Injector,
+  LogLevel,
+  mergeConfig,
+} from '@vendure/core';
 import {
   createTestEnvironment,
   registerInitializer,
@@ -5,27 +13,18 @@ import {
   SqljsInitializer,
   testConfig,
 } from '@vendure/testing';
-import { initialData } from '../../test/src/initial-data';
-import {
-  ConfigService,
-  DefaultLogger,
-  InitialData,
-  LogLevel,
-  mergeConfig,
-} from '@vendure/core';
 import { TestServer } from '@vendure/testing/lib/test-server';
-import { expect, describe, beforeAll, afterAll, it, vi, test } from 'vitest';
-import { Injector } from '@vendure/core';
-import { ModuleRef } from '@nestjs/core';
+import gql from 'graphql-tag';
+import { afterAll, beforeAll, expect, it } from 'vitest';
+import { initialData } from '../../test/src/initial-data';
+import { createSettledOrder } from '../../test/src/shop-utils';
+import { waitFor } from '../../test/src/test-helpers';
+import { testPaymentMethod } from '../../test/src/test-payment-method';
 import {
   FrequentlyBoughtTogetherPlugin,
   frequentlyBoughtTogetherTask,
 } from '../src';
-import gql from 'graphql-tag';
 import { GetProductById, UpdateProductMutation } from './queries';
-import { createSettledOrder } from '../../test/src/shop-utils';
-import { waitFor } from '../../test/src/test-helpers';
-import { testPaymentMethod } from '../../test/src/test-payment-method';
 
 let server: TestServer;
 let adminClient: SimpleGraphQLClient;
@@ -67,7 +66,7 @@ it('Server should start', async () => {
 it('Registers the recalculation scheduled task by default', () => {
   const tasks = server.app.get(ConfigService).schedulerOptions.tasks ?? [];
   expect(
-    tasks.some((t) => t.id === 'frequently-bought-together-calculation')
+    tasks.some((t) => t.id === 'frequently-bought-together-calculation'),
   ).toBe(true);
 });
 
@@ -121,7 +120,7 @@ it('Triggers bought together calculation via admin API', async () => {
       mutation {
         triggerFrequentlyBoughtTogetherCalculation
       }
-    `
+    `,
   );
   // We have to wait for async job processing to complete
   await waitFor(async () => {

@@ -22,7 +22,7 @@
     "build": "rimraf dist && tsc",
     "test": "vitest run",
     "start": "nodemon --watch src --ext ts --exec ts-node --transpile-only test/dev-server.ts",
-    "lint": "echo 'No linting configured'"
+    "lint": "biome check ."
   },
   "dependencies": {
     "@google-cloud/tasks": "^5.4.0",

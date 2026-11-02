@@ -9,7 +9,9 @@ The fastest way to get your bug fixed or feature released, is to create a Pull R
 3. Go to the plugin you'd like to run. For example, `cd packages/vendure-plugin-stripe-webhook` and `yarn` again to install it's dependencies.
 4. Run `yarn start` to start the plugin. This will start the plugin with a local SQLite database on localhost:3050.
 5. Run `yarn test` to run the tests.
-6. Run `yarn lint` to check+fix for linting errors.
+6. Run `yarn lint` to check the plugin with Biome. From the repository root, `yarn biome:check` checks all supported files, `yarn biome:fix` applies safe fixes, and `yarn biome:fix:unsafe` also applies unsafe fixes (review these carefully). Install the Biome VS Code extension (`biomejs.biome`) for editor integration. The pre-commit hook checks and safely fixes staged files only.
+
+Biome respects Git ignore rules and skips unsupported formats, such as Markdown and YAML. There are no custom file exclusions. `useImportType` is disabled because NestJS relies on runtime imports for decorator metadata; Biome cannot safely distinguish these imports. Biome does not replace TypeScript builds or all type-aware ESLint checks.
 
 ## Development with the dashboard
 
@@ -29,6 +31,6 @@ If your dashboard keeps loading forever in the browser, you might need to access
 6. Implement your changes.
 7. Describe your changes in the `CHANGELOG.md` of the plugin.
 8. Update the version number in `package.json`. This will make sure your changes are published as new version.
-9. Commit using the commandline, so that the eslint auto fix is executed `git commit -a -m 'feat(stripe-subscription): implemented example stuff'`
+9. Commit using the commandline, so that the staged-file Biome check is executed `git commit -a -m 'feat(stripe-subscription): implemented example stuff'`
 10. Push the branch with `git push --set-upstream origin HEAD`
 11. Create a Pull Request at https://github.com/Pinelab-studio/pinelab-vendure-plugins/pulls

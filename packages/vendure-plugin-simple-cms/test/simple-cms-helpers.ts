@@ -88,7 +88,7 @@ export interface IntrospectionSchema {
  */
 export function getType(
   schema: IntrospectionSchema,
-  name: string
+  name: string,
 ): IntrospectionType | undefined {
   return schema.types.find((t) => t.name === name);
 }
@@ -98,7 +98,7 @@ export function getType(
  */
 export function getQueryField(
   schema: IntrospectionSchema,
-  fieldName: string
+  fieldName: string,
 ): IntrospectionField | undefined {
   const queryType = getType(schema, schema.queryType.name);
   return queryType?.fields?.find((f) => f.name === fieldName);
@@ -122,7 +122,7 @@ export function typeRefToString(ref: IntrospectionTypeRef): string {
  */
 export function getField(
   type: IntrospectionType | undefined,
-  name: string
+  name: string,
 ): IntrospectionField | undefined {
   return type?.fields?.find((f) => f.name === name);
 }

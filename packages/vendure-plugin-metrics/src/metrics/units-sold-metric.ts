@@ -1,13 +1,5 @@
-import {
-  Injector,
-  Logger,
-  Order,
-  OrderLine,
-  ProductVariant,
-  RequestContext,
-  TransactionalConnection,
-} from '@vendure/core';
-import { AdvancedMetricType } from '../ui/generated/graphql';
+import { Order, ProductVariant, RequestContext } from '@vendure/core';
+import { AdvancedMetricType } from '../generated/graphql';
 import { MetricStrategy, NamedDatapoint } from '../services/metric-strategy';
 
 /**
@@ -19,16 +11,16 @@ export class UnitsSoldMetric implements MetricStrategy {
   readonly code = 'units-sold';
   readonly allowProductSelection = true;
 
-  getTitle(ctx: RequestContext): string {
+  getTitle(_ctx: RequestContext): string {
     return `Units sold`;
   }
 
   calculateDataPoints(
-    ctx: RequestContext,
+    _ctx: RequestContext,
     orders: Order[],
-    variants: ProductVariant[]
+    variants: ProductVariant[],
   ): NamedDatapoint[] {
-    const lines = orders.map((order) => order.lines).flat();
+    const lines = orders.flatMap((order) => order.lines);
     // Return the nr of products sold
     if (!variants.length) {
       // Return total sum of quantities if no variantIds given
@@ -47,12 +39,12 @@ export class UnitsSoldMetric implements MetricStrategy {
     variants.forEach((variant) => {
       // Find order lines per variant id
       const linesForVariant = lines.filter(
-        (line) => line.productVariant.id === variant.id
+        (line) => line.productVariant.id === variant.id,
       );
       // Sum of quantities for this variant
       const sum = linesForVariant.reduce(
         (total, current) => total + current.quantity,
-        0
+        0,
       );
       dataPoints.push({
         legendLabel: variant.name,

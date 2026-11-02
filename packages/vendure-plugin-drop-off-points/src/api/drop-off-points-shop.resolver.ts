@@ -14,7 +14,7 @@ export class DropOffPointsShopResolver {
   @Query()
   async parcelDropOffPoints(
     @Ctx() ctx: RequestContext,
-    @Args() args: QueryParcelDropOffPointsArgs
+    @Args() args: QueryParcelDropOffPointsArgs,
   ): Promise<ParcelDropOffPoint[]> {
     return await this.dropOffPointsService.getDropOffPoints(ctx, args.input);
   }
@@ -22,7 +22,7 @@ export class DropOffPointsShopResolver {
   @Mutation()
   async setParcelDropOffPoint(
     @Ctx() ctx: RequestContext,
-    @Args() { token }: MutationSetParcelDropOffPointArgs
+    @Args() { token }: MutationSetParcelDropOffPointArgs,
   ): Promise<Order> {
     return await this.dropOffPointsService.setDropOffPointOnOrder(ctx, token);
   }

@@ -1,10 +1,10 @@
+import { AdministratorService, VendureConfig } from '@vendure/core';
 import {
   createTestEnvironment,
   registerInitializer,
   SqljsInitializer,
 } from '@vendure/testing';
 import { getSuperadminContext } from '@vendure/testing/lib/utils/get-superadmin-context';
-import { AdministratorService, VendureConfig } from '@vendure/core';
 import { initialData } from '../../test/src/initial-data';
 import { config } from './vendure-config';
 

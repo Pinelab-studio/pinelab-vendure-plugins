@@ -1,13 +1,13 @@
+import { RequestContextService, VendureConfig } from '@vendure/core';
 import {
   createTestEnvironment,
   registerInitializer,
   SqljsInitializer,
 } from '@vendure/testing';
-import { RequestContextService, VendureConfig } from '@vendure/core';
-import { initialData } from '../../test/src/initial-data';
-import { testPaymentMethod } from '../../test/src/test-payment-method';
 import { addShippingMethod } from '../../test/src/admin-utils';
+import { initialData } from '../../test/src/initial-data';
 import { createSettledOrder } from '../../test/src/shop-utils';
+import { testPaymentMethod } from '../../test/src/test-payment-method';
 import { OrderPDFsService } from '../src/api/order-pdfs.service';
 import { defaultTemplate } from '../src/default-template';
 import { config } from './vendure-config';
@@ -22,7 +22,7 @@ import { config } from './vendure-config';
   };
 
   const { server, adminClient, shopClient } = createTestEnvironment(
-    config as Required<VendureConfig>
+    config as Required<VendureConfig>,
   );
   await server.init({
     initialData: {

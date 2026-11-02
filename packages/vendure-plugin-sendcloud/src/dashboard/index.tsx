@@ -1,12 +1,12 @@
+import { useMutation } from '@tanstack/react-query';
 import {
   api,
-  defineDashboardExtension,
   DropdownMenuItem,
+  defineDashboardExtension,
 } from '@vendure/dashboard';
-import { graphql } from '@/gql';
-import { useMutation } from '@tanstack/react-query';
-import { toast } from 'sonner';
 import { RefreshCwIcon } from 'lucide-react';
+import { toast } from 'sonner';
+import { graphql } from '@/gql';
 
 const sendToSendCloudDocument = graphql(`
   mutation SendToSendCloud($orderId: ID!) {
@@ -33,7 +33,7 @@ function SyncToSendcloudMenuItem({ context }: { context: { entity?: any } }) {
   });
 
   const hasSendcloudHandler = order?.shippingLines?.some(
-    (line: any) => line.shippingMethod?.fulfillmentHandlerCode === 'sendcloud'
+    (line: any) => line.shippingMethod?.fulfillmentHandlerCode === 'sendcloud',
   );
   if (!hasSendcloudHandler) {
     return null;

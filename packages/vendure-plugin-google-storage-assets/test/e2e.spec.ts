@@ -1,20 +1,19 @@
+import path from 'node:path';
+import { AssetServerPlugin } from '@vendure/asset-server-plugin';
 import {
   createTestEnvironment,
   registerInitializer,
   SqljsInitializer,
   testConfig,
 } from '@vendure/testing';
-import { DefaultLogger, LogLevel } from '@vendure/core';
-import { GoogleStorageAssetsPlugin, GoogleStorageStrategy } from '../src';
-import path from 'path';
-import { describe, it, expect, afterAll, beforeAll } from 'vitest';
-import { initialData } from '../../test/src/initial-data';
 import { gql } from 'graphql-tag';
-import { AssetServerPlugin } from '@vendure/asset-server-plugin';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { initialData } from '../../test/src/initial-data';
+import { GoogleStorageAssetsPlugin, GoogleStorageStrategy } from '../src';
 
 registerInitializer(
   'sqljs',
-  new SqljsInitializer(path.join(__dirname, '__data__'))
+  new SqljsInitializer(path.join(__dirname, '__data__')),
 );
 
 describe('Google Storage Assets plugin', () => {
@@ -45,7 +44,7 @@ describe('Google Storage Assets plugin', () => {
       initialData,
       productsCsvPath: path.join(
         __dirname,
-        '../../test/src/products-import.csv'
+        '../../test/src/products-import.csv',
       ),
       customerCount: 1,
     });

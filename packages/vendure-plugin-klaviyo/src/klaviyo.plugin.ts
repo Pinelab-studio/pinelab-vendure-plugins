@@ -4,16 +4,16 @@ import {
   RequestContext,
   VendurePlugin,
 } from '@vendure/core';
+import { shopApiExtensions } from './api/api-extensions';
+import { KlaviyoShopResolver } from './api/klaviyo-shop-resolver';
 import { PLUGIN_INIT_OPTIONS } from './constants';
+import { startedCheckoutHandler } from './event-handler/checkout-started-event-handler';
 import { defaultOrderPlacedEventHandler } from './event-handler/default-order-placed-event-handler';
 import {
   KlaviyoEventHandler,
   KlaviyoOrderPlacedEventHandler,
 } from './event-handler/klaviyo-event-handler';
 import { KlaviyoService } from './service/klaviyo.service';
-import { KlaviyoShopResolver } from './api/klaviyo-shop-resolver';
-import { shopApiExtensions } from './api/api-extensions';
-import { startedCheckoutHandler } from './event-handler/checkout-started-event-handler';
 import { KlaviyoProductFeedItem } from './types';
 
 export interface KlaviyoPluginOptions {
@@ -41,7 +41,7 @@ export interface KlaviyoPluginOptions {
     enhanceProductFeedItemFn: (
       ctx: RequestContext,
       variant: ProductVariant,
-      feedItem: Omit<KlaviyoProductFeedItem, 'image_link' | 'link'>
+      feedItem: Omit<KlaviyoProductFeedItem, 'image_link' | 'link'>,
     ) => KlaviyoProductFeedItem & Record<string, unknown>;
   };
 }
@@ -65,7 +65,7 @@ export class KlaviyoPlugin {
   static options: KlaviyoPluginOptions;
 
   static init(options: KlaviyoPluginOptions): typeof KlaviyoPlugin {
-    this.options = {
+    KlaviyoPlugin.options = {
       ...options,
       eventHandlers: options.eventHandlers ?? [
         defaultOrderPlacedEventHandler,

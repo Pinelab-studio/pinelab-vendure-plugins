@@ -1,19 +1,19 @@
 import {
-  createTestEnvironment,
-  registerInitializer,
-  SqljsInitializer,
-} from '@vendure/testing';
-import {
   Channel,
   ShippingMethodService,
   TransactionalConnection,
   VendureConfig,
 } from '@vendure/core';
+import {
+  createTestEnvironment,
+  registerInitializer,
+  SqljsInitializer,
+} from '@vendure/testing';
 import { initialData } from '../../test/src/initial-data';
-import { GoedgepicktService } from '../src/api/goedgepickt.service';
-import { goedgepicktHandler } from '../src';
 import { createSettledOrder } from '../../test/src/shop-utils';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
+import { goedgepicktHandler } from '../src';
+import { GoedgepicktService } from '../src/api/goedgepickt.service';
 import { config } from './vendure-config';
 
 (async () => {
@@ -26,7 +26,7 @@ import { config } from './vendure-config';
   };
 
   const { server, shopClient } = createTestEnvironment(
-    config as Required<VendureConfig>
+    config as Required<VendureConfig>,
   );
   await server.init({
     initialData: {

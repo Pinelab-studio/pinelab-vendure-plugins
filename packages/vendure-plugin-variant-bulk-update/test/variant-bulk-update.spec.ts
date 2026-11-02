@@ -7,15 +7,15 @@ import {
   testConfig,
 } from '@vendure/testing';
 import { TestServer } from '@vendure/testing/lib/test-server';
-import { initialData } from '../../test/src/initial-data';
 import gql from 'graphql-tag';
-import { expect, describe, beforeAll, afterAll, it, vi, test } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { initialData } from '../../test/src/initial-data';
 import { VariantBulkUpdatePlugin } from '../src/variant-bulk-update.plugin';
 
-describe('Limit variants per order plugin', function () {
+describe('Limit variants per order plugin', () => {
   let server: TestServer;
   let adminClient: SimpleGraphQLClient;
-  let shopClient: SimpleGraphQLClient;
+  let _shopClient: SimpleGraphQLClient;
   let serverStarted = false;
 
   beforeAll(async () => {
@@ -46,7 +46,7 @@ describe('Limit variants per order plugin', function () {
         ],
       },
     });
-    ({ server, adminClient, shopClient } = createTestEnvironment(config));
+    ({ server, adminClient, _shopClient } = createTestEnvironment(config));
     await server.init({
       initialData,
       productsCsvPath: '../test/src/products-import.csv',

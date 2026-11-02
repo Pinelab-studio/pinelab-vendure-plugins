@@ -1,19 +1,17 @@
-import { PluginCommonModule, Type, VendurePlugin } from '@vendure/core';
-import { AdminUiExtension } from '@vendure/ui-devkit/compiler';
-import path from 'path';
+import { PluginCommonModule, type Type, VendurePlugin } from '@vendure/core';
 import { adminSchema } from './api/api-extension';
-import {
-  webhookPermission,
-  WebhookRequestTransformerResolver,
-  WebhookResolver,
-} from './api/webhook.resolver';
-import { WebhookService } from './api/webhook.service';
-import {
+import type {
   EventWithContext,
   RequestTransformer,
 } from './api/request-transformer';
-import { PLUGIN_INIT_OPTIONS } from './constants';
 import { Webhook } from './api/webhook.entity';
+import {
+  WebhookRequestTransformerResolver,
+  WebhookResolver,
+  webhookPermission,
+} from './api/webhook.resolver';
+import { WebhookService } from './api/webhook.service';
+import { PLUGIN_INIT_OPTIONS } from './constants';
 
 export interface WebhookPluginOptions {
   /**
@@ -66,27 +64,10 @@ export class WebhookPlugin {
   };
 
   static init(options: WebhookPluginOptions): typeof WebhookPlugin {
-    this.options = {
-      ...this.options,
+    WebhookPlugin.options = {
+      ...WebhookPlugin.options,
       ...options,
     };
     return WebhookPlugin;
   }
-
-  static ui: AdminUiExtension = {
-    extensionPath: path.join(__dirname, 'ui'),
-    ngModules: [
-      {
-        type: 'lazy',
-        route: 'webhook',
-        ngModuleFileName: 'webhook.module.ts',
-        ngModuleName: 'WebhookModule',
-      },
-      {
-        type: 'shared',
-        ngModuleFileName: 'webhook-nav.module.ts',
-        ngModuleName: 'WebhookNavModule',
-      },
-    ],
-  };
 }

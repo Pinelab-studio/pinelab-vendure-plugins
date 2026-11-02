@@ -2,8 +2,8 @@ import { Mutation, Resolver } from '@nestjs/graphql';
 import {
   Ctx,
   Order,
-  Relations,
   RelationPaths,
+  Relations,
   RequestContext,
 } from '@vendure/core';
 import { ValidateActiveOrderResult } from '../api/generated/graphql';
@@ -16,7 +16,7 @@ export class ValidateCartResolver {
   @Mutation()
   async validateActiveOrder(
     @Ctx() ctx: RequestContext,
-    @Relations(Order) relations: RelationPaths<Order>
+    @Relations(Order) relations: RelationPaths<Order>,
   ): Promise<ValidateActiveOrderResult> {
     return await this.validateCartService.validateActiveOrder(ctx, relations);
   }

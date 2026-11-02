@@ -54,7 +54,7 @@ export class StockMonitoringService
     private readonly cacheService: CacheService,
     private readonly stockLevelService: StockLevelService,
     private readonly eventBus: EventBus,
-    private readonly globalSettingsService: GlobalSettingsService
+    private readonly globalSettingsService: GlobalSettingsService,
   ) {}
 
   async onModuleInit(): Promise<void> {
@@ -63,7 +63,7 @@ export class StockMonitoringService
       process: async (job) =>
         await this.handleStockMonitoringJob(
           RequestContext.deserialize(job.data.ctx),
-          job.data
+          job.data,
         ),
     });
   }
@@ -76,7 +76,7 @@ export class StockMonitoringService
         Logger.error(
           `Error deleting cache for stock movement event: ${e}`,
           loggerCtx,
-          asError(e).stack
+          asError(e).stack,
         );
       });
       // Create jobs for stock movements that decrease saleable stock.
@@ -101,7 +101,7 @@ export class StockMonitoringService
               Logger.error(
                 `Error adding stock monitoring job for variant ${movement.productVariant.id}: ${e}`,
                 loggerCtx,
-                asError(e).stack
+                asError(e).stack,
               );
             });
         }
@@ -111,7 +111,7 @@ export class StockMonitoringService
 
   async getVariantsBelowThreshold(
     ctx: RequestContext,
-    limit: number = 10
+    limit: number = 10,
   ): Promise<ProductVariant[]> {
     // See if we have cached the variant ids for this channel and limit
     const cacheKey = this.getCacheKey(ctx);
@@ -143,7 +143,7 @@ export class StockMonitoringService
         .groupBy('pv.id')
         // Repeat the expressions instead of the SELECT aliases: Postgres rejects aliases in HAVING
         .having(
-          'COALESCE(SUM(sl.stockOnHand - sl.stockAllocated), 0) < COALESCE(pv.customFieldsStockmonitoringthreshold, :globalThreshold)'
+          'COALESCE(SUM(sl.stockOnHand - sl.stockAllocated), 0) < COALESCE(pv.customFieldsStockmonitoringthreshold, :globalThreshold)',
         )
         .limit(limit)
         .orderBy('availableStock', 'ASC')
@@ -154,12 +154,12 @@ export class StockMonitoringService
     const variants = await this.variantService.findByIds(ctx, variantIds);
     // findByIds does not preserve input order, so re-sort to match the cached ASC order
     const idOrder = new Map(
-      variantIds.map((id, index) => [id.toString(), index])
+      variantIds.map((id, index) => [id.toString(), index]),
     );
     variants.sort(
       (a, b) =>
         (idOrder.get(a.id.toString()) ?? 0) -
-        (idOrder.get(b.id.toString()) ?? 0)
+        (idOrder.get(b.id.toString()) ?? 0),
     );
     return variants;
   }
@@ -169,11 +169,11 @@ export class StockMonitoringService
    */
   async handleStockMonitoringJob(
     ctx: RequestContext,
-    jobData: StockMonitoringJobData
+    jobData: StockMonitoringJobData,
   ): Promise<void> {
     const stockLevels = await this.stockLevelService.getAvailableStock(
       ctx,
-      jobData.variantId
+      jobData.variantId,
     );
     const stockAfterAdjustment =
       stockLevels.stockOnHand - stockLevels.stockAllocated;
@@ -185,7 +185,7 @@ export class StockMonitoringService
     if (!variant) {
       Logger.error(
         `Variant ${jobData.variantId} not found while handling stock monitoring job`,
-        loggerCtx
+        loggerCtx,
       );
       return;
     }
@@ -205,8 +205,8 @@ export class StockMonitoringService
           ctx,
           variant,
           stockBeforeAdjustment,
-          stockAfterAdjustment
-        )
+          stockAfterAdjustment,
+        ),
       );
     }
   }
@@ -216,7 +216,7 @@ export class StockMonitoringService
    */
   private async tracksInventory(
     ctx: RequestContext,
-    variant: ProductVariant
+    variant: ProductVariant,
   ): Promise<boolean> {
     if (variant.trackInventory === GlobalFlag.INHERIT) {
       return this.tracksInventoryByDefault(ctx);
@@ -230,11 +230,10 @@ export class StockMonitoringService
    * but Vendure's `StockMovementService` still uses it to decide whether stock levels change, so we use it too.
    */
   private async tracksInventoryByDefault(
-    ctx: RequestContext
+    ctx: RequestContext,
   ): Promise<boolean> {
-    const { trackInventory } = await this.globalSettingsService.getSettings(
-      ctx
-    );
+    const { trackInventory } =
+      await this.globalSettingsService.getSettings(ctx);
     return trackInventory;
   }
 

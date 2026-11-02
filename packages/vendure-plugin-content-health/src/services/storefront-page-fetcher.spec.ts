@@ -57,11 +57,11 @@ describe('StorefrontPageFetcher', () => {
 
   it('fails on an unreachable host (connection error)', async () => {
     const client = mockAgent.get('https://shop.example.com');
-    client
-      .intercept({ path: '/down', method: 'GET' })
-      .replyWithError(
-        Object.assign(new Error('connection refused'), { code: 'ECONNREFUSED' })
-      );
+    client.intercept({ path: '/down', method: 'GET' }).replyWithError(
+      Object.assign(new Error('connection refused'), {
+        code: 'ECONNREFUSED',
+      }),
+    );
 
     const result = await fetcher.fetch('https://shop.example.com/down');
 

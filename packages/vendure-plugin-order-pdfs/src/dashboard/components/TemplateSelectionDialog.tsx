@@ -1,3 +1,4 @@
+import { useQuery } from '@tanstack/react-query';
 import {
   api,
   Button,
@@ -9,7 +10,6 @@ import {
   DialogTitle,
 } from '@vendure/dashboard';
 import { graphql } from '@/gql';
-import { useQuery } from '@tanstack/react-query';
 
 const pdfTemplateNamesDocument = graphql(`
   query PdfTemplateNamesForDownload {
@@ -53,7 +53,7 @@ export function TemplateSelectionDialog({
           </DialogDescription>
         </DialogHeader>
         {!isLoading && templates.length === 0 && (
-          <p className="text-sm text-muted-foreground">
+          <p className="text-muted-foreground text-sm">
             No enabled PDF templates found.
           </p>
         )}

@@ -1,22 +1,20 @@
+import { AssetServerPlugin } from '@vendure/asset-server-plugin';
+import {
+  DefaultLogger,
+  DefaultSearchPlugin,
+  InitialData,
+  LogLevel,
+  mergeConfig,
+} from '@vendure/core';
 import {
   createTestEnvironment,
   registerInitializer,
   SqljsInitializer,
   testConfig,
 } from '@vendure/testing';
-import {
-  DefaultLogger,
-  DefaultSearchPlugin,
-  LogLevel,
-  InitialData,
-  mergeConfig,
-} from '@vendure/core';
-import { AssetServerPlugin } from '@vendure/asset-server-plugin';
-import { GoogleStorageStrategy } from '../src';
-import { GoogleStorageAssetsPlugin } from '../src';
-import { initialData } from '../../test/src/initial-data';
-import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
 import dotenv from 'dotenv';
+import { initialData } from '../../test/src/initial-data';
+import { GoogleStorageAssetsPlugin, GoogleStorageStrategy } from '../src';
 
 (async () => {
   dotenv.config(); // Needed for GCLOUD_PROJECT
@@ -55,7 +53,6 @@ import dotenv from 'dotenv';
         },
       }),
       DefaultSearchPlugin,
-      AdminUiPlugin.init({ route: 'admin', port: 3002 }),
     ],
   });
   const { server } = createTestEnvironment(devServerConfig);

@@ -1,6 +1,6 @@
-import { Product, ID, Collection, Logger } from '@vendure/core';
+import { promises as fs } from 'node:fs';
+import { Collection, ID, Logger, Product } from '@vendure/core';
 import { QueryRunner } from 'typeorm';
-import { promises as fs } from 'fs';
 import { loggerCtx } from '../constants';
 
 export const EXPORTED_PRIMARY_COLLECTIONS_FILE = 'data.json';
@@ -17,7 +17,7 @@ export async function exportPrimaryCollections(queryRunner: QueryRunner) {
       .innerJoin(
         Collection,
         'primaryCollection',
-        'primaryCollection.id = product.customFieldsPrimarycollectionId'
+        'primaryCollection.id = product.customFieldsPrimarycollectionId',
       )
       .select(['product.id', 'primaryCollection.id'])
       .getRawMany();
@@ -34,7 +34,7 @@ export async function exportPrimaryCollections(queryRunner: QueryRunner) {
     await fs.writeFile(EXPORTED_PRIMARY_COLLECTIONS_FILE, jsonString);
     Logger.info(
       `Primary Collection data has been exported to ${EXPORTED_PRIMARY_COLLECTIONS_FILE}.`,
-      loggerCtx
+      loggerCtx,
     );
   } catch (err) {
     Logger.error(`Error writing file: ${JSON.stringify(err)}`, loggerCtx);

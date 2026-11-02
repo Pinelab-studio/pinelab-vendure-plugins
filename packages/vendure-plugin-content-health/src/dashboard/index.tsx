@@ -1,5 +1,5 @@
-import { api, Button, defineDashboardExtension } from '@vendure/dashboard';
 import { Link } from '@tanstack/react-router';
+import { api, Button, defineDashboardExtension } from '@vendure/dashboard';
 import {
   CollectionContentCheckFindingsBlock,
   ProductContentCheckFindingsBlock,

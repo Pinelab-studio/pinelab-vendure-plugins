@@ -82,10 +82,10 @@ export interface KlaviyoOrderPlacedEvent extends KlaviyoGenericEvent {
  */
 export type KlaviyoEventMapFn<
   EventType extends EventWithContext,
-  ReturnType
+  ReturnType,
 > = (
   event: EventType,
-  injector: Injector
+  injector: Injector,
 ) => Promise<ReturnType | false> | ReturnType | false;
 
 export interface KlaviyoEventHandler<T extends EventWithContext> {

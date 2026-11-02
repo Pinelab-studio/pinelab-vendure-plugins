@@ -29,7 +29,7 @@ import {
 export class QlsAdminResolver {
   constructor(
     private qlsProductService: QlsProductService,
-    private qlsOrderService: QlsOrderService
+    private qlsOrderService: QlsOrderService,
   ) {}
 
   @ResolveField()
@@ -38,7 +38,7 @@ export class QlsAdminResolver {
   @Allow(Permission.UpdateAdministrator)
   async qlsOrderIds(
     @Ctx() ctx: RequestContext,
-    @Parent() order: Order
+    @Parent() order: Order,
   ): Promise<string[]> {
     return this.qlsOrderService.getQlsOrderIdsForOrder(ctx, order.id);
   }
@@ -49,7 +49,7 @@ export class QlsAdminResolver {
   @Allow(Permission.UpdateAdministrator)
   async qlsOrderUrl(
     @Ctx() ctx: RequestContext,
-    @Parent() order: Order
+    @Parent() order: Order,
   ): Promise<string | null> {
     return this.qlsOrderService.getQlsOrderUrl(ctx, order.id);
   }
@@ -58,7 +58,7 @@ export class QlsAdminResolver {
   @Resolver('ProductVariant')
   async qlsProductUrl(
     @Ctx() ctx: RequestContext,
-    @Parent() productVariant: ProductVariant
+    @Parent() productVariant: ProductVariant,
   ): Promise<string | null> {
     return this.qlsProductService.getQlsProductUrl(ctx, productVariant);
   }
@@ -76,12 +76,12 @@ export class QlsAdminResolver {
   @Allow(qlsFullSyncPermission.Permission)
   async addAdditionalEANSToQLS(
     @Ctx() ctx: RequestContext,
-    @Args() input: MutationAddAdditionalEansToQlsArgs
+    @Args() input: MutationAddAdditionalEansToQlsArgs,
   ): Promise<string[]> {
     return await this.qlsProductService.addAdditionalEANsToQls(
       ctx,
       input.variantId,
-      input.additionalEANS
+      input.additionalEANS,
     );
   }
 
@@ -91,7 +91,7 @@ export class QlsAdminResolver {
   @Allow(Permission.UpdateAdministrator)
   async pushOrderToQls(
     @Ctx() ctx: RequestContext,
-    @Args() input: MutationPushOrderToQlsArgs
+    @Args() input: MutationPushOrderToQlsArgs,
   ): Promise<string> {
     return await this.qlsOrderService.pushOrderToQls(ctx, input.orderId, true);
   }

@@ -1,4 +1,4 @@
-import { RequestContext, Injector, Order, OrderLine } from '@vendure/core';
+import { Injector, Order, OrderLine, RequestContext } from '@vendure/core';
 
 /**
  * @description
@@ -31,6 +31,6 @@ export interface StoreCreditPluginOptions {
     ctx: RequestContext,
     injector: Injector,
     order: Order,
-    orderLine: OrderLine
+    orderLine: OrderLine,
   ) => Promise<{ price: number; cardCode: string } | false>;
 }

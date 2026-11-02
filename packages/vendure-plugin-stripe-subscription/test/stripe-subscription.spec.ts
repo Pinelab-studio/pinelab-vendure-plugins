@@ -15,33 +15,33 @@ import {
   testConfig,
 } from '@vendure/testing';
 import { TestServer } from '@vendure/testing/lib/test-server';
-// @ts-ignore
+// @ts-expect-error
 import nock from 'nock';
-// @ts-ignore
+// @ts-expect-error
 import { afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { getOrder } from '../../test/src/admin-utils';
 import { initialData } from '../../test/src/initial-data';
-import { stripeSubscriptionHandler, StripeSubscriptionPlugin } from '../src';
+import { waitFor } from '../../test/src/test-helpers';
+import { StripeSubscriptionPlugin, stripeSubscriptionHandler } from '../src';
 import { DefaultStrategyTestWrapper } from './helpers/default-strategy-test-wrapper';
 import {
   ADD_ITEM_TO_ORDER,
   CANCEL_ORDER,
-  CREATE_SHOP_PAYMENT_LINK,
   CREATE_ADMIN_PAYMENT_LINK,
   CREATE_PAYMENT_METHOD,
+  CREATE_SHOP_PAYMENT_LINK,
   ELIGIBLE_PAYMENT_METHODS,
-  getDefaultCtx,
-  getOneMonthFromNow,
   GET_ACTIVE_ORDER,
   GET_PAYMENT_METHODS,
+  getDefaultCtx,
+  getOneMonthFromNow,
   PREVIEW_SUBSCRIPTIONS,
   PREVIEW_SUBSCRIPTIONS_FOR_PRODUCT,
   REFUND_ORDER,
   setShipping,
 } from './helpers/graphql-helpers';
-import { waitFor } from '../../test/src/test-helpers';
 
-describe('Stripe Subscription Plugin', function () {
+describe('Stripe Subscription Plugin', () => {
   let server: TestServer;
   let adminClient: SimpleGraphQLClient;
   let shopClient: SimpleGraphQLClient;
@@ -74,7 +74,7 @@ describe('Stripe Subscription Plugin', function () {
     expect(serverStarted).toBe(true);
   });
 
-  let orderEvents: (OrderStateTransitionEvent | OrderPlacedEvent)[] = [];
+  const orderEvents: (OrderStateTransitionEvent | OrderPlacedEvent)[] = [];
 
   it('Listens for OrderPlacedEvent and OrderStateTransitionEvents', async () => {
     // Used to test if all events have RequestContext defined
@@ -137,7 +137,7 @@ describe('Stripe Subscription Plugin', function () {
             ],
           },
         },
-      }
+      },
     );
     await new Promise((resolve) => setTimeout(resolve, 1000)); // Await asyncronous webhook creation
     expect(createPaymentMethod.id).toBe('T_1');
@@ -146,7 +146,7 @@ describe('Stripe Subscription Plugin', function () {
   it('Created webhooks and saved webhook secrets', async () => {
     const { paymentMethods } = await adminClient.query(GET_PAYMENT_METHODS);
     const webhookSecret = paymentMethods.items[0].handler.args.find(
-      (a: any) => a.name === 'webhookSecret'
+      (a: any) => a.name === 'webhookSecret',
     )?.value;
     expect(createdWebhooks.length).toBe(1);
     expect(paymentMethods.items[0].code).toBe('stripe-subscription-method');
@@ -181,7 +181,7 @@ describe('Stripe Subscription Plugin', function () {
       });
     // T_2 is not a subscription, so it should not be in the preview result
     const nonSubscription = subscriptions.find(
-      (s: any) => s.variantId === 'T_2'
+      (s: any) => s.variantId === 'T_2',
     );
     expect(nonSubscription).toBeUndefined();
     expect(subscriptions.length).toBe(3);
@@ -215,7 +215,7 @@ describe('Stripe Subscription Plugin', function () {
       });
     // T_2 is not a subscription, so it should not be in the preview result
     const nonSubscription = subscriptions.find(
-      (s: any) => s.variantId === 'T_2'
+      (s: any) => s.variantId === 'T_2',
     );
     expect(nonSubscription).toBeUndefined();
     expect(subscriptions.length).toBe(3);
@@ -247,14 +247,14 @@ describe('Stripe Subscription Plugin', function () {
   it('Adds a subscription to order', async () => {
     await shopClient.asUserWithCredentials(
       'hayden.zieme12@hotmail.com',
-      'test'
+      'test',
     );
     const { addItemToOrder: order } = await shopClient.query(
       ADD_ITEM_TO_ORDER,
       {
         productVariantId: 'T_1', // Is subscription
         quantity: 1,
-      }
+      },
     );
     orderCode = order.code;
     expect(order.total).toBe(129900);
@@ -267,7 +267,7 @@ describe('Stripe Subscription Plugin', function () {
       {
         productVariantId: 'T_2', // Is not a subscription
         quantity: 1,
-      }
+      },
     );
     orderCode = order.code;
     expect(order.lines[0].stripeSubscriptions.length).toBe(1);
@@ -297,10 +297,10 @@ describe('Stripe Subscription Plugin', function () {
 
   it('Exposes publishable key via eligible payment methods', async () => {
     const { eligiblePaymentMethods } = await shopClient.query(
-      ELIGIBLE_PAYMENT_METHODS
+      ELIGIBLE_PAYMENT_METHODS,
     );
     expect(eligiblePaymentMethods[0].stripeSubscriptionPublishableKey).toBe(
-      'test-publishable-key'
+      'test-publishable-key',
     );
   });
 
@@ -320,7 +320,7 @@ describe('Stripe Subscription Plugin', function () {
         object: 'payment_intent',
       });
     const { createStripeSubscriptionIntent: intent } = await shopClient.query(
-      CREATE_SHOP_PAYMENT_LINK
+      CREATE_SHOP_PAYMENT_LINK,
     );
     expect(intent.clientSecret).toBe('mock-secret-1234');
     expect(intent.intentType).toBe('PaymentIntent');
@@ -351,7 +351,7 @@ describe('Stripe Subscription Plugin', function () {
       CREATE_ADMIN_PAYMENT_LINK,
       {
         orderId: activeOrder.id,
-      }
+      },
     );
     expect(intent.clientSecret).toBe('mock-secret-1234');
     expect(intent.intentType).toBe('PaymentIntent');
@@ -362,7 +362,7 @@ describe('Stripe Subscription Plugin', function () {
     expect(paymentIntentInput.amount).toBe(String(totalDueNow));
   });
 
-  let createdSubscriptions: any[] = [];
+  const createdSubscriptions: any[] = [];
 
   it('Settles order on incoming succeeded webhook', async () => {
     // Mock API
@@ -397,7 +397,7 @@ describe('Stripe Subscription Plugin', function () {
           metadata: {
             orderCode,
             channelToken: 'e2e-default-channel',
-            amount: adminOrder!.totalWithTax,
+            amount: adminOrder?.totalWithTax,
           },
         },
       },
@@ -410,7 +410,7 @@ describe('Stripe Subscription Plugin', function () {
       {
         method: 'POST',
         body: JSON.stringify(mockIntent),
-      }
+      },
     );
     adminOrder = await waitFor(async () => {
       const order = await getOrder(adminClient, '1');
@@ -439,7 +439,7 @@ describe('Stripe Subscription Plugin', function () {
 
   it('Should cancel subscription', async () => {
     // Mock API
-    let subscriptionRequests: any[] = [];
+    const subscriptionRequests: any[] = [];
     nock('https://api.stripe.com')
       .post(/subscriptions*/, (body) => {
         subscriptionRequests.push(body);
@@ -465,7 +465,7 @@ describe('Stripe Subscription Plugin', function () {
 
   it('Should refund subscription', async () => {
     // Mock API
-    let refundRequests: any = [];
+    const refundRequests: any = [];
     nock('https://api.stripe.com')
       .post(/refunds*/, (body) => {
         refundRequests.push(body);

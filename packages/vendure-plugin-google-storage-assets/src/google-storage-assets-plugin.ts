@@ -1,9 +1,10 @@
 import { PluginCommonModule, VendurePlugin } from '@vendure/core';
 import { createAssetSchema } from './api/api-extensions';
 import { GoogleStorageAssetResolver } from './api/google-storage-asset.resolver';
-import { GoogleStorageAssetConfig } from './types';
-import { PresetService } from './services/preset-service';
+import { googleStorageAssetConfig } from './config';
 import { PLUGIN_INIT_OPTIONS } from './constants';
+import { PresetService } from './services/preset-service';
+import { GoogleStorageAssetConfig } from './types';
 
 @VendurePlugin({
   imports: [PluginCommonModule],
@@ -35,12 +36,23 @@ import { PLUGIN_INIT_OPTIONS } from './constants';
   },
 })
 export class GoogleStorageAssetsPlugin {
-  static config: GoogleStorageAssetConfig;
+  /** Return the shared configuration used by storage strategies. */
+  static get config(): GoogleStorageAssetConfig {
+    const config = googleStorageAssetConfig.current;
+    if (!config)
+      throw new Error('GoogleStorageAssetsPlugin is not initialized');
+    return config;
+  }
+
+  /** Update the shared configuration without importing the decorated plugin. */
+  static set config(config: GoogleStorageAssetConfig) {
+    googleStorageAssetConfig.current = config;
+  }
 
   static init(
-    config: GoogleStorageAssetConfig
+    config: GoogleStorageAssetConfig,
   ): typeof GoogleStorageAssetsPlugin {
-    this.config = config;
-    return this;
+    GoogleStorageAssetsPlugin.config = config;
+    return GoogleStorageAssetsPlugin;
   }
 }

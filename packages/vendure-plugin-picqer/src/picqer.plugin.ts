@@ -1,3 +1,4 @@
+import { UpdateProductVariantInput } from '@vendure/common/lib/generated-types';
 import {
   Order,
   OrderLine,
@@ -7,17 +8,15 @@ import {
   RuntimeVendureConfig,
   VendurePlugin,
 } from '@vendure/core';
-import { ProductData } from './api/types';
-import { PLUGIN_INIT_OPTIONS } from './constants';
-import { ProductInput } from './api/types';
-import { adminSchema } from './api/api-extensions';
-import { picqerPermission, channelCustomFields } from './custom-fields';
-import { PicqerService } from './api/picqer.service';
-import { PicqerResolver } from './api/picqer.resolvers';
-import { PicqerController } from './api/picqer.controller';
-import { UpdateProductVariantInput } from '@vendure/common/lib/generated-types';
-import { picqerHandler } from './api/picqer.handler';
 import { rawBodyMiddleware } from '../../util/src/raw-body.middleware';
+import { adminSchema } from './api/api-extensions';
+import { PicqerController } from './api/picqer.controller';
+import { picqerHandler } from './api/picqer.handler';
+import { PicqerResolver } from './api/picqer.resolvers';
+import { PicqerService } from './api/picqer.service';
+import { ProductData, ProductInput } from './api/types';
+import { PLUGIN_INIT_OPTIONS } from './constants';
+import { channelCustomFields, picqerPermission } from './custom-fields';
 
 export interface PicqerOptions {
   enabled: boolean;
@@ -34,7 +33,7 @@ export interface PicqerOptions {
    * pullPicqerProductFields: (product) => ({ customFields: { weight: product.weight / 1000 }})
    */
   pullPicqerProductFields?: (
-    product: ProductInput & ProductData
+    product: ProductInput & ProductData,
   ) => Partial<UpdateProductVariantInput>;
   /**
    * Implement this function if you'd like to sync additional (custom) fields from Vendure to Picqer,
@@ -43,7 +42,7 @@ export interface PicqerOptions {
    * pushProductVariantFields: (variant) => ({ barcode: variant.customFields.EAN }})
    */
   pushProductVariantFields?: (
-    variant: ProductVariant
+    variant: ProductVariant,
   ) => Partial<ProductInput & ProductData>;
   /**
    * Map any Vendure fields to Order fields in Picqer.
@@ -62,7 +61,7 @@ export interface PicqerOptions {
   pushPicqerOrderLineFields?: (
     ctx: RequestContext,
     orderLine: OrderLine,
-    order: Order
+    order: Order,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   ) => any;
   /**
@@ -114,7 +113,7 @@ export class PicqerPlugin {
   static options: PicqerOptions;
 
   static init(options: PicqerOptions) {
-    this.options = {
+    PicqerPlugin.options = {
       fallBackToProductFeaturedAsset: true,
       cancelOrdersOnPicqerCancellation: true,
       ...options,

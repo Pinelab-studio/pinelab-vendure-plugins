@@ -1,4 +1,4 @@
-import { Channel, VendureEntity, ChannelAware } from '@vendure/core';
+import { Channel, ChannelAware, VendureEntity } from '@vendure/core';
 import {
   Column,
   DeleteDateColumn,
@@ -28,9 +28,13 @@ export class ContentEntry extends VendureEntity implements ChannelAware {
   @Column({ type: 'simple-json', nullable: true })
   fields!: Record<string, unknown>;
 
-  @OneToMany(() => ContentEntryTranslation, (translation) => translation.base, {
-    eager: true,
-  })
+  @OneToMany(
+    () => ContentEntryTranslation,
+    (translation) => translation.base,
+    {
+      eager: true,
+    },
+  )
   translatableFields!: ContentEntryTranslation[];
 
   /** Soft-delete timestamp. Set by TypeORM on soft removal; null when active. */

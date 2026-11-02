@@ -1,4 +1,4 @@
-import { DefaultLogger, LogLevel, mergeConfig, Order } from '@vendure/core';
+import { DefaultLogger, LogLevel, mergeConfig } from '@vendure/core';
 import {
   createTestEnvironment,
   E2E_DEFAULT_CHANNEL_TOKEN,
@@ -8,13 +8,13 @@ import {
   testConfig,
 } from '@vendure/testing';
 import { TestServer } from '@vendure/testing/lib/test-server';
-import fetch from 'node-fetch';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { initialData } from '../../test/src/initial-data';
-import { testPaymentMethod } from '../../test/src/test-payment-method';
-import { createSettledOrder, SettledOrder } from '../../test/src/shop-utils';
-import { OrderPDFsPlugin } from '../src';
 import gql from 'graphql-tag';
+import fetch from 'node-fetch';
+import { afterAll, beforeAll, expect, it } from 'vitest';
+import { initialData } from '../../test/src/initial-data';
+import { createSettledOrder, SettledOrder } from '../../test/src/shop-utils';
+import { testPaymentMethod } from '../../test/src/test-payment-method';
+import { OrderPDFsPlugin } from '../src';
 
 let server: TestServer;
 let adminClient: SimpleGraphQLClient;
@@ -77,7 +77,7 @@ it('Creates a private PDF template', async () => {
         public: false,
         templateString: '<html><body><h1>Example PDF</h1></body></html>',
       },
-    }
+    },
   );
   templateId = template.id;
   expect(template.id).toBeDefined();
@@ -87,7 +87,7 @@ it('Creates a private PDF template', async () => {
   expect(template.enabled).toBe(true);
   expect(template.public).toBe(false);
   expect(template.templateString).toBe(
-    '<html><body><h1>Example PDF</h1></body></html>'
+    '<html><body><h1>Example PDF</h1></body></html>',
   );
 });
 
@@ -119,7 +119,7 @@ it('Downloads private PDF as admin', async () => {
     {
       headers,
       method: 'GET',
-    }
+    },
   );
   expect(res.ok).toBe(true);
 });
@@ -127,14 +127,14 @@ it('Downloads private PDF as admin', async () => {
 it('Does not show up as available PDF template to customers', async () => {
   await shopClient.asAnonymousUser();
   const { availablePDFTemplates } = await shopClient.query(
-    availablePDFTemplatesQuery
+    availablePDFTemplatesQuery,
   );
   expect(availablePDFTemplates).toEqual([]);
 });
 
 it('Does not allow downloading of private template as customer', async () => {
   const res = await fetch(
-    `http://localhost:3050/order-pdf/download/${E2E_DEFAULT_CHANNEL_TOKEN}/${order.code}/T_1/hayden.zieme12@hotmail.com`
+    `http://localhost:3050/order-pdf/download/${E2E_DEFAULT_CHANNEL_TOKEN}/${order.code}/T_1/hayden.zieme12@hotmail.com`,
   );
   expect(res.status).toBe(403);
 });
@@ -151,7 +151,7 @@ it('Updates the PDF template to public', async () => {
         public: true,
         name: 'Public PDF Template',
       },
-    }
+    },
   );
   expect(template.templateString).toBe('<html>New HTML</html>');
   expect(template.public).toBe(true);
@@ -161,7 +161,7 @@ it('Updates the PDF template to public', async () => {
 it('Shows up as available PDF template', async () => {
   await shopClient.asAnonymousUser();
   const { availablePDFTemplates } = await shopClient.query(
-    availablePDFTemplatesQuery
+    availablePDFTemplatesQuery,
   );
   expect(availablePDFTemplates.length).toBe(1);
   expect(availablePDFTemplates[0].name).toBe('Public PDF Template');
@@ -173,7 +173,7 @@ it('Allows public download', async () => {
     `http://localhost:3050/order-pdf/download/${E2E_DEFAULT_CHANNEL_TOKEN}/${order1.code}/1/hayden.zieme12@hotmail.com`,
     {
       method: 'GET',
-    }
+    },
   );
   expect(res.ok).toBe(true);
 });
@@ -211,7 +211,7 @@ it('Downloads multiple PDFs as ZIP file', async () => {
     {
       headers,
       method: 'GET',
-    }
+    },
   );
   expect(res.ok).toBe(true);
 });
@@ -220,7 +220,7 @@ it('Deletes the PDF template', async () => {
   await adminClient.asSuperAdmin();
   const { deletePDFTemplate } = await adminClient.query(
     deletePDFTemplateMutation,
-    { id: templateId }
+    { id: templateId },
   );
   expect(deletePDFTemplate.result).toBe('DELETED');
   const { pdfTemplates } = await adminClient.query(getPDFTemplatesQuery);
@@ -231,7 +231,7 @@ afterAll(async () => {
   await server.destroy();
 }, 100000);
 
-export const availablePDFTemplatesQuery = gql`
+const availablePDFTemplatesQuery = gql`
   query availablePDFTemplates {
     availablePDFTemplates {
       id

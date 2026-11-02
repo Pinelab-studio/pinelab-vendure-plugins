@@ -40,7 +40,7 @@ export const frequentlyBoughtTogetherTask = new ScheduledTask({
  * this returns the shared `frequentlyBoughtTogetherTask` singleton.
  */
 export function buildFrequentlyBoughtTogetherTask(
-  option?: ScheduledTaskOption
+  option?: ScheduledTaskOption,
 ): ScheduledTask {
   return option
     ? frequentlyBoughtTogetherTask.configure(option)

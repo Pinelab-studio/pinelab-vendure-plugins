@@ -1,10 +1,11 @@
+import { randomBytes } from 'node:crypto';
 import {
   Inject,
   Injectable,
   OnApplicationBootstrap,
   Optional,
 } from '@nestjs/common';
-import { randomBytes } from 'crypto';
+import { ModuleRef } from '@nestjs/core';
 import { summate } from '@vendure/common/lib/shared-utils';
 import { unique } from '@vendure/common/lib/unique';
 import {
@@ -12,9 +13,9 @@ import {
   ChannelService,
   EventBus,
   ID,
-  idsAreEqual,
   Injector,
   InternalServerError,
+  idsAreEqual,
   ListQueryBuilder,
   ListQueryOptions,
   Logger,
@@ -35,14 +36,13 @@ import {
   UserService,
 } from '@vendure/core';
 import { asError } from 'catch-unknown';
+import { IsNull, Not, QueryFailedError } from 'typeorm';
 import { CreateWalletInput } from '../api/generated/graphql';
 import { loggerCtx, STORE_CREDIT_PLUGIN_OPTIONS } from '../constants';
-import { WalletAdjustment } from '../entities/wallet-adjustment.entity';
 import { Wallet } from '../entities/wallet.entity';
-import { QueryFailedError, IsNull, Not } from 'typeorm';
+import { WalletAdjustment } from '../entities/wallet-adjustment.entity';
 import { GiftCardsCreatedEvent } from '../events/gift-cards-created.event';
 import { StoreCreditPluginOptions } from '../types';
-import { ModuleRef } from '@nestjs/core';
 
 @Injectable()
 export class WalletService implements OnApplicationBootstrap {
@@ -61,7 +61,7 @@ export class WalletService implements OnApplicationBootstrap {
     private readonly orderService: OrderService,
     @Optional()
     @Inject(STORE_CREDIT_PLUGIN_OPTIONS)
-    private options?: StoreCreditPluginOptions
+    private options?: StoreCreditPluginOptions,
   ) {}
 
   onApplicationBootstrap() {
@@ -71,7 +71,7 @@ export class WalletService implements OnApplicationBootstrap {
           `Error creating gift card wallets for order ${payload.order.code}: ${
             asError(err).message
           }`,
-          loggerCtx
+          loggerCtx,
         );
       });
     });
@@ -92,13 +92,13 @@ export class WalletService implements OnApplicationBootstrap {
           `Error creating gift card wallet for order line ${line.id} in order ${
             order.code
           }: ${asError(err).message}`,
-          loggerCtx
+          loggerCtx,
         );
       }
     }
     if (createdWallets.length > 0) {
       void this.eventBus.publish(
-        new GiftCardsCreatedEvent(ctx, createdWallets, order)
+        new GiftCardsCreatedEvent(ctx, createdWallets, order),
       );
     }
   }
@@ -112,7 +112,7 @@ export class WalletService implements OnApplicationBootstrap {
   async createGiftCardForOrderLine(
     ctx: RequestContext,
     order: Order,
-    line: OrderLine
+    line: OrderLine,
   ): Promise<Wallet[]> {
     const createdWallets: Wallet[] = [];
 
@@ -121,7 +121,7 @@ export class WalletService implements OnApplicationBootstrap {
         ctx,
         new Injector(this.moduleRef),
         order,
-        line
+        line,
       );
 
       if (!result) {
@@ -136,13 +136,13 @@ export class WalletService implements OnApplicationBootstrap {
         {
           name: finalCode,
         },
-        finalCode
+        finalCode,
       );
       const [walletWithBalance] = await this.adjustBalanceForWallet(
         ctx,
         price,
         wallet.id,
-        `Initial gift card balance for order ${order.code}`
+        `Initial gift card balance for order ${order.code}`,
       );
       createdWallets.push(walletWithBalance);
 
@@ -201,7 +201,7 @@ export class WalletService implements OnApplicationBootstrap {
     ctx: RequestContext,
     customerId: ID,
     options?: ListQueryOptions<Wallet>,
-    relations: RelationPaths<Wallet> = []
+    relations: RelationPaths<Wallet> = [],
   ): Promise<PaginatedList<Wallet>> {
     return this.listQueryBuilder
       .build(Wallet, options, {
@@ -223,7 +223,7 @@ export class WalletService implements OnApplicationBootstrap {
     ctx: RequestContext,
     walletId: ID,
     options?: ListQueryOptions<WalletAdjustment>,
-    relations: RelationPaths<WalletAdjustment> = []
+    relations: RelationPaths<WalletAdjustment> = [],
   ): Promise<PaginatedList<WalletAdjustment>> {
     return this.listQueryBuilder
       .build(WalletAdjustment, options, {
@@ -243,11 +243,11 @@ export class WalletService implements OnApplicationBootstrap {
   async create(
     ctx: RequestContext,
     input: CreateWalletInput,
-    code?: string
+    code?: string,
   ): Promise<Wallet> {
     if (!input.customerId && !code) {
       throw new UserInputError(
-        'Either a customerId or a code must be provided to create a wallet'
+        'Either a customerId or a code must be provided to create a wallet',
       );
     }
     const wallet = new Wallet({
@@ -268,7 +268,7 @@ export class WalletService implements OnApplicationBootstrap {
       if (error instanceof QueryFailedError) {
         if (error.message.includes('UNIQUE constraint failed')) {
           throw new UserInputError(
-            `Wallet with name '${input.name}' already exists for customer ${input.customerId}`
+            `Wallet with name '${input.name}' already exists for customer ${input.customerId}`,
           );
         }
       }
@@ -279,10 +279,10 @@ export class WalletService implements OnApplicationBootstrap {
       ctx,
       Wallet,
       wallet.id,
-      unique([defaultChannel.id, ctx.channel.id])
+      unique([defaultChannel.id, ctx.channel.id]),
     );
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    const foundWallet = await this.findOne(ctx, savedWallet!.id);
+    const foundWallet = await this.findOne(ctx, savedWallet?.id);
     if (!foundWallet) {
       throw new InternalServerError('Wallet was not found after creation');
     }
@@ -293,7 +293,7 @@ export class WalletService implements OnApplicationBootstrap {
     ctx: RequestContext,
     amount: number,
     walletId: ID,
-    description: string
+    description: string,
   ): Promise<[Wallet, WalletAdjustment]> {
     let user: User | undefined;
     if (ctx.activeUserId) {
@@ -313,16 +313,16 @@ export class WalletService implements OnApplicationBootstrap {
       !idsAreEqual(wallet.customer?.user?.id, user?.id)
     ) {
       throw new UserInputError(
-        `Wallet with id ${walletId} is not assigned to the current user`
+        `Wallet with id ${walletId} is not assigned to the current user`,
       );
     }
 
     const isAllowedInChannel = wallet.channels.some((channel) =>
-      idsAreEqual(channel.id, ctx.channelId)
+      idsAreEqual(channel.id, ctx.channelId),
     );
     if (!isAllowedInChannel) {
       throw new UserInputError(
-        `Wallet with id ${walletId} is not assigned to the current channel`
+        `Wallet with id ${walletId} is not assigned to the current channel`,
       );
     }
     // Atomic balance update: the WHERE clause ensures we never end up with a
@@ -339,12 +339,12 @@ export class WalletService implements OnApplicationBootstrap {
       throw new UserInputError(
         `Insufficient balance. Wallet has ${
           wallet.balance
-        }, cannot debit ${-amount}`
+        }, cannot debit ${-amount}`,
       );
     } else if ((res.affected ?? 0) > 1) {
       // This should never happen since id is unique, but we check just in case
       throw new InternalServerError(
-        `Unexpected error adjusting wallet balance: ${res.affected} wallets were updated`
+        `Unexpected error adjusting wallet balance: ${res.affected} wallets were updated`,
       );
     }
 
@@ -354,7 +354,7 @@ export class WalletService implements OnApplicationBootstrap {
         amount,
         description,
         mutatedBy: user,
-      })
+      }),
     );
     const updatedWallet = await assertFound(this.findOne(ctx, walletId));
     return [updatedWallet, adjustment];
@@ -378,7 +378,7 @@ export class WalletService implements OnApplicationBootstrap {
       walletId?: ID;
       shouldCreateRefundEntity: boolean;
       reason?: string;
-    }
+    },
   ): Promise<WalletAdjustment> {
     const {
       order,
@@ -391,25 +391,25 @@ export class WalletService implements OnApplicationBootstrap {
     const reason = inputReason ?? 'No reason provided';
     if (!walletId) {
       throw new UserInputError(
-        'Wallet ID is required to refund to store credit.'
+        'Wallet ID is required to refund to store credit.',
       );
     }
     const wallet = await this.findOne(ctx, walletId);
     if (!wallet) {
       throw new UserInputError(
-        `Wallet with id ${walletId} not found. Can not refund payment to this wallet.`
+        `Wallet with id ${walletId} not found. Can not refund payment to this wallet.`,
       );
     }
     if (String(wallet.currencyCode) !== String(order.currencyCode)) {
       throw new UserInputError(
-        `Wallet currency '${wallet.currencyCode}' does not match order currency '${order.currencyCode}'. Can not refund payment to this wallet.`
+        `Wallet currency '${wallet.currencyCode}' does not match order currency '${order.currencyCode}'. Can not refund payment to this wallet.`,
       );
     }
     const [, adjustment] = await this.adjustBalanceForWallet(
       ctx,
       amount,
       walletId,
-      `Refund for order ${payment.order.code}: ${reason}`
+      `Refund for order ${payment.order.code}: ${reason}`,
     );
     if (shouldCreateRefundEntity) {
       // This means we should create a refund entity, because this was called outside of a payment method handler.
@@ -420,7 +420,7 @@ export class WalletService implements OnApplicationBootstrap {
         order,
         payment,
         adjustment,
-        wallet
+        wallet,
       );
     }
     return adjustment;
@@ -430,31 +430,31 @@ export class WalletService implements OnApplicationBootstrap {
     ctx: RequestContext,
     order: Order,
     amount: number,
-    metadata: PaymentMetadata
+    metadata: PaymentMetadata,
   ) {
     if (metadata.walletId) {
       await this.adjustBalanceForWallet(
         ctx,
         -1 * amount,
         metadata.walletId as ID,
-        `Paid for order ${order.code}`
+        `Paid for order ${order.code}`,
       );
     }
     if (metadata.giftCardCode) {
       const wallet = await this.findByCode(
         ctx,
-        metadata.giftCardCode as string
+        metadata.giftCardCode as string,
       );
       if (!wallet) {
         throw new UserInputError(
-          `No wallet found for gift card code '${metadata.giftCardCode}'`
+          `No wallet found for gift card code '${metadata.giftCardCode}'`,
         );
       }
       await this.adjustBalanceForWallet(
         ctx,
         -1 * amount,
         wallet?.id,
-        `Paid for order ${order.code}`
+        `Paid for order ${order.code}`,
       );
     }
   }
@@ -462,7 +462,7 @@ export class WalletService implements OnApplicationBootstrap {
   async findOne(
     ctx: RequestContext,
     walletId: ID,
-    relations?: RelationPaths<Wallet>
+    relations?: RelationPaths<Wallet>,
   ): Promise<Wallet | undefined> {
     const effectiveRelations = relations ?? this.relations.slice();
     const wallet = await this.connection.findOneInChannel(
@@ -472,7 +472,7 @@ export class WalletService implements OnApplicationBootstrap {
       ctx.channelId,
       {
         relations: unique(effectiveRelations),
-      }
+      },
     );
     return wallet;
   }
@@ -480,7 +480,7 @@ export class WalletService implements OnApplicationBootstrap {
   async findByCode(
     ctx: RequestContext,
     code: string,
-    relations?: RelationPaths<Wallet>
+    relations?: RelationPaths<Wallet>,
   ): Promise<Wallet | null> {
     const effectiveRelations = relations ?? this.relations.slice();
     // Channel-scoped lookup: only return a wallet when it is assigned to the
@@ -517,7 +517,7 @@ export class WalletService implements OnApplicationBootstrap {
     order: Order,
     payment: Payment,
     adjustment: WalletAdjustment,
-    wallet: Wallet
+    wallet: Wallet,
   ): Promise<Refund[]> {
     const orderWithRefunds = await this.connection.getEntityOrThrow(
       ctx,
@@ -525,10 +525,10 @@ export class WalletService implements OnApplicationBootstrap {
       order.id,
       {
         relations: ['payments', 'payments.refunds'],
-      }
+      },
     );
     const paymentToRefund = orderWithRefunds.payments.find((p) =>
-      idsAreEqual(p.id, payment.id)
+      idsAreEqual(p.id, payment.id),
     );
     if (!paymentToRefund) {
       throw new InternalServerError('Could not find a Payment to refund');
@@ -537,7 +537,7 @@ export class WalletService implements OnApplicationBootstrap {
       paymentToRefund.amount - this.getPaymentRefundTotal(paymentToRefund);
     if (refundableAmount < amount) {
       throw new UserInputError(
-        `Refund amount ${amount} is greater than payment amount ${refundableAmount}.`
+        `Refund amount ${amount} is greater than payment amount ${refundableAmount}.`,
       );
     }
     const refundsCreated: Refund[] = [];
@@ -592,12 +592,12 @@ export class WalletService implements OnApplicationBootstrap {
       .catch((err) => {
         Logger.error(
           `Error adding note to order ${order.id}: ${err}`,
-          loggerCtx
+          loggerCtx,
         );
       });
     for (const refund of refundsCreated) {
       await this.eventBus.publish(
-        new RefundEvent(ctx, order, refund, 'created')
+        new RefundEvent(ctx, order, refund, 'created'),
       );
     }
     return refundsCreated;
@@ -612,7 +612,7 @@ export class WalletService implements OnApplicationBootstrap {
   getGiftCardWallets(
     ctx: RequestContext,
     options?: ListQueryOptions<Wallet>,
-    relations: RelationPaths<Wallet> = []
+    relations: RelationPaths<Wallet> = [],
   ): Promise<PaginatedList<Wallet>> {
     return this.listQueryBuilder
       .build(Wallet, options, {

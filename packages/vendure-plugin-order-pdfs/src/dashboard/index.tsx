@@ -1,8 +1,8 @@
 import { defineDashboardExtension } from '@vendure/dashboard';
-import { pdfTemplateListRoute } from './components/PdfTemplateListPage';
-import { pdfTemplateDetailRoute } from './components/PdfTemplateDetailPage';
-import { DownloadPdfMenuItem } from './components/DownloadPdfMenuItem';
 import { DownloadPdfBulkAction } from './components/DownloadPdfBulkAction';
+import { DownloadPdfMenuItem } from './components/DownloadPdfMenuItem';
+import { pdfTemplateDetailRoute } from './components/PdfTemplateDetailPage';
+import { pdfTemplateListRoute } from './components/PdfTemplateListPage';
 
 defineDashboardExtension({
   routes: [pdfTemplateListRoute, pdfTemplateDetailRoute],

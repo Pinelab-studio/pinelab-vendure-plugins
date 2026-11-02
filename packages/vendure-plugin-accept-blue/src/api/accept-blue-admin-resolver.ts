@@ -15,13 +15,13 @@ export class AcceptBlueAdminResolver {
   async refundAcceptBlueTransaction(
     @Ctx() ctx: RequestContext,
     @Args()
-    { transactionId, amount, cvv2 }: MutationRefundAcceptBlueTransactionArgs
+    { transactionId, amount, cvv2 }: MutationRefundAcceptBlueTransactionArgs,
   ): Promise<GraphqlMutation['refundAcceptBlueTransaction']> {
     return await this.acceptBlueService.refund(
       ctx,
       transactionId,
       amount ?? undefined,
-      cvv2 ?? undefined
+      cvv2 ?? undefined,
     );
   }
 }

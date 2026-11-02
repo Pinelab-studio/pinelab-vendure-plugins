@@ -110,4 +110,4 @@ const MODIFY_ORDER = gql`
   }
 `;
 
-export { mockShipment, cancelShipmentResponse, MODIFY_ORDER };
+export { cancelShipmentResponse, MODIFY_ORDER, mockShipment };

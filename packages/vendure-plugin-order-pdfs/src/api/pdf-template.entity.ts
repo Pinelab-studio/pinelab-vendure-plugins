@@ -1,5 +1,5 @@
-import { Column, Entity, ColumnType } from 'typeorm';
 import { DeepPartial, Logger, VendureEntity } from '@vendure/core';
+import { Column, ColumnType, Entity } from 'typeorm';
 import { loggerCtx } from '../constants';
 
 @Entity('pdf_template')
@@ -46,7 +46,7 @@ function resolveTemplateColumnType(): ColumnType {
   } else {
     Logger.warn(
       `No large-text column type available for DB engine "${dbEngine}", using "text". ( Contributions welcome )`,
-      loggerCtx
+      loggerCtx,
     );
   }
   return 'text';

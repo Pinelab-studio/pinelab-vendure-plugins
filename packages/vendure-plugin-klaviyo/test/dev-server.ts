@@ -1,4 +1,3 @@
-import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
 import {
   DefaultLogger,
   DefaultSearchPlugin,
@@ -14,9 +13,9 @@ import { initialData } from '../../test/src/initial-data';
 import { createSettledOrder } from '../../test/src/shop-utils';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
 import {
-  KlaviyoPlugin,
   createRefundHandler,
   defaultOrderPlacedEventHandler,
+  KlaviyoPlugin,
 } from '../src';
 import { mockCustomEventHandler } from './mock-custom-event-handler';
 
@@ -52,7 +51,7 @@ import { mockCustomEventHandler } from './mock-custom-event-handler';
         feed: {
           // The feed is secured by a password, to prevent abuse, but still able to use it via the shop API in your storefront build.
           password: 'some_password',
-          enhanceProductFeedItemFn: (ctx, variant, feedItem) => {
+          enhanceProductFeedItemFn: (_ctx, variant, feedItem) => {
             const asset =
               variant.product.featuredAsset ?? variant.featuredAsset;
             return {
@@ -62,16 +61,12 @@ import { mockCustomEventHandler } from './mock-custom-event-handler';
               // You can add any custom fields you want to the feed item, like so:
               myCustomField: 'Testing',
               // or override any of the default fields, like so:
-              name: variant.product.name + ' - Buy Now!',
+              name: `${variant.product.name} - Buy Now!`,
             };
           },
         },
       }),
       DefaultSearchPlugin,
-      AdminUiPlugin.init({
-        port: 3002,
-        route: 'admin',
-      }),
     ],
   });
   const { server, shopClient, adminClient } = createTestEnvironment(config);

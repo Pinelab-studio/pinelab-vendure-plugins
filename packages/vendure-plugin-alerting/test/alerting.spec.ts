@@ -2,10 +2,10 @@ import {
   DefaultLogger,
   EventBus,
   Injector,
+  Logger,
   LogLevel,
   mergeConfig,
   ProductEvent,
-  Logger,
   ProductVariantEvent,
 } from '@vendure/core';
 import {
@@ -22,12 +22,12 @@ import { initialData } from '../../test/src/initial-data';
 import { waitFor } from '../../test/src/test-helpers';
 import {
   AlertingPlugin,
+  AlertingService,
+  AlertMessage,
   EventAlert,
   LogAlert,
-  WebhookNotifier,
   Notifier,
-  AlertMessage,
-  AlertingService,
+  WebhookNotifier,
 } from '../src';
 
 class TestNotifier implements Notifier {
@@ -41,7 +41,7 @@ class TestNotifier implements Notifier {
   }
 }
 
-describe('Alerting plugin', function () {
+describe('Alerting plugin', () => {
   let server: TestServer;
   let serverStarted = false;
   let notifier1: TestNotifier;
@@ -148,10 +148,10 @@ describe('Alerting plugin', function () {
     // notifier1 receives both the unfiltered 'updated' and the filtered 'created' alert
     expect(notifier1.messages.length).toBeGreaterThanOrEqual(2);
     expect(
-      notifier1.messages.some((m) => m.text === 'Product event: updated')
+      notifier1.messages.some((m) => m.text === 'Product event: updated'),
     ).toBe(true);
     expect(notifier1.messages.some((m) => m.text === 'Product created')).toBe(
-      true
+      true,
     );
   });
 
@@ -172,10 +172,10 @@ describe('Alerting plugin', function () {
   it('Should send log-based alerts', async () => {
     Logger.error('Test error message', 'TestCtx');
     await waitFor(() =>
-      notifier1.messages.some((m) => m.text === 'Test error message')
+      notifier1.messages.some((m) => m.text === 'Test error message'),
     );
     const msg = notifier1.messages.find(
-      (m) => m.text === 'Test error message'
+      (m) => m.text === 'Test error message',
     )!;
     expect(msg.subject).toBe('[error] Alert');
     expect(msg.text).toBe('Test error message');
@@ -195,7 +195,7 @@ describe('Alerting plugin', function () {
     await new Promise((r) => setTimeout(r, 300));
     // Should NOT have received any message for this context
     const matching = notifier1.messages.filter(
-      (m) => m.text === 'Self loop message'
+      (m) => m.text === 'Self loop message',
     );
     expect(matching.length).toBe(0);
   });

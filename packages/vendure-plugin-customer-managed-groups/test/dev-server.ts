@@ -1,4 +1,4 @@
-import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
+import path from 'node:path';
 import { AssetServerPlugin } from '@vendure/asset-server-plugin';
 import {
   DefaultLogger,
@@ -8,13 +8,10 @@ import {
 } from '@vendure/core';
 import {
   createTestEnvironment,
-  MysqlInitializer,
   registerInitializer,
   SqljsInitializer,
   testConfig,
 } from '@vendure/testing';
-import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
-import path from 'path';
 import { initialData } from '../../test/src/initial-data';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
 
@@ -33,15 +30,6 @@ require('dotenv').config();
       }),
       CustomerManagedGroupsPlugin,
       DefaultSearchPlugin,
-      AdminUiPlugin.init({
-        port: 3002,
-        route: 'admin',
-        app: compileUiExtensions({
-          outputPath: path.join(__dirname, '__admin-ui'),
-          extensions: [],
-          devMode: true,
-        }),
-      }),
     ],
     apiOptions: {
       shopApiPlayground: true,

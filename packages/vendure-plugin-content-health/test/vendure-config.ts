@@ -1,5 +1,6 @@
 require('dotenv').config();
 
+import path from 'node:path';
 import {
   Administrator,
   DefaultLogger,
@@ -11,9 +12,8 @@ import {
   TransactionalConnection,
   VendureConfig,
 } from '@vendure/core';
-import { testConfig } from '@vendure/testing';
 import { DashboardPlugin } from '@vendure/dashboard/plugin';
-import path from 'path';
+import { testConfig } from '@vendure/testing';
 import { ContentHealthPlugin } from '../src';
 import { MOCK_STOREFRONT_PORT } from './mock-storefront-server';
 
@@ -31,18 +31,18 @@ export const config: VendureConfig = mergeConfig(testConfig, {
   },
   plugins: [
     ContentHealthPlugin.init({
-      getProductUrl: (ctx, { product, languageCode }) =>
+      getProductUrl: (_ctx, { product, languageCode }) =>
         `http://localhost:${MOCK_STOREFRONT_PORT}/${languageCode}/products/${product.slug}`,
-      getCollectionUrl: (ctx, { collection, languageCode }) =>
+      getCollectionUrl: (_ctx, { collection, languageCode }) =>
         `http://localhost:${MOCK_STOREFRONT_PORT}/${languageCode}/collections/${collection.slug}`,
       getSitemapUrl: () =>
         `http://localhost:${MOCK_STOREFRONT_PORT}/sitemap.xml`,
       maxRedirects: 5,
-      shouldCheckEntity: (ctx, entity) =>
+      shouldCheckEntity: (_ctx, entity) =>
         'enabled' in entity ? entity.enabled : !entity.isPrivate,
       checks: {
         product: [
-          (ctx, { product }) => {
+          (_ctx, { product }) => {
             const description = (product.description ?? '') as string;
             if (description.trim().length < 20) {
               return [

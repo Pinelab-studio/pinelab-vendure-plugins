@@ -52,8 +52,8 @@ export class GooglePlacesLookupStrategy implements AddressLookupStrategy {
   }
 
   async lookup(
-    ctx: RequestContext,
-    input: AddressLookupInput
+    _ctx: RequestContext,
+    input: AddressLookupInput,
   ): Promise<OrderAddress[]> {
     let query = `${input.houseNumber} ${input.streetName}`;
     if (input.postalCode) {
@@ -72,32 +72,32 @@ export class GooglePlacesLookupStrategy implements AddressLookupStrategy {
           textQuery: query,
           regionCode: input.countryCode.toLowerCase(),
         }),
-      }
+      },
     );
     if (!result.ok) {
       throw new Error(
-        `Google Places API returned status ${result.status}: ${result.statusText}`
+        `Google Places API returned status ${result.status}: ${result.statusText}`,
       );
     }
     const jsonResult = (await result.json()) as GooglePlacesResponse;
     return (jsonResult.places ?? []).map((place) => {
       const streetNumber = place.addressComponents.find((comp) =>
-        comp.types.includes('street_number')
+        comp.types.includes('street_number'),
       )?.longText;
       const route = place.addressComponents.find((comp) =>
-        comp.types.includes('route')
+        comp.types.includes('route'),
       )?.longText;
       const city = place.addressComponents.find((comp) =>
-        comp.types.includes('locality')
+        comp.types.includes('locality'),
       )?.longText;
       const province = place.addressComponents.find((comp) =>
-        comp.types.includes('administrative_area_level_1')
+        comp.types.includes('administrative_area_level_1'),
       )?.longText;
       const postalCode = place.addressComponents.find((comp) =>
-        comp.types.includes('postal_code')
+        comp.types.includes('postal_code'),
       )?.longText;
       const country = place.addressComponents.find((comp) =>
-        comp.types.includes('country')
+        comp.types.includes('country'),
       );
       return {
         streetLine1: route,

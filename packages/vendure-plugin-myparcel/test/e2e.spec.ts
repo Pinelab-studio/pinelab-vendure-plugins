@@ -1,45 +1,42 @@
+import { Fulfillment } from '@vendure/common/lib/generated-types';
+import {
+  ChannelService,
+  DefaultLogger,
+  LogLevel,
+  mergeConfig,
+} from '@vendure/core';
 import {
   createTestEnvironment,
   registerInitializer,
   SimpleGraphQLClient,
   SqljsInitializer,
-  testConfig,
   TestServer,
+  testConfig,
 } from '@vendure/testing';
-import {
-  Channel,
-  ChannelService,
-  DefaultLogger,
-  LogLevel,
-  mergeConfig,
-  RequestContext,
-  TransactionalConnection,
-} from '@vendure/core';
-import { testPaymentMethod } from '../../test/src/test-payment-method';
-import { initialData } from '../../test/src/initial-data';
 import { getSuperadminContext } from '@vendure/testing/lib/utils/get-superadmin-context';
-import {
-  addItem,
-  addPaymentToOrder,
-  proceedToArrangingPayment,
-} from '../../test/src/shop-utils';
+import axios from 'axios';
+import gql from 'graphql-tag';
+import nock from 'nock';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import {
   addShippingMethod,
   fulfill,
   getOrder,
 } from '../../test/src/admin-utils';
-import nock from 'nock';
+import { initialData } from '../../test/src/initial-data';
+import {
+  addItem,
+  addPaymentToOrder,
+  proceedToArrangingPayment,
+} from '../../test/src/shop-utils';
+import { testPaymentMethod } from '../../test/src/test-payment-method';
+import { MyparcelPlugin } from '../src';
 import {
   MyparcelService,
   MyparcelShipment,
   MyparcelStatusChangeEvent,
   WebhookSubscription,
 } from '../src/api/myparcel.service';
-import { Fulfillment } from '@vendure/common/lib/generated-types';
-import axios from 'axios';
-import { MyparcelPlugin } from '../src';
-import gql from 'graphql-tag';
-import { expect, describe, beforeAll, afterAll, it, vi, test } from 'vitest';
 
 type OutgoingMyparcelShipment = { data: { shipments: MyparcelShipment[] } };
 type OutgoingWebhookSubscription = {
@@ -99,7 +96,7 @@ describe('MyParcel', () => {
       plugins: [
         MyparcelPlugin.init({
           vendureHost: 'https://test-webhook.com',
-          getCustomsInformationFn: (orderLine) => {
+          getCustomsInformationFn: (_orderLine) => {
             return {
               weightInGrams: 30,
               classification: 'mock classification code',
@@ -149,7 +146,7 @@ describe('MyParcel', () => {
     await server.app.get(MyparcelService).setWebhooksForAllChannels(ctx);
     const webhook = body?.data?.webhook_subscriptions?.[0];
     expect(webhook?.url).toEqual(
-      'https://test-webhook.com/myparcel/update-status'
+      'https://test-webhook.com/myparcel/update-status',
     );
     expect(webhook?.hook).toEqual('shipment_status_change');
     expect(contentType).toEqual('application/json');
@@ -182,7 +179,7 @@ describe('MyParcel', () => {
     await addShippingMethod(adminClient, 'my-parcel');
     await shopClient.asUserWithCredentials(
       'hayden.zieme12@hotmail.com',
-      'test'
+      'test',
     );
     await addItem(shopClient, 'T_1', 1);
     await addItem(shopClient, 'T_2', 2);
@@ -194,7 +191,7 @@ describe('MyParcel', () => {
 
   it('Fulfill order with MyParcel', async () => {
     let body: OutgoingMyparcelShipment | undefined;
-    let contentType = undefined;
+    let contentType: string | string[] | undefined;
     nock('https://api.myparcel.nl/')
       .post('/shipments', (reqBody) => {
         body = reqBody;
@@ -217,7 +214,7 @@ describe('MyParcel', () => {
           name: 'customsContents',
           value: '1',
         },
-      ]
+      ],
     );
     const shipment = body?.data?.shipments?.[0];
     expect(fulfillment.state).toEqual('Pending');
@@ -230,21 +227,21 @@ describe('MyParcel', () => {
     expect(shipment?.recipient.email).toEqual('hayden.zieme12@hotmail.com');
     expect(shipment?.recipient.cc).toEqual('NL');
     expect(contentType).toEqual(
-      'application/vnd.shipment+json;version=1.1;charset=utf-8'
+      'application/vnd.shipment+json;version=1.1;charset=utf-8',
     );
     // Customs information
     expect(shipment?.physical_properties?.weight).toEqual(30 * 3);
     expect(shipment?.customs_declaration?.weight).toEqual(30 * 3);
     expect(
-      shipment?.customs_declaration?.items.every((i) => i.weight === 30)
+      shipment?.customs_declaration?.items.every((i) => i.weight === 30),
     ).toBeTruthy();
     expect(
       shipment?.customs_declaration?.items.every(
-        (i) => i.classification === 'mock classification code'
-      )
+        (i) => i.classification === 'mock classification code',
+      ),
     ).toBeTruthy();
     expect(
-      shipment?.customs_declaration?.items.every((i) => i.country === 'NL')
+      shipment?.customs_declaration?.items.every((i) => i.country === 'NL'),
     ).toBeTruthy();
     expect(shipment?.customs_declaration?.contents).toEqual(1);
   });
@@ -270,7 +267,7 @@ describe('MyParcel', () => {
     });
     const disabledCtx = await getSuperadminContext(server.app);
     expect(
-      server.app.get(MyparcelService).getConfig(disabledCtx)
+      server.app.get(MyparcelService).getConfig(disabledCtx),
     ).toBeUndefined();
   });
 
@@ -279,13 +276,13 @@ describe('MyParcel', () => {
   }, 100000);
 });
 
-export async function postStatusChange(
+async function postStatusChange(
   fulfillmentReference: string,
-  status: number
+  status: number,
 ): Promise<void> {
   const shipmentId = fulfillmentReference.replace(`MyParcel `, '');
-  let buff = Buffer.from(apiKey);
-  let encodedKey = buff.toString('base64');
+  const buff = Buffer.from(apiKey);
+  const encodedKey = buff.toString('base64');
   await axios.post(
     'http://localhost:3051/myparcel/update-status',
     <MyparcelStatusChangeEvent>{
@@ -300,6 +297,6 @@ export async function postStatusChange(
     },
     {
       headers: { 'X-MyParcel-Authorization': encodedKey },
-    }
+    },
   );
 }

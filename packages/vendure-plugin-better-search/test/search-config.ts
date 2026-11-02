@@ -1,7 +1,7 @@
 import {
+  BetterSearchConfigInput,
   BetterSearchResult,
   defaultSearchConfig,
-  BetterSearchConfigInput,
 } from '../src';
 
 interface MySearchResult extends BetterSearchResult {
@@ -12,7 +12,7 @@ export const searchConfig: BetterSearchConfigInput<MySearchResult> = {
   mapToSearchDocument: (product, collections) => {
     const defaultDocument = defaultSearchConfig.mapToSearchDocument(
       product,
-      collections
+      collections,
     );
     const productFacetValues = product.facetValues.map((fv) => fv.name);
     return {

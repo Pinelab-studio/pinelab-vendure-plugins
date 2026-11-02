@@ -5,15 +5,15 @@ import {
   registerInitializer,
   SimpleGraphQLClient,
   SqljsInitializer,
-  testConfig,
   TestServer,
+  testConfig,
 } from '@vendure/testing';
 import gql from 'graphql-tag';
 import { MockAgent, setGlobalDispatcher } from 'undici';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { initialData } from '../../test/src/initial-data';
-import { testPaymentMethod } from '../../test/src/test-payment-method';
 import { waitFor } from '../../test/src/test-helpers';
+import { testPaymentMethod } from '../../test/src/test-payment-method';
 import {
   AdditionalCheckResult,
   ChannelContentScanCompletedEvent,
@@ -132,7 +132,7 @@ const ASSIGN_PRODUCTS_TO_CHANNEL = gql`
 
 function goodProductHtml(
   url: string,
-  languageUrls?: { en: string; nl: string }
+  languageUrls?: { en: string; nl: string },
 ): string {
   return `<html><head>
     <title>${'a'.repeat(55)}</title>
@@ -210,26 +210,26 @@ describe('ContentHealthPlugin (e2e)', () => {
       logger: new DefaultLogger({ level: LogLevel.Debug }),
       plugins: [
         ContentHealthPlugin.init({
-          getProductUrl: (ctx, { product, languageCode }) =>
+          getProductUrl: (_ctx, { product, languageCode }) =>
             `${STOREFRONT_ORIGIN}/${languageCode}/products/${product.slug}`,
-          getCollectionUrl: (ctx, { collection, languageCode }) =>
+          getCollectionUrl: (_ctx, { collection, languageCode }) =>
             `${STOREFRONT_ORIGIN}/${languageCode}/collections/${collection.slug}`,
           getSitemapUrl: () => `${STOREFRONT_ORIGIN}/sitemap.xml`,
           // Compared by slug, not id: `entity.id` here is the raw internal
           // id, while `excludedProductId` (assigned below, after product
           // creation) is the GraphQL-encoded admin-facing id — the two are
           // not directly comparable.
-          shouldCheckEntity: (ctx, entity) =>
+          shouldCheckEntity: (_ctx, entity) =>
             !excludeProduct || entity.slug !== 'excluded-product',
           checks: {
             product: [
               (ctx, { product }) => {
                 configurableCheckCalls.push(product.slug);
                 const translation = product.translations.find(
-                  (item) => item.languageCode === ctx.languageCode
+                  (item) => item.languageCode === ctx.languageCode,
                 );
                 const hasCompleteTranslation = Boolean(
-                  translation?.name.trim() && translation.description.trim()
+                  translation?.name.trim() && translation.description.trim(),
                 );
                 if (hasCompleteTranslation) {
                   return [];
@@ -356,7 +356,7 @@ describe('ContentHealthPlugin (e2e)', () => {
         goodProductHtml(goodProductUrl, {
           en: goodProductUrl,
           nl: goodProductNlUrl,
-        })
+        }),
       )
       .persist();
     storefrontClient
@@ -366,7 +366,7 @@ describe('ContentHealthPlugin (e2e)', () => {
         goodProductHtml(goodProductNlUrl, {
           en: goodProductUrl,
           nl: goodProductNlUrl,
-        })
+        }),
       )
       .persist();
     storefrontClient
@@ -382,7 +382,7 @@ describe('ContentHealthPlugin (e2e)', () => {
           goodProductNlUrl,
           goodCollectionUrl,
           brokenProductUrl,
-        ])
+        ]),
       )
       .persist();
   }, 60000);
@@ -428,7 +428,7 @@ describe('ContentHealthPlugin (e2e)', () => {
 
     const goodCollectionResults = await adminClient.query(
       GET_CONTENT_CHECK_RESULTS,
-      { entityType: 'COLLECTION', entityId: goodCollectionId }
+      { entityType: 'COLLECTION', entityId: goodCollectionId },
     );
     expect(goodCollectionResults.contentCheckResults).toHaveLength(1);
     expect(goodCollectionResults.contentCheckResults[0].hasError).toBe(false);
@@ -441,8 +441,8 @@ describe('ContentHealthPlugin (e2e)', () => {
     expect(brokenResults.contentCheckResults[0].hasError).toBe(true);
     expect(
       brokenResults.contentCheckResults[0].messages.some(
-        (m: { code: string }) => m.code === 'PAGE_FETCH_FAILED'
-      )
+        (m: { code: string }) => m.code === 'PAGE_FETCH_FAILED',
+      ),
     ).toBe(true);
 
     // The broken entity did not prevent the others (or their configurable
@@ -464,8 +464,8 @@ describe('ContentHealthPlugin (e2e)', () => {
     });
     expect(
       productsOnly.contentCheckOverview.items.every(
-        (item: { entityType: string }) => item.entityType === 'PRODUCT'
-      )
+        (item: { entityType: string }) => item.entityType === 'PRODUCT',
+      ),
     ).toBe(true);
     expect(productsOnly.contentCheckOverview.items.length).toBeGreaterThan(0);
 
@@ -488,7 +488,7 @@ describe('ContentHealthPlugin (e2e)', () => {
     });
     expect(firstPage.contentCheckOverview.items).toHaveLength(1);
     expect(firstPage.contentCheckOverview.totalItems).toBe(
-      allItems.contentCheckOverview.totalItems
+      allItems.contentCheckOverview.totalItems,
     );
   });
 
@@ -572,7 +572,7 @@ describe('ContentHealthPlugin (e2e)', () => {
       });
       const messages = res.contentCheckResults[0]?.messages ?? [];
       return messages.some(
-        (m: { code: string }) => m.code === 'PAGE_FETCH_FAILED'
+        (m: { code: string }) => m.code === 'PAGE_FETCH_FAILED',
       )
         ? true
         : undefined;
@@ -580,12 +580,12 @@ describe('ContentHealthPlugin (e2e)', () => {
 
     const overviewBefore = await adminClient.query(
       GET_CONTENT_CHECK_OVERVIEW,
-      {}
+      {},
     );
     expect(
       overviewBefore.contentCheckOverview.items.some(
-        isBrokenProductOverviewItem
-      )
+        isBrokenProductOverviewItem,
+      ),
     ).toBe(true);
 
     // Now: fix it (page is reachable and fully valid; the shared sitemap
@@ -617,16 +617,18 @@ describe('ContentHealthPlugin (e2e)', () => {
     expect(resultsAfter.contentCheckResults).toHaveLength(1);
     expect(
       resultsAfter.contentCheckResults[0].messages.some(
-        (m: { code: string }) => m.code === 'PAGE_FETCH_FAILED'
-      )
+        (m: { code: string }) => m.code === 'PAGE_FETCH_FAILED',
+      ),
     ).toBe(false);
 
     const overviewAfter = await adminClient.query(
       GET_CONTENT_CHECK_OVERVIEW,
-      {}
+      {},
     );
     expect(
-      overviewAfter.contentCheckOverview.items.some(isBrokenProductOverviewItem)
+      overviewAfter.contentCheckOverview.items.some(
+        isBrokenProductOverviewItem,
+      ),
     ).toBe(false);
   }, 30000);
 
@@ -658,7 +660,7 @@ describe('ContentHealthPlugin (e2e)', () => {
     expect(results.contentCheckResults[0].label).toBe('Super Admin');
     expect(results.contentCheckResults[0].url).toBe('/administrators/1');
     expect(results.contentCheckResults[0].messages[0].code).toBe(
-      'DEMO_CUSTOM_CHECK'
+      'DEMO_CUSTOM_CHECK',
     );
 
     const overview = await adminClient.query(GET_CONTENT_CHECK_OVERVIEW, {
@@ -677,7 +679,7 @@ describe('ContentHealthPlugin (e2e)', () => {
     // `additionalChecks` entity type must show up alongside the built-ins.
     const entityTypes = await adminClient.query(GET_CONTENT_CHECK_ENTITY_TYPES);
     expect(entityTypes.contentCheckEntityTypes).toEqual(
-      expect.arrayContaining(['PRODUCT', 'COLLECTION', 'administrator'])
+      expect.arrayContaining(['PRODUCT', 'COLLECTION', 'administrator']),
     );
   }, 20000);
 
@@ -697,14 +699,14 @@ describe('ContentHealthPlugin (e2e)', () => {
       RUN_CONTENT_CHECK_FOR_PRODUCT,
       {
         productId: excludedProductId,
-      }
+      },
     );
     expect(checkedResult.runContentCheckForProduct[0].hasError).toBe(true);
 
     excludeProduct = true;
     const excludedResult = await adminClient.query(
       RUN_CONTENT_CHECK_FOR_PRODUCT,
-      { productId: excludedProductId }
+      { productId: excludedProductId },
     );
 
     expect(excludedResult.runContentCheckForProduct).toHaveLength(1);
@@ -726,20 +728,20 @@ describe('ContentHealthPlugin (e2e)', () => {
   it('runContentHealthFullScan: manually runs a full scan on demand', async () => {
     const result = await adminClient.query(
       RUN_CONTENT_SEO_MONITOR_FULL_SCAN,
-      {}
+      {},
     );
 
     expect(result.runContentHealthFullScan.channelsScanned).toBe(1);
     // Our 3 non-excluded entities plus whatever the CSV fixture imported.
     expect(
-      result.runContentHealthFullScan.entitiesChecked
+      result.runContentHealthFullScan.entitiesChecked,
     ).toBeGreaterThanOrEqual(3);
   }, 20000);
 
   it('runContentCheckForProduct is isolated to the active channel: does not read or write another channel', async () => {
     const defaultChannelResultsBefore = await adminClient.query(
       GET_CONTENT_CHECK_RESULTS,
-      { entityType: 'PRODUCT', entityId: goodProductId }
+      { entityType: 'PRODUCT', entityId: goodProductId },
     );
     expect(defaultChannelResultsBefore.contentCheckResults).toHaveLength(1);
 
@@ -767,7 +769,7 @@ describe('ContentHealthPlugin (e2e)', () => {
       RUN_CONTENT_CHECK_FOR_PRODUCT,
       {
         productId: goodProductId,
-      }
+      },
     );
     expect(channel2Result.runContentCheckForProduct).toHaveLength(1);
 
@@ -782,11 +784,11 @@ describe('ContentHealthPlugin (e2e)', () => {
     adminClient.setChannelToken(E2E_DEFAULT_CHANNEL_TOKEN);
     const defaultChannelResultsAfter = await adminClient.query(
       GET_CONTENT_CHECK_RESULTS,
-      { entityType: 'PRODUCT', entityId: goodProductId }
+      { entityType: 'PRODUCT', entityId: goodProductId },
     );
     expect(defaultChannelResultsAfter.contentCheckResults).toHaveLength(1);
     expect(defaultChannelResultsAfter.contentCheckResults[0].id).toBe(
-      defaultChannelResultsBefore.contentCheckResults[0].id
+      defaultChannelResultsBefore.contentCheckResults[0].id,
     );
   });
 
@@ -807,7 +809,7 @@ describe('ContentHealthPlugin (e2e)', () => {
       productId: goodProductId,
     });
     const nlResult = result.runContentCheckForProduct.find(
-      (item: { languageCode: string }) => item.languageCode === 'nl'
+      (item: { languageCode: string }) => item.languageCode === 'nl',
     );
 
     expect(nlResult).toMatchObject({

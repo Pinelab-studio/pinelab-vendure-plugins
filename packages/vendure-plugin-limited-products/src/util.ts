@@ -1,4 +1,4 @@
-import { RequestContext, idsAreEqual } from '@vendure/core';
+import { idsAreEqual, RequestContext } from '@vendure/core';
 import { ChannelAwareIntValue } from './types';
 
 /**
@@ -6,13 +6,13 @@ import { ChannelAwareIntValue } from './types';
  */
 export function getChannelAwareValue(
   ctx: RequestContext,
-  value: string[] = []
+  value: string[] = [],
 ): number {
   return (
     (value ?? [])
       .map((v) => JSON.parse(v) as ChannelAwareIntValue)
       .find((channelValue) =>
-        idsAreEqual(channelValue.channelId, ctx.channelId)
+        idsAreEqual(channelValue.channelId, ctx.channelId),
       )?.value ?? 0
   );
 }

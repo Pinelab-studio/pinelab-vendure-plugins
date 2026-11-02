@@ -22,7 +22,7 @@
     "serve": "nodemon --watch \"src/**\" --ext \"ts,json\" --exec \"ts-node test/dev-server.ts\"",
     "build": "rimraf dist && tsc",
     "test": "vitest --bail 1 run",
-    "lint": "eslint ."
+    "lint": "biome check ."
   },
   "dependencies": {
     "klaviyo-api": "18.0.0",

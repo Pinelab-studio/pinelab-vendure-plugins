@@ -1,5 +1,5 @@
-import type { APIRoute } from 'astro';
 import { getCollection } from 'astro:content';
+import type { APIRoute } from 'astro';
 import {
   markdownLabel,
   rawRepository,
@@ -12,33 +12,33 @@ export const GET: APIRoute = async () => {
     await getCollection(
       'docs',
       ({ data }) =>
-        data.engineeringPath?.startsWith('docs/best-practices/') ?? false
+        data.engineeringPath?.startsWith('docs/best-practices/') ?? false,
     )
   ).sort((a, b) =>
-    a.data.engineeringPath!.localeCompare(b.data.engineeringPath!)
+    a.data.engineeringPath?.localeCompare(b.data.engineeringPath!),
   );
   if (!entries.length)
     throw new Error(
-      'Cannot publish best-practices-only.md: no source documents.'
+      'Cannot publish best-practices-only.md: no source documents.',
     );
   const sections = entries.map((entry) => {
     const body = stripFrontmatter(entry.body ?? '');
     if (!body)
       throw new Error(
-        `Empty best-practices source: ${entry.data.engineeringPath}`
+        `Empty best-practices source: ${entry.data.engineeringPath}`,
       );
     return `## [${markdownLabel(
-      entry.data.title
+      entry.data.title,
     )}](${rawRepository}/refs/heads/main/${
       entry.data.engineeringPath
     })\n\n${body}`;
   });
   return new Response(
     `# Best practices\n\nInstructions for implementing and reviewing code in all Vendure projects.\n\n${sections.join(
-      '\n\n'
+      '\n\n',
     )}\n`,
     {
       headers: { 'Content-Type': 'text/markdown; charset=utf-8' },
-    }
+    },
   );
 };

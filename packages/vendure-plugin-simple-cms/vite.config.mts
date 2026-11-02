@@ -1,7 +1,6 @@
+import { join, resolve } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { vendureDashboardPlugin } from '@vendure/dashboard/vite';
-import { existsSync } from 'fs';
-import { join, resolve } from 'path';
-import { pathToFileURL } from 'url';
 import { defineConfig } from 'vite';
 
 export default defineConfig({

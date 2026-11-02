@@ -1,6 +1,6 @@
 import {
-  CustomerGroup,
   Customer,
+  CustomerGroup,
   CustomFields,
   LanguageCode,
 } from '@vendure/core';

@@ -1,15 +1,15 @@
 import { UserInputError } from '@vendure/core';
 import {
-  PrimitiveFieldDefinition,
-  StructFieldDefinition,
-  StructSubFieldDefinition,
-  RelationFieldDefinition,
-  TypeDefinition,
-} from '../types';
-import {
   ContentEntryInput,
   ContentEntryTranslationInput,
 } from '../api/generated/graphql';
+import {
+  PrimitiveFieldDefinition,
+  RelationFieldDefinition,
+  StructFieldDefinition,
+  StructSubFieldDefinition,
+  TypeDefinition,
+} from '../types';
 
 const ISO_DATE_REGEX =
   /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}(:\d{2}(\.\d+)?)?(Z|[+-]\d{2}:?\d{2})?)?$/;
@@ -36,14 +36,14 @@ type AnyFieldDefinition =
  */
 export function validateContentEntryInput(
   contentType: TypeDefinition,
-  input: ContentEntryInput
+  input: ContentEntryInput,
 ): void {
   const translatableFields = contentType.fields.filter(
     (f): f is PrimitiveFieldDefinition | StructFieldDefinition =>
-      f.type !== 'relation' && f.isTranslatable === true
+      f.type !== 'relation' && f.isTranslatable === true,
   );
   const nonTranslatableFields = contentType.fields.filter(
-    (f) => !translatableFields.includes(f as never)
+    (f) => !translatableFields.includes(f as never),
   ) as AnyFieldDefinition[];
 
   validateTopLevelFields(nonTranslatableFields, translatableFields, input);
@@ -54,7 +54,7 @@ export function validateContentEntryInput(
 function validateTopLevelFields(
   nonTranslatable: AnyFieldDefinition[],
   translatable: Array<PrimitiveFieldDefinition | StructFieldDefinition>,
-  input: ContentEntryInput
+  input: ContentEntryInput,
 ): void {
   const fields = (input.fields ?? {}) as Record<string, unknown>;
   const allowedNames = new Set(nonTranslatable.map((f) => f.name));
@@ -62,12 +62,12 @@ function validateTopLevelFields(
   for (const key of Object.keys(fields)) {
     if (translatable.some((f) => f.name === key)) {
       throw new UserInputError(
-        `Field '${key}' is translatable and must be provided in 'translations', not in 'fields'`
+        `Field '${key}' is translatable and must be provided in 'translations', not in 'fields'`,
       );
     }
     if (!allowedNames.has(key)) {
       throw new UserInputError(
-        `Unknown field '${key}' for content type '${input.contentTypeCode}'`
+        `Unknown field '${key}' for content type '${input.contentTypeCode}'`,
       );
     }
   }
@@ -79,7 +79,7 @@ function validateTopLevelFields(
     if (!present || value === null || value === undefined) {
       if (!isNullable) {
         throw new UserInputError(
-          `Required field '${fieldDef.name}' is missing`
+          `Required field '${fieldDef.name}' is missing`,
         );
       }
       continue;
@@ -91,7 +91,7 @@ function validateTopLevelFields(
 /** Validates translation rows: unique language codes, no unknown keys, and required fields present per row. */
 function validateTranslations(
   translatable: Array<PrimitiveFieldDefinition | StructFieldDefinition>,
-  translations: ContentEntryTranslationInput[] | null
+  translations: ContentEntryTranslationInput[] | null,
 ): void {
   if (!translations || translations.length === 0) {
     // If there are required translatable fields but no translations row at all,
@@ -100,7 +100,7 @@ function validateTranslations(
     const hasRequired = translatable.some((f) => f.nullable !== true);
     if (hasRequired) {
       throw new UserInputError(
-        `At least one translation is required for translatable fields`
+        `At least one translation is required for translatable fields`,
       );
     }
     return;
@@ -116,42 +116,53 @@ function validateTranslations(
     }
     seenLanguages.add(lang);
 
-    const tFields = (t.fields ?? {}) as Record<string, unknown>;
-    for (const key of Object.keys(tFields)) {
-      if (!allowedNames.has(key)) {
-        throw new UserInputError(
-          `Unknown translatable field '${key}' in translation '${lang}'`
-        );
-      }
-    }
-    for (const fieldDef of translatable) {
-      const present = fieldDef.name in tFields;
-      const value = tFields[fieldDef.name];
-      const isNullable = fieldDef.nullable === true;
-      if (!present || value === null || value === undefined) {
-        if (!isNullable) {
-          throw new UserInputError(
-            `Required translatable field '${fieldDef.name}' is missing for languageCode '${lang}'`
-          );
-        }
-        continue;
-      }
-      assertValueMatchesType(fieldDef, value);
-    }
+    validateTranslationFields(translatable, t, allowedNames, lang);
   }
+}
+
+/** Validates field names and required values for one translation row. */
+function validateTranslationFields(
+  fields: Array<PrimitiveFieldDefinition | StructFieldDefinition>,
+  translation: ContentEntryTranslationInput,
+  allowedNames: Set<string>,
+  lang: string,
+): void {
+  const values = (translation.fields ?? {}) as Record<string, unknown>;
+  for (const key of Object.keys(values)) {
+    if (!allowedNames.has(key))
+      throw new UserInputError(
+        `Unknown translatable field '${key}' in translation '${lang}'`,
+      );
+  }
+  for (const field of fields) {
+    const value = values[field.name];
+    if (!(field.name in values) || value === null || value === undefined) {
+      if (field.nullable !== true)
+        throw new UserInputError(
+          `Required translatable field '${field.name}' is missing for languageCode '${lang}'`,
+        );
+      continue;
+    }
+    assertValueMatchesType(field, value);
+  }
+}
+
+/** Identifies non-array object values used by struct and relation inputs. */
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
 /** Asserts that a value matches the expected type for its field definition. Throws on mismatch. */
 function assertValueMatchesType(
   fieldDef: AnyFieldDefinition,
-  value: unknown
+  value: unknown,
 ): void {
   switch (fieldDef.type) {
     case 'string':
     case 'text':
       if (typeof value !== 'string') {
         throw new UserInputError(
-          `Field '${fieldDef.name}' must be a string, got ${typeof value}`
+          `Field '${fieldDef.name}' must be a string, got ${typeof value}`,
         );
       }
       return;
@@ -163,7 +174,7 @@ function assertValueMatchesType(
     case 'float':
       if (typeof value !== 'number' || !Number.isFinite(value)) {
         throw new UserInputError(
-          `Field '${fieldDef.name}' must be a finite number`
+          `Field '${fieldDef.name}' must be a finite number`,
         );
       }
       return;
@@ -175,7 +186,7 @@ function assertValueMatchesType(
     case 'date':
       if (typeof value !== 'string' || !ISO_DATE_REGEX.test(value)) {
         throw new UserInputError(
-          `Field '${fieldDef.name}' must be an ISO 8601 date string`
+          `Field '${fieldDef.name}' must be an ISO 8601 date string`,
         );
       }
       return;
@@ -195,7 +206,7 @@ function assertValueMatchesType(
 /** Validates a struct value: must be a plain object with only allowed sub-fields. */
 function assertStructValue(
   fieldDef: StructFieldDefinition,
-  value: unknown
+  value: unknown,
 ): void {
   if (typeof value !== 'object' || value === null || Array.isArray(value)) {
     throw new UserInputError(`Field '${fieldDef.name}' must be an object`);
@@ -205,7 +216,7 @@ function assertStructValue(
   for (const key of Object.keys(obj)) {
     if (!allowed.has(key)) {
       throw new UserInputError(
-        `Unknown sub-field '${key}' on struct '${fieldDef.name}'`
+        `Unknown sub-field '${key}' on struct '${fieldDef.name}'`,
       );
     }
   }
@@ -216,7 +227,7 @@ function assertStructValue(
     if (!present || subValue === null || subValue === undefined) {
       if (!isNullable) {
         throw new UserInputError(
-          `Required sub-field '${sub.name}' is missing on struct '${fieldDef.name}'`
+          `Required sub-field '${sub.name}' is missing on struct '${fieldDef.name}'`,
         );
       }
       continue;
@@ -228,39 +239,39 @@ function assertStructValue(
 /** Validates a relation value: must be `{ id }` (single) or `[{ id }, ...]` (list). */
 function assertRelationValue(
   fieldDef: RelationFieldDefinition,
-  value: unknown
+  value: unknown,
 ): void {
   if (fieldDef.list) {
     if (!Array.isArray(value)) {
       throw new UserInputError(
-        `Relation field '${fieldDef.name}' must be an array of objects with an 'id' property`
+        `Relation field '${fieldDef.name}' must be an array of objects with an 'id' property`,
       );
     }
     for (const item of value) {
-      if (typeof item !== 'object' || item === null || Array.isArray(item)) {
+      if (!isPlainObject(item)) {
         throw new UserInputError(
-          `Relation field '${fieldDef.name}' must be an array of objects with an 'id' property`
+          `Relation field '${fieldDef.name}' must be an array of objects with an 'id' property`,
         );
       }
       const id = (item as Record<string, unknown>).id;
       if (typeof id !== 'string' && typeof id !== 'number') {
         throw new UserInputError(
-          `Relation field '${fieldDef.name}' must have a string or number 'id'`
+          `Relation field '${fieldDef.name}' must have a string or number 'id'`,
         );
       }
     }
     return;
   }
 
-  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+  if (!isPlainObject(value)) {
     throw new UserInputError(
-      `Relation field '${fieldDef.name}' must be an object with an 'id' property`
+      `Relation field '${fieldDef.name}' must be an object with an 'id' property`,
     );
   }
   const id = (value as Record<string, unknown>).id;
   if (typeof id !== 'string' && typeof id !== 'number') {
     throw new UserInputError(
-      `Relation field '${fieldDef.name}' must have a string or number 'id'`
+      `Relation field '${fieldDef.name}' must have a string or number 'id'`,
     );
   }
 }

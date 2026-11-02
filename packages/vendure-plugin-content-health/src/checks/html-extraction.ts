@@ -73,7 +73,9 @@ export function extractJsonLdTypes(html: string): string[] {
 
 function collectTypes(node: unknown, types: Set<string>): void {
   if (Array.isArray(node)) {
-    node.forEach((n) => collectTypes(n, types));
+    node.forEach((n) => {
+      collectTypes(n, types);
+    });
     return;
   }
   if (!node || typeof node !== 'object') {
@@ -84,7 +86,9 @@ function collectTypes(node: unknown, types: Set<string>): void {
   if (typeof typeValue === 'string') {
     types.add(typeValue);
   } else if (Array.isArray(typeValue)) {
-    typeValue.forEach((t) => typeof t === 'string' && types.add(t));
+    typeValue.forEach((t) => {
+      if (typeof t === 'string') types.add(t);
+    });
   }
   if (Array.isArray(obj['@graph'])) {
     collectTypes(obj['@graph'], types);

@@ -25,7 +25,7 @@ export class ContentCheckResultService {
   async findResultsFor(
     ctx: RequestContext,
     entityType: string,
-    entityId: ID
+    entityId: ID,
   ): Promise<ContentCheckResult[]> {
     return this.connection.getRepository(ctx, ContentCheckResult).find({
       where: {
@@ -53,7 +53,7 @@ export class ContentCheckResultService {
         {
           hasError: true,
           hasWarning: true,
-        }
+        },
       )
       .orderBy('result.entityType', 'ASC')
       .addOrderBy('result.entityId', 'ASC')
@@ -68,7 +68,7 @@ export class ContentCheckResultService {
    * `additionalChecks`) are actually present, instead of a fixed list.
    */
   async findDistinctEntityTypesWithIssues(
-    ctx: RequestContext
+    ctx: RequestContext,
   ): Promise<string[]> {
     const results = await this.findOverview(ctx);
     return [...new Set(results.map((result) => result.entityType))].sort();
@@ -86,7 +86,7 @@ export class ContentCheckResultService {
    */
   async saveResult(
     ctx: RequestContext,
-    input: SaveContentCheckResultInput
+    input: SaveContentCheckResultInput,
   ): Promise<ContentCheckResult> {
     const repo = this.connection.getRepository(ctx, ContentCheckResult);
     const entityType = input.entityType;
@@ -110,7 +110,7 @@ export class ContentCheckResultService {
         messages: input.messages,
         checkedAt: input.checkedAt,
       },
-      ['entityType', 'entityId', 'channelId', 'languageCode']
+      ['entityType', 'entityId', 'channelId', 'languageCode'],
     );
 
     return repo.findOneOrFail({

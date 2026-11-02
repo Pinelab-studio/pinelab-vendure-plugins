@@ -1,11 +1,11 @@
+import { createReadStream, ReadStream } from 'node:fs';
 import { Logger } from '@vendure/core';
 import { Response } from 'express';
 import { InvoiceEntity } from '../../entities/invoice.entity';
-import { createReadStream, ReadStream } from 'fs';
 import {
-  ZippableFile,
   createTempFile,
   safeRemove,
+  ZippableFile,
   zipFiles,
 } from '../../util/file.util';
 import { RemoteStorageStrategy } from './storage-strategy';
@@ -42,7 +42,7 @@ export class GoogleStorageInvoiceStrategy implements RemoteStorageStrategy {
         `Could not find the "@google-cloud/storage" package. Make sure it is installed`,
         GoogleStorageInvoiceStrategy.name,
         // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access
-        err.stack
+        err.stack,
       );
     }
   }
@@ -63,7 +63,7 @@ export class GoogleStorageInvoiceStrategy implements RemoteStorageStrategy {
     tmpFile: string,
     invoiceNumber: number,
     channelToken: string,
-    isCreditInvoice: boolean
+    isCreditInvoice: boolean,
   ): Promise<string> {
     let filename = `${invoiceNumber}.pdf`;
     if (isCreditInvoice) {
@@ -79,7 +79,7 @@ export class GoogleStorageInvoiceStrategy implements RemoteStorageStrategy {
 
   async streamMultiple(
     invoices: InvoiceEntity[],
-    res: Response
+    res: Response,
   ): Promise<ReadStream> {
     res.set({
       'Content-Type': 'application/zip',
@@ -96,14 +96,14 @@ export class GoogleStorageInvoiceStrategy implements RemoteStorageStrategy {
         } catch {
           safeRemove(tmpFile);
           throw new Error(
-            `Invoice file not found in Google Cloud Storage at path: ${invoice.storageReference}`
+            `Invoice file not found in Google Cloud Storage at path: ${invoice.storageReference}`,
           );
         }
         return {
           path: tmpFile,
-          name: invoice.invoiceNumber + '.pdf',
+          name: `${invoice.invoiceNumber}.pdf`,
         };
-      })
+      }),
     );
     const zipFile = await zipFiles(files);
     for (const file of files) {

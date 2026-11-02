@@ -6,7 +6,7 @@ test('homepage presents Pinelab Engineering branding', async ({ page }) => {
   await expect(
     page
       .locator('header')
-      .getByRole('link', { name: 'Pinelab Engineering', exact: true })
+      .getByRole('link', { name: 'Pinelab Engineering', exact: true }),
   ).toBeVisible();
 });
 
@@ -24,7 +24,7 @@ test('search is case-insensitive, trims whitespace, and supports clearing withou
   await search.fill('Acceot Blue');
   await expect(cards).toHaveCount(0);
   await expect(page.getByRole('status')).toHaveText(
-    'No plugins or recipes found.'
+    'No plugins or recipes found.',
   );
   await search.fill('');
   await expect(cards).toHaveCount(originalCount);
@@ -42,7 +42,7 @@ test('recipe descriptions are searchable without searching body content', async 
   await expect(page.locator('.plugin-card:visible')).toHaveCount(1);
   await expect(page.locator('.plugin-card:visible a')).toHaveAttribute(
     'href',
-    '/recipes/marketing-consent/'
+    '/recipes/marketing-consent/',
   );
   await search.fill('Initialization – All Pages');
   await expect(page.locator('.plugin-card:visible')).toHaveCount(0);
@@ -63,8 +63,8 @@ test('catalog grids use three desktop, two tablet and one mobile columns', async
         .poll(() =>
           grid.evaluate(
             (element) =>
-              getComputedStyle(element).gridTemplateColumns.split(' ').length
-          )
+              getComputedStyle(element).gridTemplateColumns.split(' ').length,
+          ),
         )
         .toBe(columns);
     }
@@ -79,7 +79,7 @@ test('plugin package keywords are searchable', async ({ page }) => {
   await expect(page.locator('.plugin-card:visible')).toHaveCount(1);
   await expect(page.locator('.plugin-card:visible a')).toHaveAttribute(
     'href',
-    '/plugin/vendure-plugin-metrics/'
+    '/plugin/vendure-plugin-metrics/',
   );
 });
 
@@ -90,6 +90,6 @@ test('searching by plugin name filters homepage cards', async ({ page }) => {
     .fill('Accept Blue');
   await expect(page.locator('.plugin-card:visible')).toHaveCount(1);
   await expect(page.locator('.plugin-card:visible')).toContainText(
-    'Accept Blue'
+    'Accept Blue',
   );
 });

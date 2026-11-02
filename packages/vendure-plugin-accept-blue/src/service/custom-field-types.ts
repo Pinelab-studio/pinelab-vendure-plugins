@@ -1,9 +1,4 @@
-import {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  CustomCustomerFields,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  CustomOrderLineFields,
-} from '@vendure/core/dist/entity/custom-entity-fields';
+export {};
 
 declare module '@vendure/core/dist/entity/custom-entity-fields' {
   interface CustomCustomerFields {

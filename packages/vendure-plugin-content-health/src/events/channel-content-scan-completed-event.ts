@@ -12,7 +12,7 @@ export class ChannelContentScanCompletedEvent extends VendureEvent {
   constructor(
     public ctx: RequestContext,
     public channel: Channel,
-    public findings: ChannelScanFindingEntry[]
+    public findings: ChannelScanFindingEntry[],
   ) {
     super();
   }

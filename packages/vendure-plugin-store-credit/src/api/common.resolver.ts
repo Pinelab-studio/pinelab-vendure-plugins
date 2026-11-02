@@ -10,8 +10,8 @@ import {
   Relations,
   RequestContext,
 } from '@vendure/core';
-import { WalletAdjustment } from '../entities/wallet-adjustment.entity';
 import { Wallet } from '../entities/wallet.entity';
+import { WalletAdjustment } from '../entities/wallet-adjustment.entity';
 import { WalletService } from '../services/wallet.service';
 import {
   CustomerWalletsArgs,
@@ -22,7 +22,7 @@ import {
 export class CommonResolver {
   constructor(
     private readonly walletService: WalletService,
-    private readonly activeOrderService: ActiveOrderService
+    private readonly activeOrderService: ActiveOrderService,
   ) {}
 
   @ResolveField('wallets')
@@ -31,13 +31,13 @@ export class CommonResolver {
     @Ctx() ctx: RequestContext,
     @Args() args: CustomerWalletsArgs,
     @Relations({ entity: Wallet }) relations: RelationPaths<Wallet>,
-    @Parent() customer: Customer
+    @Parent() customer: Customer,
   ): Promise<PaginatedList<Wallet>> {
     return this.walletService.findAll(
       ctx,
       customer.id,
       args.options || undefined,
-      relations
+      relations,
     );
   }
 
@@ -48,13 +48,13 @@ export class CommonResolver {
     @Args() args: WalletAdjustmentsArgs,
     @Relations({ entity: WalletAdjustment })
     relations: RelationPaths<WalletAdjustment>,
-    @Parent() wallet: Wallet
+    @Parent() wallet: Wallet,
   ): Promise<PaginatedList<WalletAdjustment>> {
     return this.walletService.findAdjustmentsForWallet(
       ctx,
       wallet.id,
       args.options || undefined,
-      relations
+      relations,
     );
   }
 
@@ -62,7 +62,7 @@ export class CommonResolver {
   async wallet(
     @Ctx() ctx: RequestContext,
     @Args() args: { id: ID },
-    @Relations({ entity: Wallet }) relations: RelationPaths<Wallet>
+    @Relations({ entity: Wallet }) relations: RelationPaths<Wallet>,
   ) {
     return this.walletService.findOne(ctx, args.id, relations);
   }
@@ -81,16 +81,15 @@ export class CommonResolver {
   async walletByCode(
     @Ctx() ctx: RequestContext,
     @Args() args: { code: string },
-    @Relations({ entity: Wallet }) relations: RelationPaths<Wallet>
+    @Relations({ entity: Wallet }) relations: RelationPaths<Wallet>,
   ) {
     if (ctx.apiType === 'admin') {
       if (!ctx.userHasPermissions([Permission.UpdateOrder])) {
         return null;
       }
     } else {
-      const activeOrder = await this.activeOrderService.getOrderFromContext(
-        ctx
-      );
+      const activeOrder =
+        await this.activeOrderService.getOrderFromContext(ctx);
       if (!activeOrder) {
         return null;
       }

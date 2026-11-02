@@ -1,11 +1,4 @@
-import {
-  ID,
-  Injector,
-  Order,
-  OrderLine,
-  ProductVariant,
-  RequestContext,
-} from '@vendure/core';
+import { Injector, Order, ProductVariant, RequestContext } from '@vendure/core';
 
 /**
  * Subscriptions can be created for Recurring payments or Recurring payments plus a one time payment
@@ -40,7 +33,7 @@ export interface SubscriptionStrategy {
   isSubscription(
     ctx: RequestContext,
     variant: ProductVariant,
-    injector: Injector
+    injector: Injector,
   ): boolean | Promise<boolean>;
 
   /**
@@ -54,7 +47,7 @@ export interface SubscriptionStrategy {
     productVariant: ProductVariant,
     order: Order,
     orderLineCustomFields: { [key: string]: any },
-    quantity: number
+    quantity: number,
   ):
     | Promise<Subscription>
     | Subscription
@@ -71,7 +64,7 @@ export interface SubscriptionStrategy {
     ctx: RequestContext,
     injector: Injector,
     productVariant: ProductVariant,
-    customInputs?: any
+    customInputs?: any,
   ):
     | Promise<Subscription>
     | Subscription

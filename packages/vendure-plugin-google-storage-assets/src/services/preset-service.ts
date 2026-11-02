@@ -1,26 +1,26 @@
+import fs from 'node:fs/promises';
 import { Inject, Injectable, OnApplicationBootstrap } from '@nestjs/common';
 import {
-  JobQueueService,
+  Asset,
+  AssetEvent,
+  AssetService,
+  AssetType,
+  EventBus,
+  ID,
   JobQueue,
+  JobQueueService,
   JsonCompatible,
   Logger,
-  AssetService,
-  SerializedRequestContext,
-  EventBus,
-  AssetEvent,
   RequestContext,
-  ID,
-  Asset,
-  AssetType,
+  SerializedRequestContext,
   TransactionalConnection,
 } from '@vendure/core';
 import { asError } from 'catch-unknown';
-import { GoogleStorageAssetConfig } from '../types';
-import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
-import { GoogleStorageStrategy } from './google-storage-strategy';
 import sharp from 'sharp';
+import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
+import { GoogleStorageAssetConfig } from '../types';
+import { GoogleStorageStrategy } from './google-storage-strategy';
 import { removeExtension } from './util';
-import fs from 'fs/promises';
 
 interface AssetJobData {
   assetIds: ID[];
@@ -38,7 +38,7 @@ export class PresetService implements OnApplicationBootstrap {
     private eventBus: EventBus,
     private connection: TransactionalConnection,
     @Inject(PLUGIN_INIT_OPTIONS)
-    private config: GoogleStorageAssetConfig
+    private config: GoogleStorageAssetConfig,
   ) {
     this.strategy = new GoogleStorageStrategy();
   }
@@ -53,14 +53,14 @@ export class PresetService implements OnApplicationBootstrap {
               assetIds: [event.entity.id],
               ctx: event.ctx.serialize(),
             },
-            { retries: 2 }
+            { retries: 2 },
           )
           .catch((e) => {
             Logger.error(
               `Failed to add asset ${
                 event.entity.id
               } to preset generation queue: ${asError(e).message}`,
-              loggerCtx
+              loggerCtx,
             );
           });
       }
@@ -76,9 +76,9 @@ export class PresetService implements OnApplicationBootstrap {
         await this.generatePresets(ctx, job.data.assetIds).catch((e) => {
           Logger.warn(
             `Failed to generate presets for asset ${job.data.assetIds.join(
-              ', '
+              ', ',
             )}: ${asError(e).message}`,
-            loggerCtx
+            loggerCtx,
           );
         });
       },
@@ -95,7 +95,7 @@ export class PresetService implements OnApplicationBootstrap {
         throw new Error(`Asset ${assetId} not found`);
       }
       const localFile = await this.strategy.downloadRemoteToLocalTmpFile(
-        asset.preview
+        asset.preview,
       );
       const originalSizeInKB = (asset.fileSize / 1024).toFixed(1);
 
@@ -103,7 +103,7 @@ export class PresetService implements OnApplicationBootstrap {
 
       // Iterate over each preset configuration
       for (const [presetName, { extension, generateFn }] of Object.entries(
-        this.config.presets
+        this.config.presets,
       )) {
         const buffer = await generateFn(sharp(localFile));
         // Create a preset file name like "presets/1c/myimage_123_thumbnail.webp"
@@ -111,7 +111,7 @@ export class PresetService implements OnApplicationBootstrap {
         const presetFileName = this.createPresetFileName(
           asset.source,
           presetName,
-          extension
+          extension,
         );
         await this.strategy.writeFileFromBuffer(presetFileName, buffer);
         // Set preset in custom fields object
@@ -120,7 +120,7 @@ export class PresetService implements OnApplicationBootstrap {
         const sizeInKB = (buffer.length / 1024).toFixed(1);
         Logger.info(
           `Generated preset '${presetName}' for asset ${asset.id}: ${originalSizeInKB}KB > ${sizeInKB}KB`,
-          loggerCtx
+          loggerCtx,
         );
       }
       await this.assetService.update(ctx, {
@@ -143,7 +143,7 @@ export class PresetService implements OnApplicationBootstrap {
   createPresetFileName(
     assetSourcePath: string,
     presetName: string,
-    extension: string
+    extension: string,
   ) {
     let presetPath = removeExtension(assetSourcePath);
     presetPath = presetPath.replace('source', 'presets');
@@ -159,14 +159,14 @@ export class PresetService implements OnApplicationBootstrap {
     }
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const generatedPresets: Record<string, string> = JSON.parse(
-      asset.customFields.presets
+      asset.customFields.presets,
     );
     // Transform urls to absolute urls
     const presetResponse: Record<string, string> = {};
     for (const [presetName, presetUrl] of Object.entries(generatedPresets)) {
       presetResponse[presetName] = this.strategy.toAbsoluteUrl(
         ctx.req,
-        presetUrl
+        presetUrl,
       );
     }
     return presetResponse;
@@ -177,7 +177,7 @@ export class PresetService implements OnApplicationBootstrap {
    */
   async createPresetJobsForAllAssets(
     ctx: RequestContext,
-    force: boolean = false
+    force: boolean = false,
   ) {
     // These are the presets that should be generated for the assets
     const shouldHavePresets = Object.keys(this.config.presets);
@@ -204,7 +204,7 @@ export class PresetService implements OnApplicationBootstrap {
           }
           // Else, check if each preset is present in the custom fields
           const generatedPresets = JSON.parse(
-            asset.customFields.presets
+            asset.customFields.presets,
           ) as Record<string, string>;
           return !shouldHavePresets.every((preset) => generatedPresets[preset]);
         })

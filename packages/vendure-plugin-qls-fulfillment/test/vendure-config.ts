@@ -1,3 +1,4 @@
+import path from 'node:path';
 import {
   DefaultLogger,
   DefaultSchedulerPlugin,
@@ -8,9 +9,8 @@ import {
 } from '@vendure/core';
 import { DashboardPlugin } from '@vendure/dashboard/plugin';
 import { testConfig } from '@vendure/testing';
-import path from 'path';
-import { QlsPlugin } from '../src';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
+import { QlsPlugin } from '../src';
 
 /**
  * Vendure configuration used by the dashboard Vite dev server.

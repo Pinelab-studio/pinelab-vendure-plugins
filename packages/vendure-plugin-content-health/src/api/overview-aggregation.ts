@@ -23,7 +23,7 @@ export interface AggregatedOverviewGroup {
  * per language it was checked in within a channel.
  */
 export function groupContentCheckResultsByEntity(
-  results: ContentCheckResult[]
+  results: ContentCheckResult[],
 ): AggregatedOverviewGroup[] {
   interface MutableGroup extends AggregatedOverviewGroup {
     firstErrorMessage: string | undefined;

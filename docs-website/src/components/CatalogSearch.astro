@@ -5,7 +5,6 @@
       aria-label="Search plugins and recipes"
       placeholder="Search plugins and recipes"
       aria-controls="catalog-suggestions"
-      aria-expanded="false"
       autocomplete="off"
     />
   </label>
@@ -16,14 +15,16 @@
 <script>
   const input = document.querySelector<HTMLInputElement>(
     '.catalog-search input'
-  )!;
+  );
+  if (!input) throw new Error('Catalog search input not found');
   const cards = document.querySelectorAll<HTMLElement>('[data-catalog-search]');
-  const noResults = document.querySelector<HTMLElement>('#catalog-no-results')!;
-
+  const noResults = document.querySelector<HTMLElement>('#catalog-no-results');
   const suggestions = document.querySelector<HTMLUListElement>(
     '#catalog-suggestions'
-  )!;
-  const wrapper = input.closest<HTMLElement>('.catalog-search-wrapper')!;
+  );
+  const wrapper = input.closest<HTMLElement>('.catalog-search-wrapper');
+  if (!noResults || !suggestions || !wrapper)
+    throw new Error('Catalog search elements not found');
   const keywords = Array.from(
     new Set(
       Array.from(cards).flatMap((card) =>
@@ -37,7 +38,6 @@
   /** Close suggestions without changing the current filter. */
   function closeSuggestions() {
     suggestions.hidden = true;
-    input.setAttribute('aria-expanded', 'false');
   }
 
   /** Show at most five unique plugin keywords matching the query. */
@@ -62,7 +62,6 @@
       suggestions.append(item);
     }
     suggestions.hidden = suggestions.childElementCount === 0;
-    input.setAttribute('aria-expanded', String(!suggestions.hidden));
   }
 
   input.addEventListener('focus', updateSuggestions);
@@ -86,14 +85,15 @@
     const query = input.value.trim().toLowerCase();
     let matches = 0;
     for (const card of cards) {
-      card.hidden = !card.dataset.catalogSearch!.toLowerCase().includes(query);
+      card.hidden = !card.dataset.catalogSearch?.toLowerCase().includes(query);
       if (!card.hidden) matches++;
     }
     noResults.hidden = matches > 0;
     updateSuggestions();
     const pluginsHeading = document
-      .querySelector<HTMLElement>('#plugins')!
-      .closest<HTMLElement>('.sl-heading-wrapper')!;
+      .querySelector<HTMLElement>('#plugins')
+      ?.closest<HTMLElement>('.sl-heading-wrapper');
+    if (!pluginsHeading) return;
     pluginsHeading.hidden = !Array.from(cards).some(
       (card) => !card.hidden && card.querySelector('a[href^="/plugin/"]')
     );

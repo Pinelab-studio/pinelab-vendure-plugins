@@ -1,3 +1,5 @@
+import { useQuery } from '@tanstack/react-query';
+import { Link } from '@tanstack/react-router';
 import {
   Button,
   DetailPageButton,
@@ -8,11 +10,9 @@ import {
   ListPage,
   PageActionBarRight,
 } from '@vendure/dashboard';
-import { graphql } from '@/vdb/graphql/graphql';
-import { api } from '@/vdb/graphql/api.js';
-import { Link } from '@tanstack/react-router';
-import { useQuery } from '@tanstack/react-query';
 import { ChevronDown, PlusIcon, Tag } from 'lucide-react';
+import { api } from '@/vdb/graphql/api.js';
+import { graphql } from '@/vdb/graphql/graphql';
 import { ContentTypeBadge } from './ContentTypeBadge';
 
 /**

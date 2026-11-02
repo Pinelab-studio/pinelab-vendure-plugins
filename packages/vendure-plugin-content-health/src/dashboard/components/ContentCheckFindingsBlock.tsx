@@ -1,3 +1,4 @@
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   api,
   Button,
@@ -5,7 +6,6 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@vendure/dashboard';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   AlertTriangleIcon,
   CheckCircle2Icon,
@@ -88,7 +88,7 @@ function ContentCheckFindingsBlockInner({
       onClick={() => checkNowMutation.mutate()}
     >
       <RefreshCwIcon
-        className={`h-3.5 w-3.5 mr-2 ${
+        className={`mr-2 h-3.5 w-3.5 ${
           checkNowMutation.isPending ? 'animate-spin' : ''
         }`}
       />
@@ -102,10 +102,10 @@ function ContentCheckFindingsBlockInner({
 
   const results = data?.contentCheckResults ?? [];
   const allMessages = results.flatMap((r) =>
-    r.messages.map((m) => ({ ...m, languageCode: r.languageCode }))
+    r.messages.map((m) => ({ ...m, languageCode: r.languageCode })),
   );
   const hasErrors = results.some((result) =>
-    result.messages.some((message) => message.severity === 'ERROR')
+    result.messages.some((message) => message.severity === 'ERROR'),
   );
   const StatusIcon = hasErrors ? AlertTriangleIcon : CheckCircle2Icon;
 
@@ -126,7 +126,7 @@ function ContentCheckFindingsBlockInner({
         <div className="space-y-2">
           {checkNowButton}
           {isLoading ? (
-            <p className="text-sm text-muted-foreground">Loading checks…</p>
+            <p className="text-muted-foreground text-sm">Loading checks…</p>
           ) : (
             <ContentCheckFindingsList messages={allMessages} />
           )}

@@ -8,9 +8,7 @@ import {
   testConfig,
 } from '@vendure/testing';
 import { TestServer } from '@vendure/testing/lib/test-server';
-import * as fs from 'fs';
 import gql from 'graphql-tag';
-import * as path from 'path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { fulfill } from '../../test/src/admin-utils';
 import { initialData } from '../../test/src/initial-data';
@@ -19,7 +17,7 @@ import { waitFor } from '../../test/src/test-helpers';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
 import { StockDroppedBelowThresholdEvent, StockMonitoringPlugin } from '../src';
 
-describe('Stock monitoring plugin', function () {
+describe('Stock monitoring plugin', () => {
   let server: TestServer;
   let adminClient: SimpleGraphQLClient;
   let shopClient: SimpleGraphQLClient;
@@ -90,7 +88,7 @@ describe('Stock monitoring plugin', function () {
   it('Gets variants with stock levels below threshold', async () => {
     await adminClient.asSuperAdmin();
     const { productVariantsWithLowStock } = await adminClient.query(
-      GET_OUT_OF_STOCK_VARIANTS
+      GET_OUT_OF_STOCK_VARIANTS,
     );
     expect(productVariantsWithLowStock.length).toBe(4);
     expect(productVariantsWithLowStock[0].name).toBeDefined();
@@ -122,7 +120,7 @@ describe('Stock monitoring plugin', function () {
       }
     `);
     const { productVariantsWithLowStock } = await adminClient.query(
-      GET_OUT_OF_STOCK_VARIANTS
+      GET_OUT_OF_STOCK_VARIANTS,
     );
     expect(updateProductVariants[0].stockLevels[0].stockOnHand).toBe(105);
     expect(updateProductVariants[0].stockLevels[0].stockAllocated).toBe(0);
@@ -156,7 +154,7 @@ describe('Stock monitoring plugin', function () {
             }
           }
         }
-      `
+      `,
     );
     expect(productVariant.stockLevels[0].stockOnHand).toBe(105);
     expect(productVariant.stockLevels[0].stockAllocated).toBe(2);
@@ -180,7 +178,7 @@ describe('Stock monitoring plugin', function () {
       [
         { name: 'method', value: 'Manual' },
         { name: 'trackingCode', value: 'TRACK-1' },
-      ]
+      ],
     );
     expect(fulfillment.state).toBe('Pending');
     // Wait until a stock check for the fulfillment would have run
@@ -214,7 +212,7 @@ describe('Stock monitoring plugin', function () {
   it('Does not emit the event for variants that inherit a disabled global inventory setting', async () => {
     const { updateGlobalSettings } = await adminClient.query(
       UPDATE_GLOBAL_SETTINGS,
-      { input: { trackInventory: false } }
+      { input: { trackInventory: false } },
     );
     expect(updateGlobalSettings.trackInventory).toBe(false);
     await adminClient.query(UPDATE_VARIANTS, {
@@ -236,10 +234,10 @@ describe('Stock monitoring plugin', function () {
     // Global tracking is still off, so neither T_3 (FALSE) nor T_4 (INHERIT) is tracked.
     // T_2 (0, from the marker) and T_1 (103, threshold 104) remain, lowest stock first
     const { productVariantsWithLowStock } = await adminClient.query(
-      GET_OUT_OF_STOCK_VARIANTS
+      GET_OUT_OF_STOCK_VARIANTS,
     );
     expect(
-      productVariantsWithLowStock.map((variant: { id: string }) => variant.id)
+      productVariantsWithLowStock.map((variant: { id: string }) => variant.id),
     ).toEqual(['T_2', 'T_1']);
   });
 
@@ -274,7 +272,7 @@ describe('Stock monitoring plugin', function () {
   }, 100000);
 });
 
-export const GET_OUT_OF_STOCK_VARIANTS = gql`
+const GET_OUT_OF_STOCK_VARIANTS = gql`
   query productVariantsWithLowStock {
     productVariantsWithLowStock {
       id
@@ -286,7 +284,7 @@ export const GET_OUT_OF_STOCK_VARIANTS = gql`
   }
 `;
 
-export const UPDATE_VARIANTS = gql`
+const UPDATE_VARIANTS = gql`
   mutation UpdateProductVariants($input: [UpdateProductVariantInput!]!) {
     updateProductVariants(input: $input) {
       id
@@ -294,7 +292,7 @@ export const UPDATE_VARIANTS = gql`
   }
 `;
 
-export const UPDATE_GLOBAL_SETTINGS = gql`
+const UPDATE_GLOBAL_SETTINGS = gql`
   mutation UpdateGlobalSettings($input: UpdateGlobalSettingsInput!) {
     updateGlobalSettings(input: $input) {
       ... on GlobalSettings {

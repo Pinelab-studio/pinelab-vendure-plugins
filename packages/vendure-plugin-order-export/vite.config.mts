@@ -1,6 +1,6 @@
+import { dirname, join, resolve } from 'node:path';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { vendureDashboardPlugin } from '@vendure/dashboard/vite';
-import { dirname, join, resolve } from 'path';
-import { fileURLToPath, pathToFileURL } from 'url';
 import { defineConfig } from 'vite';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));

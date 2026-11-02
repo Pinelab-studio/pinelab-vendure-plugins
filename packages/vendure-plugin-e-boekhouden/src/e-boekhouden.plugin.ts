@@ -21,7 +21,7 @@ export class EBoekhoudenPlugin {
   static options: EBoekhoudenOptions;
 
   static init(options: EBoekhoudenOptions): typeof EBoekhoudenPlugin {
-    this.options = options;
+    EBoekhoudenPlugin.options = options;
     return EBoekhoudenPlugin;
   }
 }

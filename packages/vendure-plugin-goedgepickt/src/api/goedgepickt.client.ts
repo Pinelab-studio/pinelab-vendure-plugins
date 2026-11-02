@@ -1,4 +1,6 @@
+import { Logger } from '@vendure/core';
 import fetch from 'node-fetch';
+import { loggerCtx } from '../constants';
 import {
   GoedgepicktEvent,
   Order,
@@ -7,9 +9,6 @@ import {
   ProductInput,
   Webhook,
 } from './goedgepickt.types';
-import { Logger } from '@vendure/core';
-import crypto from 'crypto';
-import { loggerCtx } from '../constants';
 
 interface RawRequestInput {
   entity: 'products' | 'orders' | 'webhooks' | 'webshops';
@@ -46,7 +45,7 @@ export class GoedgepicktClient {
     });
     Logger.debug(
       `Fetched ${result.items?.length} products from Goedgepickt`,
-      loggerCtx
+      loggerCtx,
     );
     return result.items as Product[];
   }
@@ -80,7 +79,7 @@ export class GoedgepicktClient {
     }
     Logger.debug(
       `Fetched ${items?.length} webhooks from Goedgepickt`,
-      loggerCtx
+      loggerCtx,
     );
     return items.filter((item) => item.webshopUuid === this.config.webshopUuid);
   }
@@ -93,7 +92,7 @@ export class GoedgepicktClient {
     });
     Logger.debug(
       `Created product ${result.items?.[0]?.uuid} in Goedgepickt`,
-      loggerCtx
+      loggerCtx,
     );
     return result.items as Product[];
   }
@@ -108,7 +107,7 @@ export class GoedgepicktClient {
     if (result.items.length > 1) {
       Logger.warn(
         `Found multiple products with sku ${sku} in Goedgepickt, using '${foundProduct.uuid}'`,
-        loggerCtx
+        loggerCtx,
       );
     }
     return foundProduct;
@@ -136,7 +135,7 @@ export class GoedgepicktClient {
     });
     Logger.info(
       `Set webhook for event ${input.webhookEvent} to url ${input.targetUrl}`,
-      loggerCtx
+      loggerCtx,
     );
     return result;
   }
@@ -149,7 +148,7 @@ export class GoedgepicktClient {
     });
     Logger.info(
       `Created order ${order.orderId} in Goedgepickt with uuid ${result.orderUuid}`,
-      loggerCtx
+      loggerCtx,
     );
     return result;
   }
@@ -182,7 +181,7 @@ export class GoedgepicktClient {
               })
             : undefined,
         redirect: 'follow',
-      }
+      },
     );
     const json = (await response.json()) as any;
     if (response.ok) {

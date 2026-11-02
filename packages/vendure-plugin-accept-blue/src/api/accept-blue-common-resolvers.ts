@@ -16,46 +16,46 @@ import {
   Permission,
   RequestContext,
 } from '@vendure/core';
+import { AcceptBlueService } from '../service/accept-blue-service';
 import {
   AcceptBlueCheckPaymentMethod,
   AcceptBluePaymentMethod,
 } from '../types';
-import { AcceptBlueService } from '../service/accept-blue-service';
 import {
+  AcceptBlueCardPaymentMethod,
   AcceptBluePaymentMethodQuote,
   AcceptBlueSubscription,
   AcceptBlueSurcharges,
-  Query as GraphqlQuery,
   Mutation as GraphqlMutation,
-  MutationUpdateAcceptBlueCardPaymentMethodArgs,
-  QueryPreviewAcceptBlueSubscriptionsArgs,
-  QueryPreviewAcceptBlueSubscriptionsForProductArgs,
-  AcceptBlueCardPaymentMethod,
-  MutationUpdateAcceptBlueCheckPaymentMethodArgs,
-  MutationDeleteAcceptBluePaymentMethodArgs,
+  Query as GraphqlQuery,
   MutationCreateAcceptBlueCardPaymentMethodArgs,
   MutationCreateAcceptBlueCheckPaymentMethodArgs,
+  MutationDeleteAcceptBluePaymentMethodArgs,
+  MutationUpdateAcceptBlueCardPaymentMethodArgs,
+  MutationUpdateAcceptBlueCheckPaymentMethodArgs,
   MutationUpdateAcceptBlueSubscriptionArgs,
+  QueryPreviewAcceptBlueSubscriptionsArgs,
+  QueryPreviewAcceptBlueSubscriptionsForProductArgs,
 } from './generated/graphql';
 
 @Resolver()
 export class AcceptBlueCommonResolver {
   constructor(
     private readonly acceptBlueService: AcceptBlueService,
-    private entityHydrator: EntityHydrator
+    private entityHydrator: EntityHydrator,
   ) {}
 
   @Query()
   async previewAcceptBlueSubscriptions(
     @Ctx() ctx: RequestContext,
     @Args()
-    { productVariantId, customInputs }: QueryPreviewAcceptBlueSubscriptionsArgs
+    { productVariantId, customInputs }: QueryPreviewAcceptBlueSubscriptionsArgs,
   ): Promise<GraphqlQuery['previewAcceptBlueSubscriptions']> {
     const subscriptions =
       await this.acceptBlueService.subscriptionHelper.previewSubscription(
         ctx,
         productVariantId,
-        customInputs
+        customInputs,
       );
     return subscriptions.map((sub) => ({
       ...sub,
@@ -70,13 +70,13 @@ export class AcceptBlueCommonResolver {
     {
       productId,
       customInputs,
-    }: QueryPreviewAcceptBlueSubscriptionsForProductArgs
+    }: QueryPreviewAcceptBlueSubscriptionsForProductArgs,
   ): Promise<GraphqlQuery['previewAcceptBlueSubscriptionsForProduct']> {
     const subscriptions =
       await this.acceptBlueService.subscriptionHelper.previewSubscriptionsForProduct(
         ctx,
         productId,
-        customInputs
+        customInputs,
       );
     return subscriptions.map((sub) => ({
       ...sub,
@@ -88,7 +88,7 @@ export class AcceptBlueCommonResolver {
   @Resolver('PaymentMethodQuote')
   async acceptBlueHostedTokenizationKey(
     @Parent() quote: PaymentMethodQuote,
-    @Ctx() ctx: RequestContext
+    @Ctx() ctx: RequestContext,
   ): Promise<string | null | undefined> {
     return (await this.acceptBlueService.getStorefrontKeys(ctx, quote.id))
       ?.acceptBlueHostedTokenizationKey;
@@ -98,7 +98,7 @@ export class AcceptBlueCommonResolver {
   @Resolver('PaymentMethodQuote')
   async testMode(
     @Parent() quote: PaymentMethodQuote,
-    @Ctx() ctx: RequestContext
+    @Ctx() ctx: RequestContext,
   ): Promise<boolean | undefined> {
     return (await this.acceptBlueService.getStorefrontKeys(ctx, quote.id))
       ?.acceptBlueTestMode;
@@ -108,7 +108,7 @@ export class AcceptBlueCommonResolver {
   @Resolver('PaymentMethodQuote')
   async acceptBlueGooglePayMerchantId(
     @Parent() quote: PaymentMethodQuote,
-    @Ctx() ctx: RequestContext
+    @Ctx() ctx: RequestContext,
   ): Promise<string | null | undefined> {
     return (await this.acceptBlueService.getStorefrontKeys(ctx, quote.id))
       ?.acceptBlueGooglePayMerchantId;
@@ -118,7 +118,7 @@ export class AcceptBlueCommonResolver {
   @Resolver('PaymentMethodQuote')
   async acceptBlueGooglePayGatewayMerchantId(
     @Parent() quote: PaymentMethodQuote,
-    @Ctx() ctx: RequestContext
+    @Ctx() ctx: RequestContext,
   ): Promise<string | null | undefined> {
     return (await this.acceptBlueService.getStorefrontKeys(ctx, quote.id))
       ?.acceptBlueGooglePayGatewayMerchantId;
@@ -128,7 +128,7 @@ export class AcceptBlueCommonResolver {
   @Resolver('Customer')
   async savedPaymentMethods(
     @Ctx() ctx: RequestContext,
-    @Parent() customer: Customer
+    @Parent() customer: Customer,
   ): Promise<AcceptBluePaymentMethod[]> {
     return await this.acceptBlueService.getSavedPaymentMethods(ctx, customer);
   }
@@ -137,7 +137,7 @@ export class AcceptBlueCommonResolver {
   @Resolver('OrderLine')
   async acceptBlueSubscriptions(
     @Ctx() ctx: RequestContext,
-    @Parent() orderLine: OrderLine
+    @Parent() orderLine: OrderLine,
   ): Promise<AcceptBlueSubscription[]> {
     await this.entityHydrator.hydrate(ctx, orderLine, {
       relations: ['productVariant', 'order'],
@@ -145,14 +145,14 @@ export class AcceptBlueCommonResolver {
     return this.acceptBlueService.getSubscriptionsForOrderLine(
       ctx,
       orderLine,
-      orderLine.order
+      orderLine.order,
     );
   }
 
   @ResolveField()
   @Resolver('AcceptBluePaymentMethod')
   __resolveType(
-    value: AcceptBlueCheckPaymentMethod | AcceptBlueCardPaymentMethod
+    value: AcceptBlueCheckPaymentMethod | AcceptBlueCardPaymentMethod,
   ): string {
     return value.payment_method_type === 'card'
       ? 'AcceptBlueCardPaymentMethod'
@@ -161,14 +161,14 @@ export class AcceptBlueCommonResolver {
 
   @Query()
   async eligibleAcceptBluePaymentMethods(
-    @Ctx() ctx: RequestContext
+    @Ctx() ctx: RequestContext,
   ): Promise<AcceptBluePaymentMethodQuote[]> {
     return this.acceptBlueService.getEligiblePaymentMethods(ctx);
   }
 
   @Query()
   async acceptBlueSurcharges(
-    @Ctx() ctx: RequestContext
+    @Ctx() ctx: RequestContext,
   ): Promise<AcceptBlueSurcharges> {
     return await this.acceptBlueService.getSurcharges(ctx);
   }
@@ -178,7 +178,7 @@ export class AcceptBlueCommonResolver {
   async updateAcceptBlueCardPaymentMethod(
     @Ctx() ctx: RequestContext,
     @Args()
-    { input }: MutationUpdateAcceptBlueCardPaymentMethodArgs
+    { input }: MutationUpdateAcceptBlueCardPaymentMethodArgs,
   ): Promise<GraphqlMutation['updateAcceptBlueCardPaymentMethod']> {
     return await this.acceptBlueService.updateCardPaymentMethod(ctx, input);
   }
@@ -188,7 +188,7 @@ export class AcceptBlueCommonResolver {
   async updateAcceptBlueCheckPaymentMethod(
     @Ctx() ctx: RequestContext,
     @Args()
-    { input }: MutationUpdateAcceptBlueCheckPaymentMethodArgs
+    { input }: MutationUpdateAcceptBlueCheckPaymentMethodArgs,
   ): Promise<GraphqlMutation['updateAcceptBlueCheckPaymentMethod']> {
     return await this.acceptBlueService.updateCheckPaymentMethod(ctx, input);
   }
@@ -197,7 +197,7 @@ export class AcceptBlueCommonResolver {
   @Allow(Permission.UpdateCustomer, Permission.Authenticated)
   async deleteAcceptBluePaymentMethod(
     @Ctx() ctx: RequestContext,
-    @Args() { id }: MutationDeleteAcceptBluePaymentMethodArgs
+    @Args() { id }: MutationDeleteAcceptBluePaymentMethodArgs,
   ): Promise<GraphqlMutation['deleteAcceptBluePaymentMethod']> {
     return await this.acceptBlueService.deletePaymentMethod(ctx, id);
   }
@@ -206,14 +206,17 @@ export class AcceptBlueCommonResolver {
   @Allow(Permission.UpdateCustomer, Permission.Authenticated)
   async createAcceptBlueCardPaymentMethod(
     @Ctx() ctx: RequestContext,
-    @Args() { input, customerId }: MutationCreateAcceptBlueCardPaymentMethodArgs
+    @Args() {
+      input,
+      customerId,
+    }: MutationCreateAcceptBlueCardPaymentMethodArgs,
   ): Promise<GraphqlMutation['createAcceptBlueCardPaymentMethod']> {
     if (ctx.apiType === 'admin') {
       // CustomerId is only defined for admin API
       return await this.acceptBlueService.createCardPaymentMethod(
         ctx,
         input,
-        customerId
+        customerId,
       );
     }
     // For Shop API, we use the ctx.activeUserId
@@ -225,14 +228,14 @@ export class AcceptBlueCommonResolver {
   async createAcceptBlueCheckPaymentMethod(
     @Ctx() ctx: RequestContext,
     @Args()
-    { input, customerId }: MutationCreateAcceptBlueCheckPaymentMethodArgs
+    { input, customerId }: MutationCreateAcceptBlueCheckPaymentMethodArgs,
   ): Promise<GraphqlMutation['createAcceptBlueCheckPaymentMethod']> {
     if (ctx.apiType === 'admin') {
       // CustomerId is only defined for admin API
       return await this.acceptBlueService.createCheckPaymentMethod(
         ctx,
         input,
-        customerId
+        customerId,
       );
     }
     // For Shop API, we use the ctx.activeUserId
@@ -244,7 +247,7 @@ export class AcceptBlueCommonResolver {
   async updateAcceptBlueSubscription(
     @Ctx() ctx: RequestContext,
     @Args()
-    { input }: MutationUpdateAcceptBlueSubscriptionArgs
+    { input }: MutationUpdateAcceptBlueSubscriptionArgs,
   ): Promise<GraphqlMutation['updateAcceptBlueSubscription']> {
     return await this.acceptBlueService.updateSubscription(ctx, input);
   }

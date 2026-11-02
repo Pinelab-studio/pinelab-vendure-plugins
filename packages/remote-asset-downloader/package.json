@@ -19,7 +19,7 @@
   "scripts": {
     "build": "rimraf dist && tsc",
     "test": "vitest run --bail 1",
-    "lint": "eslint ."
+    "lint": "biome check ."
   },
   "dependencies": {
     "node-fetch": "2.x"

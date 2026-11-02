@@ -1,7 +1,7 @@
 import { Body, Controller, Post } from '@nestjs/common';
-import { Resolver, Mutation } from '@nestjs/graphql';
-import { CoinbaseService } from './coinbase.service';
+import { Mutation, Resolver } from '@nestjs/graphql';
 import { Ctx, Logger, RequestContext } from '@vendure/core';
+import { CoinbaseService } from './coinbase.service';
 import { ChargeConfirmedWebhookEvent } from './coinbase.types';
 import { loggerCtx } from './constants';
 
@@ -19,7 +19,7 @@ export class CoinbaseController {
           error?.message
         }: ${JSON.stringify(body)}`,
         loggerCtx,
-        error
+        error,
       );
       throw error;
     }

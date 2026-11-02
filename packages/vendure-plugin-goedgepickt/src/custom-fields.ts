@@ -127,7 +127,7 @@ export const channelCustomFields: CustomFieldConfig[] = [
 async function validate(
   value: any,
   injector: Injector,
-  ctx: RequestContext
+  ctx: RequestContext,
 ): Promise<string | undefined> {
   if (!value) {
     // Empty is allowed
@@ -163,7 +163,7 @@ async function validate(
   }
   Logger.info(
     `Saved correct UUID and ApiKey for webshop '${webshop.name}' for channel '${ctx.channel.token}`,
-    loggerCtx
+    loggerCtx,
   );
   await injector
     .get(GoedgepicktService)
@@ -171,7 +171,7 @@ async function validate(
     .catch((err) => {
       Logger.error(
         `Failed to set webhooks for channel '${ctx.channel.token}' after saving credentials: ${err.message}`,
-        loggerCtx
+        loggerCtx,
       );
     });
 }

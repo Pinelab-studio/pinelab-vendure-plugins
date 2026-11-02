@@ -1,4 +1,5 @@
 import { Logger, RequestContext } from '@vendure/core';
+import { QlsServicePoint } from '../api/generated/graphql';
 import { loggerCtx } from '../constants';
 import { QlsClientConfig, QlsPluginOptions } from '../types';
 import type {
@@ -9,11 +10,10 @@ import type {
   FulfillmentProductInput,
   QlsApiResponse,
 } from './client-types';
-import { QlsServicePoint } from '../api/generated/graphql';
 
 export async function getQlsClient(
   ctx: RequestContext,
-  pluginOptions: QlsPluginOptions
+  pluginOptions: QlsPluginOptions,
 ): Promise<QlsClient | undefined> {
   const config = await pluginOptions.getConfig(ctx);
   if (!config) {
@@ -38,11 +38,11 @@ export class QlsClient {
    * Returns the first product found, or undefined if no product is found.
    */
   async getFulfillmentProductBySku(
-    sku: string
+    sku: string,
   ): Promise<FulfillmentProduct | undefined> {
     const result = await this.rawRequest<FulfillmentProduct[]>(
       'GET',
-      `fulfillment/products?filter%5Bsku%5D=${encodeURIComponent(sku)}`
+      `fulfillment/products?filter%5Bsku%5D=${encodeURIComponent(sku)}`,
     );
     if (!result.data || result.data.length === 0) {
       return undefined;
@@ -51,18 +51,18 @@ export class QlsClient {
       Logger.error(
         `Multiple products found for SKU: ${sku}`,
         loggerCtx,
-        JSON.stringify(result.data)
+        JSON.stringify(result.data),
       );
     }
     return result.data[0];
   }
 
   async getFulfillmentProductById(
-    fulfillmentProductId: string
+    fulfillmentProductId: string,
   ): Promise<FulfillmentProductDetail | undefined> {
     const result = await this.rawRequest<FulfillmentProductDetail>(
       'GET',
-      `fulfillment/products/${fulfillmentProductId}`
+      `fulfillment/products/${fulfillmentProductId}`,
     );
     if (!result.data) {
       return undefined;
@@ -81,7 +81,7 @@ export class QlsClient {
     while (hasNextPage) {
       const result = await this.rawRequest<FulfillmentProduct[]>(
         'GET',
-        `fulfillment/products?page=${page}`
+        `fulfillment/products?page=${page}`,
       );
       if (!result.data || result.data.length === 0) {
         break;
@@ -91,7 +91,7 @@ export class QlsClient {
       page++;
       Logger.info(
         `Fetched products ${allProducts.length}/${result.pagination?.count}`,
-        loggerCtx
+        loggerCtx,
       );
       await new Promise((resolve) => setTimeout(resolve, 700)); // Limit to ~86/minute, because the rate limit is 500/5 minutes
     }
@@ -99,16 +99,16 @@ export class QlsClient {
   }
 
   async createFulfillmentProduct(
-    data: FulfillmentProductInput
+    data: FulfillmentProductInput,
   ): Promise<FulfillmentProduct> {
     const response = await this.rawRequest<FulfillmentProduct>(
       'POST',
       'fulfillment/products',
-      data
+      data,
     );
     if (!response.data) {
       throw new Error(
-        'Failed to create fulfillment product. Got empty response.'
+        'Failed to create fulfillment product. Got empty response.',
       );
     }
     return response.data;
@@ -116,24 +116,24 @@ export class QlsClient {
 
   async updateFulfillmentProduct(
     fulfillmentProductId: string,
-    data: FulfillmentProductInput
+    data: FulfillmentProductInput,
   ): Promise<void> {
     await this.rawRequest<FulfillmentProduct>(
       'PUT',
       `fulfillment/products/${fulfillmentProductId}`,
-      data
+      data,
     );
   }
 
   async deleteFulfillmentProduct(fulfillmentProductId: string): Promise<void> {
     await this.rawRequest<void>(
       'DELETE',
-      `fulfillment/products/${fulfillmentProductId}`
+      `fulfillment/products/${fulfillmentProductId}`,
     );
   }
 
   async createFulfillmentOrder(
-    data: Omit<FulfillmentOrderInput, 'brand_id'>
+    data: Omit<FulfillmentOrderInput, 'brand_id'>,
   ): Promise<FulfillmentOrder> {
     const response = await this.rawRequest<FulfillmentOrder>(
       'POST',
@@ -141,11 +141,11 @@ export class QlsClient {
       {
         ...data,
         brand_id: this.config.brandId,
-      }
+      },
     );
     if (!response.data) {
       throw new Error(
-        'Failed to create fulfillment order. Got empty response.'
+        'Failed to create fulfillment order. Got empty response.',
       );
     }
     return response.data;
@@ -155,11 +155,11 @@ export class QlsClient {
    * Get all barcodes for a fulfillment product in QLS
    */
   async getBarcodes(
-    productId: string
+    productId: string,
   ): Promise<FulfillmentProduct['barcodes']> {
     const result = await this.rawRequest<FulfillmentProduct['barcodes']>(
       'GET',
-      `fulfillment/products/${productId}/barcodes`
+      `fulfillment/products/${productId}/barcodes`,
     );
     return result.data ?? [];
   }
@@ -173,18 +173,18 @@ export class QlsClient {
       `fulfillment/products/${productId}/barcodes`,
       {
         barcode,
-      }
+      },
     );
   }
 
   async getServicePoints(
     countryCode: string,
-    postalCode: string
+    postalCode: string,
   ): Promise<QlsServicePoint[]> {
     countryCode = countryCode.toUpperCase();
     const result = await this.rawRequest<QlsServicePoint[]>(
       'GET',
-      `service-points/${countryCode}/${postalCode}`
+      `service-points/${countryCode}/${postalCode}`,
     );
     return result.data ?? [];
   }
@@ -192,12 +192,12 @@ export class QlsClient {
   async rawRequest<T>(
     method: 'POST' | 'GET' | 'PUT' | 'DELETE',
     action: string,
-    data?: unknown
+    data?: unknown,
   ): Promise<QlsApiResponse<T | undefined>> {
     // Set headers
     const headers: Record<string, string> = {
       Authorization: `Basic ${Buffer.from(
-        `${this.config.username}:${this.config.password}`
+        `${this.config.username}:${this.config.password}`,
       ).toString('base64')}`,
       Accept: 'application/json',
       'Content-Type': 'application/json',
@@ -225,7 +225,7 @@ export class QlsClient {
       Logger.error(
         `[QLS] '${method}' request to '${url}' failed: ${response.status} ${response.statusText} - ${errorText}`,
         loggerCtx,
-        data ? JSON.stringify(data, null, 2) : undefined
+        data ? JSON.stringify(data, null, 2) : undefined,
       );
       throw new Error(errorText);
     }

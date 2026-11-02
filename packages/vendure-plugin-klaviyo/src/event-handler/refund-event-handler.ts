@@ -6,11 +6,11 @@ import {
   RefundEvent,
 } from '@vendure/core';
 import { loggerCtx } from '../constants';
+import { mapToProfile } from '../util/map-to-profile';
 import {
   KlaviyoEventHandler,
   KlaviyoGenericEvent,
 } from './klaviyo-event-handler';
-import { mapToProfile } from '../util/map-to-profile';
 
 export interface RefundEventInput {
   getPaymentMethodName: (payment: Payment | undefined) => string;
@@ -20,7 +20,7 @@ export interface RefundEventInput {
  * Sends an event to Klavyio when a refund has been created for an order.
  */
 export function createRefundHandler(
-  input: RefundEventInput
+  input: RefundEventInput,
 ): KlaviyoEventHandler<RefundEvent> {
   return {
     vendureEvent: RefundEvent,
@@ -28,7 +28,7 @@ export function createRefundHandler(
       const hydratedOrder = await assertFound(
         injector
           .get(OrderService)
-          .findOne(ctx, _order.id, ['customer', 'payments'])
+          .findOne(ctx, _order.id, ['customer', 'payments']),
       );
       if (!hydratedOrder.customer?.emailAddress) {
         return false;
@@ -37,7 +37,7 @@ export function createRefundHandler(
         ? hydratedOrder.billingAddress
         : hydratedOrder.shippingAddress;
       const paymentToRefund = hydratedOrder.payments.find(
-        (p) => p.id === refund.paymentId
+        (p) => p.id === refund.paymentId,
       );
       const paymentMethodName = input.getPaymentMethodName(paymentToRefund);
       const event: KlaviyoGenericEvent = {
@@ -62,7 +62,7 @@ export function createRefundHandler(
       };
       Logger.info(
         `Sent '${event.eventName}' to Klaviyo for order ${hydratedOrder.code}`,
-        loggerCtx
+        loggerCtx,
       );
       return event;
     },

@@ -1,5 +1,4 @@
-import { RequestContext } from '@vendure/core';
-import { Order } from '@vendure/core';
+import { Order, RequestContext } from '@vendure/core';
 
 /**
  * Codes as defined in the e-Boekhouden documentation
@@ -32,7 +31,7 @@ export type EBoekhoudenBTWCode =
 export type GetTaxCodeFn = (
   ctx: RequestContext,
   order: Order,
-  taxRate: number
+  taxRate: number,
 ) => EBoekhoudenBTWCode;
 
 export interface EBoekhoudenOptions {

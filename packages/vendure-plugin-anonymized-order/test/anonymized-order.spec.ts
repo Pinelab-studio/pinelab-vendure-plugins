@@ -7,14 +7,14 @@ import {
   testConfig,
 } from '@vendure/testing';
 import { TestServer } from '@vendure/testing/lib/test-server';
+import { beforeAll, describe, expect, it } from 'vitest';
 import { initialData } from '../../test/src/initial-data';
-import { testPaymentMethod } from '../../test/src/test-payment-method';
-import { describe, beforeAll, it, expect } from 'vitest';
-import { AnonymizedOrderPlugin } from '../src/plugin';
 import { createSettledOrder } from '../../test/src/shop-utils';
-import { ANONYMIZED_ORDER_QUERY, GET_ACTIVE_ORDER } from './helpers';
+import { testPaymentMethod } from '../../test/src/test-payment-method';
+import { AnonymizedOrderPlugin } from '../src/plugin';
+import { ANONYMIZED_ORDER_QUERY } from './helpers';
 
-describe('Customer managed groups', function () {
+describe('Customer managed groups', () => {
   let server: TestServer;
   let shopClient: SimpleGraphQLClient;
   let serverStarted = false;
@@ -62,7 +62,7 @@ describe('Customer managed groups', function () {
         {
           orderCode: setteledOrder.code,
           emailAddress: setteledOrder.customer?.emailAddress,
-        }
+        },
       );
       expect(anonymizedOrder?.customer).toBeNull();
       expect(anonymizedOrder?.billingAddress?.fullName).toBeNull();
