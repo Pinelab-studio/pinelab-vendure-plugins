@@ -7,7 +7,7 @@ import sitemap from '@astrojs/sitemap';
 const plugins = await getPlugins();
 
 export default defineConfig({
-  site: 'https://plugins.pinelab.studio',
+  site: 'https://engineering.pinelab.studio',
   trailingSlash: 'always',
   vite: {
     preview: {

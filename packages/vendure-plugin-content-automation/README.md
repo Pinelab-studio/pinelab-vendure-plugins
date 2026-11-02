@@ -1,6 +1,6 @@
 # Vendure Content Automation Plugin
 
-[Official documentation here](https://plugins.pinelab.studio/plugin/vendure-plugin-content-automation)
+[Official documentation here](https://engineering.pinelab.studio/plugin/vendure-plugin-content-automation)
 
 This plugin orchestrates bulk generation and enrichment of entity content, like SEO meta titles and descriptions, for every channel and language. The actual content generation is done by your own strategies: the plugin doesn't include an AI provider, prompt format or content logic.
 
@@ -153,7 +153,7 @@ contentAutomationTask.configure({
 
 The timeout only covers loading and comparing inputs, and creating the jobs: the content generation itself runs in the jobs. When the task times out, Vendure marks it as failed while it keeps running in the background, so increase the timeout if loading your inputs takes longer than an hour.
 
-Job data is fully serializable, so it also works with job queues that pass jobs over HTTP, like the [Google Cloud Tasks plugin](https://plugins.pinelab.studio/plugin/vendure-plugin-google-cloud-tasks).
+Job data is fully serializable, so it also works with job queues that pass jobs over HTTP, like the [Google Cloud Tasks plugin](https://engineering.pinelab.studio/plugin/vendure-plugin-google-cloud-tasks).
 
 ## Stored state
 

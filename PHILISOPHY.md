@@ -22,4 +22,4 @@ The goal is fewer plugin upgrades. A change to your business rules or an externa
 - Test the shared workflow independently of any one project's integration.
 - Explain what the plugin does, how to use it, and how to extend it. Include working examples and make failure behavior clear.
 
-Plugins are building blocks, not always complete features. Our [recipes](https://plugins.pinelab.studio/recipes/) show how to put them together.
+Plugins are building blocks, not always complete features. Our [recipes](https://engineering.pinelab.studio/recipes/) show how to put them together.

@@ -1,10 +1,10 @@
 # Vendure Alerting Plugin
 
-[Official documentation here](https://plugins.pinelab.studio/plugin/vendure-plugin-alerting)
+[Official documentation here](https://engineering.pinelab.studio/plugin/vendure-plugin-alerting)
 
 Send notifications based on Vendure events and log messages via configurable notifiers like webhooks, slack or N8N.
 
-![image](https://plugins.pinelab.studio/plugin-images/alerting.png)
+![image](https://engineering.pinelab.studio/plugin-images/alerting.png)
 
 ## Getting started
 

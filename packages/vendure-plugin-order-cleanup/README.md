@@ -1,6 +1,6 @@
 # Vendure Order Cleanup Plugin
 
-[Official documentation here](https://plugins.pinelab.studio/plugin/vendure-plugin-order-cleanup)
+[Official documentation here](https://engineering.pinelab.studio/plugin/vendure-plugin-order-cleanup)
 
 This plugin automatically empties stale active orders so their items are released without deleting the orders or changing their current state.
 

@@ -2,7 +2,7 @@
 
 # Pinelab Vendure plugins
 
-### Visit [plugins.pinelab.studio](https://plugins.pinelab.studio/) for official docs and examples.
+### Visit [engineering.pinelab.studio](https://engineering.pinelab.studio/) for official docs and examples.
 
 # Development
 

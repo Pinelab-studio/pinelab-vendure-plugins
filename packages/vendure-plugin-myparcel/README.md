@@ -1,6 +1,6 @@
 # Vendure MyParcel Plugin
 
-[Official documentation here](https://plugins.pinelab.studio/plugin/vendure-plugin-myparcel)
+[Official documentation here](https://engineering.pinelab.studio/plugin/vendure-plugin-myparcel)
 
 Plugin for sending placed orders to MyParcel.
 

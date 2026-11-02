@@ -1,6 +1,6 @@
 # Vendure Social Authentication for Administrators
 
-[Official documentation here](https://plugins.pinelab.studio/plugin/vendure-plugin-admin-social-auth)
+[Official documentation here](https://engineering.pinelab.studio/plugin/vendure-plugin-admin-social-auth)
 
 Allow admins to login with social accounts like Google.
 
@@ -10,7 +10,7 @@ The plugin setup allows for easy extension of other auth providers. Contribution
 
 You will be able to login if an administrator with your email address already exists in Vendure. Roles and permissions are still handled in Vendure. This plugin disables the native authentication method, so you will only be able to login via Google.
 
-![image](https://plugins.pinelab.studio/plugin-images/admin-google.png)
+![image](https://engineering.pinelab.studio/plugin-images/admin-google.png)
 
 ## Set up Google login
 

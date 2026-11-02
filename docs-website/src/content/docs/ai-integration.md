@@ -13,7 +13,7 @@ At Pinelab, we use the resources on this website in two ways: We have **best pra
 // Example prompt
 
 Implement feature XYZ and make sure it adheres to the best practices from
-https://plugins.pinelab.studio/best-practices-only.md
+https://engineering.pinelab.studio/best-practices-only.md
 ```
 
 ## Recipes and plugins: find existing solutions
@@ -26,6 +26,6 @@ At Pinelab, we reference this index file explicitly when researching a new featu
 // Example prompt
 
 /plan I want to add SEO metadata and structured data to my Vendure project.
-Read https://plugins.pinelab.studio/resources_index.md and look for
+Read https://engineering.pinelab.studio/resources_index.md and look for
 similar work or existing plugins.
 ```
