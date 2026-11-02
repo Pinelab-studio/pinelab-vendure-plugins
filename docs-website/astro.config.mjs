@@ -27,6 +27,7 @@ export default defineConfig({
       },
       customCss: ['./src/styles/pinelab.css'],
       components: {
+        Head: './src/components/Head.astro',
         Header: './src/components/Header.astro',
         PageFrame: './src/components/PageFrame.astro',
         MarkdownContent: './src/components/MarkdownContent.astro',
