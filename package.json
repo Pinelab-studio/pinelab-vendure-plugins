@@ -12,9 +12,9 @@
   ],
   "scripts": {
     "postinstall": "yarn husky install",
-    "biome:check": "biome check .",
-    "biome:fix": "biome check --write .",
-    "biome:fix:unsafe": "biome check --write --unsafe .",
+    "biome:check": "biome check --diagnostic-level=error .",
+    "biome:fix": "biome check --write --diagnostic-level=error .",
+    "biome:fix:unsafe": "biome check --write --unsafe --diagnostic-level=error .",
     "remove-node-modules": "find . -name 'node_modules' -type d -prune -exec rm -rf '{}' +",
     "lint": "yarn biome:check"
   },
