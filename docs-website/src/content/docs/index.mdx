@@ -3,17 +3,17 @@ title: Pinelab Vendure Plugins
 description: Production-tested Vendure plugins and practical recipes from Pinelab Studio.
 template: splash
 hero:
-  title: Battle-tested Vendure plugins
-  tagline: Vendure plugins built by Pinelab, used for solving real problems for our clients. Licensed under MIT, free to use, forever.
+  title: Battle-tested Vendure knowledge
+  tagline: 'Knowledge is worth more when shared: Checkout our plugins and recipes, built from solving real-world challenges for our clients. MIT licensed and free forever.'
   image:
     file: ../../../public/vendure-conf.webp
     alt: Vendure conference
   actions:
-    - text: Build me a custom plugin
-      link: https://pinelab.studio/contact/?q=I+would+like+a+custom+plugin
+    - text: Let us help you
+      link: https://pinelab.studio/contact/
       icon: right-arrow
-    - text: Plugins
-      link: '#plugins'
+    - text: Find resources
+      link: '#resources'
       icon: down-arrow
       variant: minimal
 ---
@@ -24,16 +24,14 @@ import { pluginIcons } from '../../utils/plugin-icons';
 import { getContributors } from '../../utils/plugins';
 import CatalogSearch from '../../components/CatalogSearch.astro';
 
+<div id="resources"></div>
+
 <CatalogSearch />
 
 <div className="catalog-review">
-  <em>
-    Enjoying our free knowledge and plugins?{' '}
-    <a href="https://www.trustpilot.com/review/pinelab.studio">
-      Consider leaving us a review
-    </a>
-    .
-  </em>
+
+_Enjoying our free knowledge and plugins? [Consider leaving us a review.](https://www.trustpilot.com/review/pinelab.studio)_
+
 </div>
 
 ## Plugins
@@ -54,6 +52,7 @@ import CatalogSearch from '../../components/CatalogSearch.astro';
     .map((plugin) => (
       <article
         className="card plugin-card"
+        data-catalog-keywords={JSON.stringify(plugin.data.pluginSearchTerms)}
         data-catalog-search={[
           plugin.data.title,
           ...plugin.data.pluginSearchTerms,
@@ -109,12 +108,14 @@ import CatalogSearch from '../../components/CatalogSearch.astro';
     ))}
 </CardGrid>
 
-## Contributors
+export const contributors = await getContributors();
 
-Thanks to everyone who contributed to our plugins!
+{contributors.length > 0 && <>
 
+<h2 id="contributors">Contributors</h2>
+<p>Thanks to everyone who contributed to our plugins!</p>
 <div className="contributors">
-  {(await getContributors()).map((contributor) => (
+  {contributors.map((contributor) => (
     <a
       className="contributor"
       href={contributor.html_url}
@@ -144,3 +145,4 @@ Thanks to everyone who contributed to our plugins!
     </a>
   ))}
 </div>
+</>}

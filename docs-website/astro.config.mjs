@@ -34,6 +34,7 @@ export default defineConfig({
         shiki: { langAlias: { Dockerfile: 'dockerfile', env: 'dotenv' } },
       },
       sidebar: [
+        { label: 'Plugin philosophy', slug: 'philosophy' },
         { label: 'AI integration', slug: 'ai-integration' },
         {
           label: 'Recipes',
