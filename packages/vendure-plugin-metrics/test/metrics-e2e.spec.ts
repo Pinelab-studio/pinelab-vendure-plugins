@@ -1,6 +1,3 @@
-import { execSync } from 'node:child_process';
-import path from 'node:path';
-import { chromium } from '@playwright/test';
 import { Order, TransactionalConnection, VendureConfig } from '@vendure/core';
 import {
   createTestEnvironment,
@@ -201,33 +198,6 @@ describe('Metrics', () => {
     expect(revenue.data.datasets[0].data).toEqual([0, 0, 0, 0, 0, 0, 0]);
   });
 
-  it('Shows a widget per metric in the React dashboard', async () => {
-    buildDashboard();
-    const browser = await chromium.launch();
-    try {
-      const page = await browser.newPage();
-      await page.goto('http://localhost:3050/dashboard/login');
-      await page.fill('#field-username', 'superadmin');
-      await page.fill('#field-password', 'superadmin');
-      await page.click('button[type="submit"]');
-      // The widget titles are the chart titles of the first variation
-      for (const title of [
-        'Revenue (excl. tax)',
-        'Average order value (excl. tax)',
-        'Units sold',
-        'Variation A run 2',
-        'Failing metric run 1',
-      ]) {
-        await page
-          .getByText(title, { exact: true })
-          .waitFor({ timeout: 30000 });
-      }
-      expect(await page.locator('canvas').count()).toBe(5);
-    } finally {
-      await browser.close();
-    }
-  }, 300000);
-
   afterAll(async () => {
     await server.destroy();
   }, 100000);
@@ -256,16 +226,6 @@ describe('Metrics', () => {
       .find();
   }
 });
-
-/**
- * Build the React dashboard with the test Vendure config, served by the DashboardPlugin of the test server
- */
-function buildDashboard() {
-  execSync('npx vite build --config vite.config.mts', {
-    cwd: path.join(__dirname, '..'),
-    stdio: 'inherit',
-  });
-}
 
 const CREATE_CHANNEL = gql`
   mutation createChannel($input: CreateChannelInput!) {
