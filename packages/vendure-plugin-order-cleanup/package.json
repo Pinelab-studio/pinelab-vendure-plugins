@@ -5,6 +5,7 @@
   "types": "dist/index.d.ts",
   "repository": "https://github.com/Pinelab-studio/pinelab-vendure-plugins",
   "author": "Martijn van de Brug <martijn@pinelab.studio>",
+  "description": "Periodically empty stale active orders so their items are released",
   "license": "MIT",
   "files": [
     "dist",
