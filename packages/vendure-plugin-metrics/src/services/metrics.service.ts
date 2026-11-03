@@ -13,7 +13,7 @@ import { asError } from 'catch-unknown';
 import { IsNull } from 'typeorm';
 import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
 import { MetricResult } from '../entities/metric-result.entity';
-import type { MetricStrategy, MetricsPluginOptions } from '../types';
+import type { MetricDefinition, MetricsPluginOptions } from '../types';
 import { validateMetricChart } from './util';
 
 @Injectable()
@@ -35,23 +35,23 @@ export class MetricsService {
    * Never calculates anything: charts are only calculated by the scheduled task.
    */
   async getCharts(ctx: RequestContext, code: string): Promise<MetricResult[]> {
-    const strategy = this.options.metrics.find((m) => m.code === code);
-    if (!strategy) {
+    const metric = this.options.metrics.find((m) => m.code === code);
+    if (!metric) {
       // Results of metrics that are no longer configured are hidden
       return [];
     }
     return await this.connection.getRepository(ctx, MetricResult).find({
       where: {
         code,
-        channelId: strategy.perChannel ? String(ctx.channelId) : IsNull(),
+        channelId: metric.perChannel ? String(ctx.channelId) : IsNull(),
       },
       order: { position: 'ASC' },
     });
   }
 
   /**
-   * Calculate and store the charts of all metrics. Strategies run one by one, never in parallel,
-   * to prevent heavy load on the database. A failing strategy is logged and keeps its previous charts.
+   * Calculate and store the charts of all metrics. Metrics are calculated one by one, never in parallel,
+   * to prevent heavy load on the database. A failing metric is logged and keeps its previous charts.
    */
   async generateAllCharts(): Promise<void> {
     const channels = await this.connection.rawConnection
@@ -59,16 +59,14 @@ export class MetricsService {
       .find();
     const defaultChannel = await this.channelService.getDefaultChannel();
     const start = Date.now();
-    for (const strategy of this.options.metrics) {
-      const channelsForStrategy = strategy.perChannel
-        ? channels
-        : [defaultChannel];
-      for (const channel of channelsForStrategy) {
+    for (const metric of this.options.metrics) {
+      const channelsForMetric = metric.perChannel ? channels : [defaultChannel];
+      for (const channel of channelsForMetric) {
         const ctx = await this.requestContextService.create({
           apiType: 'admin',
           channelOrToken: channel,
         });
-        await this.generateCharts(ctx, strategy);
+        await this.generateCharts(ctx, metric);
       }
     }
     Logger.info(
@@ -78,22 +76,22 @@ export class MetricsService {
   }
 
   /**
-   * Load and store the charts for all variations of a strategy in the given channel.
+   * Load and store the charts for all variations of a metric in the given channel.
    */
   private async generateCharts(
     ctx: RequestContext,
-    strategy: MetricStrategy,
+    metric: MetricDefinition,
   ): Promise<void> {
-    const channelId = strategy.perChannel ? String(ctx.channelId) : null;
+    const channelId = metric.perChannel ? String(ctx.channelId) : null;
     let variations: Array<string | undefined>;
     try {
-      variations = strategy.getChartVariations
-        ? await strategy.getChartVariations(ctx, this.injector)
+      variations = metric.getChartVariations
+        ? await metric.getChartVariations(ctx, this.injector)
         : [undefined];
     } catch (e) {
       const error = asError(e);
       Logger.error(
-        `Failed to get variations for metric '${strategy.code}' in channel '${ctx.channel.code}': ${error.message}`,
+        `Failed to get variations for metric '${metric.code}' in channel '${ctx.channel.code}': ${error.message}`,
         loggerCtx,
         error.stack,
       );
@@ -103,10 +101,10 @@ export class MetricsService {
     for (const [position, variation] of variations.entries()) {
       try {
         const chart = validateMetricChart(
-          await strategy.loadChart(ctx, this.injector, variation),
+          await metric.loadChart(ctx, this.injector, variation),
         );
         await this.saveResult(ctx, {
-          code: strategy.code,
+          code: metric.code,
           variation: variation ?? null,
           channelId,
           position,
@@ -115,13 +113,13 @@ export class MetricsService {
       } catch (e) {
         const error = asError(e);
         Logger.error(
-          `Failed to load chart for metric '${strategy.code}' (variation '${variation}') in channel '${ctx.channel.code}': ${error.message}`,
+          `Failed to load chart for metric '${metric.code}' (variation '${variation}') in channel '${ctx.channel.code}': ${error.message}`,
           loggerCtx,
           error.stack,
         );
       }
     }
-    await this.removeStaleVariations(ctx, strategy.code, channelId, variations);
+    await this.removeStaleVariations(ctx, metric.code, channelId, variations);
   }
 
   /**
@@ -146,7 +144,7 @@ export class MetricsService {
   }
 
   /**
-   * Remove stored charts of variations that the strategy no longer returns,
+   * Remove stored charts of variations that the metric no longer returns,
    * for example when the top 5 products have changed.
    */
   private async removeStaleVariations(

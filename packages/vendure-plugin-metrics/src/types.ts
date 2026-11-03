@@ -12,7 +12,7 @@ import type { ChartData, ChartOptions, ChartType } from 'chart.js';
 export type MetricValueFormat = 'currency' | 'number';
 
 /**
- * The chart a metric strategy returns. `type`, `data` and `options` are passed to Chart.js as-is,
+ * The chart a metric definition returns. `type`, `data` and `options` are passed to Chart.js as-is,
  * so they must be JSON serializable: functions (like formatting callbacks) are lost when stored.
  */
 export interface MetricChart {
@@ -27,10 +27,10 @@ export interface MetricChart {
 }
 
 /**
- * A metric is calculated by a strategy. The plugin calls the strategy nightly,
+ * Defines how a metric is calculated. The plugin calls it nightly,
  * stores the returned charts and shows them in a dashboard widget.
  */
-export interface MetricStrategy {
+export interface MetricDefinition {
   /**
    * Unique code of the metric. Must be a valid GraphQL enum value, e.g. `units_sold`,
    * because it is exposed as such for the dashboard to create a widget per metric.
@@ -65,7 +65,7 @@ export interface MetricsPluginOptions {
   /**
    * The metrics to calculate. Each metric gets its own dashboard widget.
    */
-  metrics: MetricStrategy[];
+  metrics: MetricDefinition[];
   /**
    * Change when the metrics are calculated, or the timeout of the task.
    * Defaults to every night at 02:00, with a timeout of 1 hour.

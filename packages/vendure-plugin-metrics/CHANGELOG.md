@@ -1,6 +1,6 @@
 # 4.0.0 (2026-11-03)
 
-- BREAKING: Metrics are now defined as strategies that return a Chart.js chart. See the README for the new `MetricStrategy` interface and migration steps.
+- BREAKING: `MetricStrategy` is replaced by `MetricDefinition`, which returns a Chart.js chart. See the README for migration steps.
 - BREAKING: Charts are calculated nightly by the `generate-metrics` scheduled task and stored in the database, instead of when viewing the dashboard. Requires the `DefaultSchedulerPlugin`.
 - BREAKING: The `metric_summary` table has been replaced by `metric_result`. A database migration is required.
 - BREAKING: Removed the `displayPastMonths` option, variant selection, the `advancedMetricSummaries` query and the deprecated `pageVisit` mutation.

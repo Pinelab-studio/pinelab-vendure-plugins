@@ -12,7 +12,7 @@ import type { MetricChart } from '../types';
 
 /**
  * Throws when the given value is not a valid {@link MetricChart}, so that
- * invalid strategy results are never stored and shown in the dashboard.
+ * invalid charts are never stored and shown in the dashboard.
  */
 export function validateMetricChart(chart: unknown): MetricChart {
   const c = chart as Partial<MetricChart> | undefined;

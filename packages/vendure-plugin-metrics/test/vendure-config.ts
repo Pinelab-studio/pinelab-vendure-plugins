@@ -12,12 +12,12 @@ import { testPaymentMethod } from '../../test/src/test-payment-method';
 import {
   defaultMetrics,
   MetricChart,
-  MetricStrategy,
+  MetricDefinition,
   MetricsPlugin,
 } from '../src';
 
 /**
- * Tracks calls of the test metrics, so tests can verify strategies run sequentially
+ * Tracks calls of the test metrics, so tests can verify metrics are calculated sequentially
  */
 export const testMetricState = {
   inFlight: 0,
@@ -28,7 +28,7 @@ export const testMetricState = {
 };
 
 /**
- * Takes a short time per variation, to detect if strategies run in parallel
+ * Takes a short time per variation, to detect if metrics are calculated in parallel
  */
 async function trackCall(createChart: () => MetricChart): Promise<MetricChart> {
   testMetricState.calls++;
@@ -45,7 +45,7 @@ async function trackCall(createChart: () => MetricChart): Promise<MetricChart> {
 /**
  * Channel independent test metric with 2 variations
  */
-export class SequentialTestMetric implements MetricStrategy {
+export class SequentialTestMetric implements MetricDefinition {
   readonly code = 'test_sequential';
   readonly perChannel = false;
 
@@ -65,7 +65,7 @@ export class SequentialTestMetric implements MetricStrategy {
 /**
  * Per channel test metric without variations, that throws when `testMetricState.failing` is set
  */
-export class FailingTestMetric implements MetricStrategy {
+export class FailingTestMetric implements MetricDefinition {
   readonly code = 'test_failing';
   readonly perChannel = true;
 

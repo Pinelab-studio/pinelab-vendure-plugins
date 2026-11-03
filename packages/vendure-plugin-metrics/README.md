@@ -2,7 +2,7 @@
 
 [Official documentation here](https://plugins.pinelab.studio/plugin/vendure-plugin-metrics)
 
-Show your shop's most important metrics as charts on the Vendure dashboard. Metrics are defined as strategies, so you can easily add your own.
+Show your shop's most important metrics as charts on the Vendure dashboard. Metrics are defined in code, so you can easily add your own.
 
 ## Getting started
 
@@ -24,12 +24,12 @@ plugins: [
 
 ## How it works
 
-**Charts are calculated nightly, never when viewing them.** A scheduled task runs every night at 02:00, calls all metric strategies and stores the resulting charts in the database. The dashboard widgets only read these stored charts.
+**Charts are calculated nightly, never when viewing them.** A scheduled task runs every night at 02:00, calculates all metrics and stores the resulting charts in the database. The dashboard widgets only read these stored charts.
 
-This is done for performance: metrics often need to aggregate a lot of orders. Running these queries every time someone opens the dashboard would put heavy load on your database. Strategies are also executed one by one, never in parallel, for the same reason.
+This is done for performance: metrics often need to aggregate a lot of orders. Running these queries every time someone opens the dashboard would put heavy load on your database. Metrics are also calculated one by one, never in parallel, for the same reason.
 
 - Charts show the data up until the last time the task ran. The widget shows when the chart was last updated.
-- If a strategy fails, the error is logged and the previously stored charts of that metric are kept. The other metrics are still calculated.
+- If a metric fails, the error is logged and the previously stored charts of that metric are kept. The other metrics are still calculated.
 - Before the task has run for the first time, widgets show "No data yet, charts are generated nightly".
 - Charts of metrics that have been removed from the config are no longer shown.
 
@@ -62,13 +62,13 @@ MetricsPlugin.init({
 
 ## Custom metrics
 
-Implement the `MetricStrategy` interface. Its only job is returning a chart: a title, a [Chart.js](https://www.chartjs.org/docs/latest/) chart type, Chart.js data and optionally Chart.js options. You are free to query the data any way you like.
+Implement the `MetricDefinition` interface. Its only job is returning a chart: a title, a [Chart.js](https://www.chartjs.org/docs/latest/) chart type, Chart.js data and optionally Chart.js options. You are free to query the data any way you like.
 
 ```ts
 import { Injector, RequestContext, TransactionalConnection, Customer } from '@vendure/core';
-import { MetricChart, MetricStrategy } from '@pinelab/vendure-plugin-metrics';
+import { MetricChart, MetricDefinition } from '@pinelab/vendure-plugin-metrics';
 
-export class NewCustomersMetric implements MetricStrategy {
+export class NewCustomersMetric implements MetricDefinition {
   // Must be a valid GraphQL enum value: letters, digits and underscores
   readonly code = 'new_customers';
   // Load charts for each channel, or once for all channels
@@ -126,8 +126,8 @@ Things to keep in mind:
 
 v4 is a complete rewrite:
 
-- The `MetricStrategy` interface has changed: implement `loadChart()` instead of `calculateDataPoints()`. Strategies now query their own data.
-- The option `displayPastMonths` has been removed: strategies decide which period to show, via variations.
+- The `MetricStrategy` interface has been replaced by `MetricDefinition`: implement `loadChart()` instead of `calculateDataPoints()`. Metrics now query their own data.
+- The option `displayPastMonths` has been removed: metrics decide which period to show, via variations.
 - Selecting variants in the widget is no longer supported.
 - The built-in metric code `revenue-per-product` is now `revenue`, and `units-sold` is now `units_sold`.
 - The GraphQL query `advancedMetricSummaries` has been replaced by `metricCharts(code)`.

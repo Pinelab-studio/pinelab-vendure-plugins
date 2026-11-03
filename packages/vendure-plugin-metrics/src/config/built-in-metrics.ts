@@ -13,13 +13,17 @@ import {
   PeriodVariation,
   periodVariations,
 } from '../services/util';
-import type { MetricChart, MetricStrategy, MetricValueFormat } from '../types';
+import type {
+  MetricChart,
+  MetricDefinition,
+  MetricValueFormat,
+} from '../types';
 
 /**
  * Base for the built-in metrics: shows a period (past 7 days, past 30 days or past 6 months),
  * compared with the same period one year earlier.
  */
-abstract class PeriodComparisonMetric implements MetricStrategy {
+abstract class PeriodComparisonMetric implements MetricDefinition {
   abstract readonly code: string;
   protected abstract readonly valueFormat: MetricValueFormat;
   protected abstract readonly aggregate: 'sum' | 'average';
@@ -205,7 +209,7 @@ export class UnitsSoldMetric extends PeriodComparisonMetric {
 /**
  * The metrics enabled by default. Use `[...defaultMetrics, new MyMetric()]` to add your own.
  */
-export const defaultMetrics: MetricStrategy[] = [
+export const defaultMetrics: MetricDefinition[] = [
   new RevenueMetric(),
   new AverageOrderValueMetric(),
   new UnitsSoldMetric(),

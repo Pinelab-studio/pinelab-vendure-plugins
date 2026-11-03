@@ -98,7 +98,7 @@ describe('Metrics', () => {
     ]);
   });
 
-  it('Runs strategies sequentially and stores a result per metric, variation and channel', async () => {
+  it('Calculates metrics sequentially and stores a result per metric, variation and channel', async () => {
     await server.app.get(MetricsService).generateAllCharts();
     // 2 variations of the sequential metric + the failing metric in 2 channels
     expect(testMetricState.calls).toBe(4);
@@ -121,7 +121,7 @@ describe('Metrics', () => {
     expect(countPerCode('test_failing')).toBe(2);
   });
 
-  it('Keeps the previous result of a failing strategy and still runs the others', async () => {
+  it('Keeps the previous result of a failing metric and still runs the others', async () => {
     testMetricState.failing = true;
     testMetricState.run = 2;
     await server.app.get(MetricsService).generateAllCharts();
@@ -134,7 +134,7 @@ describe('Metrics', () => {
     ]);
   });
 
-  it('Returns stored charts without executing strategies', async () => {
+  it('Returns stored charts without calculating metrics', async () => {
     testMetricState.calls = 0;
     const charts = await getCharts('test_sequential');
     expect(charts.map((c) => c.variation)).toEqual([

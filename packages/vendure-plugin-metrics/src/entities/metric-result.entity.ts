@@ -16,7 +16,7 @@ export class MetricResult extends VendureEntity {
   code!: string;
 
   /**
-   * Null when the strategy has no variations
+   * Null when the metric has no variations
    */
   @Column({ type: 'varchar', nullable: true })
   variation!: string | null;
