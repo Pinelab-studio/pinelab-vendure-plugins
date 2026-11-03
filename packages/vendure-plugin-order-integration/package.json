@@ -1,0 +1,44 @@
+{
+  "name": "@pinelab/vendure-plugin-order-integration",
+  "version": "1.0.0",
+  "description": "Framework for sending placed Vendure orders to shipping, marketing and accounting platforms through your own strategies, with queued retries and webhooks",
+  "keywords": [
+    "vendure",
+    "vendure-plugin",
+    "order integration",
+    "order sync",
+    "webhooks",
+    "job queue",
+    "retries",
+    "fulfillment",
+    "shipping",
+    "accounting",
+    "marketing",
+    "erp"
+  ],
+  "author": "Ayoub Kermout <contact@kermout-ayoub.dev>",
+  "homepage": "https://engineering.pinelab.studio/",
+  "repository": "https://github.com/Pinelab-studio/pinelab-vendure-plugins",
+  "license": "MIT",
+  "private": false,
+  "publishConfig": {
+    "access": "public"
+  },
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md",
+    "CHANGELOG.md"
+  ],
+  "scripts": {
+    "build": "rimraf dist && tsc",
+    "start": "nodemon --watch src --exec ts-node test/dev-server.ts",
+    "test": "vitest run --bail 1",
+    "lint": "biome check ."
+  },
+  "dependencies": {
+    "body-parser": "^2.2.1",
+    "catch-unknown": "^2.0.0"
+  }
+}
