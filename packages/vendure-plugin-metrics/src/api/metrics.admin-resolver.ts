@@ -1,9 +1,6 @@
 import { Args, Query, Resolver } from '@nestjs/graphql';
 import { Allow, Ctx, Permission, RequestContext } from '@vendure/core';
-import {
-  AdvancedMetricSummary,
-  AdvancedMetricSummaryInput,
-} from '../generated/graphql';
+import type { MetricChart as GraphqlMetricChart } from '../generated/graphql';
 import { MetricsService } from '../services/metrics.service';
 
 @Resolver()
@@ -12,10 +9,20 @@ export class MetricsAdminResolver {
 
   @Query()
   @Allow(Permission.ReadOrder)
-  async advancedMetricSummaries(
+  async metricCharts(
     @Ctx() ctx: RequestContext,
-    @Args('input') input: AdvancedMetricSummaryInput,
-  ): Promise<AdvancedMetricSummary[]> {
-    return await this.metricsService.getMetrics(ctx, input);
+    @Args('code') code: string,
+  ): Promise<GraphqlMetricChart[]> {
+    const results = await this.metricsService.getCharts(ctx, code);
+    return results.map((result) => ({
+      code: result.code,
+      variation: result.variation,
+      title: result.chart.title,
+      type: result.chart.type,
+      data: result.chart.data,
+      options: result.chart.options,
+      valueFormat: result.chart.valueFormat ?? 'number',
+      updatedAt: result.updatedAt,
+    })) as GraphqlMetricChart[];
   }
 }

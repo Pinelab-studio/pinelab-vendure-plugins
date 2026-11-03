@@ -1,18 +1,28 @@
-import { DefaultLogger, LogLevel, mergeConfig } from '@vendure/core';
+import { execSync } from 'node:child_process';
+import path from 'node:path';
+import { chromium } from '@playwright/test';
+import { Order, TransactionalConnection, VendureConfig } from '@vendure/core';
 import {
   createTestEnvironment,
   registerInitializer,
   type SimpleGraphQLClient,
   SqljsInitializer,
   type TestServer,
-  testConfig,
 } from '@vendure/testing';
+import { subYears } from 'date-fns';
+import gql from 'graphql-tag';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { initialData } from '../../test/src/initial-data';
 import { createSettledOrder } from '../../test/src/shop-utils';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
-import { type AdvancedMetricSummariesQuery, MetricsPlugin } from '../src';
-import { GET_METRICS } from './queries.graphql';
+import {
+  type MetricChart,
+  type MetricChartsQuery,
+  MetricResult,
+  MetricsService,
+} from '../src';
+import { GET_METRIC_CHARTS, GET_METRIC_CODE_ENUM } from './queries.graphql';
+import { config, testMetricState } from './vendure-config';
 
 describe('Metrics', () => {
   let shopClient: SimpleGraphQLClient;
@@ -21,17 +31,7 @@ describe('Metrics', () => {
 
   beforeAll(async () => {
     registerInitializer('sqljs', new SqljsInitializer('__data__'));
-    const devConfig = mergeConfig(testConfig, {
-      apiOptions: {
-        port: 3050,
-      },
-      logger: new DefaultLogger({ level: LogLevel.Debug }),
-      plugins: [MetricsPlugin],
-      paymentOptions: {
-        paymentMethodHandlers: [testPaymentMethod],
-      },
-    });
-    const env = createTestEnvironment(devConfig);
+    const env = createTestEnvironment(config as Required<VendureConfig>);
     shopClient = env.shopClient;
     adminClient = env.adminClient;
     server = env.server;
@@ -50,81 +50,229 @@ describe('Metrics', () => {
     });
   }, 60000);
 
-  it('Creates 3 settled orders', async () => {
-    const variants = [
-      { id: 'T_1', quantity: 1 },
-      { id: 'T_2', quantity: 2 },
-    ];
-    await createSettledOrder(shopClient, 1, true, variants);
-    await createSettledOrder(shopClient, 1, true, variants);
-    await createSettledOrder(shopClient, 1, true, variants);
-  });
-
-  it('Fails to fetch metrics when unauthenticated', async () => {
-    const promise = adminClient.query(GET_METRICS);
-    await expect(promise).rejects.toThrow('authorized');
-  });
-
-  it('Fetches metrics for past 14 months', async () => {
+  it('Creates 2 orders today, 1 order a year ago and a second channel', async () => {
+    // Each order is 1x T_1 and 2x T_2: 3 units, with a total of 4102.00 excl. tax
+    await createSettledOrder(shopClient, 1);
+    await createSettledOrder(shopClient, 1);
+    const lastYearOrder = await createSettledOrder(shopClient, 1);
+    await server.app
+      .get(TransactionalConnection)
+      .rawConnection.getRepository(Order)
+      .update(
+        { code: lastYearOrder.code },
+        { orderPlacedAt: subYears(new Date(), 1) },
+      );
     await adminClient.asSuperAdmin();
-    const { advancedMetricSummaries } =
-      await adminClient.query<AdvancedMetricSummariesQuery>(GET_METRICS);
-    expect.hasAssertions();
-    const averageOrderValue = advancedMetricSummaries.find(
-      (m) => m.code === 'aov',
-    )!;
-    const revenuePerProduct = advancedMetricSummaries.find(
-      (m) => m.code === 'revenue-per-product',
-    )!;
-    const salesPerProduct = advancedMetricSummaries.find(
-      (m) => m.code === 'units-sold',
-    )!;
-    [averageOrderValue, revenuePerProduct, salesPerProduct].forEach(
-      (metric) => {
-        expect(metric.series[0].values.length).toEqual(14);
-        expect(metric.labels.length).toEqual(14);
+    const { createChannel } = await adminClient.query(CREATE_CHANNEL, {
+      input: {
+        code: 'second-channel',
+        token: 'second-channel-token',
+        defaultLanguageCode: 'en',
+        defaultCurrencyCode: 'USD',
+        pricesIncludeTax: false,
+        defaultShippingZoneId: 1,
+        defaultTaxZoneId: 1,
       },
-    );
-    expect(averageOrderValue.series[0].values.length).toEqual(14);
-    expect(averageOrderValue.labels.length).toEqual(14);
-    // All orders are 4102 without tax, so the AOV is always 4102
-    expect(averageOrderValue.series[0].values[13]).toEqual(4921.4); // Incl tax
-    expect(averageOrderValue.series[1].values[13]).toEqual(4102);
-    // All orders are 4102 without tax, and we placed 3 orders
-    expect(revenuePerProduct.series[0].values[13]).toEqual(3 * 4102); //12306
+    });
+    expect(createChannel.id).toBeDefined();
   });
 
-  it('Fetches metrics for specific variant', async () => {
-    await adminClient.asSuperAdmin();
-    const { advancedMetricSummaries } =
-      await adminClient.query<AdvancedMetricSummariesQuery>(GET_METRICS, {
-        input: { variantIds: [1, 2] },
-      });
-    const revenuePerProduct = advancedMetricSummaries.find(
-      (m) => m.code === 'revenue-per-product',
-    )!;
-    // For revenue per product we expect 2 series: one for each variant
-    expect(revenuePerProduct.series[0].values.length).toEqual(14);
-    expect(revenuePerProduct.series[1].values.length).toEqual(14);
-    expect(revenuePerProduct.labels.length).toEqual(14);
-    // Expect the first series (variant 1), to have 389700 revenue in last month
-    expect(revenuePerProduct.series[0].values[13]).toEqual(3897);
-    // Expect the first series (variant 2), to have 839400 revenue in last month
-    expect(revenuePerProduct.series[1].values[13]).toEqual(8394);
-    const salesPerProduct = advancedMetricSummaries.find(
-      (m) => m.code === 'units-sold',
-    )!;
-    // For sales per product we expect 2 series: one for each variant
-    expect(salesPerProduct.series[0].values.length).toEqual(14);
-    expect(salesPerProduct.series[1].values.length).toEqual(14);
-    expect(salesPerProduct.labels.length).toEqual(14);
-    // Expect the first series (variant 1), to have 3 revenue in last month
-    expect(salesPerProduct.series[0].values[13]).toEqual(3);
-    // Expect the first series (variant 2), to have 6 revenue in last month
-    expect(salesPerProduct.series[1].values[13]).toEqual(6);
+  it('Fails to fetch charts when unauthenticated', async () => {
+    await adminClient.asAnonymousUser();
+    await expect(
+      adminClient.query(GET_METRIC_CHARTS, { code: 'revenue' }),
+    ).rejects.toThrow('authorized');
   });
+
+  it('Returns no charts before the metrics have been generated', async () => {
+    await adminClient.asSuperAdmin();
+    const charts = await getCharts('revenue');
+    expect(charts).toEqual([]);
+  });
+
+  it('Exposes the configured metric codes as MetricCode enum for the dashboard', async () => {
+    const { __type } = await adminClient.query(GET_METRIC_CODE_ENUM);
+    expect(__type.enumValues.map((v: { name: string }) => v.name)).toEqual([
+      'revenue',
+      'aov',
+      'units_sold',
+      'test_sequential',
+      'test_failing',
+    ]);
+  });
+
+  it('Runs strategies sequentially and stores a result per metric, variation and channel', async () => {
+    await server.app.get(MetricsService).generateAllCharts();
+    // 2 variations of the sequential metric + the failing metric in 2 channels
+    expect(testMetricState.calls).toBe(4);
+    expect(testMetricState.maxInFlight).toBe(1);
+    const results = await getStoredResults();
+    const countPerCode = (code: string) =>
+      results.filter((r) => r.code === code).length;
+    // 3 variations in 2 channels
+    expect(countPerCode('revenue')).toBe(6);
+    expect(countPerCode('aov')).toBe(6);
+    expect(countPerCode('units_sold')).toBe(6);
+    // 2 variations, channel independent
+    expect(countPerCode('test_sequential')).toBe(2);
+    expect(
+      results
+        .filter((r) => r.code === 'test_sequential')
+        .every((r) => r.channelId === null),
+    ).toBe(true);
+    // No variations, 2 channels
+    expect(countPerCode('test_failing')).toBe(2);
+  });
+
+  it('Keeps the previous result of a failing strategy and still runs the others', async () => {
+    testMetricState.failing = true;
+    testMetricState.run = 2;
+    await server.app.get(MetricsService).generateAllCharts();
+    const failing = await getCharts('test_failing');
+    expect(failing.map((c) => c.title)).toEqual(['Failing metric run 1']);
+    const sequential = await getCharts('test_sequential');
+    expect(sequential.map((c) => c.title)).toEqual([
+      'Variation A run 2',
+      'Variation B run 2',
+    ]);
+  });
+
+  it('Returns stored charts without executing strategies', async () => {
+    testMetricState.calls = 0;
+    const charts = await getCharts('test_sequential');
+    expect(charts.map((c) => c.variation)).toEqual([
+      'Variation A',
+      'Variation B',
+    ]);
+    expect(testMetricState.calls).toBe(0);
+  });
+
+  it('Shows channel independent charts in every channel', async () => {
+    adminClient.setChannelToken('second-channel-token');
+    const charts = await getCharts('test_sequential');
+    adminClient.setChannelToken('e2e-default-channel');
+    expect(charts).toHaveLength(2);
+  });
+
+  it('Hides charts of metrics that are not configured', async () => {
+    const charts = await getCharts('some_removed_metric');
+    expect(charts).toEqual([]);
+  });
+
+  it('Calculates revenue for today and the same day last year', async () => {
+    const charts = await getCharts('revenue');
+    expect(charts.map((c) => c.variation)).toEqual([
+      'Past 7 days',
+      'Past 30 days',
+      'Past 6 months',
+    ]);
+    const past7Days = charts[0];
+    expect(past7Days.title).toBe('Revenue (excl. tax)');
+    expect(past7Days.type).toBe('line');
+    expect(past7Days.valueFormat).toBe('currency');
+    expect(past7Days.data.labels).toHaveLength(7);
+    const [current, previousYear] = past7Days.data.datasets;
+    expect(current.data).toEqual([0, 0, 0, 0, 0, 0, 820400]);
+    expect(previousYear.data).toEqual([0, 0, 0, 0, 0, 0, 410200]);
+    const past6Months = charts[2];
+    expect(past6Months.data.labels).toHaveLength(6);
+    expect(past6Months.data.datasets[0].data[5]).toBe(820400);
+    expect(past6Months.data.datasets[1].data[5]).toBe(410200);
+  });
+
+  it('Calculates average order value and units sold', async () => {
+    const [aovPast30Days] = (await getCharts('aov')).filter(
+      (c) => c.variation === 'Past 30 days',
+    );
+    expect(aovPast30Days.title).toBe('Average order value (excl. tax)');
+    expect(aovPast30Days.data.datasets[0].data[29]).toBe(410200);
+    expect(aovPast30Days.data.datasets[1].data[29]).toBe(410200);
+    const [unitsSoldPast7Days] = await getCharts('units_sold');
+    expect(unitsSoldPast7Days.valueFormat).toBe('number');
+    expect(unitsSoldPast7Days.data.datasets[0].data[6]).toBe(6);
+    expect(unitsSoldPast7Days.data.datasets[1].data[6]).toBe(3);
+  });
+
+  it('Calculates charts per channel', async () => {
+    adminClient.setChannelToken('second-channel-token');
+    const [revenue] = await getCharts('revenue');
+    adminClient.setChannelToken('e2e-default-channel');
+    // No orders were placed in the second channel
+    expect(revenue.data.datasets[0].data).toEqual([0, 0, 0, 0, 0, 0, 0]);
+  });
+
+  it('Shows a widget per metric in the React dashboard', async () => {
+    buildDashboard();
+    const browser = await chromium.launch();
+    try {
+      const page = await browser.newPage();
+      await page.goto('http://localhost:3050/dashboard/login');
+      await page.fill('#field-username', 'superadmin');
+      await page.fill('#field-password', 'superadmin');
+      await page.click('button[type="submit"]');
+      // The widget titles are the chart titles of the first variation
+      for (const title of [
+        'Revenue (excl. tax)',
+        'Average order value (excl. tax)',
+        'Units sold',
+        'Variation A run 2',
+        'Failing metric run 1',
+      ]) {
+        await page
+          .getByText(title, { exact: true })
+          .waitFor({ timeout: 30000 });
+      }
+      expect(await page.locator('canvas').count()).toBe(5);
+    } finally {
+      await browser.close();
+    }
+  }, 300000);
 
   afterAll(async () => {
     await server.destroy();
   }, 100000);
+
+  /**
+   * Get the charts of a metric via the Admin API
+   */
+  async function getCharts(code: string) {
+    const { metricCharts } = await adminClient.query<MetricChartsQuery>(
+      GET_METRIC_CHARTS,
+      { code },
+    );
+    return metricCharts as Array<
+      MetricChartsQuery['metricCharts'][number] & {
+        data: Required<MetricChart['data']> & {
+          datasets: Array<{ data: number[] }>;
+        };
+      }
+    >;
+  }
+
+  async function getStoredResults() {
+    return await server.app
+      .get(TransactionalConnection)
+      .rawConnection.getRepository(MetricResult)
+      .find();
+  }
 });
+
+/**
+ * Build the React dashboard with the test Vendure config, served by the DashboardPlugin of the test server
+ */
+function buildDashboard() {
+  execSync('npx vite build --config vite.config.mts', {
+    cwd: path.join(__dirname, '..'),
+    stdio: 'inherit',
+  });
+}
+
+const CREATE_CHANNEL = gql`
+  mutation createChannel($input: CreateChannelInput!) {
+    createChannel(input: $input) {
+      ... on Channel {
+        id
+      }
+    }
+  }
+`;

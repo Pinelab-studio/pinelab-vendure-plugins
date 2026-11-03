@@ -72,6 +72,9 @@ jobs:
       - name: Install Chrome for Puppeteer (invoices plugin only)
         # if: ${{ matrix.package == 'packages/vendure-plugin-invoices/' }}
         run: npx puppeteer browsers install chrome
+      - name: Install Chromium for Playwright (metrics plugin only)
+        if: ${{ matrix.package == 'packages/vendure-plugin-metrics/' }}
+        run: npx playwright install --with-deps chromium
       - name: Build
         run: cd ${{ matrix.package }} && yarn build
       - name: Test

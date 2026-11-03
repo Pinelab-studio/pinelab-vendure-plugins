@@ -1,40 +1,27 @@
-import {
-  DefaultLogger,
-  DefaultSearchPlugin,
-  LogLevel,
-  mergeConfig,
-} from '@vendure/core';
+import { VendureConfig } from '@vendure/core';
 import {
   createTestEnvironment,
   registerInitializer,
   SqljsInitializer,
 } from '@vendure/testing';
 import { initialData } from '../../test/src/initial-data';
-import { addItem, createSettledOrder } from '../../test/src/shop-utils';
+import { createSettledOrder } from '../../test/src/shop-utils';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
-import { MetricsPlugin } from '../src/';
+import { MetricsService } from '../src';
+import { config } from './vendure-config';
 
+// eslint-disable-next-line @typescript-eslint/no-floating-promises
 (async () => {
   require('dotenv').config();
-  const { testConfig } = require('@vendure/testing');
   registerInitializer('sqljs', new SqljsInitializer('__data__'));
-  const config = mergeConfig(testConfig, {
-    logger: new DefaultLogger({ level: LogLevel.Debug }),
-    apiOptions: {
-      adminApiPlayground: {},
-      shopApiPlayground: {},
-    },
-    paymentOptions: {
-      paymentMethodHandlers: [testPaymentMethod],
-    },
-    plugins: [
-      MetricsPlugin.init({
-        displayPastMonths: 19,
-      }),
-      DefaultSearchPlugin,
-    ],
-  });
-  const { server, shopClient } = createTestEnvironment(config);
+  // testConfig sets cors: true, allow the Vite dev server instead
+  config.apiOptions.cors = {
+    origin: 'http://localhost:5173',
+    credentials: true,
+  };
+  const { server, shopClient } = createTestEnvironment(
+    config as Required<VendureConfig>,
+  );
   await server.init({
     initialData: {
       ...initialData,
@@ -47,15 +34,9 @@ import { MetricsPlugin } from '../src/';
     },
     productsCsvPath: '../test/src/products-import.csv',
   });
-  // Create placed orders
-  await createSettledOrder(shopClient, 1);
-  await createSettledOrder(shopClient, 1);
-  await createSettledOrder(shopClient, 1);
-  await createSettledOrder(shopClient, 1);
-  await createSettledOrder(shopClient, 1);
-  // Also create some non-finished orders for conversion metric
-  for (let i = 0; i < 10; i++) {
-    await shopClient.asAnonymousUser();
-    await addItem(shopClient, '1', 1);
+  for (let i = 0; i < 5; i++) {
+    await createSettledOrder(shopClient, 1);
   }
+  // Generate charts right away, instead of waiting for the nightly task
+  await server.app.get(MetricsService).generateAllCharts();
 })();

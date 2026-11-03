@@ -1,56 +1,70 @@
 import { PluginCommonModule, VendurePlugin } from '@vendure/core';
+import { Kind } from 'graphql';
+import { adminApiExtensions, createMetricCodeEnum } from './api/api-extensions';
 import { MetricsAdminResolver } from './api/metrics.admin-resolver';
-import { adminSchema, shopSchema } from './api/schema.graphql';
+import { defaultMetrics } from './config/built-in-metrics';
+import { buildMetricsScheduledTask } from './config/metrics-scheduled-task';
 import { PLUGIN_INIT_OPTIONS } from './constants';
-import { MetricSummary } from './entities/metric-summary.entity';
-import { AverageOrderValueMetric } from './metrics/average-order-value';
-import { RevenuePerProduct } from './metrics/revenue-per-product';
-import { UnitsSoldMetric } from './metrics/units-sold-metric';
-import type { MetricStrategy } from './services/metric-strategy';
+import { MetricResult } from './entities/metric-result.entity';
 import { MetricsService } from './services/metrics.service';
-export interface MetricsPluginOptions {
-  /**
-   * The enabled metrics shown in the widget.
-   */
-  metrics: MetricStrategy[];
-  /**
-   * The number of past months to display in the metrics widget.
-   * If your shop has a lot of orders, consider using only the last 3 months for example.
-   */
-  displayPastMonths: number;
-}
+import type { MetricsPluginOptions } from './types';
 
+/**
+ * Calculates metrics nightly and shows them as charts in the React dashboard.
+ */
 @VendurePlugin({
   imports: [PluginCommonModule],
   adminApiExtensions: {
-    schema: adminSchema,
+    schema: () => ({
+      kind: Kind.DOCUMENT,
+      definitions: [
+        ...adminApiExtensions.definitions,
+        ...createMetricCodeEnum(
+          MetricsPlugin.options.metrics.map((m) => m.code),
+        ).definitions,
+      ],
+    }),
     resolvers: [MetricsAdminResolver],
-  },
-  shopApiExtensions: {
-    schema: shopSchema,
   },
   providers: [
     MetricsService,
     { provide: PLUGIN_INIT_OPTIONS, useFactory: () => MetricsPlugin.options },
   ],
-  compatibility: '>=2.2.0',
-  entities: [MetricSummary],
+  entities: [MetricResult],
+  configuration: (config) => {
+    config.schedulerOptions.tasks.push(
+      buildMetricsScheduledTask(MetricsPlugin.options.scheduledTask),
+    );
+    return config;
+  },
+  dashboard: './dashboard/index.tsx',
+  compatibility: '>=3.3.0',
 })
 export class MetricsPlugin {
   static options: MetricsPluginOptions = {
-    metrics: [
-      new RevenuePerProduct(),
-      new AverageOrderValueMetric(),
-      new UnitsSoldMetric(),
-    ],
-    displayPastMonths: 13,
+    metrics: defaultMetrics,
   };
 
+  /**
+   * Configure the plugin. Throws when metric codes are missing, duplicated or not valid GraphQL enum values.
+   */
   static init(options: Partial<MetricsPluginOptions>): typeof MetricsPlugin {
-    MetricsPlugin.options = {
-      ...MetricsPlugin.options,
-      ...options,
-    };
+    const metrics = options.metrics ?? defaultMetrics;
+    if (!metrics.length) {
+      throw Error(`MetricsPlugin: at least one metric is required`);
+    }
+    const codes = metrics.map((m) => m.code);
+    const invalid = codes.find((c) => !/^[_A-Za-z][_0-9A-Za-z]*$/.test(c));
+    if (invalid) {
+      throw Error(
+        `MetricsPlugin: metric code '${invalid}' must be a valid GraphQL enum value, like 'units_sold'`,
+      );
+    }
+    const duplicate = codes.find((c, i) => codes.indexOf(c) !== i);
+    if (duplicate) {
+      throw Error(`MetricsPlugin: metric code '${duplicate}' is not unique`);
+    }
+    MetricsPlugin.options = { ...MetricsPlugin.options, ...options, metrics };
     return MetricsPlugin;
   }
 }
