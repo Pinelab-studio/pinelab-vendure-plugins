@@ -16,6 +16,18 @@ import { MetricResult } from '../entities/metric-result.entity';
 import type { MetricDefinition, MetricsPluginOptions } from '../types';
 import { validateMetricChart } from './util';
 
+interface MetricGenerationResult {
+  code: string;
+  channel: string | null;
+  variations: Array<{
+    variation: string | null;
+    durationMs: number;
+    success: boolean;
+    error?: string;
+  }>;
+  error?: string;
+}
+
 @Injectable()
 export class MetricsService {
   private readonly injector: Injector;
@@ -51,14 +63,15 @@ export class MetricsService {
 
   /**
    * Calculate and store the charts of all metrics. Metrics are calculated one by one, never in parallel,
-   * to prevent heavy load on the database. A failing metric is logged and keeps its previous charts.
+   * to prevent heavy load on the database. Returns counts, variation timings and errors for the task history.
    */
-  async generateAllCharts(): Promise<void> {
+  async generateAllCharts() {
+    const start = Date.now();
+    const metrics: MetricGenerationResult[] = [];
     const channels = await this.connection.rawConnection
       .getRepository(Channel)
-      .find();
+      .find({ relations: ['defaultTaxZone'] });
     const defaultChannel = await this.channelService.getDefaultChannel();
-    const start = Date.now();
     for (const metric of this.options.metrics) {
       const channelsForMetric = metric.perChannel ? channels : [defaultChannel];
       for (const channel of channelsForMetric) {
@@ -66,13 +79,20 @@ export class MetricsService {
           apiType: 'admin',
           channelOrToken: channel,
         });
-        await this.generateCharts(ctx, metric);
+        metrics.push(await this.generateCharts(ctx, metric));
       }
     }
+    const chartsGenerated = metrics.reduce(
+      (total, metric) =>
+        total + metric.variations.filter((v) => v.success).length,
+      0,
+    );
+    const durationMs = Date.now() - start;
     Logger.info(
-      `Generated charts for ${this.options.metrics.length} metrics in ${Date.now() - start}ms`,
+      `Generated ${chartsGenerated} charts for ${this.options.metrics.length} metrics in ${durationMs}ms`,
       loggerCtx,
     );
+    return { chartsGenerated, durationMs, metrics };
   }
 
   /**
@@ -81,7 +101,12 @@ export class MetricsService {
   private async generateCharts(
     ctx: RequestContext,
     metric: MetricDefinition,
-  ): Promise<void> {
+  ): Promise<MetricGenerationResult> {
+    const result: MetricGenerationResult = {
+      code: metric.code,
+      channel: metric.perChannel ? ctx.channel.code : null,
+      variations: [],
+    };
     const channelId = metric.perChannel ? String(ctx.channelId) : null;
     let variations: Array<string | undefined>;
     try {
@@ -95,10 +120,17 @@ export class MetricsService {
         loggerCtx,
         error.stack,
       );
-      return;
+      result.error = error.message;
+      return result;
     }
-    // Load variations one by one
+    // Load variations one by one, recording calculation and persistence time.
     for (const [position, variation] of variations.entries()) {
+      const start = Date.now();
+      const variationResult: MetricGenerationResult['variations'][number] = {
+        variation: variation ?? null,
+        durationMs: 0,
+        success: false,
+      };
       try {
         const chart = validateMetricChart(
           await metric.loadChart(ctx, this.injector, variation),
@@ -110,6 +142,7 @@ export class MetricsService {
           position,
           chart,
         });
+        variationResult.success = true;
       } catch (e) {
         const error = asError(e);
         Logger.error(
@@ -117,9 +150,13 @@ export class MetricsService {
           loggerCtx,
           error.stack,
         );
+        variationResult.error = error.message;
       }
+      variationResult.durationMs = Date.now() - start;
+      result.variations.push(variationResult);
     }
     await this.removeStaleVariations(ctx, metric.code, channelId, variations);
+    return result;
   }
 
   /**

@@ -16,7 +16,9 @@ import {
   type ChartConfiguration,
   Chart as ChartJS,
   registerables,
+  type ScriptableContext,
 } from 'chart.js';
+import { color } from 'chart.js/helpers';
 import { useMemo, useState } from 'react';
 import { Chart } from 'react-chartjs-2';
 
@@ -71,7 +73,47 @@ export function MetricWidget({
     const hasAxes = chart.type === 'line' || chart.type === 'bar';
     return {
       type: chart.type,
-      data: chart.data,
+      data:
+        chart.type === 'line'
+          ? {
+              ...chart.data,
+              datasets: chart.data.datasets.map((dataset, index) => {
+                const lineColor =
+                  dataset.borderColor ?? (index === 0 ? '#0ea5e9' : '#94a3b8');
+                return {
+                  tension: 0.4,
+                  borderWidth: 1.5,
+                  cubicInterpolationMode: 'monotone',
+                  fill: true,
+                  ...dataset,
+                  borderColor: lineColor,
+                  backgroundColor:
+                    dataset.backgroundColor ??
+                    (({ chart }: ScriptableContext<'line'>) => {
+                      const { ctx, chartArea } = chart;
+                      if (!chartArea || typeof lineColor !== 'string') {
+                        return 'transparent';
+                      }
+                      const gradient = ctx.createLinearGradient(
+                        0,
+                        chartArea.top,
+                        0,
+                        chartArea.bottom,
+                      );
+                      gradient.addColorStop(
+                        0,
+                        color(lineColor).alpha(0.4).rgbString(),
+                      );
+                      gradient.addColorStop(
+                        1,
+                        color(lineColor).alpha(0).rgbString(),
+                      );
+                      return gradient;
+                    }),
+                };
+              }),
+            }
+          : chart.data,
       options: {
         responsive: true,
         maintainAspectRatio: false,
@@ -128,6 +170,7 @@ export function MetricWidget({
       {config ? (
         <div className="relative h-full w-full">
           <Chart
+            key={JSON.stringify([code, activeChannel?.id, chart?.variation])}
             type={config.type}
             data={config.data}
             options={config.options}

@@ -13,13 +13,16 @@ import { initialData } from '../../test/src/initial-data';
 import { createSettledOrder } from '../../test/src/shop-utils';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
 import {
+  defaultMetrics,
   type MetricChart,
   type MetricChartsQuery,
+  type MetricDefinition,
   MetricResult,
+  MetricsPlugin,
   MetricsService,
 } from '../src';
 import { GET_METRIC_CHARTS, GET_METRIC_CODE_ENUM } from './queries.graphql';
-import { config, testMetricState } from './vendure-config';
+import { config } from './vendure-config';
 
 describe('Metrics', () => {
   let shopClient: SimpleGraphQLClient;
@@ -28,7 +31,20 @@ describe('Metrics', () => {
 
   beforeAll(async () => {
     registerInitializer('sqljs', new SqljsInitializer('__data__'));
-    const env = createTestEnvironment(config as Required<VendureConfig>);
+    const e2eConfig = {
+      ...config,
+      plugins: [
+        ...config.plugins.filter((plugin) => plugin !== MetricsPlugin),
+        MetricsPlugin.init({
+          metrics: [
+            ...defaultMetrics,
+            new SequentialTestMetric(),
+            new FailingTestMetric(),
+          ],
+        }),
+      ],
+    };
+    const env = createTestEnvironment(e2eConfig as Required<VendureConfig>);
     shopClient = env.shopClient;
     adminClient = env.adminClient;
     server = env.server;
@@ -232,6 +248,66 @@ describe('Metrics', () => {
       .find();
   }
 });
+
+// These metrics exercise scheduling and failure behaviour only in e2e tests.
+const testMetricState = {
+  inFlight: 0,
+  maxInFlight: 0,
+  calls: 0,
+  run: 1,
+  failing: false,
+};
+
+/** Keep calls in flight briefly to detect concurrent metric calculations. */
+async function trackCall(createChart: () => MetricChart): Promise<MetricChart> {
+  testMetricState.calls++;
+  testMetricState.inFlight++;
+  testMetricState.maxInFlight = Math.max(
+    testMetricState.maxInFlight,
+    testMetricState.inFlight,
+  );
+  await new Promise((resolve) => setTimeout(resolve, 50));
+  testMetricState.inFlight--;
+  return createChart();
+}
+
+class SequentialTestMetric implements MetricDefinition {
+  readonly code = 'test_sequential';
+  readonly perChannel = false;
+
+  /** Exercise multiple variations on a channel-independent metric. */
+  getChartVariations(): string[] {
+    return ['Variation A', 'Variation B'];
+  }
+
+  /** Return a new title each run so tests can observe regeneration. */
+  loadChart(_ctx: unknown, _injector: unknown, variation?: string) {
+    return trackCall(() => ({
+      title: `${variation} run ${testMetricState.run}`,
+      type: 'bar',
+      data: { labels: ['x'], datasets: [{ label: 'x', data: [1] }] },
+    }));
+  }
+}
+
+class FailingTestMetric implements MetricDefinition {
+  readonly code = 'test_failing';
+  readonly perChannel = true;
+
+  /** Fail on demand to verify that previously stored charts are retained. */
+  loadChart() {
+    return trackCall(() => {
+      if (testMetricState.failing) {
+        throw Error('Test metric failed');
+      }
+      return {
+        title: `Failing metric run ${testMetricState.run}`,
+        type: 'pie',
+        data: { labels: ['x'], datasets: [{ data: [1] }] },
+      };
+    });
+  }
+}
 
 const CREATE_CHANNEL = gql`
   mutation createChannel($input: CreateChannelInput!) {

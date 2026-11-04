@@ -30,7 +30,7 @@
   "scripts": {
     "build": "rimraf dist && yarn generate && tsc && copyfiles -u 1 -e 'src/**/*.spec.ts' 'src/dashboard/**/*' dist/",
     "build:dashboard": "vite build --config ./vite.config.mts",
-    "test": "vitest run --bail 1",
+    "test": "yarn build:dashboard && vitest run --bail 1",
     "start": "ts-node test/dev-server.ts",
     "dev:dashboard": "vite --clearScreen false",
     "generate": "graphql-codegen",
