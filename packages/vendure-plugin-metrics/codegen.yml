@@ -1,4 +1,4 @@
-schema: 'src/**/*.graphql.ts'
+schema: 'src/api/api-extensions.ts'
 documents: 'test/queries.graphql.ts'
 generates:
   ./src/generated/graphql.ts:
@@ -7,3 +7,6 @@ generates:
       - typescript-operations
     config:
       avoidOptionals: false
+      scalars:
+        JSON: any
+        DateTime: Date

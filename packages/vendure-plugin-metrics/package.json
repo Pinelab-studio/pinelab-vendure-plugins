@@ -1,6 +1,6 @@
 {
   "name": "@pinelab/vendure-plugin-metrics",
-  "version": "3.3.0",
+  "version": "4.0.0",
   "description": "Vendure plugin measuring and visualizing e-commerce metrics",
   "keywords": [
     "vendure",
@@ -28,15 +28,19 @@
     "CHANGELOG.md"
   ],
   "scripts": {
-    "build": "rimraf dist && yarn graphql-codegen && tsc",
-    "test": "vitest run --bail 1",
-    "start": "yarn ts-node test/dev-server.ts",
+    "build": "rimraf dist && yarn generate && tsc && copyfiles -u 1 -e 'src/**/*.spec.ts' 'src/dashboard/**/*' dist/",
+    "build:dashboard": "vite build --config ./vite.config.mts",
+    "test": "yarn build:dashboard && vitest run --bail 1",
+    "start": "ts-node test/dev-server.ts",
+    "dev:dashboard": "vite --clearScreen false",
     "generate": "graphql-codegen",
     "lint": "biome check ."
   },
   "dependencies": {
     "catch-unknown": "^2.0.0",
-    "date-fns": "^2.29.3"
+    "chart.js": "^4",
+    "date-fns": "^2.29.3",
+    "react-chartjs-2": "^5"
   },
   "gitHead": "476f36da3aafea41fbf21c70774a30306f1d238f"
 }

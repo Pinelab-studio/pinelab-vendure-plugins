@@ -1,16 +1,25 @@
 import gql from 'graphql-tag';
 
-export const GET_METRICS = gql`
-  query advancedMetricSummaries($input: AdvancedMetricSummaryInput) {
-    advancedMetricSummaries(input: $input) {
+export const GET_METRIC_CHARTS = gql`
+  query metricCharts($code: String!) {
+    metricCharts(code: $code) {
       code
+      variation
       title
       type
-      allowProductSelection
-      labels
-      series {
+      data
+      options
+      valueFormat
+      updatedAt
+    }
+  }
+`;
+
+export const GET_METRIC_CODE_ENUM = gql`
+  query metricCodeEnum {
+    __type(name: "MetricCode") {
+      enumValues {
         name
-        values
       }
     }
   }

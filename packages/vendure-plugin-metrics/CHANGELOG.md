@@ -1,3 +1,12 @@
+# 4.0.0 (2026-11-03)
+
+- BREAKING: `MetricStrategy` is replaced by `MetricDefinition`, which returns a Chart.js chart. See the README for migration steps.
+- BREAKING: Charts are calculated nightly by the `generate-metrics` scheduled task and stored in the database, instead of when viewing the dashboard. Requires the `DefaultSchedulerPlugin`.
+- BREAKING: The `metric_summary` table has been replaced by `metric_result`. A database migration is required.
+- BREAKING: Removed the `displayPastMonths` option, variant selection, the `advancedMetricSummaries` query and the deprecated `pageVisit` mutation.
+- Added React dashboard widgets: one widget per metric, with a dropdown for chart variations.
+- Built-in metrics (revenue, average order value, units sold) now show the past 7 days, 30 days and 6 months, compared with the same period last year.
+
 # 3.3.0 (2026-10-30)
 
 - Removed the legacy Angular Admin UI extension. Backend functionality is unchanged.
