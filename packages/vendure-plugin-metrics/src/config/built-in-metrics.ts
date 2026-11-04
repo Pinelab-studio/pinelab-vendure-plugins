@@ -5,9 +5,10 @@ import {
   RequestContext,
   TransactionalConnection,
 } from '@vendure/core';
+import type { SelectQueryBuilder } from 'typeorm';
 import {
   aggregatePerBucket,
-  DataPoint,
+  DailyTotal,
   DateRange,
   getPeriodBuckets,
   PeriodVariation,
@@ -32,13 +33,13 @@ abstract class PeriodComparisonMetric implements MetricDefinition {
   protected abstract getTitle(ctx: RequestContext): string;
 
   /**
-   * Load the data points (e.g. order totals) placed in the given range.
+   * Load the totals per day (e.g. order totals) of orders placed in the given range.
    */
-  protected abstract loadDataPoints(
+  protected abstract loadDailyTotals(
     ctx: RequestContext,
     injector: Injector,
     range: DateRange,
-  ): Promise<DataPoint[]>;
+  ): Promise<DailyTotal[]>;
 
   getChartVariations(): string[] {
     return [...periodVariations];
@@ -54,12 +55,12 @@ abstract class PeriodComparisonMetric implements MetricDefinition {
       start: b[0].start,
       end: b[b.length - 1].end,
     });
-    const current = await this.loadDataPoints(
+    const current = await this.loadDailyTotals(
       ctx,
       injector,
       toRange(buckets.current),
     );
-    const previousYear = await this.loadDataPoints(
+    const previousYear = await this.loadDailyTotals(
       ctx,
       injector,
       toRange(buckets.previousYear),
@@ -91,34 +92,50 @@ abstract class PeriodComparisonMetric implements MetricDefinition {
 }
 
 /**
- * Get the totals of the orders placed in the given range, for the current channel.
+ * Sum the totals of the orders placed in the given range per day, for the current channel.
  * Uses `totalWithTax` when the channel's prices include tax, otherwise `total`.
  */
-async function getOrderTotals(
+async function getDailyOrderTotals(
   ctx: RequestContext,
   injector: Injector,
   range: DateRange,
-): Promise<DataPoint[]> {
-  const orders = await injector
+): Promise<DailyTotal[]> {
+  const total = ctx.channel.pricesIncludeTax
+    ? 'order.subTotalWithTax + order.shippingWithTax'
+    : 'order.subTotal + order.shipping';
+  const query = injector
     .get(TransactionalConnection)
     .getRepository(ctx, Order)
     .createQueryBuilder('order')
-    .select([
-      'order.id',
-      'order.orderPlacedAt',
-      'order.subTotal',
-      'order.subTotalWithTax',
-      'order.shipping',
-      'order.shippingWithTax',
-    ])
+    .select(`SUM(${total})`, 'total')
+    .addSelect('COUNT(order.id)', 'count');
+  return getDailyTotals(ctx, query, range);
+}
+
+/**
+ * Group the given query on `order` per day of `orderPlacedAt`, for placed and not cancelled orders
+ * in the current channel. The query must select `total` and `count`.
+ * Aggregating in the database prevents loading all orders into memory.
+ */
+async function getDailyTotals(
+  ctx: RequestContext,
+  query: SelectQueryBuilder<Order | OrderLine>,
+  range: DateRange,
+): Promise<DailyTotal[]> {
+  const rows = await query
+    .addSelect('DATE(order.orderPlacedAt)', 'day')
     .innerJoin('order.channels', 'channel', 'channel.id = :channelId', {
       channelId: ctx.channelId,
     })
     .where('order.orderPlacedAt BETWEEN :start AND :end', range)
-    .getMany();
-  return orders.map((order) => ({
-    date: order.orderPlacedAt as Date,
-    value: ctx.channel.pricesIncludeTax ? order.totalWithTax : order.total,
+    .andWhere('order.state != :cancelled', { cancelled: 'Cancelled' })
+    .groupBy('DATE(order.orderPlacedAt)')
+    .getRawMany<{ day: string | Date; total: unknown; count: unknown }>();
+  // Some drivers return sums as strings
+  return rows.map((row) => ({
+    day: row.day,
+    total: Number(row.total),
+    count: Number(row.count),
   }));
 }
 
@@ -141,12 +158,12 @@ export class RevenueMetric extends PeriodComparisonMetric {
     return withTaxLabel(ctx, 'Revenue');
   }
 
-  protected loadDataPoints(
+  protected loadDailyTotals(
     ctx: RequestContext,
     injector: Injector,
     range: DateRange,
-  ): Promise<DataPoint[]> {
-    return getOrderTotals(ctx, injector, range);
+  ): Promise<DailyTotal[]> {
+    return getDailyOrderTotals(ctx, injector, range);
   }
 }
 
@@ -162,12 +179,12 @@ export class AverageOrderValueMetric extends PeriodComparisonMetric {
     return withTaxLabel(ctx, 'Average order value');
   }
 
-  protected loadDataPoints(
+  protected loadDailyTotals(
     ctx: RequestContext,
     injector: Injector,
     range: DateRange,
-  ): Promise<DataPoint[]> {
-    return getOrderTotals(ctx, injector, range);
+  ): Promise<DailyTotal[]> {
+    return getDailyOrderTotals(ctx, injector, range);
   }
 }
 
@@ -183,26 +200,19 @@ export class UnitsSoldMetric extends PeriodComparisonMetric {
     return 'Units sold';
   }
 
-  protected async loadDataPoints(
+  protected loadDailyTotals(
     ctx: RequestContext,
     injector: Injector,
     range: DateRange,
-  ): Promise<DataPoint[]> {
-    const lines = await injector
+  ): Promise<DailyTotal[]> {
+    const query = injector
       .get(TransactionalConnection)
       .getRepository(ctx, OrderLine)
       .createQueryBuilder('line')
-      .select(['line.id', 'line.quantity', 'order.id', 'order.orderPlacedAt'])
-      .innerJoin('line.order', 'order')
-      .innerJoin('order.channels', 'channel', 'channel.id = :channelId', {
-        channelId: ctx.channelId,
-      })
-      .where('order.orderPlacedAt BETWEEN :start AND :end', range)
-      .getMany();
-    return lines.map((line) => ({
-      date: line.order.orderPlacedAt as Date,
-      value: line.quantity,
-    }));
+      .select('SUM(line.quantity)', 'total')
+      .addSelect('COUNT(line.id)', 'count')
+      .innerJoin('line.order', 'order');
+    return getDailyTotals(ctx, query, range);
   }
 }
 

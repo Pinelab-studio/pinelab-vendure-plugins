@@ -47,18 +47,24 @@ describe('Metrics', () => {
     });
   }, 60000);
 
-  it('Creates 2 orders today, 1 order a year ago and a second channel', async () => {
+  it('Creates 2 orders today, 1 cancelled order today, 1 order a year ago and a second channel', async () => {
     // Each order is 1x T_1 and 2x T_2: 3 units, with a total of 4102.00 excl. tax
     await createSettledOrder(shopClient, 1);
     await createSettledOrder(shopClient, 1);
-    const lastYearOrder = await createSettledOrder(shopClient, 1);
-    await server.app
+    const orderRepository = server.app
       .get(TransactionalConnection)
-      .rawConnection.getRepository(Order)
-      .update(
-        { code: lastYearOrder.code },
-        { orderPlacedAt: subYears(new Date(), 1) },
-      );
+      .rawConnection.getRepository(Order);
+    // Should not be included in any metric
+    const cancelledOrder = await createSettledOrder(shopClient, 1);
+    await orderRepository.update(
+      { code: cancelledOrder.code },
+      { state: 'Cancelled' },
+    );
+    const lastYearOrder = await createSettledOrder(shopClient, 1);
+    await orderRepository.update(
+      { code: lastYearOrder.code },
+      { orderPlacedAt: subYears(new Date(), 1) },
+    );
     await adminClient.asSuperAdmin();
     const { createChannel } = await adminClient.query(CREATE_CHANNEL, {
       input: {

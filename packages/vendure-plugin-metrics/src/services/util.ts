@@ -2,6 +2,7 @@ import {
   endOfDay,
   endOfMonth,
   format,
+  parseISO,
   startOfDay,
   startOfMonth,
   subDays,
@@ -88,27 +89,40 @@ export function getPeriodBuckets(
   };
 }
 
-export interface DataPoint {
-  date: Date;
-  value: number;
+/**
+ * The aggregated value of a single day, e.g. the summed order totals and the number of orders
+ */
+export interface DailyTotal {
+  /**
+   * The day as returned by SQL `DATE()`: a 'YYYY-MM-DD' string or a Date, depending on the database driver
+   */
+  day: string | Date;
+  total: number;
+  count: number;
 }
 
 /**
- * Sum or average the values of the data points per bucket. Empty buckets are 0.
+ * Sum or average the daily totals per bucket. Averages are weighted by count,
+ * e.g. total revenue divided by number of orders. Empty buckets are 0.
  */
 export function aggregatePerBucket(
-  points: DataPoint[],
+  dailyTotals: DailyTotal[],
   buckets: DateRange[],
   aggregate: 'sum' | 'average',
 ): number[] {
+  const days = dailyTotals.map((d) => ({
+    ...d,
+    date: d.day instanceof Date ? d.day : parseISO(d.day),
+  }));
   return buckets.map((bucket) => {
-    const values = points
-      .filter((p) => p.date >= bucket.start && p.date <= bucket.end)
-      .map((p) => p.value);
-    if (!values.length) {
+    const inBucket = days.filter(
+      (d) => d.date >= bucket.start && d.date <= bucket.end,
+    );
+    const total = inBucket.reduce((sum, d) => sum + d.total, 0);
+    const count = inBucket.reduce((sum, d) => sum + d.count, 0);
+    if (!count) {
       return 0;
     }
-    const sum = values.reduce((total, value) => total + value, 0);
-    return aggregate === 'sum' ? sum : Math.round(sum / values.length);
+    return aggregate === 'sum' ? total : Math.round(total / count);
   });
 }

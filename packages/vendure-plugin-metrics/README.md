@@ -45,7 +45,11 @@ The dashboard registers widgets at build time, based on the configured metrics: 
 2. **Average order value**: the average total of placed orders.
 3. **Units sold**: the number of units sold in placed orders.
 
-Order totals include tax when the channel's prices include tax. Each metric has the variations "Past 7 days" and "Past 30 days" (per day) and "Past 6 months" (per month), and compares them with the same period one year earlier.
+Cancelled orders are excluded. Order totals include tax when the channel's prices include tax.
+
+Vendure assigns every order to the default channel as well, so in a multi-channel setup the default channel shows the combined metrics of all channels. Totals of channels with different currencies are summed without conversion.
+
+Each metric has the variations "Past 7 days" and "Past 30 days" (per day) and "Past 6 months" (per month), and compares them with the same period one year earlier.
 
 ### Changing the schedule
 
