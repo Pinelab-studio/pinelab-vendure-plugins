@@ -21,6 +21,7 @@ import {
 } from '../src';
 
 const demoHooks: HookName[] = [
+  'onOrderCreated',
   'onOrderPlaced',
   'onOrderUpdated',
   'onOrderStateTransition',
@@ -33,7 +34,6 @@ const demoHooks: HookName[] = [
   'onRefundStateTransition',
   'onFulfillmentCreated',
   'onFulfillmentStateTransition',
-  'onStockShortfall',
 ];
 
 /**

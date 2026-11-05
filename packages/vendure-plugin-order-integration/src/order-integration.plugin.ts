@@ -3,11 +3,10 @@ import { OrderIntegrationController } from './api/order-integration.controller';
 import { rawBodyMiddleware } from './api/raw-body.middleware';
 import { PLUGIN_INIT_OPTIONS } from './constants';
 import { OrderIntegrationService } from './services/order-integration.service';
-import { StockShortfallService } from './services/stock-shortfall.service';
 import { OrderIntegrationPluginOptions } from './types';
 
 /**
- * Sends placed orders to external platforms through consumer-supplied strategies: lifecycle
+ * Connects orders and carts to external platforms through consumer-supplied strategies: lifecycle
  * hooks run as retried background jobs and inbound webhooks reach the owning strategy.
  */
 @VendurePlugin({
@@ -19,7 +18,6 @@ import { OrderIntegrationPluginOptions } from './types';
       useFactory: () => OrderIntegrationPlugin.options,
     },
     OrderIntegrationService,
-    StockShortfallService,
   ],
   configuration: (config) => {
     config.apiOptions.middleware.push({

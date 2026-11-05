@@ -8,7 +8,7 @@ import { describe, expect, it } from 'vitest';
 import { buildFulfillmentCreatedPayload } from './capture';
 
 describe('Fulfillments that span several orders', () => {
-  it('Captures only the placed orders of a mixed set', () => {
+  it('Captures every referenced order regardless of placement', () => {
     const event = createFulfillmentEvent([
       new Order({
         id: 1,
@@ -25,15 +25,12 @@ describe('Fulfillments that span several orders', () => {
 
     const payload = buildFulfillmentCreatedPayload(event);
 
-    expect(payload?.orderIds).toEqual([1, 3]);
-    expect(payload?.orderCodes).toEqual(['PLACED-1', 'PLACED-3']);
+    expect(payload?.orderIds).toEqual([1, 2, 3]);
+    expect(payload?.orderCodes).toEqual(['PLACED-1', 'CART-2', 'PLACED-3']);
   });
 
-  it('Captures nothing when none of the orders is placed', () => {
-    const event = createFulfillmentEvent([
-      new Order({ id: 2, code: 'CART-2' }),
-      new Order({ id: 4, code: 'CART-4' }),
-    ]);
+  it('Captures nothing without referenced orders', () => {
+    const event = createFulfillmentEvent([]);
 
     expect(buildFulfillmentCreatedPayload(event)).toBeUndefined();
   });

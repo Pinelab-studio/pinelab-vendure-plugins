@@ -55,22 +55,22 @@ import {
 } from '../types';
 import {
   buildFulfillmentCreatedPayload,
-  getPlacedOrderRefs,
+  getOrderRefs,
   OrderRef,
   snapshotOrderLine,
   snapshotRefund,
   toJson,
-  toOrderUpdatedInput,
+  toOrderEventInput,
 } from './capture';
 
 /**
- * Payload of the shared dispatch pipeline used by the event subscribers, the stock
- * shortfall derivation and {@link OrderIntegrationService.enqueue}.
+ * Payload of the shared dispatch pipeline used by the event subscribers and
+ * {@link OrderIntegrationService.enqueue}.
  *
  * @internal
  */
 export interface DispatchPayload<H extends HookName> {
-  /** Ids of eligible placed orders; never empty. */
+  /** Ids of the referenced orders; never empty. */
   readonly orderIds: readonly [ID, ...ID[]];
   /** Codes of those orders, for log messages and readable job data only. */
   readonly orderCodes: readonly string[];
@@ -232,9 +232,9 @@ export class OrderIntegrationService
   }
 
   /**
-   * Enqueues `hook` for placed orders without a Vendure event or webhook, through the same
-   * eligibility, serialization and retry pipeline. Orders that are not placed (or not found
-   * in `ctx`'s channel) are skipped; with no placed order left, it returns `[]`. With a
+   * Enqueues `hook` for orders without a Vendure event or webhook, through the same
+   * eligibility, serialization and retry pipeline. Orders not found in `ctx`'s channel
+   * are skipped; with no order left, it returns `[]`. With a
    * `route`, only that strategy is considered and the event carries `route.connectionId`;
    * an unknown strategy, or one that lacks the hook, rejects.
    */
@@ -248,7 +248,7 @@ export class OrderIntegrationService
     const orders = await Promise.all(
       payload.orderIds.map((id) => this.orderService.findOne(ctx, id, [])),
     );
-    const refs = getPlacedOrderRefs(orders.filter(notNullOrUndefined));
+    const refs = getOrderRefs(orders.filter(notNullOrUndefined));
     if (!refs) {
       return [];
     }
@@ -388,7 +388,7 @@ export class OrderIntegrationService
     );
     this.listen(
       OrderEvent,
-      (event) => this.captureOrderUpdated(event),
+      (event) => this.captureOrderEvent(event),
       (event) => `order ${event.entity.code}`,
     );
     this.listen(
@@ -456,19 +456,16 @@ export class OrderIntegrationService
   }
 
   /**
-   * Shared capture path: skips events no strategy listens to and orders that are not
-   * placed, then dispatches what `build` returns. `build` runs only when something is
-   * dispatched, so it may read the database.
+   * Shared capture path: skips events no strategy listens to or without referenced orders,
+   * then dispatches what `build` returns. `build` may read the database.
    */
-  private async dispatchPlaced<H extends HookName>(
+  private async dispatchOrders<H extends HookName>(
     event: SourceEvent,
     hook: H,
     orders: readonly OrderRef[],
     build: () => PayloadParts<H> | Promise<PayloadParts<H>>,
   ): Promise<void> {
-    const refs = this.isImplemented(hook)
-      ? getPlacedOrderRefs(orders)
-      : undefined;
+    const refs = this.isImplemented(hook) ? getOrderRefs(orders) : undefined;
     if (!refs) {
       return;
     }
@@ -480,7 +477,7 @@ export class OrderIntegrationService
   }
 
   private captureOrderPlaced(event: OrderPlacedEvent): Promise<void> {
-    return this.dispatchPlaced(event, 'onOrderPlaced', [event.order], () => ({
+    return this.dispatchOrders(event, 'onOrderPlaced', [event.order], () => ({
       data: { fromState: event.fromState, toState: event.toState },
     }));
   }
@@ -488,7 +485,7 @@ export class OrderIntegrationService
   private captureOrderStateTransition(
     event: OrderStateTransitionEvent,
   ): Promise<void> {
-    return this.dispatchPlaced(
+    return this.dispatchOrders(
       event,
       'onOrderStateTransition',
       [event.order],
@@ -498,19 +495,20 @@ export class OrderIntegrationService
     );
   }
 
-  /** Only `updated`: `created` and `deleted` order events have no hook. */
-  private async captureOrderUpdated(event: OrderEvent): Promise<void> {
-    if (event.type !== 'updated') {
+  /** Captures creation and updates; order deletion has no hook. */
+  private async captureOrderEvent(event: OrderEvent): Promise<void> {
+    if (event.type === 'deleted') {
       return;
     }
-    await this.dispatchPlaced(event, 'onOrderUpdated', [event.entity], () => ({
+    const hook = event.type === 'created' ? 'onOrderCreated' : 'onOrderUpdated';
+    await this.dispatchOrders(event, hook, [event.entity], () => ({
       data: {},
-      input: toOrderUpdatedInput(event.input),
+      input: toOrderEventInput(event.input),
     }));
   }
 
   private captureOrderLine(event: OrderLineEvent): Promise<void> {
-    return this.dispatchPlaced(
+    return this.dispatchOrders(
       event,
       LINE_EVENT_HOOKS[event.type],
       [event.order],
@@ -542,7 +540,7 @@ export class OrderIntegrationService
   private capturePaymentStateTransition(
     event: PaymentStateTransitionEvent,
   ): Promise<void> {
-    return this.dispatchPlaced(
+    return this.dispatchOrders(
       event,
       'onPaymentStateTransition',
       [event.order],
@@ -557,7 +555,7 @@ export class OrderIntegrationService
   }
 
   private captureRefundCreated(event: RefundEvent): Promise<void> {
-    return this.dispatchPlaced(event, 'onRefundCreated', [event.order], () => ({
+    return this.dispatchOrders(event, 'onRefundCreated', [event.order], () => ({
       data: {
         refundId: event.refund.id,
         snapshot: snapshotRefund(event.refund),
@@ -568,7 +566,7 @@ export class OrderIntegrationService
   private captureRefundStateTransition(
     event: RefundStateTransitionEvent,
   ): Promise<void> {
-    return this.dispatchPlaced(
+    return this.dispatchOrders(
       event,
       'onRefundStateTransition',
       [event.order],
@@ -582,7 +580,7 @@ export class OrderIntegrationService
     );
   }
 
-  /** The orders come from the event input, filtered to the placed ones. */
+  /** The referenced orders come from the event input. */
   private async captureFulfillmentCreated(
     event: FulfillmentEvent,
   ): Promise<void> {
@@ -615,7 +613,7 @@ export class OrderIntegrationService
         where: { id: event.fulfillment.id },
         relations: { orders: true },
       });
-    await this.dispatchPlaced(
+    await this.dispatchOrders(
       event,
       'onFulfillmentStateTransition',
       fulfillment?.orders ?? [],

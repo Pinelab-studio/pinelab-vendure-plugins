@@ -27,14 +27,7 @@ import { getSuperadminContext } from '@vendure/testing/lib/utils/get-superadmin-
 import type { DocumentNode } from 'graphql';
 import gql from 'graphql-tag';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import {
-  cancelOrder,
-  fulfill,
-  getAllVariants,
-  getOrder,
-  updateVariants,
-} from '../../test/src/admin-utils';
-import { GlobalFlag } from '../../test/src/generated/admin-graphql';
+import { cancelOrder, fulfill, getOrder } from '../../test/src/admin-utils';
 import { initialData } from '../../test/src/initial-data';
 import {
   addItem,
@@ -61,8 +54,7 @@ import {
 } from './simulated-providers';
 
 // The tests share one server and run in file order. Some build on earlier ones: the
-// signed-webhook tests use the eu/us channels of the channel test, and the modification
-// shortfall test continues from the placement shortfall test. Run the whole file.
+// signed-webhook tests use the eu/us channels of the channel test. Run the whole file.
 const warehouse = new WarehouseStrategy();
 const marketing = new MarketingStrategy();
 const acme = new AcmeStrategy();
@@ -81,7 +73,18 @@ beforeAll(async () => {
     logger: recordingLogger,
     plugins: [
       OrderIntegrationPlugin.init({
-        strategies: [warehouse, marketing, acme],
+        strategies: [
+          warehouse,
+          marketing,
+          acme,
+          {
+            name: 'disabled',
+            isEnabled: () => false,
+            onOrderCreated: () => {},
+            onOrderUpdated: () => {},
+            onOrderStateTransition: () => {},
+          },
+        ],
         retries: 2,
       }),
     ],
@@ -117,6 +120,28 @@ beforeAll(async () => {
 afterAll(async () => {
   await server.destroy();
 }, 30000);
+
+it('Delivers order creation before the cart is placed', async () => {
+  await loginAsCustomer();
+  const cart = await addItem(shopClient, 'T_1', 1);
+  const orderId = toEntityId(cart.id);
+
+  const creation = await waitFor(
+    () => warehouse.invocationsFor(orderId, 'onOrderCreated')[0],
+  );
+  await waitForAllJobsSettled();
+
+  expect(creation.event.orderIds).toEqual([orderId]);
+  expect(creation.event.data).toEqual({});
+  expect(warehouse.invocationsFor(orderId, 'onOrderCreated')).toHaveLength(1);
+  expect(await findJobs('warehouse', orderId, 'onOrderCreated')).toMatchObject([
+    { state: 'COMPLETED' },
+  ]);
+  expect(warehouse.invocationsFor(orderId, 'onOrderPlaced')).toEqual([]);
+
+  // Leave the customer without an active cart for the following cases.
+  await checkout();
+});
 
 it('Delivers onOrderPlaced with the original transition to every strategy that implements it', async () => {
   const before = new Date();
@@ -223,32 +248,104 @@ it('Rejects two strategies with the same name', () => {
   ).toThrow('warehouse');
 });
 
-it('Ignores cart events and does not replay them when the cart is placed', async () => {
-  await loginAsCustomer();
-  const cart = await addItem(shopClient, 'T_1', 1);
-  const cartWithT2 = await addItem(shopClient, 'T_2', 2);
-  const t1LineId = lineIdFor(cartWithT2, 'T_1');
-  const t2LineId = lineIdFor(cartWithT2, 'T_2');
+it('Delivers cart changes and transitions without replaying them at placement', async () => {
+  const cart = await createCartWithTwoLines();
+  const orderId = toEntityId(cart.id);
+  const t1LineId = lineIdFor(cart, 'T_1');
+  const t2LineId = lineIdFor(cart, 'T_2');
   await mutate(shopClient, ADJUST_ORDER_LINE, {
     orderLineId: t2LineId,
     quantity: 3,
   });
   await mutate(shopClient, REMOVE_ORDER_LINE, { orderLineId: t1LineId });
-  const order = await checkout();
-  const orderId = toEntityId(cart.id);
-  expect(order.id).toBe(cart.id);
+  await mutate(adminClient, SET_ORDER_CUSTOM_FIELDS, {
+    input: { id: cart.id, customFields: { integrationStatus: 'cart-updated' } },
+  });
+  const transition = await proceedToArrangingPayment(shopClient, 1, {
+    input: {
+      fullName: 'Cart Customer',
+      streetLine1: 'Teststraat 1',
+      city: 'Leeuwarden',
+      postalCode: '8923CP',
+      countryCode: 'NL',
+    },
+  });
+  expect(transition && 'errorCode' in transition).toBe(false);
 
-  // marketing's onOrderPlaced for this order is the positive control
+  await waitFor(
+    () => warehouse.invocationsFor(orderId, 'onOrderStateTransition')[0],
+  );
+  await waitForAllJobsSettled();
+  expectSameMembers(
+    warehouse.invocationsFor(orderId, 'onOrderLineCreated').map(lineDataOf),
+    [
+      expect.objectContaining({ lineId: toEntityId(t1LineId) }),
+      expect.objectContaining({ lineId: toEntityId(t2LineId) }),
+    ],
+  );
+  expect(
+    warehouse.invocationsFor(orderId, 'onOrderLineUpdated').map(lineDataOf),
+  ).toContainEqual(
+    expect.objectContaining({
+      lineId: toEntityId(t2LineId),
+      lineSnapshot: expect.objectContaining({ quantity: 3 }),
+    }),
+  );
+  expect(warehouse.invocationsFor(orderId, 'onOrderLineDeleted')).toMatchObject(
+    [{ event: { data: { lineId: toEntityId(t1LineId) } } }],
+  );
+  expect(warehouse.invocationsFor(orderId, 'onOrderUpdated')).toMatchObject([
+    {
+      event: {
+        input: {
+          customFields: { integrationStatus: 'cart-updated' },
+        },
+      },
+    },
+  ]);
+  expect(transitionsOf(warehouse, orderId)).toContain(
+    'AddingItems -> ArrangingPayment',
+  );
+  expect(warehouse.invocationsFor(orderId, 'onOrderPlaced')).toEqual([]);
+  const cartHooks = hooksOf(warehouse, orderId).filter(
+    (hook) => hook !== 'onOrderStateTransition',
+  );
+
+  const order = await addPaymentToOrder(shopClient, 'test-payment-method');
+  expect(order).toMatchObject({ id: cart.id });
   await waitFor(() => marketing.invocationsFor(orderId, 'onOrderPlaced')[0]);
   await waitForAllJobsSettled();
+  expectSameMembers(
+    hooksOf(warehouse, orderId).filter(
+      (hook) =>
+        hook !== 'onOrderStateTransition' &&
+        hook !== 'onOrderPlaced' &&
+        hook !== 'onPaymentStateTransition',
+    ),
+    cartHooks,
+  );
+});
 
-  expectSameMembers(hooksOf(warehouse, orderId), [
-    'onOrderPlaced',
-    'onOrderStateTransition',
-  ]);
-  expect(
-    warehouse.invocationsFor(orderId, 'onOrderStateTransition')[0].event.data,
-  ).toEqual({ fromState: 'ArrangingPayment', toState: 'PaymentSettled' });
+it('Creates no order-hook jobs for disabled strategies or missing hooks', async () => {
+  await loginAsCustomer();
+  const cart = await addItem(shopClient, 'T_1', 1);
+  const orderId = toEntityId(cart.id);
+  await mutate(adminClient, SET_ORDER_CUSTOM_FIELDS, {
+    input: { id: cart.id, customFields: { integrationStatus: 'eligibility' } },
+  });
+  await checkout();
+  await waitFor(() => warehouse.invocationsFor(orderId, 'onOrderPlaced')[0]);
+  await waitForAllJobsSettled();
+
+  for (const [hook, count] of [
+    ['onOrderCreated', 1],
+    ['onOrderUpdated', 1],
+    ['onOrderStateTransition', 3],
+  ] as const) {
+    expect(await findJobs('warehouse', orderId, hook)).toHaveLength(count);
+    expect(await findJobs('marketing', orderId, hook)).toEqual([]);
+  }
+  expect(await findJobs('disabled', orderId)).toEqual([]);
 });
 
 it('Completes the job without a provider request for an order the strategy excludes', async () => {
@@ -366,7 +463,7 @@ it('Delivers payment and refund transitions of an authorize-only payment', async
   const orderId = toEntityId(order.id);
   const paymentId = firstPaymentId(order);
 
-  // The checkout payment places the order and is not dispatched itself
+  // Checkout delivers both payment authorization and order placement
   const placed = await waitFor(
     () => warehouse.invocationsFor(orderId, 'onOrderPlaced')[0],
   );
@@ -375,13 +472,23 @@ it('Delivers payment and refund transitions of an authorize-only payment', async
     toState: 'PaymentAuthorized',
   });
   await waitForAllJobsSettled();
-  expect(warehouse.invocationsFor(orderId, 'onPaymentStateTransition')).toEqual(
-    [],
-  );
+  expect(
+    warehouse.invocationsFor(orderId, 'onPaymentStateTransition'),
+  ).toMatchObject([
+    {
+      event: {
+        data: {
+          paymentId: toEntityId(paymentId),
+          fromState: 'Created',
+          toState: 'Authorized',
+        },
+      },
+    },
+  ]);
 
   await mutate(adminClient, SETTLE_PAYMENT, { id: paymentId });
   const settled = await waitFor(
-    () => warehouse.invocationsFor(orderId, 'onPaymentStateTransition')[0],
+    () => warehouse.invocationsFor(orderId, 'onPaymentStateTransition')[1],
   );
   expect(settled.event.data).toEqual({
     paymentId: toEntityId(paymentId),
@@ -417,12 +524,14 @@ it('Delivers payment and refund transitions of an authorize-only payment', async
   await waitForAllJobsSettled();
   expect(
     warehouse.invocationsFor(orderId, 'onPaymentStateTransition'),
-  ).toHaveLength(1);
+  ).toHaveLength(2);
   expect(warehouse.invocationsFor(orderId, 'onRefundCreated')).toHaveLength(1);
   expect(
     warehouse.invocationsFor(orderId, 'onRefundStateTransition'),
   ).toHaveLength(1);
   expectSameMembers(transitionsOf(warehouse, orderId), [
+    'Created -> AddingItems',
+    'AddingItems -> ArrangingPayment',
     'ArrangingPayment -> PaymentAuthorized',
     'PaymentAuthorized -> PaymentSettled',
   ]);
@@ -432,6 +541,9 @@ it('Delivers the order update and the line events of a modification', async () =
   const order = await createSettledOrder(shopClient, 1, true);
   const orderId = toEntityId(order.id);
   const t2LineId = lineIdFor(order, 'T_2');
+  await waitFor(() => warehouse.invocationsFor(orderId, 'onOrderPlaced')[0]);
+  await waitForAllJobsSettled();
+  const priorCount = warehouse.invocationsFor(orderId).length;
 
   await mutate(adminClient, TRANSITION_ORDER_TO_STATE, {
     id: order.id,
@@ -471,8 +583,13 @@ it('Delivers the order update and the line events of a modification', async () =
     state: 'PaymentSettled',
   });
 
-  await waitFor(() => transitionsOf(warehouse, orderId).length === 4);
+  await waitFor(() =>
+    transitionsOf(warehouse, orderId).includes(
+      'ArrangingAdditionalPayment -> PaymentSettled',
+    ),
+  );
   await waitForAllJobsSettled();
+  const modification = warehouse.invocationsFor(orderId).slice(priorCount);
 
   // The update carries the modification input as it was supplied
   const updates = warehouse.invocationsFor(orderId, 'onOrderUpdated');
@@ -494,13 +611,17 @@ it('Delivers the order update and the line events of a modification', async () =
     linePrice: 900,
     linePriceWithTax: 1080,
   };
-  const created = warehouse.invocationsFor(orderId, 'onOrderLineCreated');
+  const created = modification.filter(
+    ({ hook }) => hook === 'onOrderLineCreated',
+  );
   expect(created).toHaveLength(1);
   expect(created[0].event.data).toMatchObject({
     lineId: toEntityId(t3LineId),
     lineSnapshot: t3Snapshot,
   });
-  const updated = warehouse.invocationsFor(orderId, 'onOrderLineUpdated');
+  const updated = modification.filter(
+    ({ hook }) => hook === 'onOrderLineUpdated',
+  );
   expect(updated).toHaveLength(2);
   const t3Updated = updated.find(
     (invocation) => lineDataOf(invocation).lineId === toEntityId(t3LineId),
@@ -517,9 +638,8 @@ it('Delivers the order update and the line events of a modification', async () =
     },
   });
   // The additional payment
-  const payments = warehouse.invocationsFor(
-    orderId,
-    'onPaymentStateTransition',
+  const payments = modification.filter(
+    ({ hook }) => hook === 'onPaymentStateTransition',
   );
   expect(payments).toHaveLength(1);
   expect(payments[0].event.data).toEqual({
@@ -528,6 +648,8 @@ it('Delivers the order update and the line events of a modification', async () =
     toState: 'Settled',
   });
   expectSameMembers(transitionsOf(warehouse, orderId), [
+    'Created -> AddingItems',
+    'AddingItems -> ArrangingPayment',
     'ArrangingPayment -> PaymentSettled',
     'PaymentSettled -> Modifying',
     'Modifying -> ArrangingAdditionalPayment',
@@ -583,12 +705,14 @@ it('Delivers cancelled lines with their values before the cancellation', async (
     lineSnapshot: { quantity: 2, cancelledQuantity: 2 },
   });
   expectSameMembers(transitionsOf(warehouse, orderId), [
+    'Created -> AddingItems',
+    'AddingItems -> ArrangingPayment',
     'ArrangingPayment -> PaymentSettled',
     'PaymentSettled -> Cancelled',
   ]);
 });
 
-it('Delivers deleted lines of placed orders and ignores them on carts', async () => {
+it('Delivers deleted lines of carts and placed orders', async () => {
   // Vendure deletes lines only in AddingItems or Draft, so the event is published here
   const cart = await createCartWithTwoLines();
   const orderId = toEntityId(cart.id);
@@ -599,11 +723,13 @@ it('Delivers deleted lines of placed orders and ignores them on carts', async ()
   // marketing's onOrderPlaced for this order is the positive control
   await waitFor(() => marketing.invocationsFor(orderId, 'onOrderPlaced')[0]);
   await waitForAllJobsSettled();
-  expect(warehouse.invocationsFor(orderId, 'onOrderLineDeleted')).toEqual([]);
+  expect(warehouse.invocationsFor(orderId, 'onOrderLineDeleted')).toMatchObject(
+    [{ event: { data: { lineId: toEntityId(t2LineId) } } }],
+  );
 
   await publishDeletedLineEvent(orderId, toEntityId(t2LineId));
   const deleted = await waitFor(
-    () => warehouse.invocationsFor(orderId, 'onOrderLineDeleted')[0],
+    () => warehouse.invocationsFor(orderId, 'onOrderLineDeleted')[1],
   );
   expect(order.id).toBe(cart.id);
   expect(deleted.event.orderIds).toEqual([orderId]);
@@ -622,7 +748,7 @@ it('Delivers deleted lines of placed orders and ignores them on carts', async ()
   });
   await waitForAllJobsSettled();
   expect(warehouse.invocationsFor(orderId, 'onOrderLineDeleted')).toHaveLength(
-    1,
+    2,
   );
 });
 
@@ -689,102 +815,6 @@ it('Delivers a fulfillment and its transitions for a placed order', async () => 
   expect(
     warehouse.invocationsFor(orderId, 'onFulfillmentCreated'),
   ).toHaveLength(1);
-});
-
-it('Reports a stock shortfall when an order is placed beyond the stock on hand', async () => {
-  await updateVariants(adminClient, [
-    {
-      id: 'T_4',
-      trackInventory: GlobalFlag.True,
-      stockOnHand: 1,
-      useGlobalOutOfStockThreshold: false,
-      outOfStockThreshold: -5,
-    },
-    { id: 'T_3', trackInventory: GlobalFlag.True, stockOnHand: 100 },
-  ]);
-  const order = await createSettledOrder(shopClient, 1, true, [
-    { id: 'T_4', quantity: 3 },
-    { id: 'T_3', quantity: 1 },
-  ]);
-  const orderId = toEntityId(order.id);
-
-  await waitFor(() => warehouse.invocationsFor(orderId, 'onStockShortfall')[0]);
-  await waitForAllJobsSettled();
-
-  const shortfalls = warehouse.invocationsFor(orderId, 'onStockShortfall');
-  expect(shortfalls).toHaveLength(1);
-  expect(shortfalls[0].event.data).toEqual({
-    lines: [
-      {
-        orderLineId: toEntityId(lineIdFor(order, 'T_4')),
-        requestedQuantity: 3,
-        availableQuantity: 1,
-      },
-    ],
-  });
-});
-
-it('Reports a stock shortfall for the units a modification adds beyond the stock on hand', async () => {
-  // Continues from the previous test: T_4 has 1 unit on hand and 3 allocated
-  const variants = await getAllVariants(adminClient);
-  expect(variants.find((variant) => variant.id === 'T_4')).toMatchObject({
-    stockOnHand: 1,
-    stockAllocated: 3,
-  });
-  const order = await createSettledOrder(shopClient, 1, true, [
-    { id: 'T_3', quantity: 1 },
-  ]);
-  const orderId = toEntityId(order.id);
-
-  await mutate(adminClient, TRANSITION_ORDER_TO_STATE, {
-    id: order.id,
-    state: 'Modifying',
-  });
-  const before = new Date();
-  const modified = await mutate<ModifiedOrder>(adminClient, MODIFY_ORDER, {
-    input: {
-      dryRun: false,
-      orderId: order.id,
-      addItems: [{ productVariantId: 'T_4', quantity: 2 }],
-      adjustOrderLines: [{ orderLineId: lineIdFor(order, 'T_3'), quantity: 2 }],
-    },
-  });
-  const after = new Date();
-  await mutate(adminClient, TRANSITION_ORDER_TO_STATE, {
-    id: order.id,
-    state: 'ArrangingAdditionalPayment',
-  });
-  await mutate(adminClient, ADD_MANUAL_PAYMENT, {
-    input: {
-      orderId: order.id,
-      method: 'test-payment-method',
-      transactionId: 'MOD-2',
-      metadata: {},
-    },
-  });
-  await mutate(adminClient, TRANSITION_ORDER_TO_STATE, {
-    id: order.id,
-    state: 'PaymentSettled',
-  });
-
-  await waitFor(() => warehouse.invocationsFor(orderId, 'onStockShortfall')[0]);
-  await waitForAllJobsSettled();
-
-  // Only the new T_4 line is short; raising the T_3 line reports nothing
-  const shortfalls = warehouse.invocationsFor(orderId, 'onStockShortfall');
-  expect(shortfalls).toHaveLength(1);
-  expect(shortfalls[0].event.data).toEqual({
-    lines: [
-      {
-        orderLineId: toEntityId(lineIdFor(modified, 'T_4')),
-        requestedQuantity: 2,
-        availableQuantity: 0,
-      },
-    ],
-  });
-  const occurredAt = new Date(shortfalls[0].event.occurredAt).getTime();
-  expect(occurredAt).toBeGreaterThanOrEqual(before.getTime());
-  expect(occurredAt).toBeLessThanOrEqual(after.getTime());
 });
 
 it('Retries a failed hook with the captured event and lets the provider deduplicate', async () => {
@@ -876,17 +906,39 @@ it('Fails the job after the last attempt, logs every attempt and leaves other st
   expect(loggedErrors).toHaveLength(3);
 });
 
+it('Enqueues a hook programmatically for an unplaced order', async () => {
+  await loginAsCustomer();
+  const cart = await addItem(shopClient, 'T_1', 1);
+  const orderId = toEntityId(cart.id);
+  const service = server.app.get(OrderIntegrationService);
+
+  const jobs = await service.enqueue(ctx, 'onOrderUpdated', {
+    orderIds: [orderId],
+    data: {},
+    input: { customFields: { integrationStatus: 'manual' } },
+  });
+
+  expect(jobs).toHaveLength(1);
+  await waitForJob('warehouse', 'onOrderUpdated', orderId, 'COMPLETED');
+  expect(warehouse.invocationsFor(orderId, 'onOrderUpdated')).toMatchObject([
+    {
+      event: {
+        orderIds: [orderId],
+        input: {
+          customFields: { integrationStatus: 'manual' },
+        },
+      },
+    },
+  ]);
+  await checkout();
+});
+
 it('Enqueues hooks programmatically through the same pipeline', async () => {
   const service = server.app.get(OrderIntegrationService);
   const data = { fromState: 'ArrangingPayment', toState: 'PaymentSettled' };
 
-  // An order that is not placed yet is skipped
   await loginAsCustomer();
-  const cart = await addItem(shopClient, 'T_1', 1);
-  const cartId = toEntityId(cart.id);
-  expect(
-    await service.enqueue(ctx, 'onOrderPlaced', { orderIds: [cartId], data }),
-  ).toEqual([]);
+  await addItem(shopClient, 'T_1', 1);
 
   const order = await checkout();
   const orderId = toEntityId(order.id);
@@ -1615,6 +1667,14 @@ const CREATE_CHANNEL = gql`
         errorCode
         message
       }
+    }
+  }
+`;
+
+const SET_ORDER_CUSTOM_FIELDS = gql`
+  mutation SetOrderCustomFields($input: UpdateOrderInput!) {
+    setOrderCustomFields(input: $input) {
+      id
     }
   }
 `;

@@ -186,6 +186,11 @@ export class WarehouseStrategy extends RecordingStrategy {
     });
   }
 
+  /** Records order creation, including carts. */
+  onOrderCreated(ctx: RequestContext, event: HookEvent<'onOrderCreated'>) {
+    return this.handle('onOrderCreated', ctx, event);
+  }
+
   onOrderUpdated(ctx: RequestContext, event: HookEvent<'onOrderUpdated'>) {
     return this.handle('onOrderUpdated', ctx, event);
   }
@@ -259,10 +264,6 @@ export class WarehouseStrategy extends RecordingStrategy {
     event: HookEvent<'onFulfillmentStateTransition'>,
   ) {
     return this.handle('onFulfillmentStateTransition', ctx, event);
-  }
-
-  onStockShortfall(ctx: RequestContext, event: HookEvent<'onStockShortfall'>) {
-    return this.handle('onStockShortfall', ctx, event);
   }
 
   /** Maps the event to one request, then fails when a failure is planned for the order. */
@@ -379,6 +380,9 @@ export class AcmeStrategy extends RecordingStrategy {
       | undefined;
     if (input?.customFields && 'integrationStatus' in input.customFields) {
       return; // Feedback-loop guard: this is the update made by our own webhook
+    }
+    if (!order.orderPlacedAt) {
+      return; // This provider only accepts updates to placed orders
     }
     this.clients[ctx.channel.token as AcmeAccount].send({
       idempotencyKey: this.idempotencyKey('onOrderUpdated', ctx, event),

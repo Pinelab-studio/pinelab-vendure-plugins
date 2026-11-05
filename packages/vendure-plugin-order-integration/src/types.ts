@@ -29,7 +29,7 @@ export interface OrderIntegrationEvent<TData = JsonObject> {
   /** ISO-8601 event occurrence time, not worker execution time. */
   readonly occurredAt: string;
   readonly route: OrderIntegrationRoute;
-  /** Fulfillments may reference multiple eligible placed orders. */
+  /** Fulfillments may reference multiple orders. */
   readonly orderIds: readonly [ID, ...ID[]];
   /** Original supplied mutation input, when available. */
   readonly input?: JsonValue;
@@ -61,16 +61,6 @@ export interface FulfillmentCreatedData {
   readonly snapshot: JsonObject;
 }
 
-/** Data of `onStockShortfall`: quantities as determined when Vendure allocated the stock. */
-export interface StockShortfallData {
-  /** Preserve source-event quantities; confirm mapping in its adapter. */
-  readonly lines: readonly {
-    readonly orderLineId: ID;
-    readonly requestedQuantity: number;
-    readonly availableQuantity: number;
-  }[];
-}
-
 /** An inbound HTTP request for `onWebhookReceived`. */
 export interface OrderIntegrationWebhookRequest {
   /** Untrusted route values until the strategy authenticates the request. */
@@ -95,10 +85,16 @@ export interface OrderIntegrationStrategy extends InjectableStrategy {
   /** Stable, unique configured strategy name. */
   readonly name: string;
 
-  /** Channel eligibility; omitted means enabled. Not an order-level filter. */
+  /** Channel eligibility checked before enqueueing implemented hooks, not on retries. Omitted means enabled. */
   isEnabled?(ctx: RequestContext): boolean | Promise<boolean>;
 
-  /** Process an update to an already placed order. */
+  /** Process order creation, including a new cart. */
+  onOrderCreated?(
+    ctx: RequestContext,
+    event: OrderIntegrationEvent,
+  ): HookResult;
+
+  /** Process an order update, including updates to carts. */
   onOrderUpdated?(
     ctx: RequestContext,
     event: OrderIntegrationEvent,
@@ -110,7 +106,7 @@ export interface OrderIntegrationStrategy extends InjectableStrategy {
     event: OrderIntegrationEvent<StateTransitionData>,
   ): HookResult;
 
-  /** Process an original order transition, including cancellation. */
+  /** Process any original order transition, including cart transitions and cancellation. */
   onOrderStateTransition?(
     ctx: RequestContext,
     event: OrderIntegrationEvent<StateTransitionData>,
@@ -158,7 +154,7 @@ export interface OrderIntegrationStrategy extends InjectableStrategy {
     event: OrderIntegrationEvent<StateTransitionData & { refundId: ID }>,
   ): HookResult;
 
-  /** Process fulfillment creation for eligible placed orders only. */
+  /** Process fulfillment creation for its referenced orders. */
   onFulfillmentCreated?(
     ctx: RequestContext,
     event: OrderIntegrationEvent<FulfillmentCreatedData>,
@@ -170,20 +166,15 @@ export interface OrderIntegrationStrategy extends InjectableStrategy {
     event: OrderIntegrationEvent<StateTransitionData & { fulfillmentId: ID }>,
   ): HookResult;
 
-  /** Process event-time shortfalls, not current stock levels. */
-  onStockShortfall?(
-    ctx: RequestContext,
-    event: OrderIntegrationEvent<StockShortfallData>,
-  ): HookResult;
-
   /** Authenticate, resolve trusted context, process, and return the HTTP response. */
   onWebhookReceived?(
     request: OrderIntegrationWebhookRequest,
   ): Promise<OrderIntegrationWebhookResponse>;
 }
 
-/** Name of one of the thirteen lifecycle hooks. */
+/** Name of one of the lifecycle hooks. */
 export type HookName =
+  | 'onOrderCreated'
   | 'onOrderPlaced'
   | 'onOrderUpdated'
   | 'onOrderStateTransition'
@@ -195,8 +186,7 @@ export type HookName =
   | 'onRefundCreated'
   | 'onRefundStateTransition'
   | 'onFulfillmentCreated'
-  | 'onFulfillmentStateTransition'
-  | 'onStockShortfall';
+  | 'onFulfillmentStateTransition';
 
 /** The `data` type of a hook's event, derived from the strategy method signature. */
 export type HookData<H extends HookName> =
@@ -208,7 +198,7 @@ export type HookData<H extends HookName> =
 
 /** Payload of {@link OrderIntegrationService.enqueue}. */
 export interface EnqueuePayload<H extends HookName> {
-  /** Ids of placed orders in the caller's channel; orders that are not placed are skipped. */
+  /** Ids of orders in the caller's channel, including carts; missing orders are skipped. */
   readonly orderIds: readonly [ID, ...ID[]];
   readonly data: HookData<H>;
   readonly input?: JsonValue;

@@ -9,21 +9,20 @@ import {
 } from '@vendure/core';
 import type { FulfillmentCreatedData, JsonObject } from '../types';
 
-/** The part of an `Order` that decides whether a hook is dispatched for it. */
+/** Order identifiers captured for hook payloads and logging. */
 export interface OrderRef {
   readonly id: ID;
   readonly code: string;
-  readonly orderPlacedAt?: Date | null;
 }
 
-/** Ids and codes of the placed orders an event is dispatched for. */
-export interface PlacedOrderRefs {
+/** Ids and codes of the orders an event is dispatched for. */
+export interface OrderRefs {
   orderIds: [ID, ...ID[]];
   orderCodes: string[];
 }
 
 /** Payload of `onFulfillmentCreated`, captured from a `FulfillmentEvent` without reading the database. */
-export interface FulfillmentCreatedPayload extends PlacedOrderRefs {
+export interface FulfillmentCreatedPayload extends OrderRefs {
   data: FulfillmentCreatedData;
   input?: Json;
 }
@@ -39,21 +38,17 @@ export function toJson(value: unknown): Json | undefined {
   return JSON.parse(JSON.stringify(value)) as Json;
 }
 
-/**
- * Keeps the placed orders (those with `orderPlacedAt`) and returns their ids and codes.
- * Returns `undefined` when none is placed, which means nothing is dispatched.
- */
-export function getPlacedOrderRefs(
+/** Returns order ids and codes, or `undefined` when there are no referenced orders. */
+export function getOrderRefs(
   orders: readonly OrderRef[],
-): PlacedOrderRefs | undefined {
-  const placed = orders.filter((order) => order.orderPlacedAt);
-  if (placed.length === 0) {
+): OrderRefs | undefined {
+  if (orders.length === 0) {
     return undefined;
   }
-  const [firstId, ...otherIds] = placed.map((order) => order.id);
+  const [firstId, ...otherIds] = orders.map((order) => order.id);
   return {
     orderIds: [firstId, ...otherIds],
-    orderCodes: placed.map((order) => order.code),
+    orderCodes: orders.map((order) => order.code),
   };
 }
 
@@ -90,18 +85,18 @@ export function snapshotRefund(refund: Refund): JsonObject {
 }
 
 /**
- * JSON form of the input of an updated `OrderEvent`. Vendure passes a `Customer` entity when
+ * JSON form of an `OrderEvent` input. Vendure passes a `Customer` entity when
  * the customer of an order is changed, which is reduced to `{ customerId }`.
  */
-export function toOrderUpdatedInput(
+export function toOrderEventInput(
   input: OrderEvent['input'],
 ): Json | undefined {
   return input instanceof Customer ? { customerId: input.id } : toJson(input);
 }
 
 /**
- * Captures a created fulfillment. The orders of the event are filtered to the placed ones and
- * `undefined` is returned when none remain, so nothing is dispatched. The snapshot lines come
+ * Captures a created fulfillment. Returns `undefined` when it references no orders.
+ * The snapshot lines come
  * from the event input, because Vendure publishes the fulfillment before its lines and orders
  * are attached. The input is returned with its orders reduced to ids.
  */
@@ -112,8 +107,8 @@ export function buildFulfillmentCreatedPayload(
   if (!input) {
     return undefined;
   }
-  // Nothing is dispatched when no referenced order is placed
-  const refs = getPlacedOrderRefs(input.orders);
+  // Nothing is dispatched when there are no referenced orders
+  const refs = getOrderRefs(input.orders);
   if (!refs) {
     return undefined;
   }

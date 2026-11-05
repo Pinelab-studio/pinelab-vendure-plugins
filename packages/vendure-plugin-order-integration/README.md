@@ -1,8 +1,8 @@
 # Vendure Order Integration Plugin
 
-[Official documentation here](https://engineering.pinelab.studio/plugin/vendure-plugin-order-integration)
+Framework for connecting Vendure orders to shipping, marketing, accounting and other platforms through your own strategies. Implement only the lifecycle hooks you need, from cart creation through placement, payment and fulfillment. Your strategy decides which orders to process or ignore. The plugin captures event data after the transaction commits, runs implemented hooks of enabled strategies as retried background jobs, keeps failed jobs visible and exposes one webhook route per strategy and connection.
 
-Framework for sending placed Vendure orders to shipping, marketing, accounting and other platforms through your own strategies. You write a strategy class that maps Vendure orders to the API of a platform. The plugin does the shared work: it listens to Vendure's order events, ignores carts that are not placed yet, captures the event data once the transaction has committed, runs every hook you implement as its own background job with retries, keeps failed jobs visible and exposes one webhook route per strategy and connection.
+[Official documentation here](https://engineering.pinelab.studio/plugin/vendure-plugin-order-integration)
 
 This is a developer tool, not a ready-made integration. You own the API client, the payload mapping, external references, business rules, idempotency and every update to Vendure orders.
 
@@ -68,6 +68,7 @@ export class AcmeOrderIntegration implements OrderIntegrationStrategy {
       // Throwing fails the attempt: the job is retried
       throw new Error(`Order ${event.orderIds[0]} was not found`);
     }
+    if (!order.orderPlacedAt) return; // also guard programmatic enqueue of carts
     // Don't catch errors of the platform: let the queue retry. Returning completes the job.
     await this.client.exportOrder(order, {
       idempotencyKey: `${this.name}:${ctx.channelId}:onOrderPlaced:${event.eventId}`,
@@ -112,7 +113,7 @@ Only the worker processes jobs. A worker that restricts `jobQueueOptions.activeQ
 ## How it works
 
 1. Vendure publishes an order event. The plugin receives it after the transaction that published it has committed, so events of rolled-back transactions (such as a `modifyOrder` dry run) are never delivered.
-2. The plugin ignores the event when the order is not placed at that moment. Cart events are never replayed.
+2. Cart and placed-order events are both eligible. The plugin checks that each strategy implements the matching hook and passes `isEnabled(ctx)` before creating its job.
 3. For every strategy that implements the matching hook and is enabled for the channel (`isEnabled`), it captures the event once and adds one job to the `order-integration` queue, with the serialized `RequestContext`.
 4. The worker restores the context and calls your hook with `(ctx, event)`.
 5. Returning completes the job. Throwing retries the same hook with the identical event until the retries are exhausted; then the job stays `FAILED` on Vendure's Job Queue page. Every failed attempt is logged.
@@ -130,8 +131,8 @@ A strategy has a required, stable `name` and these optional members: `init(injec
 | `eventId`    | Random UUID, identical on every retry. The jobs of all strategies for one source event share it, so include the strategy name in idempotency keys.                          |
 | `occurredAt` | ISO time at which Vendure created the event, not when the job runs.                                                                                                           |
 | `route`      | `strategyName`, plus the `connectionId` you pass to `enqueue`. Events from Vendure have no `connectionId`: the account follows from the channel of `ctx`.                    |
-| `orderIds`   | Ids of the placed orders, never empty. Only fulfillments can span several orders.                                                                                             |
-| `input`      | The mutation input, where Vendure supplies one: `onOrderUpdated` and `onFulfillmentCreated`.                                                                                  |
+| `orderIds`   | Ids of the referenced orders, never empty. Only fulfillments can span several orders.                                                                                             |
+| `input`      | The mutation input, where Vendure supplies one: `onOrderCreated`, `onOrderUpdated` and `onFulfillmentCreated`.                                                                                  |
 | `data`       | Hook-specific data, see below.                                                                                                                                                |
 
 The event is plain JSON: dates are ISO strings and entities are reduced to ids. Ids are Vendure's database ids, also inside `input`.
@@ -140,26 +141,26 @@ The event is plain JSON: dates are ISO strings and entities are reduced to ids. 
 
 | Hook                           | Vendure source                            | `event.data`                                      | When it fires                                                                                                     |
 | ------------------------------ | ----------------------------------------- | ------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `onOrderCreated`               | `OrderEvent` `created`                    | `{}`, input when available                       | A new order or cart is created.                                                                                  |
 | `onOrderPlaced`                | `OrderPlacedEvent`                        | `{ fromState, toState }`                          | The order is placed.                                                                                              |
-| `onOrderStateTransition`       | `OrderStateTransitionEvent`               | `{ fromState, toState }`                          | Every transition of a placed order, including placement itself and `Cancelled`.                                   |
-| `onOrderUpdated`               | `OrderEvent` `updated`                    | `{}`, the change is in `input`                    | `modifyOrder`, `setOrderCustomFields` or `setOrderCustomer` on a placed order.                                    |
-| `onOrderLineCreated`           | `OrderLineEvent` `created`                | `{ lineId, lineSnapshot }`                        | `modifyOrder` adds a line. The same line also fires `onOrderLineUpdated`.                                         |
-| `onOrderLineUpdated`           | `OrderLineEvent` `updated`                | `{ lineId, lineSnapshot }`                        | `modifyOrder` raises a quantity or adds a line.                                                                   |
-| `onOrderLineDeleted`           | `OrderLineEvent` `deleted`                | `{ lineId, lineSnapshot }`                        | Only with a custom order process: Vendure deletes lines only in `AddingItems` and `Draft`.                        |
+| `onOrderStateTransition`       | `OrderStateTransitionEvent`               | `{ fromState, toState }`                          | Every order transition, including cart transitions, placement and `Cancelled`.                                   |
+| `onOrderUpdated`               | `OrderEvent` `updated`                    | `{}`, the change is in `input`                    | An order update, including carts: for example `setOrderCustomFields`, `setOrderCustomer` or `modifyOrder`.                                    |
+| `onOrderLineCreated`           | `OrderLineEvent` `created`                | `{ lineId, lineSnapshot }`                        | A cart or order gets a new line. The same line also fires `onOrderLineUpdated`.                                         |
+| `onOrderLineUpdated`           | `OrderLineEvent` `updated`                | `{ lineId, lineSnapshot }`                        | A cart or order line is updated, including adding or adjusting quantities.                                                                   |
+| `onOrderLineDeleted`           | `OrderLineEvent` `deleted`                | `{ lineId, lineSnapshot }`                        | A line is removed, normally while the order is in `AddingItems` or `Draft`.                        |
 | `onOrderLineCancelled`         | `OrderLineEvent` `cancelled`              | `{ lineId, lineSnapshot }`                        | `cancelOrder`, or `modifyOrder` lowering a quantity (also to 0). A whole-order cancellation fires one per line.   |
-| `onPaymentStateTransition`     | `PaymentStateTransitionEvent`             | `{ fromState, toState, paymentId }`               | Payment transitions of a placed order, except the checkout transition that places it.                             |
+| `onPaymentStateTransition`     | `PaymentStateTransitionEvent`             | `{ fromState, toState, paymentId }`               | Every payment transition, including the checkout payment.                             |
 | `onRefundCreated`              | `RefundEvent` `created`                   | `{ refundId, snapshot }`                          | The primary refund of the Admin API `refundOrder` mutation.                                                       |
-| `onRefundStateTransition`      | `RefundStateTransitionEvent`              | `{ fromState, toState, refundId }`                | Every refund transition of a placed order.                                                                        |
-| `onFulfillmentCreated`         | `FulfillmentEvent` `created`              | `{ fulfillmentId, snapshot }`                     | A fulfillment is created for one or more placed orders.                                                           |
+| `onRefundStateTransition`      | `RefundStateTransitionEvent`              | `{ fromState, toState, refundId }`                | Every refund transition.                                                                        |
+| `onFulfillmentCreated`         | `FulfillmentEvent` `created`              | `{ fulfillmentId, snapshot }`                     | A fulfillment is created for one or more orders.                                                           |
 | `onFulfillmentStateTransition` | `FulfillmentStateTransitionEvent`         | `{ fromState, toState, fulfillmentId }`           | Every fulfillment transition, including `Created` to `Pending` right after creation.                              |
-| `onStockShortfall`             | `StockMovementEvent` `ALLOCATION`         | `{ lines: [{ orderLineId, requestedQuantity, availableQuantity }] }` | Stock allocated to a placed order exceeds the stock on hand, see [Stock shortfalls](#stock-shortfalls). |
 
 Things to know:
 
 - **Placement fires two hooks:** `onOrderPlaced` and `onOrderStateTransition`. Implement one, or filter on the states.
-- **The checkout payment is not dispatched**, because its event carries an order that is not placed yet. Read the payments in `onOrderPlaced`.
+- **Cart events are delivered immediately**, not replayed at placement. Return early in your hooks when an order or transition is not relevant to your integration.
 - **Refunds created by `modifyOrder`** publish no refund event. They reach you through `onRefundStateTransition` and `input.refunds` of `onOrderUpdated`.
-- There is no `onOrderCreated` or `onOrderDeleted`: a cancellation is a state transition, a partial cancellation a line event.
+- There is no `onOrderDeleted`: a cancellation is a state transition, a partial cancellation a line event.
 
 ### Snapshots
 
@@ -169,20 +170,9 @@ Snapshots show the entity as it was when the transaction committed. They are not
 - **Refund:** `id`, `state`, `total`, `reason`, `method`, `transactionId` and `paymentId`.
 - **Fulfillment:** `id`, `state`, `method`, `trackingCode`, `handlerCode` and `lines` (`orderLineId`, `quantity`).
 
-## Stock shortfalls
-
-Vendure publishes no event for stock that is short, so the plugin derives one: whenever Vendure allocates stock to lines of a placed order (at placement, when `modifyOrder` adds or raises lines, or when a cancelled fulfillment allocates its lines again), it compares the allocation with the stock on hand that is not allocated elsewhere. Short lines are reported in one `onStockShortfall` job per order and strategy.
-
-- `requestedQuantity` is the quantity of this allocation: the whole line at placement, the added units after a modification. `availableQuantity` is the part covered by free stock on hand.
-- Only variants that track inventory are checked. The out-of-stock threshold is ignored on purpose: a negative threshold is how Vendure allows backorders, and a shortfall means Vendure accepted units that are not on hand.
-
-Example: a variant has 1 unit on hand, nothing allocated elsewhere and a threshold of -5. An order for 3 gets `{ "lines": [{ "orderLineId": 12, "requestedQuantity": 3, "availableQuantity": 1 }] }`. A later modification adding 2 units to another order gets `requestedQuantity` 2 and `availableQuantity` 0.
-
-Limits: totals come from the configured stock location strategy (Vendure 3.7's default `MultiChannelStockLocationStrategy` counts the locations of the order's channel), stock is read after commit so a concurrent order can make a shortfall look bigger, and a modification produces one job per short line because Vendure allocates each line separately.
-
 ## Channel eligibility
 
-`isEnabled(ctx)` is called with the context of the source event before a hook is enqueued. Without it, the strategy is enabled for every channel. `false` enqueues nothing for that strategy. A thrown error is logged and counts as disabled for that strategy only.
+Before enqueueing, the plugin checks that the strategy implements the matching hook, then awaits `isEnabled(ctx)` with the context of the source event. Without `isEnabled`, the strategy is enabled for every channel. Eligibility is not checked again on retries. `false` enqueues nothing for that strategy. A thrown error is logged and counts as disabled for that strategy only.
 
 It is a channel check, not an order filter: to skip single orders, return early from the hook, so the job completes and nothing is sent. To serve several accounts, register one strategy per account with distinct names, or hold account-scoped clients in one strategy and pick one by `ctx.channel.token`; then add the channel to your idempotency keys.
 
@@ -200,7 +190,7 @@ Security: the plugin does not authenticate requests. Verify the signature over `
 
 ## Programmatic enqueue
 
-`OrderIntegrationService` sends a hook without a Vendure event, for example to resend an order after its job failed. It uses the same placed-order check, eligibility, serialization and retries.
+`OrderIntegrationService` sends a hook without a Vendure event, for example to resend an order after its job failed. It uses the same hook-presence check, channel eligibility, serialization and retries.
 
 ```ts
 const jobs = await injector.get(OrderIntegrationService).enqueue(
@@ -214,7 +204,7 @@ const jobs = await injector.get(OrderIntegrationService).enqueue(
 );
 ```
 
-Orders that are not placed or not found in the channel of `ctx` are skipped, and it returns `[]` when nothing qualifies. An unknown strategy, or one without the hook, rejects. Every call creates a new `eventId`, so an idempotency key based on `eventId` treats a resend as a new event; use the order code when a platform must never get an order twice. The plugin does not replay missed events: use `enqueue` for recovery.
+Orders not found in the channel of `ctx` are skipped, and it returns `[]` when nothing qualifies. An unknown strategy, or one without the hook, rejects. Every call creates a new `eventId`, so an idempotency key based on `eventId` treats a resend as a new event; use the order code when a platform must never get an order twice. The plugin does not replay missed events: use `enqueue` for recovery.
 
 ## Hook context
 
@@ -290,7 +280,7 @@ async onOrderUpdated(ctx: RequestContext, event: OrderIntegrationEvent) {
 ```
 
 - **Do not update the `Order` in `onOrderPlaced`.** Vendure and other subscribers write the order around placement, and an update from this hook can race with those writes. Running hooks as jobs after commit makes that less likely, but doesn't remove it. Store external references later, from another hook or a webhook, or in your own table.
-- **Exclusions.** Skip orders by returning from the hook, not by throwing.
+- **Exclusions.** Skip orders by returning from the hook, not by throwing. Hooks also receive cart events: load the order and check `order.orderPlacedAt` when your integration only handles placed orders.
 - **Errors and timeouts.** Don't swallow platform errors; let the queue retry. Give API clients a timeout.
 
 ## Prerequisite products
@@ -321,6 +311,7 @@ export class ShipStationIntegration implements OrderIntegrationStrategy {
   async onOrderPlaced(ctx, event) {
     const order = await orderService.findOne(ctx, event.orderIds[0], ['lines', 'lines.productVariant']);
     if (!order) throw new Error(`Order ${event.orderIds[0]} not found`); // retried
+    if (!order.orderPlacedAt) return;
     if (order.shippingAddress.countryCode === 'BE') return; // your own exclusion: job completes
     // Same orderKey on every attempt: the platform updates instead of duplicating
     await client.upsertOrder({ orderKey: order.code, shipTo: mapAddress(order), items: mapLines(order) });
@@ -372,6 +363,7 @@ export class KlaviyoIntegration implements OrderIntegrationStrategy {
   private async send(ctx, event, hook, metric) {
     const order = await orderService.findOne(ctx, event.orderIds[0], ['customer', 'lines', 'lines.productVariant']);
     if (!order) throw new Error(`Order ${event.orderIds[0]} not found`);
+    if (!order.orderPlacedAt) return; // only record placed orders
     if (!order.customer?.emailAddress) return; // can never be delivered: complete instead of retrying
     await client.createEvent({
       metric,

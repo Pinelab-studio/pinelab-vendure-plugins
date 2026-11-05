@@ -1,7 +1,7 @@
 {
   "name": "@pinelab/vendure-plugin-order-integration",
   "version": "1.0.0",
-  "description": "Framework for sending placed Vendure orders to shipping, marketing and accounting platforms through your own strategies, with queued retries and webhooks",
+  "description": "Framework for connecting Vendure orders and carts to shipping, marketing and accounting platforms through your own strategies, with queued retries and webhooks",
   "keywords": [
     "vendure",
     "vendure-plugin",
