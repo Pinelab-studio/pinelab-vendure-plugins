@@ -85,6 +85,7 @@ export const pluginIcons: Record<string, PluginVisual> = {
     color: '#34d399',
   },
   'vendure-plugin-order-export': { icon: 'download', color: '#38bdf8' },
+  'vendure-plugin-order-integration': { icon: 'random', color: '#38bdf8' },
   'vendure-plugin-order-pdfs': { icon: 'document', color: '#fb7185' },
   'vendure-plugin-payment-extensions': { icon: 'puzzle', color: '#34d399' },
   'vendure-plugin-picqer': {
