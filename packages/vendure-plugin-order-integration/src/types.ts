@@ -220,7 +220,7 @@ export interface OrderIntegrationPluginOptions {
   strategies: OrderIntegrationStrategy[];
   /**
    * Retries per job after the first attempt. A consumer's `DefaultJobQueuePlugin`
-   * `setRetries` overrides it for the `order-integration` queue. Default: 10.
+   * `setRetries` overrides it for the `order-integration` queue. Default: 3.
    */
   retries?: number;
 }

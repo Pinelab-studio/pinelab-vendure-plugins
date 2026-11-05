@@ -97,15 +97,15 @@ export class AcmeOrderIntegration implements OrderIntegrationStrategy {
 OrderIntegrationPlugin.init({
   // Names must be unique and stable: they appear in webhook URLs and job data
   strategies: [new AcmeOrderIntegration(acmeClient, 1)],
-  // Retries after the first attempt. Default: 10
-  retries: 10,
+  // Retries after the first attempt. Default: 3
+  retries: 3,
 }),
 ```
 
 | Option       | Default  | Description                                                                                                                       |
 | ------------ | -------- | --------------------------------------------------------------------------------------------------------------------------------- |
 | `strategies` | required | Your strategies. `init()` throws on duplicate names.                                                                              |
-| `retries`    | `10`     | Retries per job after the first attempt. A `setRetries` in your `DefaultJobQueuePlugin` options overrides it.                     |
+| `retries`    | `3`      | Retries per job after the first attempt. A `setRetries` in your `DefaultJobQueuePlugin` options overrides it.                     |
 
 Only the worker processes jobs. A worker that restricts `jobQueueOptions.activeQueues` must include `order-integration`. Use a persistent job queue in production: with Vendure's in-memory queue, pending jobs are lost on restart.
 
@@ -222,11 +222,11 @@ Orders that are not placed or not found in the channel of `ctx` are skipped, and
 
 ## Retries and backoff
 
-`retries` (default 10) is the number of retries after the first attempt. The job queue decides the wait between attempts: `DefaultJobQueuePlugin` waits a constant 1 second, so 10 retries cover only about 12 seconds. Configure an exponential backoff for this queue:
+`retries` (default 3) is the number of retries after the first attempt. The job queue decides the wait between attempts: `DefaultJobQueuePlugin` waits a constant 1 second, so the default retries cover only a few seconds. Configure an exponential backoff for this queue:
 
 ```ts
 DefaultJobQueuePlugin.init({
-  // 5 s, 20 s, 45 s ... 500 s: about 32 minutes over 10 retries
+  // 5 s, 20 s, 45 s: about 70 seconds over the default 3 retries
   backoffStrategy: (queueName, attemptsMade) =>
     queueName === 'order-integration' ? attemptsMade ** 2 * 5000 : 1000,
   // All hooks share one queue; Vendure applies no job timeout, so give your API clients one
