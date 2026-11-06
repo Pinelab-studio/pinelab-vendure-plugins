@@ -1,3 +1,7 @@
+# 1.6.2 (2026-11-06)
+
+- Fixed bulk Download PDF dialog closing immediately on the order list
+
 # 1.6.1 (2026-08-04)
 
 - Include dashboard extensions in dist.

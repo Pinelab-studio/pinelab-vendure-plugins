@@ -37,6 +37,8 @@ export function DownloadPdfBulkAction({
         onClick={() => setDialogOpen(true)}
         label="Download PDF"
         icon={PrinterIcon}
+        // Keep the bulk actions menu mounted, otherwise it unmounts the dialog below
+        closeOnClick={false}
       />
       <TemplateSelectionDialog
         open={dialogOpen}
