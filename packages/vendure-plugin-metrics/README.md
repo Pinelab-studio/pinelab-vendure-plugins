@@ -4,6 +4,8 @@
 
 Show your shop's most important metrics as charts on the Vendure dashboard. Metrics are defined in code, so you can easily add your own.
 
+![Vendure dashboard showing shop metrics](https://engineering.pinelab.studio/plugin-images/metrics-dashboard.png)
+
 ## Getting started
 
 1. Add the plugin to your `vendure-config.ts`. The plugin uses Vendure's scheduler, so make sure the `DefaultSchedulerPlugin` is installed too:
