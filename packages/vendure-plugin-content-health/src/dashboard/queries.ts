@@ -64,12 +64,6 @@ export const contentCheckOverviewForAlertDocument = graphql(`
     $options: ContentCheckOverviewListOptions
   ) {
     contentCheckOverview(options: $options) {
-      items {
-        entityType
-        entityId
-        name
-        hasError
-      }
       totalItems
     }
   }

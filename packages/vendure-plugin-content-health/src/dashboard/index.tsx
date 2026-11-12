@@ -9,8 +9,6 @@ import { contentCheckIssuesListRoute } from './components/ContentCheckIssuesList
 import { ContentCheckOverviewWidget } from './components/ContentCheckOverviewWidget';
 import { contentCheckOverviewForAlertDocument } from './queries';
 
-const ALERT_ITEM_LIMIT = 50;
-
 defineDashboardExtension({
   routes: [contentCheckIssuesListRoute, contentCheckIssueDetailRoute],
   pageBlocks: [
@@ -36,7 +34,7 @@ defineDashboardExtension({
   widgets: [
     {
       id: 'content-health-overview',
-      name: 'SEO / content issues',
+      name: 'Content issues',
       component: ContentCheckOverviewWidget,
       defaultSize: { w: 6, h: 4 },
     },
@@ -48,24 +46,20 @@ defineDashboardExtension({
       // Alerts framework calls these with `result.data` straight from
       // react-query, which starts out undefined), so every callback here
       // must tolerate that.
-      title: (data: Array<{ name: string }> | undefined) => {
-        const count = data?.length ?? 0;
-        return `${count} item${count === 1 ? '' : 's'} with SEO/content errors`;
-      },
-      description: (data: Array<{ name: string }> | undefined) =>
-        (data ?? []).map((d) => d.name).join(', '),
+      title: (data: number | undefined) =>
+        `${data ?? 0} content issue${data === 1 ? '' : 's'}`,
+      description: '',
       severity: 'error',
       check: async () => {
         const result = await api.query(contentCheckOverviewForAlertDocument, {
           options: {
-            take: ALERT_ITEM_LIMIT,
+            take: 0,
             filter: { hasError: { eq: true } },
           },
         });
-        return result.contentCheckOverview.items;
+        return result.contentCheckOverview.totalItems;
       },
-      shouldShow: (data: Array<{ name: string }> | undefined) =>
-        (data?.length ?? 0) > 0,
+      shouldShow: (data: number | undefined) => (data ?? 0) > 0,
       actions: [
         {
           component: ({ dismiss }) => (

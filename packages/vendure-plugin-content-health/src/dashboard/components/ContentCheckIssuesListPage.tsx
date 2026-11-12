@@ -63,7 +63,7 @@ function ContentCheckIssuesListPage({ route }: { route: AnyRoute }) {
   return (
     <ListPage
       pageId="content-health-issues-list"
-      title="SEO / content issues"
+      title="Content Issues"
       listQuery={contentCheckOverviewListDocument}
       route={route}
       registerRefresher={(refreshFn) => {
@@ -230,12 +230,12 @@ function ContentCheckIssuesListPage({ route }: { route: AnyRoute }) {
 
 export const contentCheckIssuesListRoute: DashboardRouteDefinition = {
   path: '/content-health/issues',
-  loader: () => ({ breadcrumb: 'SEO / content issues' }),
+  loader: () => ({ breadcrumb: 'Content issues' }),
   component: (route) => <ContentCheckIssuesListPage route={route} />,
   navMenuItem: {
     sectionId: 'catalog',
     id: 'content-health-issues',
-    title: 'SEO / content issues',
+    title: 'Content issues',
     icon: AlertTriangleIcon,
   },
 };

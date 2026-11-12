@@ -1,3 +1,9 @@
+# 0.2.3 (2026-11-12)
+
+- Show only the issue count in notifications, with a link to the issues list.
+- Rename the menu item and page to "Content issues".
+- Improve issue-list loading with batched entity lookups.
+
 # 0.2.2 (2026-08-26)
 
 - Fixed the content-check result composite index exceeding MySQL's maximum key length with utf8mb4.

@@ -64,6 +64,30 @@ export class ContentHealthResolver {
   ) {
     const rawResults = await this.resultService.findOverview(ctx);
     const groups = groupContentCheckResultsByEntity(rawResults);
+    // Fetch translated names without loading each entity's default relations.
+    const names = new Map<string, string>();
+    for (const entityType of ['product', 'collection']) {
+      const ids = groups
+        .filter((group) => group.entityType === entityType)
+        .map((group) => group.entityId.toString());
+      const batchSize = Math.min(
+        100,
+        this.configService.apiOptions.adminListQueryLimit,
+      );
+      for (let offset = 0; offset < ids.length; offset += batchSize) {
+        const options = {
+          take: batchSize,
+          filter: { id: { in: ids.slice(offset, offset + batchSize) } },
+        };
+        const result =
+          entityType === 'product'
+            ? await this.productService.findAll(ctx, options, [])
+            : await this.collectionService.findAll(ctx, options, []);
+        for (const entity of result.items) {
+          names.set(`${entityType}:${entity.id}`, entity.name);
+        }
+      }
+    }
 
     const items: Array<{
       id: string;
@@ -79,11 +103,11 @@ export class ContentHealthResolver {
       preview: string | null;
     }> = [];
     for (const group of groups) {
-      const name = await this.getEntityDisplayName(
-        ctx,
+      const name = this.getEntityDisplayName(
         group.entityType,
         group.entityId,
         group.label,
+        names,
       );
       if (name === undefined) {
         // The entity was deleted since the last check; omit it rather than
@@ -175,26 +199,23 @@ export class ContentHealthResolver {
    * `label` captured at check time is used as-is (with the same blank-name
    * fallback).
    */
-  private async getEntityDisplayName(
-    ctx: RequestContext,
+  private getEntityDisplayName(
     entityType: string,
     entityId: ID,
     storedLabel: string | undefined,
-  ): Promise<string | undefined> {
+    names: Map<string, string>,
+  ): string | undefined {
     if (!isCoreEntityType(entityType)) {
       const trimmedLabel = storedLabel?.trim();
       return trimmedLabel && trimmedLabel.length > 0
         ? trimmedLabel
         : `Untitled ${entityType} #${entityId}`;
     }
-    const entity =
-      entityType === 'product'
-        ? await this.productService.findOne(ctx, entityId)
-        : await this.collectionService.findOne(ctx, entityId);
-    if (!entity) {
+    const name = names.get(`${entityType}:${entityId}`);
+    if (name === undefined) {
       return undefined;
     }
-    const trimmedName = entity.name?.trim();
+    const trimmedName = name.trim();
     if (trimmedName) {
       return trimmedName;
     }
