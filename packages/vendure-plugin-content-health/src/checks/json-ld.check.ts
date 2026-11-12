@@ -1,4 +1,5 @@
 import { ContentCheckEntityType, ContentCheckMessage } from '../types';
+import { extractJsonLd } from './html-extraction';
 
 export const PRODUCT_REQUIRED_TYPES = [
   'Product',
@@ -53,4 +54,28 @@ export function checkJsonLdTypes(
   }
 
   return messages;
+}
+
+/**
+ * @description
+ * Opt-in `validateStorefront` helper: validates the JSON-LD of a rendered
+ * page. Reports every malformed JSON-LD block, plus the required types
+ * missing for the entity type (see `checkJsonLdTypes`).
+ */
+export function validateJsonLd(
+  html: string,
+  entityType: ContentCheckEntityType,
+): ContentCheckMessage[] {
+  const { types, malformedBlocks } = extractJsonLd(html);
+  return [
+    ...malformedBlocks.map(
+      (block): ContentCheckMessage => ({
+        source: 'json-ld',
+        severity: 'error',
+        code: 'JSON_LD_MALFORMED',
+        message: `JSON-LD block ${block} on the page is not valid JSON.`,
+      }),
+    ),
+    ...checkJsonLdTypes(entityType, types),
+  ];
 }

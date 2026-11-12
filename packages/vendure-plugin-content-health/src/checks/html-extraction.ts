@@ -48,15 +48,58 @@ export function extractHreflangTags(html: string): HreflangTag[] {
 
 /**
  * @description
+ * Extracts the distinct absolute URLs of all `<a href>` links on a rendered
+ * page, resolved against `pageUrl` and without fragments. Links that are not
+ * `http(s)`, such as `mailto:` and `tel:`, are omitted.
+ */
+export function extractLinks(html: string, pageUrl: string): string[] {
+  const $ = cheerio.load(html);
+  const links = new Set<string>();
+  $('a[href]').each((_, el) => {
+    const href = $(el).attr('href');
+    if (!href) {
+      return;
+    }
+    let url: URL;
+    try {
+      url = new URL(href, pageUrl);
+    } catch {
+      return;
+    }
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+      return;
+    }
+    url.hash = '';
+    links.add(url.href);
+  });
+  return [...links];
+}
+
+/**
+ * @description
  * Extracts the set of schema.org `@type` values found across every
  * `<script type="application/ld+json">` block on a rendered page, including
  * nested `@graph` arrays. Malformed JSON-LD blocks are ignored, as if their
  * types were simply absent.
  */
 export function extractJsonLdTypes(html: string): string[] {
+  return extractJsonLd(html).types;
+}
+
+/**
+ * @description
+ * Like `extractJsonLdTypes`, but also returns the 1-based positions of the
+ * non-empty `<script type="application/ld+json">` blocks that are not valid
+ * JSON.
+ */
+export function extractJsonLd(html: string): {
+  types: string[];
+  malformedBlocks: number[];
+} {
   const $ = cheerio.load(html);
   const types = new Set<string>();
-  $('script[type="application/ld+json"]').each((_, el) => {
+  const malformedBlocks: number[] = [];
+  $('script[type="application/ld+json"]').each((index, el) => {
     const raw = $(el).contents().text();
     if (!raw?.trim()) {
       return;
@@ -65,10 +108,10 @@ export function extractJsonLdTypes(html: string): string[] {
       const json: unknown = JSON.parse(raw);
       collectTypes(json, types);
     } catch {
-      // Malformed JSON-LD block: ignore, treated as if its types are absent.
+      malformedBlocks.push(index + 1);
     }
   });
-  return [...types];
+  return { types: [...types], malformedBlocks };
 }
 
 function collectTypes(node: unknown, types: Set<string>): void {
