@@ -81,4 +81,20 @@ describe('StorefrontPageFetcher', () => {
       expect(result.error).toMatch(/404/);
     }
   });
+
+  it('reports the status and final URL of a redirect ending in a 404', async () => {
+    const client = mockAgent.get('https://shop.example.com');
+    client.intercept({ path: '/old', method: 'GET' }).reply(301, undefined, {
+      headers: { location: '/new' },
+    });
+    client.intercept({ path: '/new', method: 'GET' }).reply(404, 'not found');
+
+    const result = await fetcher.fetch('https://shop.example.com/old');
+
+    expect(result).toMatchObject({
+      ok: false,
+      status: 404,
+      finalUrl: 'https://shop.example.com/new',
+    });
+  });
 });

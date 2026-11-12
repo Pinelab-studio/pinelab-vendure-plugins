@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { checkHreflang } from './hreflang.check';
+import { checkHreflang, validateHreflang } from './hreflang.check';
 
 describe('checkHreflang', () => {
   const pageUrl = 'https://shop.example.com/en/products/foo';
@@ -65,6 +65,51 @@ describe('checkHreflang', () => {
       enabledLanguageCodes: ['en', 'nl'],
       linkedPageTags: new Map([[nlUrl, [{ hreflang: 'en', href: pageUrl }]]]),
     });
+    expect(messages).toEqual([]);
+  });
+});
+
+describe('validateHreflang', () => {
+  const en = 'https://shop.test/en/p/';
+  const nl = 'https://shop.test/nl/p/';
+  function page(...links: Array<[string, string]>): string {
+    return `<html><head>${links
+      .map(
+        ([lang, href]) =>
+          `<link rel="alternate" hreflang="${lang}" href="${href}" />`,
+      )
+      .join('')}</head></html>`;
+  }
+
+  it('fetches linked alternates and reports a missing link back', async () => {
+    const fetched: string[] = [];
+    const messages = await validateHreflang({
+      html: page(['en', en], ['nl', nl], ['x-default', en]),
+      pageUrl: en,
+      enabledLanguageCodes: ['en', 'nl'],
+      fetchPage: (url) => {
+        fetched.push(url);
+        return Promise.resolve({
+          ok: true,
+          html: page(['nl', nl]),
+          finalUrl: url,
+        });
+      },
+    });
+
+    expect(fetched).toEqual([nl]);
+    expect(messages.map((m) => m.code)).toEqual(['HREFLANG_NOT_RECIPROCAL']);
+  });
+
+  it('accepts complete reciprocal hreflang links', async () => {
+    const html = page(['en', en], ['nl', nl], ['x-default', en]);
+    const messages = await validateHreflang({
+      html,
+      pageUrl: en,
+      enabledLanguageCodes: ['en', 'nl'],
+      fetchPage: (url) => Promise.resolve({ ok: true, html, finalUrl: url }),
+    });
+
     expect(messages).toEqual([]);
   });
 });

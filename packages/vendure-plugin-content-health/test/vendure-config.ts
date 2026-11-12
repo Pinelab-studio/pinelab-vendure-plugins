@@ -14,7 +14,15 @@ import {
 } from '@vendure/core';
 import { DashboardPlugin } from '@vendure/dashboard/plugin';
 import { testConfig } from '@vendure/testing';
-import { ContentHealthPlugin } from '../src';
+import {
+  ContentHealthPlugin,
+  checkMetaDescriptionLength,
+  checkMetaTitleLength,
+  extractMetaDescription,
+  extractTitle,
+  validateHreflang,
+  validateJsonLd,
+} from '../src';
 import { MOCK_STOREFRONT_PORT } from './mock-storefront-server';
 
 export const config: VendureConfig = mergeConfig(testConfig, {
@@ -40,6 +48,22 @@ export const config: VendureConfig = mergeConfig(testConfig, {
       maxRedirects: 5,
       shouldCheckEntity: (_ctx, entity) =>
         'enabled' in entity ? entity.enabled : !entity.isPrivate,
+      // The README example: shows the storefront findings of the
+      // "Broken SEO Demo Product" seeded in dev-server.ts.
+      validateStorefront: async (
+        _ctx,
+        { entityType, channel, url, html, fetchPage },
+      ) => [
+        ...checkMetaTitleLength(extractTitle(html)),
+        ...checkMetaDescriptionLength(extractMetaDescription(html)),
+        ...validateJsonLd(html, entityType),
+        ...(await validateHreflang({
+          html,
+          pageUrl: url,
+          enabledLanguageCodes: channel.availableLanguageCodes,
+          fetchPage,
+        })),
+      ],
       checks: {
         product: [
           (_ctx, { product }) => {
