@@ -1,8 +1,13 @@
 import { Injectable } from '@nestjs/common';
 
+/**
+ * The result of fetching a storefront page. A failure carries the final
+ * HTTP `status` and `finalUrl` when a response was received, e.g. to tell a
+ * (redirected) 404 apart from a timeout.
+ */
 export type PageFetchResult =
   | { ok: true; html: string; finalUrl: string }
-  | { ok: false; error: string };
+  | { ok: false; error: string; status?: number; finalUrl?: string };
 
 export interface PageFetchOptions {
   maxRedirects?: number;
@@ -85,6 +90,8 @@ export class StorefrontPageFetcher {
       return {
         ok: false,
         error: `Received non-2xx status ${response.status} when fetching '${requestedUrl}'.`,
+        status: response.status,
+        finalUrl,
       };
     }
     return { ok: true, html: await response.text(), finalUrl };

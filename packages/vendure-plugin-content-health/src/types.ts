@@ -8,6 +8,7 @@ import {
   RequestContext,
   ScheduledTaskConfig,
 } from '@vendure/core';
+import type { PageFetchResult } from './services/storefront-page-fetcher';
 
 /**
  * @description
@@ -78,7 +79,7 @@ export interface CollectionCheckArgs {
  */
 export type ProductContentCheck = (
   ctx: RequestContext,
-  args: ProductCheckArgs,
+  args: ProductCheckArgs & { injector: Injector },
 ) => Promise<ContentCheckMessage[]> | ContentCheckMessage[];
 
 /**
@@ -88,7 +89,46 @@ export type ProductContentCheck = (
  */
 export type CollectionContentCheck = (
   ctx: RequestContext,
-  args: CollectionCheckArgs,
+  args: CollectionCheckArgs & { injector: Injector },
+) => Promise<ContentCheckMessage[]> | ContentCheckMessage[];
+
+/**
+ * @description
+ * The arguments passed to `validateStorefront`, for a single entity, channel
+ * and language whose storefront page was fetched successfully.
+ */
+export interface StorefrontValidationArgs {
+  entityType: ContentCheckEntityType;
+  entity: Product | Collection;
+  channel: Channel;
+  languageCode: LanguageCode;
+  /** The URL returned by `getProductUrl`/`getCollectionUrl`. */
+  url: string;
+  /** The URL that returned the HTML, after following redirects. */
+  finalUrl: string;
+  /** The server-rendered HTML of the storefront page. */
+  html: string;
+  /**
+   * Fetches another storefront page with the plugin's redirect and timeout
+   * settings, e.g. for hreflang alternates or internal links. Results are
+   * cached by URL per channel during a full scan, so each URL is only
+   * requested once per channel scan.
+   */
+  fetchPage: (url: string) => Promise<PageFetchResult>;
+}
+
+/**
+ * @description
+ * Validates the server-rendered storefront page of a product or collection.
+ * Use the exported helpers (e.g. `validateJsonLd`, `validateHreflang`,
+ * `checkMetaTitleLength`) to compose your own rules.
+ *
+ * Throwing is caught by the pipeline and turned into a single internal
+ * error message; it does not abort the scan.
+ */
+export type StorefrontValidator = (
+  ctx: RequestContext,
+  args: StorefrontValidationArgs,
 ) => Promise<ContentCheckMessage[]> | ContentCheckMessage[];
 
 /**
@@ -200,6 +240,13 @@ export interface ContentHealthPluginOptions {
     ctx: RequestContext,
     args: { channel: Channel; languageCode: LanguageCode },
   ) => string | undefined | Promise<string | undefined>;
+  /**
+   * @description
+   * Validates the server-rendered HTML of every successfully fetched
+   * storefront page. No HTML validation runs when omitted: page fetching,
+   * sitemap inclusion and `checks` still do. See `StorefrontValidator`.
+   */
+  validateStorefront?: StorefrontValidator;
   /**
    * @description
    * The maximum number of redirects to follow when fetching a storefront

@@ -1,5 +1,6 @@
+import type { PageFetchResult } from '../services/storefront-page-fetcher';
 import { ContentCheckMessage } from '../types';
-import { HreflangTag } from './html-extraction';
+import { extractHreflangTags, HreflangTag } from './html-extraction';
 
 export interface HreflangCheckArgs {
   /** The resolved storefront URL of the page being checked. */
@@ -77,4 +78,42 @@ export function checkHreflang(args: HreflangCheckArgs): ContentCheckMessage[] {
   }
 
   return messages;
+}
+
+/**
+ * @description
+ * Opt-in `validateStorefront` helper: extracts the hreflang tags of a
+ * rendered page, fetches every linked alternate (except `x-default` and the
+ * page itself) and runs `checkHreflang`. An alternate that cannot be fetched
+ * counts as not linking back.
+ */
+export async function validateHreflang(args: {
+  html: string;
+  pageUrl: string;
+  enabledLanguageCodes: string[];
+  fetchPage: (url: string) => Promise<PageFetchResult>;
+}): Promise<ContentCheckMessage[]> {
+  const { html, pageUrl, enabledLanguageCodes, fetchPage } = args;
+  const hreflangTags = extractHreflangTags(html);
+  const linkedPageTags = new Map<string, HreflangTag[] | undefined>();
+  const hrefsToFetch = new Set(
+    hreflangTags
+      .filter(
+        (t) => t.hreflang.toLowerCase() !== 'x-default' && t.href !== pageUrl,
+      )
+      .map((t) => t.href),
+  );
+  for (const href of hrefsToFetch) {
+    const fetchResult = await fetchPage(href);
+    linkedPageTags.set(
+      href,
+      fetchResult.ok ? extractHreflangTags(fetchResult.html) : undefined,
+    );
+  }
+  return checkHreflang({
+    pageUrl,
+    hreflangTags,
+    enabledLanguageCodes,
+    linkedPageTags,
+  });
 }

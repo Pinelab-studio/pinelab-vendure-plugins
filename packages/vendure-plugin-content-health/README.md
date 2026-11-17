@@ -6,17 +6,47 @@ Monitor Vendure products and collections for storefront SEO and content issues.
 
 ## Checks
 
-### Built-in storefront checks
+### Storefront checks
 
-The plugin fetches each rendered storefront page and runs these checks automatically:
+The plugin fetches each rendered storefront page (following redirects) and checks that the resolved URL is in the sitemap returned by `getSitemapUrl`. What the HTML must contain is up to you: pass a `validateStorefront` strategy, which receives the server-rendered HTML for every successfully fetched page. No HTML validation runs without it.
 
-| Check             | What it validates                                                                                                                        |
-| ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| Meta title        | A `<title>` exists and is 30-60 characters long.                                                                                         |
-| Meta description  | A `<meta name="description">` exists and is 100-160 characters long.                                                                     |
-| Hreflang          | Every channel language and `x-default` are linked, including reciprocal links between translated pages.                                  |
-| JSON-LD           | Products include `Product`, `ProductGroup`, `BreadcrumbList`, and `Organization` or `OnlineStore`; collections include `BreadcrumbList`. |
-| Sitemap inclusion | The resolved storefront URL exists in the sitemap returned by `getSitemapUrl`.                                                           |
+```ts
+import {
+  checkMetaDescriptionLength,
+  checkMetaTitleLength,
+  extractMetaDescription,
+  extractTitle,
+  validateHreflang,
+  validateJsonLd,
+} from '@pinelab/vendure-plugin-content-health';
+
+ContentHealthPlugin.init({
+  // ...
+  validateStorefront: async (ctx, { entityType, channel, url, html, fetchPage }) => [
+    ...checkMetaTitleLength(extractTitle(html)),
+    ...checkMetaDescriptionLength(extractMetaDescription(html)),
+    ...validateJsonLd(html, entityType),
+    ...(await validateHreflang({
+      html,
+      pageUrl: url,
+      enabledLanguageCodes: channel.availableLanguageCodes,
+      fetchPage,
+    })),
+  ],
+});
+```
+
+`validateStorefront(ctx, args)` receives `entityType`, `entity`, `channel`, `languageCode`, `url` (from `getProductUrl`/`getCollectionUrl`), `finalUrl` (after redirects), `html`, and `fetchPage(url)`. `fetchPage` fetches other pages, e.g. hreflang alternates or internal links, with the plugin's redirect and timeout settings. Its results are cached by URL per channel during a full scan, so each URL is requested once per channel. A failed fetch includes the final HTTP `status` and `finalUrl` when a response was received, so you can tell a (redirected) 404 apart from a timeout. Throwing from `validateStorefront` is recorded as an internal error finding.
+
+Opt-in helpers:
+
+| Helper                                                     | What it validates                                                                                                                                                                      |
+| ---------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `checkMetaTitleLength(extractTitle(html))`                 | A `<title>` exists and is 30-60 characters long.                                                                                                                                       |
+| `checkMetaDescriptionLength(extractMetaDescription(html))` | A `<meta name="description">` exists and is 100-160 characters long.                                                                                                                   |
+| `validateHreflang({ html, pageUrl, enabledLanguageCodes, fetchPage })` | Every enabled language and `x-default` are linked, including reciprocal links between translated pages.                                                                    |
+| `validateJsonLd(html, entityType)`                         | JSON-LD blocks are valid JSON. Products include `Product`, `ProductGroup`, `BreadcrumbList`, and `Organization` or `OnlineStore`; collections include `BreadcrumbList`.                 |
+| `extractLinks(html, pageUrl)`                              | Not a check: returns the page's absolute `<a href>` URLs, e.g. to check internal links with `fetchPage`.                                                                               |
 
 ### Configurable Vendure checks
 
@@ -87,7 +117,7 @@ plugins: [
 ];
 ```
 
-Every strategy function (`getProductUrl`, `getCollectionUrl`, `checks`, `additionalChecks`) receives the `RequestContext`, so behaviour — including the resolved URL — can differ per channel.
+Every strategy function (`getProductUrl`, `getCollectionUrl`, `validateStorefront`, `checks`, `additionalChecks`) receives the `RequestContext`, so behaviour — including the resolved URL — can differ per channel. `checks.product` and `checks.collection` functions also receive an `injector`, to use Vendure services or the database, e.g. for relations that aren't loaded on the entity.
 
 ### Checking for missing translations
 
@@ -171,7 +201,7 @@ eventBus
 - `runContentCheckForCollection(collectionId: ID!): [ContentCheckResult!]!` — manually re-checks a single collection now and returns its fresh results.
 - `runContentHealthFullScan: ContentHealthScanResult!` — manually runs a full scan now, the same as the scheduled task.
 
-## Fixing built-in findings
+## Fixing storefront findings
 
 | Finding           | How to fix                                                                                                                                                                                        | Typical owner                                                                                                         |
 | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { checkJsonLdTypes } from './json-ld.check';
+import { checkJsonLdTypes, validateJsonLd } from './json-ld.check';
 
 describe('checkJsonLdTypes', () => {
   describe('product', () => {
@@ -90,5 +90,58 @@ describe('checkJsonLdTypes', () => {
     it('produces no errors when BreadcrumbList is present', () => {
       expect(checkJsonLdTypes('collection', ['BreadcrumbList'])).toEqual([]);
     });
+  });
+});
+
+describe('validateJsonLd', () => {
+  const productTypes = [
+    { '@type': 'Product' },
+    { '@type': 'ProductGroup' },
+    { '@type': 'BreadcrumbList' },
+    { '@type': 'Organization' },
+  ];
+
+  function page(...blocks: string[]): string {
+    return `<html><head>${blocks
+      .map((b) => `<script type="application/ld+json">${b}</script>`)
+      .join('')}</head></html>`;
+  }
+
+  it('accepts a product page with every required type', () => {
+    expect(
+      validateJsonLd(
+        page(JSON.stringify({ '@graph': productTypes })),
+        'product',
+      ),
+    ).toEqual([]);
+  });
+
+  it('reports a missing required type', () => {
+    expect(
+      validateJsonLd(page(JSON.stringify(productTypes.slice(1))), 'product'),
+    ).toEqual([
+      {
+        source: 'json-ld',
+        severity: 'error',
+        code: 'JSON_LD_MISSING_TYPE',
+        message: "Required JSON-LD type 'Product' was not found on the page.",
+      },
+    ]);
+  });
+
+  it('reports a malformed block next to the valid ones', () => {
+    expect(
+      validateJsonLd(
+        page(JSON.stringify([{ '@type': 'BreadcrumbList' }]), '{"@type": '),
+        'collection',
+      ),
+    ).toEqual([
+      {
+        source: 'json-ld',
+        severity: 'error',
+        code: 'JSON_LD_MALFORMED',
+        message: 'JSON-LD block 2 on the page is not valid JSON.',
+      },
+    ]);
   });
 });

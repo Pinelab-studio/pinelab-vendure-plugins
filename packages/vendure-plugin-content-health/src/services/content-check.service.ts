@@ -17,19 +17,7 @@ import {
   TransactionalConnection,
 } from '@vendure/core';
 import { asError } from 'catch-unknown';
-import {
-  checkHreflang,
-  checkJsonLdTypes,
-  checkMetaDescriptionLength,
-  checkMetaTitleLength,
-  checkSitemapInclusion,
-  extractHreflangTags,
-  extractJsonLdTypes,
-  extractMetaDescription,
-  extractTitle,
-  HreflangTag,
-  sitemapUnavailableMessage,
-} from '../checks';
+import { checkSitemapInclusion, sitemapUnavailableMessage } from '../checks';
 import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
 import { ContentCheckResult } from '../entities/content-check-result.entity';
 import { ChannelContentScanCompletedEvent } from '../events/channel-content-scan-completed-event';
@@ -40,10 +28,14 @@ import {
   ContentCheckMessage,
   ContentHealthPluginOptions,
   ENTITY_EXCLUDED_CODE,
+  StorefrontValidationArgs,
 } from '../types';
 import { ContentCheckResultService } from './content-check-result.service';
 import { SitemapFetcher, SitemapFetchResult } from './sitemap-fetcher';
-import { StorefrontPageFetcher } from './storefront-page-fetcher';
+import {
+  PageFetchResult,
+  StorefrontPageFetcher,
+} from './storefront-page-fetcher';
 
 @Injectable()
 export class ContentCheckService implements OnApplicationBootstrap {
@@ -136,6 +128,10 @@ export class ContentCheckService implements OnApplicationBootstrap {
     sitemapCache: Map<string, SitemapFetchResult>,
   ): Promise<number> {
     const ctx = this.createCtxForChannel(channel);
+    // Per channel rather than per full scan: it holds the HTML of every
+    // fetched page until the channel is done, and channels rarely share
+    // storefront URLs.
+    const pageCache: PageCache = new Map();
     const languages = this.getEnabledLanguages(channel);
     const [products, collections] = await Promise.all([
       this.findEligibleProducts(ctx),
@@ -186,6 +182,7 @@ export class ContentCheckService implements OnApplicationBootstrap {
         channel,
         task.languageCode,
         sitemapCache,
+        pageCache,
       );
       if (result) {
         findings.push(toFindingEntry(task.entityType, result));
@@ -382,6 +379,7 @@ export class ContentCheckService implements OnApplicationBootstrap {
     // single-entity check always sees the current sitemap rather than one
     // cached from an unrelated, possibly much earlier or concurrent, scan.
     const sitemapCache = new Map<string, SitemapFetchResult>();
+    const pageCache: PageCache = new Map();
     const languages = this.getEnabledLanguages(channel);
     for (const languageCode of languages) {
       const langCtx = this.createCtxForChannel(channel, languageCode);
@@ -396,6 +394,7 @@ export class ContentCheckService implements OnApplicationBootstrap {
         channel,
         languageCode,
         sitemapCache,
+        pageCache,
       );
     }
   }
@@ -423,6 +422,7 @@ export class ContentCheckService implements OnApplicationBootstrap {
     channel: Channel,
     languageCode: LanguageCode,
     sitemapCache: Map<string, SitemapFetchResult> = new Map(),
+    pageCache: PageCache = new Map(),
   ): Promise<ContentCheckResult | undefined> {
     if (!(await this.isEligible(ctx, entity))) {
       return this.resultService.saveResult(ctx, {
@@ -482,12 +482,16 @@ export class ContentCheckService implements OnApplicationBootstrap {
         });
       } else {
         messages.push(
-          ...(await this.runPageChecks(
+          ...(await this.runStorefrontValidation(ctx, {
             entityType,
+            entity,
             channel,
-            resolvedUrl,
-            fetchResult.html,
-          )),
+            languageCode,
+            url: resolvedUrl,
+            finalUrl: fetchResult.finalUrl,
+            html: fetchResult.html,
+            fetchPage: (url) => this.fetchPage(url, pageCache),
+          })),
         );
       }
       messages.push(
@@ -531,6 +535,7 @@ export class ContentCheckService implements OnApplicationBootstrap {
     languageCode: LanguageCode,
   ): Promise<ContentCheckMessage[]> {
     const messages: ContentCheckMessage[] = [];
+    const injector = new Injector(this.moduleRef);
     if (entityType === 'product') {
       for (const check of this.options.checks?.product ?? []) {
         try {
@@ -539,6 +544,7 @@ export class ContentCheckService implements OnApplicationBootstrap {
               product: entity as Product,
               channel,
               languageCode,
+              injector,
             })),
           );
         } catch (e) {
@@ -553,6 +559,7 @@ export class ContentCheckService implements OnApplicationBootstrap {
               collection: entity as Collection,
               channel,
               languageCode,
+              injector,
             })),
           );
         } catch (e) {
@@ -563,69 +570,38 @@ export class ContentCheckService implements OnApplicationBootstrap {
     return messages;
   }
 
-  private async runPageChecks(
-    entityType: ContentCheckEntityType,
-    channel: Channel,
-    pageUrl: string,
-    html: string,
+  /** Runs the consumer's storefront validation, if configured, without letting a throw abort the pipeline. */
+  private async runStorefrontValidation(
+    ctx: RequestContext,
+    args: StorefrontValidationArgs,
   ): Promise<ContentCheckMessage[]> {
-    const messages: ContentCheckMessage[] = [];
-    try {
-      messages.push(...checkMetaTitleLength(extractTitle(html)));
-    } catch (e) {
-      messages.push(internalErrorMessage('meta-title', e));
+    if (!this.options.validateStorefront) {
+      return [];
     }
     try {
-      messages.push(
-        ...checkMetaDescriptionLength(extractMetaDescription(html)),
-      );
+      return await this.options.validateStorefront(ctx, args);
     } catch (e) {
-      messages.push(internalErrorMessage('meta-description', e));
+      return [internalErrorMessage('storefront-validation', e)];
     }
-    try {
-      messages.push(...(await this.runHreflangCheck(channel, pageUrl, html)));
-    } catch (e) {
-      messages.push(internalErrorMessage('hreflang', e));
-    }
-    try {
-      messages.push(...checkJsonLdTypes(entityType, extractJsonLdTypes(html)));
-    } catch (e) {
-      messages.push(internalErrorMessage('json-ld', e));
-    }
-    return messages;
   }
 
-  private async runHreflangCheck(
-    channel: Channel,
-    pageUrl: string,
-    html: string,
-  ): Promise<ContentCheckMessage[]> {
-    const hreflangTags = extractHreflangTags(html);
-    const enabledLanguageCodes = this.getEnabledLanguages(channel);
-    const linkedPageTags = new Map<string, HreflangTag[] | undefined>();
-    const hrefsToFetch = new Set(
-      hreflangTags
-        .filter(
-          (t) => t.hreflang.toLowerCase() !== 'x-default' && t.href !== pageUrl,
-        )
-        .map((t) => t.href),
-    );
-    for (const href of hrefsToFetch) {
-      const fetchResult = await this.pageFetcher.fetch(href, {
+  /**
+   * Fetches a page for `validateStorefront`. The promise is cached, so
+   * concurrent checks of a scan share one request per URL.
+   */
+  private fetchPage(
+    url: string,
+    pageCache: PageCache,
+  ): Promise<PageFetchResult> {
+    let result = pageCache.get(url);
+    if (!result) {
+      result = this.pageFetcher.fetch(url, {
         maxRedirects: this.options.maxRedirects ?? 5,
         timeoutMs: this.options.requestTimeoutMs ?? 10000,
       });
-      linkedPageTags.set(
-        href,
-        fetchResult.ok ? extractHreflangTags(fetchResult.html) : undefined,
-      );
+      pageCache.set(url, result);
     }
-    return checkHreflang({
-      pageUrl,
-      hreflangTags,
-      enabledLanguageCodes,
-      linkedPageTags,
-    });
+    return result;
   }
 
   private async runSitemapCheck(
@@ -746,6 +722,9 @@ export class ContentCheckService implements OnApplicationBootstrap {
     return collections;
   }
 }
+
+/** Page fetches of `validateStorefront`, keyed by URL, shared by one channel scan. */
+type PageCache = Map<string, Promise<PageFetchResult>>;
 
 function internalErrorMessage(source: string, e: unknown): ContentCheckMessage {
   const err = asError(e);

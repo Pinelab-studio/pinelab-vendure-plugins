@@ -1,3 +1,10 @@
+# 0.3.0 (2026-11-12)
+
+- **BREAKING:** The meta title, meta description, hreflang and JSON-LD checks no longer run automatically. Pass a `validateStorefront` strategy, which receives the server-rendered HTML of each storefront page. To keep the 0.2.x checks, compose the exported helpers as shown in the README.
+- Added `validateJsonLd()`, which also reports malformed JSON-LD blocks, `validateHreflang()` and `extractLinks()` helpers.
+- `checks.product` and `checks.collection` functions now receive an `injector`.
+- Added `fetchPage()` to the `validateStorefront` arguments, cached per channel during a full scan. Failed page fetches now include the HTTP `status` and `finalUrl`.
+
 # 0.2.3 (2026-11-12)
 
 - Show only the issue count in notifications, with a link to the issues list.

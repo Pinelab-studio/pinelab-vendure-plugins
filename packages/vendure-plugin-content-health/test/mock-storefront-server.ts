@@ -81,9 +81,9 @@ function renderGoodPage(
 
 /**
  * Deliberately broken page: too-short title, no meta description, no
- * hreflang tags, and no JSON-LD at all. Used to demonstrate every built-in
- * check firing at once — see the "Broken SEO Demo Product" seeded in
- * dev-server.ts (slug `broken-seo-demo`).
+ * hreflang tags, and no JSON-LD at all. Used to demonstrate every check of
+ * the dev config's `validateStorefront` firing at once — see the "Broken SEO
+ * Demo Product" seeded in dev-server.ts (slug `broken-seo-demo`).
  */
 function renderBrokenPage(): string {
   return `<!DOCTYPE html>
