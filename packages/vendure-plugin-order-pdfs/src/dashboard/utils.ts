@@ -47,7 +47,7 @@ export function downloadBlob(
 
 /**
  * Downloads the PDF(s) for the given order codes using the selected template.
- * A single order code downloads an inline PDF; multiple order codes are zipped.
+ * A single order code downloads a named PDF; multiple order codes are zipped.
  */
 export async function downloadOrderPdfs(
   templateId: string,
@@ -72,8 +72,6 @@ export async function downloadOrderPdfs(
   const fileName =
     orderCodes.length > 1
       ? 'orders.zip'
-      : `${orderCodes[0]}-${fileNameHint
-          .toLowerCase()
-          .replace(/\s+/g, '_')}.pdf`;
-  downloadBlob(blob, fileName, orderCodes.length === 1);
+      : `${fileNameHint}-${orderCodes[0]}.pdf`;
+  downloadBlob(blob, fileName);
 }
