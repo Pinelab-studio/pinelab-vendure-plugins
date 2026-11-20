@@ -1,3 +1,7 @@
+# 1.6.3 (2026-11-20)
+
+- Fix single-order PDF downloads to use `<template name>-<order code>.pdf` instead of a random filename.
+
 # 1.6.2 (2026-11-06)
 
 - Fixed bulk Download PDF dialog closing immediately on the order list
