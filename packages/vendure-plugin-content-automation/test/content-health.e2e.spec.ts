@@ -17,8 +17,8 @@ import { testPaymentMethod } from '../../test/src/test-payment-method';
 import {
   AdditionalCheckResult,
   ChannelContentScanCompletedEvent,
+  ContentAutomationPlugin,
   ContentCheckService,
-  ContentHealthPlugin,
 } from '../src';
 
 const STOREFRONT_ORIGIN = 'https://storefront.test';
@@ -177,7 +177,7 @@ interface OverviewItem {
   entityId: string;
 }
 
-describe('ContentHealthPlugin (e2e)', () => {
+describe('Content health (e2e)', () => {
   let server: TestServer;
   let adminClient: SimpleGraphQLClient;
   let serverStarted = false;
@@ -208,44 +208,48 @@ describe('ContentHealthPlugin (e2e)', () => {
     registerInitializer('sqljs', new SqljsInitializer('__data__'));
     const config = mergeConfig(testConfig, {
       logger: new DefaultLogger({ level: LogLevel.Debug }),
+      // Separate port, so this file can run in parallel with the other e2e files
+      apiOptions: { port: 3051 },
       plugins: [
-        ContentHealthPlugin.init({
-          getProductUrl: (_ctx, { product, languageCode }) =>
-            `${STOREFRONT_ORIGIN}/${languageCode}/products/${product.slug}`,
-          getCollectionUrl: (_ctx, { collection, languageCode }) =>
-            `${STOREFRONT_ORIGIN}/${languageCode}/collections/${collection.slug}`,
-          getSitemapUrl: () => `${STOREFRONT_ORIGIN}/sitemap.xml`,
-          // Compared by slug, not id: `entity.id` here is the raw internal
-          // id, while `excludedProductId` (assigned below, after product
-          // creation) is the GraphQL-encoded admin-facing id — the two are
-          // not directly comparable.
-          shouldCheckEntity: (_ctx, entity) =>
-            !excludeProduct || entity.slug !== 'excluded-product',
-          checks: {
-            product: [
-              (ctx, { product }) => {
-                configurableCheckCalls.push(product.slug);
-                const translation = product.translations.find(
-                  (item) => item.languageCode === ctx.languageCode,
-                );
-                const hasCompleteTranslation = Boolean(
-                  translation?.name.trim() && translation.description.trim(),
-                );
-                if (hasCompleteTranslation) {
-                  return [];
-                }
-                return [
-                  {
-                    source: 'translation',
-                    severity: 'error',
-                    code: 'TRANSLATION_MISSING',
-                    message: `Product has no translation for language '${ctx.languageCode}'.`,
-                  },
-                ];
-              },
-            ],
+        ContentAutomationPlugin.init({
+          contentHealth: {
+            getProductUrl: (_ctx, { product, languageCode }) =>
+              `${STOREFRONT_ORIGIN}/${languageCode}/products/${product.slug}`,
+            getCollectionUrl: (_ctx, { collection, languageCode }) =>
+              `${STOREFRONT_ORIGIN}/${languageCode}/collections/${collection.slug}`,
+            getSitemapUrl: () => `${STOREFRONT_ORIGIN}/sitemap.xml`,
+            // Compared by slug, not id: `entity.id` here is the raw internal
+            // id, while `excludedProductId` (assigned below, after product
+            // creation) is the GraphQL-encoded admin-facing id — the two are
+            // not directly comparable.
+            shouldCheckEntity: (_ctx, entity) =>
+              !excludeProduct || entity.slug !== 'excluded-product',
+            checks: {
+              product: [
+                (ctx, { product }) => {
+                  configurableCheckCalls.push(product.slug);
+                  const translation = product.translations.find(
+                    (item) => item.languageCode === ctx.languageCode,
+                  );
+                  const hasCompleteTranslation = Boolean(
+                    translation?.name.trim() && translation.description.trim(),
+                  );
+                  if (hasCompleteTranslation) {
+                    return [];
+                  }
+                  return [
+                    {
+                      source: 'translation',
+                      severity: 'error',
+                      code: 'TRANSLATION_MISSING',
+                      message: `Product has no translation for language '${ctx.languageCode}'.`,
+                    },
+                  ];
+                },
+              ],
+            },
+            additionalChecks: [() => additionalCheckResults],
           },
-          additionalChecks: [() => additionalCheckResults],
         }),
       ],
       paymentOptions: {

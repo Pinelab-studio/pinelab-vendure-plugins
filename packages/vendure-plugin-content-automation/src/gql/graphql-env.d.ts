@@ -3361,6 +3361,20 @@ export type introspection_types = {
       },
     ];
   };
+  ContentAutomationRunResult: {
+    kind: 'OBJECT';
+    name: 'ContentAutomationRunResult';
+    fields: {
+      jobsCreated: {
+        name: 'jobsCreated';
+        type: {
+          kind: 'NON_NULL';
+          name: never;
+          ofType: { kind: 'SCALAR'; name: 'Int'; ofType: null };
+        };
+      };
+    };
+  };
   ContentAutomationUpdate: {
     kind: 'OBJECT';
     name: 'ContentAutomationUpdate';
@@ -3619,6 +3633,351 @@ export type introspection_types = {
         defaultValue: null;
       },
     ];
+  };
+  ContentCheckMessage: {
+    kind: 'OBJECT';
+    name: 'ContentCheckMessage';
+    fields: {
+      code: {
+        name: 'code';
+        type: {
+          kind: 'NON_NULL';
+          name: never;
+          ofType: { kind: 'SCALAR'; name: 'String'; ofType: null };
+        };
+      };
+      message: {
+        name: 'message';
+        type: {
+          kind: 'NON_NULL';
+          name: never;
+          ofType: { kind: 'SCALAR'; name: 'String'; ofType: null };
+        };
+      };
+      severity: {
+        name: 'severity';
+        type: {
+          kind: 'NON_NULL';
+          name: never;
+          ofType: { kind: 'ENUM'; name: 'ContentCheckSeverity'; ofType: null };
+        };
+      };
+      source: {
+        name: 'source';
+        type: {
+          kind: 'NON_NULL';
+          name: never;
+          ofType: { kind: 'SCALAR'; name: 'String'; ofType: null };
+        };
+      };
+    };
+  };
+  ContentCheckOverviewFilterParameter: {
+    kind: 'INPUT_OBJECT';
+    name: 'ContentCheckOverviewFilterParameter';
+    isOneOf: false;
+    inputFields: [
+      {
+        name: 'name';
+        type: { kind: 'INPUT_OBJECT'; name: 'StringOperators'; ofType: null };
+        defaultValue: null;
+      },
+      {
+        name: 'entityType';
+        type: { kind: 'INPUT_OBJECT'; name: 'StringOperators'; ofType: null };
+        defaultValue: null;
+      },
+      {
+        name: 'hasError';
+        type: { kind: 'INPUT_OBJECT'; name: 'BooleanOperators'; ofType: null };
+        defaultValue: null;
+      },
+      {
+        name: 'hasWarning';
+        type: { kind: 'INPUT_OBJECT'; name: 'BooleanOperators'; ofType: null };
+        defaultValue: null;
+      },
+    ];
+  };
+  ContentCheckOverviewItem: {
+    kind: 'OBJECT';
+    name: 'ContentCheckOverviewItem';
+    fields: {
+      entityId: {
+        name: 'entityId';
+        type: {
+          kind: 'NON_NULL';
+          name: never;
+          ofType: { kind: 'SCALAR'; name: 'String'; ofType: null };
+        };
+      };
+      entityType: {
+        name: 'entityType';
+        type: {
+          kind: 'NON_NULL';
+          name: never;
+          ofType: { kind: 'SCALAR'; name: 'String'; ofType: null };
+        };
+      };
+      errorCount: {
+        name: 'errorCount';
+        type: {
+          kind: 'NON_NULL';
+          name: never;
+          ofType: { kind: 'SCALAR'; name: 'Int'; ofType: null };
+        };
+      };
+      hasError: {
+        name: 'hasError';
+        type: {
+          kind: 'NON_NULL';
+          name: never;
+          ofType: { kind: 'SCALAR'; name: 'Boolean'; ofType: null };
+        };
+      };
+      hasWarning: {
+        name: 'hasWarning';
+        type: {
+          kind: 'NON_NULL';
+          name: never;
+          ofType: { kind: 'SCALAR'; name: 'Boolean'; ofType: null };
+        };
+      };
+      id: {
+        name: 'id';
+        type: {
+          kind: 'NON_NULL';
+          name: never;
+          ofType: { kind: 'SCALAR'; name: 'ID'; ofType: null };
+        };
+      };
+      languageCodes: {
+        name: 'languageCodes';
+        type: {
+          kind: 'NON_NULL';
+          name: never;
+          ofType: {
+            kind: 'LIST';
+            name: never;
+            ofType: {
+              kind: 'NON_NULL';
+              name: never;
+              ofType: { kind: 'ENUM'; name: 'LanguageCode'; ofType: null };
+            };
+          };
+        };
+      };
+      name: {
+        name: 'name';
+        type: {
+          kind: 'NON_NULL';
+          name: never;
+          ofType: { kind: 'SCALAR'; name: 'String'; ofType: null };
+        };
+      };
+      preview: {
+        name: 'preview';
+        type: { kind: 'SCALAR'; name: 'String'; ofType: null };
+      };
+      url: {
+        name: 'url';
+        type: { kind: 'SCALAR'; name: 'String'; ofType: null };
+      };
+      warningCount: {
+        name: 'warningCount';
+        type: {
+          kind: 'NON_NULL';
+          name: never;
+          ofType: { kind: 'SCALAR'; name: 'Int'; ofType: null };
+        };
+      };
+    };
+  };
+  ContentCheckOverviewList: {
+    kind: 'OBJECT';
+    name: 'ContentCheckOverviewList';
+    fields: {
+      items: {
+        name: 'items';
+        type: {
+          kind: 'NON_NULL';
+          name: never;
+          ofType: {
+            kind: 'LIST';
+            name: never;
+            ofType: {
+              kind: 'NON_NULL';
+              name: never;
+              ofType: {
+                kind: 'OBJECT';
+                name: 'ContentCheckOverviewItem';
+                ofType: null;
+              };
+            };
+          };
+        };
+      };
+      totalItems: {
+        name: 'totalItems';
+        type: {
+          kind: 'NON_NULL';
+          name: never;
+          ofType: { kind: 'SCALAR'; name: 'Int'; ofType: null };
+        };
+      };
+    };
+  };
+  ContentCheckOverviewListOptions: {
+    kind: 'INPUT_OBJECT';
+    name: 'ContentCheckOverviewListOptions';
+    isOneOf: false;
+    inputFields: [
+      {
+        name: 'skip';
+        type: { kind: 'SCALAR'; name: 'Int'; ofType: null };
+        defaultValue: null;
+      },
+      {
+        name: 'take';
+        type: { kind: 'SCALAR'; name: 'Int'; ofType: null };
+        defaultValue: null;
+      },
+      {
+        name: 'filter';
+        type: {
+          kind: 'INPUT_OBJECT';
+          name: 'ContentCheckOverviewFilterParameter';
+          ofType: null;
+        };
+        defaultValue: null;
+      },
+      {
+        name: 'filterOperator';
+        type: { kind: 'ENUM'; name: 'LogicalOperator'; ofType: null };
+        defaultValue: null;
+      },
+      {
+        name: 'sort';
+        type: { kind: 'SCALAR'; name: 'JSON'; ofType: null };
+        defaultValue: null;
+      },
+    ];
+  };
+  ContentCheckResult: {
+    kind: 'OBJECT';
+    name: 'ContentCheckResult';
+    fields: {
+      checkedAt: {
+        name: 'checkedAt';
+        type: {
+          kind: 'NON_NULL';
+          name: never;
+          ofType: { kind: 'SCALAR'; name: 'DateTime'; ofType: null };
+        };
+      };
+      entityId: {
+        name: 'entityId';
+        type: {
+          kind: 'NON_NULL';
+          name: never;
+          ofType: { kind: 'SCALAR'; name: 'String'; ofType: null };
+        };
+      };
+      entityType: {
+        name: 'entityType';
+        type: {
+          kind: 'NON_NULL';
+          name: never;
+          ofType: { kind: 'SCALAR'; name: 'String'; ofType: null };
+        };
+      };
+      hasError: {
+        name: 'hasError';
+        type: {
+          kind: 'NON_NULL';
+          name: never;
+          ofType: { kind: 'SCALAR'; name: 'Boolean'; ofType: null };
+        };
+      };
+      hasWarning: {
+        name: 'hasWarning';
+        type: {
+          kind: 'NON_NULL';
+          name: never;
+          ofType: { kind: 'SCALAR'; name: 'Boolean'; ofType: null };
+        };
+      };
+      id: {
+        name: 'id';
+        type: {
+          kind: 'NON_NULL';
+          name: never;
+          ofType: { kind: 'SCALAR'; name: 'ID'; ofType: null };
+        };
+      };
+      label: {
+        name: 'label';
+        type: { kind: 'SCALAR'; name: 'String'; ofType: null };
+      };
+      languageCode: {
+        name: 'languageCode';
+        type: {
+          kind: 'NON_NULL';
+          name: never;
+          ofType: { kind: 'ENUM'; name: 'LanguageCode'; ofType: null };
+        };
+      };
+      messages: {
+        name: 'messages';
+        type: {
+          kind: 'NON_NULL';
+          name: never;
+          ofType: {
+            kind: 'LIST';
+            name: never;
+            ofType: {
+              kind: 'NON_NULL';
+              name: never;
+              ofType: {
+                kind: 'OBJECT';
+                name: 'ContentCheckMessage';
+                ofType: null;
+              };
+            };
+          };
+        };
+      };
+      url: {
+        name: 'url';
+        type: { kind: 'SCALAR'; name: 'String'; ofType: null };
+      };
+    };
+  };
+  ContentCheckSeverity: {
+    name: 'ContentCheckSeverity';
+    enumValues: 'WARNING' | 'ERROR';
+  };
+  ContentHealthScanResult: {
+    kind: 'OBJECT';
+    name: 'ContentHealthScanResult';
+    fields: {
+      channelsScanned: {
+        name: 'channelsScanned';
+        type: {
+          kind: 'NON_NULL';
+          name: never;
+          ofType: { kind: 'SCALAR'; name: 'Int'; ofType: null };
+        };
+      };
+      entitiesChecked: {
+        name: 'entitiesChecked';
+        type: {
+          kind: 'NON_NULL';
+          name: never;
+          ofType: { kind: 'SCALAR'; name: 'Int'; ofType: null };
+        };
+      };
+    };
   };
   Coordinate: {
     kind: 'OBJECT';
@@ -13096,6 +13455,70 @@ export type introspection_types = {
           ofType: { kind: 'OBJECT'; name: 'RotateApiKeyResult'; ofType: null };
         };
       };
+      runContentAutomationForProduct: {
+        name: 'runContentAutomationForProduct';
+        type: {
+          kind: 'NON_NULL';
+          name: never;
+          ofType: {
+            kind: 'OBJECT';
+            name: 'ContentAutomationRunResult';
+            ofType: null;
+          };
+        };
+      };
+      runContentCheckForCollection: {
+        name: 'runContentCheckForCollection';
+        type: {
+          kind: 'NON_NULL';
+          name: never;
+          ofType: {
+            kind: 'LIST';
+            name: never;
+            ofType: {
+              kind: 'NON_NULL';
+              name: never;
+              ofType: {
+                kind: 'OBJECT';
+                name: 'ContentCheckResult';
+                ofType: null;
+              };
+            };
+          };
+        };
+      };
+      runContentCheckForProduct: {
+        name: 'runContentCheckForProduct';
+        type: {
+          kind: 'NON_NULL';
+          name: never;
+          ofType: {
+            kind: 'LIST';
+            name: never;
+            ofType: {
+              kind: 'NON_NULL';
+              name: never;
+              ofType: {
+                kind: 'OBJECT';
+                name: 'ContentCheckResult';
+                ofType: null;
+              };
+            };
+          };
+        };
+      };
+      runContentHealthFullScan: {
+        name: 'runContentHealthFullScan';
+        type: {
+          kind: 'NON_NULL';
+          name: never;
+          ofType: {
+            kind: 'OBJECT';
+            name: 'ContentHealthScanResult';
+            ofType: null;
+          };
+        };
+      };
       runPendingSearchIndexUpdates: {
         name: 'runPendingSearchIndexUpdates';
         type: {
@@ -13713,6 +14136,7 @@ export type introspection_types = {
       | 'Channel'
       | 'Collection'
       | 'ContentAutomationUpdate'
+      | 'ContentCheckOverviewItem'
       | 'Country'
       | 'Customer'
       | 'CustomerGroup'
@@ -15224,6 +15648,7 @@ export type introspection_types = {
       | 'ChannelList'
       | 'CollectionList'
       | 'ContentAutomationUpdateList'
+      | 'ContentCheckOverviewList'
       | 'CountryList'
       | 'CustomerGroupList'
       | 'CustomerList'
@@ -15969,6 +16394,8 @@ export type introspection_types = {
       | 'ReadZone'
       | 'UpdateZone'
       | 'DeleteZone'
+      | 'ContentAutomation'
+      | 'ContentHealth'
       | 'ReadDashboardGlobalViews'
       | 'WriteDashboardGlobalViews';
   };
@@ -18980,6 +19407,54 @@ export type introspection_types = {
             kind: 'OBJECT';
             name: 'ContentAutomationUpdateList';
             ofType: null;
+          };
+        };
+      };
+      contentCheckEntityTypes: {
+        name: 'contentCheckEntityTypes';
+        type: {
+          kind: 'NON_NULL';
+          name: never;
+          ofType: {
+            kind: 'LIST';
+            name: never;
+            ofType: {
+              kind: 'NON_NULL';
+              name: never;
+              ofType: { kind: 'SCALAR'; name: 'String'; ofType: null };
+            };
+          };
+        };
+      };
+      contentCheckOverview: {
+        name: 'contentCheckOverview';
+        type: {
+          kind: 'NON_NULL';
+          name: never;
+          ofType: {
+            kind: 'OBJECT';
+            name: 'ContentCheckOverviewList';
+            ofType: null;
+          };
+        };
+      };
+      contentCheckResults: {
+        name: 'contentCheckResults';
+        type: {
+          kind: 'NON_NULL';
+          name: never;
+          ofType: {
+            kind: 'LIST';
+            name: never;
+            ofType: {
+              kind: 'NON_NULL';
+              name: never;
+              ofType: {
+                kind: 'OBJECT';
+                name: 'ContentCheckResult';
+                ofType: null;
+              };
+            };
           };
         };
       };
@@ -26885,6 +27360,8 @@ export type introspection = {
   subscription: never;
   types: introspection_types;
 };
+
+import * as gqlTada from 'gql.tada';
 
 declare module 'gql.tada' {
   interface setupSchema {

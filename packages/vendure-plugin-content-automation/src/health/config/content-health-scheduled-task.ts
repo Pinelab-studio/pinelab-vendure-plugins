@@ -5,10 +5,14 @@ import { ContentHealthPluginOptions } from '../types';
 /**
  * @description
  * Runs a full content/SEO scan of all non-excluded products and
- * collections, across every enabled channel and language. Always
- * registered; runnable on demand via Vendure's built-in Scheduled Tasks
+ * collections, across every enabled channel and language. Registered
+ * when content health is enabled; runnable on demand via Vendure's built-in Scheduled Tasks
  * admin screen, satisfying the on-demand-scan requirement without a custom
  * "run now" mutation/UI.
+ *
+ * Runs at 03:00, after the content automation task at 02:00. This does not
+ * wait for queued automation jobs to finish. Keep this order when
+ * overriding either schedule via `contentHealth.scheduledTask`.
  */
 export const contentHealthScanTask = new ScheduledTask({
   id: 'content-health-full-scan',

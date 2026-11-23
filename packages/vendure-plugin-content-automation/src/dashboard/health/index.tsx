@@ -1,5 +1,6 @@
 import { Link } from '@tanstack/react-router';
-import { api, Button, defineDashboardExtension } from '@vendure/dashboard';
+import { api, Button, DashboardExtension } from '@vendure/dashboard';
+import { CONTENT_HEALTH_PERMISSION } from '../permissions';
 import {
   CollectionContentCheckFindingsBlock,
   ProductContentCheckFindingsBlock,
@@ -7,9 +8,16 @@ import {
 import { contentCheckIssueDetailRoute } from './components/ContentCheckIssueDetailPage';
 import { contentCheckIssuesListRoute } from './components/ContentCheckIssuesListPage';
 import { ContentCheckOverviewWidget } from './components/ContentCheckOverviewWidget';
-import { contentCheckOverviewForAlertDocument } from './queries';
+import {
+  contentCheckOverviewForAlertDocument,
+  dashboardPermissionsDocument,
+} from './queries';
 
-defineDashboardExtension({
+/**
+ * The content health Dashboard UI. Everything is only shown to administrators with the `ContentHealth`
+ * permission, which only exists when content health is enabled.
+ */
+export const contentHealthDashboardExtension: DashboardExtension = {
   routes: [contentCheckIssuesListRoute, contentCheckIssueDetailRoute],
   pageBlocks: [
     {
@@ -20,6 +28,7 @@ defineDashboardExtension({
         position: { blockId: 'main-form', order: 'after' },
       },
       component: ProductContentCheckFindingsBlock,
+      requiresPermission: CONTENT_HEALTH_PERMISSION,
     },
     {
       id: 'content-health-findings',
@@ -29,6 +38,7 @@ defineDashboardExtension({
         position: { blockId: 'main-form', order: 'after' },
       },
       component: CollectionContentCheckFindingsBlock,
+      requiresPermission: CONTENT_HEALTH_PERMISSION,
     },
   ],
   widgets: [
@@ -37,6 +47,7 @@ defineDashboardExtension({
       name: 'Content issues',
       component: ContentCheckOverviewWidget,
       defaultSize: { w: 6, h: 4 },
+      requiresPermissions: [CONTENT_HEALTH_PERMISSION],
     },
   ],
   alerts: [
@@ -51,6 +62,11 @@ defineDashboardExtension({
       description: '',
       severity: 'error',
       check: async () => {
+        // Alerts have no permission option. Without the permission, content health may be
+        // disabled, and then its API doesn't exist.
+        if (!(await hasContentHealthPermission())) {
+          return 0;
+        }
         const result = await api.query(contentCheckOverviewForAlertDocument, {
           options: {
             take: 0,
@@ -74,4 +90,14 @@ defineDashboardExtension({
       ],
     },
   ],
-});
+};
+
+/**
+ * Whether the administrator has the `ContentHealth` permission in the active channel
+ */
+async function hasContentHealthPermission(): Promise<boolean> {
+  const { me, activeChannel } = await api.query(dashboardPermissionsDocument);
+  return !!me?.channels
+    .find((channel) => channel.id === activeChannel.id)
+    ?.permissions.includes(CONTENT_HEALTH_PERMISSION as never);
+}

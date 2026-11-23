@@ -13,6 +13,7 @@ import {
   RefreshCwIcon,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { RunContentAutomationsButton } from '../../components/RunContentAutomationsButton';
 import {
   contentCheckResultsDocument,
   runContentCheckForCollectionDocument,
@@ -29,7 +30,7 @@ interface ContentCheckFindingsBlockInnerProps {
  * Shared implementation for the product-detail and collection-detail page
  * blocks: shows the entity's current warnings/errors across every checked
  * channel/language, plus a button to manually re-check just this entity
- * right now.
+ * right now. Products also get a button to run content automation, when that feature is enabled.
  */
 function ContentCheckFindingsBlockInner({
   context,
@@ -124,7 +125,12 @@ function ContentCheckFindingsBlockInner({
       </CollapsibleTrigger>
       <CollapsibleContent className="pt-4">
         <div className="space-y-2">
-          {checkNowButton}
+          <div className="flex flex-wrap gap-2">
+            {checkNowButton}
+            {entityType === 'PRODUCT' && (
+              <RunContentAutomationsButton productId={entityId} />
+            )}
+          </div>
           {isLoading ? (
             <p className="text-muted-foreground text-sm">Loading checks…</p>
           ) : (

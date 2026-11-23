@@ -2,6 +2,7 @@ require('dotenv').config();
 
 import path from 'node:path';
 import {
+  Administrator,
   DefaultLogger,
   DefaultSchedulerPlugin,
   DefaultSearchPlugin,
@@ -10,11 +11,23 @@ import {
   LogLevel,
   mergeConfig,
   ProductService,
+  TransactionalConnection,
   VendureConfig,
 } from '@vendure/core';
 import { DashboardPlugin } from '@vendure/dashboard/plugin';
 import { testConfig } from '@vendure/testing';
-import { ContentAutomationPlugin, ContentAutomationStrategy } from '../src';
+import {
+  ContentAutomationPlugin,
+  ContentAutomationStrategy,
+  ContentHealthPluginOptions,
+  checkMetaDescriptionLength,
+  checkMetaTitleLength,
+  extractMetaDescription,
+  extractTitle,
+  validateHreflang,
+  validateJsonLd,
+} from '../src';
+import { MOCK_STOREFRONT_PORT } from './mock-storefront-server';
 
 /**
  * Creates a demo strategy for local development: pretends to generate content for every
@@ -28,6 +41,8 @@ function createDemoStrategy(
 ): ContentAutomationStrategy<{ id: ID; name: string }> {
   return {
     name,
+    // Run by the "Run content automations" button on the product detail page
+    entityType: 'product',
     async loadInputData(ctx, injector) {
       const products = await injector
         .get(ProductService)
@@ -123,6 +138,83 @@ const demoStrategies = [
   ),
 ];
 
+/**
+ * Content health demo config, checking the pages of the mock storefront started by dev-server.ts
+ */
+const contentHealth: ContentHealthPluginOptions = {
+  getProductUrl: (_ctx, { product, languageCode }) =>
+    `http://localhost:${MOCK_STOREFRONT_PORT}/${languageCode}/products/${product.slug}`,
+  getCollectionUrl: (_ctx, { collection, languageCode }) =>
+    `http://localhost:${MOCK_STOREFRONT_PORT}/${languageCode}/collections/${collection.slug}`,
+  getSitemapUrl: () => `http://localhost:${MOCK_STOREFRONT_PORT}/sitemap.xml`,
+  maxRedirects: 5,
+  shouldCheckEntity: (_ctx, entity) =>
+    'enabled' in entity ? entity.enabled : !entity.isPrivate,
+  // The README example: shows the storefront findings of the
+  // "Broken SEO Demo Product" seeded in dev-server.ts.
+  validateStorefront: async (
+    _ctx,
+    { entityType, channel, url, html, fetchPage },
+  ) => [
+    ...checkMetaTitleLength(extractTitle(html)),
+    ...checkMetaDescriptionLength(extractMetaDescription(html)),
+    ...validateJsonLd(html, entityType),
+    ...(await validateHreflang({
+      html,
+      pageUrl: url,
+      enabledLanguageCodes: channel.availableLanguageCodes,
+      fetchPage,
+    })),
+  ],
+  checks: {
+    product: [
+      (_ctx, { product }) => {
+        const description = (product.description ?? '') as string;
+        if (description.trim().length < 20) {
+          return [
+            {
+              source: 'demo-description-check',
+              severity: 'warning',
+              code: 'PRODUCT_DESCRIPTION_TOO_SHORT',
+              message:
+                'Product description should be at least 20 characters long.',
+            },
+          ];
+        }
+        return [];
+      },
+    ],
+  },
+  additionalChecks: [
+    async (ctx, injector) => {
+      const connection = injector.get(TransactionalConnection);
+      const administrators = await connection
+        .getRepository(ctx, Administrator)
+        .find();
+      return administrators
+        .filter((admin) => !admin.emailAddress?.includes('@'))
+        .map((admin) => ({
+          entityType: 'administrator',
+          entityId: admin.id,
+          label:
+            `${admin.firstName} ${admin.lastName}`.trim() || admin.emailAddress,
+          url: `/administrators/${admin.id}`,
+          messages: [
+            {
+              source: 'demo-admin-email-check',
+              severity: 'warning' as const,
+              code: 'ADMINISTRATOR_EMAIL_INVALID',
+              message: "Administrator email address doesn't look valid.",
+            },
+          ],
+        }));
+    },
+  ],
+};
+
+// Both features are enabled by default. Use DEV_FEATURES=automation or DEV_FEATURES=health to test a single feature.
+const devFeatures = process.env.DEV_FEATURES ?? 'automation,health';
+
 export const config: VendureConfig = mergeConfig(testConfig, {
   logger: new DefaultLogger({ level: LogLevel.Debug }),
   apiOptions: {
@@ -137,7 +229,10 @@ export const config: VendureConfig = mergeConfig(testConfig, {
   },
   plugins: [
     ContentAutomationPlugin.init({
-      automationStrategies: demoStrategies,
+      automationStrategies: devFeatures.includes('automation')
+        ? demoStrategies
+        : undefined,
+      contentHealth: devFeatures.includes('health') ? contentHealth : undefined,
     }),
     DefaultSearchPlugin,
     DefaultSchedulerPlugin.init(),

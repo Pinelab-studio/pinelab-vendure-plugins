@@ -19,3 +19,11 @@ export const contentAutomationUpdateListDocument = graphql(`
     }
   }
 `);
+
+export const runContentAutomationForProductDocument = graphql(`
+  mutation RunContentAutomationForProduct($productId: ID!) {
+    runContentAutomationForProduct(productId: $productId) {
+      jobsCreated
+    }
+  }
+`);

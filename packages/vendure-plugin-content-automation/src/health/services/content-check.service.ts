@@ -18,7 +18,7 @@ import {
 } from '@vendure/core';
 import { asError } from 'catch-unknown';
 import { checkSitemapInclusion, sitemapUnavailableMessage } from '../checks';
-import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
+import { CONTENT_HEALTH_OPTIONS, contentHealthLoggerCtx } from '../constants';
 import { ContentCheckResult } from '../entities/content-check-result.entity';
 import { ChannelContentScanCompletedEvent } from '../events/channel-content-scan-completed-event';
 import {
@@ -48,7 +48,8 @@ export class ContentCheckService implements OnApplicationBootstrap {
     private sitemapFetcher: SitemapFetcher,
     private resultService: ContentCheckResultService,
     private moduleRef: ModuleRef,
-    @Inject(PLUGIN_INIT_OPTIONS)
+    // Undefined when content health is disabled: the service is then never called
+    @Inject(CONTENT_HEALTH_OPTIONS)
     private options: ContentHealthPluginOptions,
   ) {}
 
@@ -57,9 +58,13 @@ export class ContentCheckService implements OnApplicationBootstrap {
    * updated, across all of its resolved channel/language combinations.
    * Decoupled from whatever caused the update, and cannot recurse into
    * itself since writing a `ContentCheckResult` does not touch the
-   * `Product`/`Collection` entities.
+   * `Product`/`Collection` entities. Nothing is subscribed when content
+   * health is disabled.
    */
   onApplicationBootstrap(): void {
+    if (!this.options) {
+      return;
+    }
     this.eventBus.ofType(ProductEvent).subscribe((event) => {
       if (event.type !== 'updated') {
         return;
@@ -69,7 +74,7 @@ export class ContentCheckService implements OnApplicationBootstrap {
           `Failed to run content check for product ${event.entity.id}: ${
             asError(e).message
           }`,
-          loggerCtx,
+          contentHealthLoggerCtx,
           asError(e).stack,
         );
       });
@@ -83,7 +88,7 @@ export class ContentCheckService implements OnApplicationBootstrap {
           `Failed to run content check for collection ${event.entity.id}: ${
             asError(e).message
           }`,
-          loggerCtx,
+          contentHealthLoggerCtx,
           asError(e).stack,
         );
       });
@@ -115,7 +120,7 @@ export class ContentCheckService implements OnApplicationBootstrap {
       } catch (e) {
         Logger.error(
           `Failed to scan channel '${channel.code}': ${asError(e).message}`,
-          loggerCtx,
+          contentHealthLoggerCtx,
           asError(e).stack,
         );
       }
@@ -230,7 +235,7 @@ export class ContentCheckService implements OnApplicationBootstrap {
           `additionalChecks function failed for channel '${channel.code}': ${
             asError(e).message
           }`,
-          loggerCtx,
+          contentHealthLoggerCtx,
           asError(e).stack,
         );
       }
@@ -286,7 +291,7 @@ export class ContentCheckService implements OnApplicationBootstrap {
           }', entityId '${group.entityId}') for channel '${channel.code}': ${
             asError(e).message
           }`,
-          loggerCtx,
+          contentHealthLoggerCtx,
           asError(e).stack,
         );
       }
