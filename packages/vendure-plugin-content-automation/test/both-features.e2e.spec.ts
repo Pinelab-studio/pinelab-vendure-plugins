@@ -14,7 +14,7 @@ describe('Automation and content health', () => {
   beforeAll(async () => {
     ({ server, adminClient } = await startServer(
       { automationStrategies: [], contentHealth: storefrontUrls },
-      3055,
+      3058,
     ));
   }, 60000);
 

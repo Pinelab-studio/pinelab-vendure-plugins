@@ -204,18 +204,21 @@ Job data is fully serializable, so it also works with job queues that pass jobs 
 
 ## Manually running content automation for a product
 
-The Content automation block on the product detail page has a **Run content automations** button. It runs every strategy with `entityType: 'product'` for that product, in every language of the active channel. The block is independent of content health and is only shown to administrators with the `UpdateProduct` permission.
+Expand the collapsed **Content automation** block on a product detail page to see one **Run <strategy name>** button per strategy with `entityType: 'product'`. Each button runs only that strategy for the product in every language of the active channel. The block is independent of content health and requires `UpdateProduct`.
 
 - Content is always regenerated, also when the input didn't change since the last generation.
-- Each strategy and language becomes a background job, with the same retries and stored results as the nightly run. The button reports how many jobs were queued; the results appear on the Content automation page once the jobs are done.
-- Strategies don't load a single product: `loadInputData()` is called as usual, and only the input with the product's id is used. One click therefore loads the inputs of all products, once per strategy and language.
+- Manual strategy runs are synchronous: the button stays busy until generation finishes and then shows results or skips per language. Errors appear inline; earlier languages may already have completed. There are no background jobs or automatic retries for these runs. Long-running strategies can exceed HTTP request timeouts.
+- `loadInputData()` is called for the selected strategy per language; only the input with the product's id is used. Successful results are stored as usual.
+- The nightly run and the existing bulk `runContentAutomationForProduct` mutation still queue background jobs.
 
 The button uses this mutation, which requires the `UpdateProduct` permission:
 
 ```graphql
 mutation {
-  runContentAutomationForProduct(productId: "1") {
-    jobsCreated
+  runContentAutomationStrategyForProduct(productId: "1", strategyName: "product-metatags-ai") {
+    languageCode
+    generated
+    resultMessage
   }
 }
 ```
@@ -515,7 +518,7 @@ The content automation task (`content-automation`) runs at 02:00, and the conten
 
 The Dashboard uses Vendure's built-in permissions in the active channel: `UpdateProduct` for content automation and `ReadProduct` for content health. No custom permissions are registered. These permissions do not indicate whether a feature is enabled: disabled features remain visible, but their Admin API calls fail. Health mutations keep their existing update-permission requirements.
 
-Content automation adds a **Content automation** page under the Catalog section. It lists all updates of the active channel, with the strategy, language, result message and a link to the updated entity. It also adds a separate product-detail block with a [Run content automations](#manually-running-content-automation-for-a-product) button, whether or not content health is enabled.
+Content automation adds a **Content automation** page under the Catalog section. It lists all updates of the active channel, with the strategy, language, result message and a link to the updated entity. It also adds a collapsed product-detail block with [per-strategy run buttons](#manually-running-content-automation-for-a-product), whether or not content health is enabled.
 
 Content health adds:
 
@@ -530,5 +533,5 @@ Content health adds:
 - Inputs that return `false` are offered to your strategy again on every run. Return `false` before doing expensive work, like calling an AI provider.
 - `loadInputData()` returns all inputs of a channel and language at once, so they are all kept in memory during the run. Keep inputs small for very large catalogs.
 - Only the latest successful state is retained per entity, strategy, channel and language. Previous generation results are overwritten.
-- The "Run content automations" button is only available on products.
+- Manual strategy buttons are only available on products.
 - Disabled features remain visible in the Dashboard to roles with the relevant built-in permission; their Admin API calls fail.

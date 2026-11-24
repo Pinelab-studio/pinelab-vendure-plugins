@@ -1,33 +1,79 @@
-import { useMutation } from '@tanstack/react-query';
-import { api, Button, PermissionGuard } from '@vendure/dashboard';
-import { PlayIcon } from 'lucide-react';
-import { toast } from 'sonner';
-import { CONTENT_AUTOMATION_PERMISSION } from '../permissions';
-import { runContentAutomationForProductDocument } from '../queries';
+import { useMutation, useQuery } from '@tanstack/react-query';
+import {
+  api,
+  Button,
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@vendure/dashboard';
+import { ChevronDownIcon, PlayIcon } from 'lucide-react';
+import { useState } from 'react';
+import {
+  productContentAutomationStrategiesDocument,
+  runContentAutomationStrategyForProductDocument,
+} from '../queries';
 
-/**
- * Queues every content automation strategy with `entityType: 'product'` for this product, in all
- * languages of the active channel. Only shown to administrators with UpdateProduct permission.
- */
+/** Collapsed product automation actions, with synchronous feedback per strategy and language. */
 export function RunContentAutomationsButton({
   productId,
 }: {
   productId: string;
 }) {
-  const mutation = useMutation({
-    mutationFn: () =>
-      api.mutate(runContentAutomationForProductDocument, { productId }),
-    onSuccess: ({ runContentAutomationForProduct: { jobsCreated } }) =>
-      toast.success(
-        `Queued ${jobsCreated} content automation job${jobsCreated === 1 ? '' : 's'}`,
-      ),
-    onError: (err: unknown) =>
-      toast.error(
-        err instanceof Error ? err.message : 'Content automation failed',
-      ),
+  const [open, setOpen] = useState(false);
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['product-content-automation-strategies'],
+    queryFn: () => api.query(productContentAutomationStrategiesDocument),
+    enabled: open,
   });
   return (
-    <PermissionGuard requires={[CONTENT_AUTOMATION_PERMISSION]}>
+    <Collapsible open={open} onOpenChange={setOpen}>
+      <CollapsibleTrigger className="group flex w-full items-center justify-between rounded-md text-left font-semibold hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+        Content automation
+        <ChevronDownIcon className="h-4 w-4 transition-transform group-data-[state=open]:rotate-180" />
+      </CollapsibleTrigger>
+      <CollapsibleContent className="space-y-3 pt-4">
+        {isLoading && (
+          <p className="text-muted-foreground text-sm">Loading strategies…</p>
+        )}
+        {error && (
+          <p role="alert" className="text-destructive text-sm">
+            {error.message}
+          </p>
+        )}
+        {data?.productContentAutomationStrategies.length === 0 && (
+          <p className="text-muted-foreground text-sm">
+            No product automation strategies configured.
+          </p>
+        )}
+        {data?.productContentAutomationStrategies.map((strategyName) => (
+          <StrategyAction
+            key={`${productId}:${strategyName}`}
+            productId={productId}
+            strategyName={strategyName}
+          />
+        ))}
+      </CollapsibleContent>
+    </Collapsible>
+  );
+}
+
+/** Runs a single strategy and displays the completed results, skips or error inline. */
+function StrategyAction({
+  productId,
+  strategyName,
+}: {
+  productId: string;
+  strategyName: string;
+}) {
+  const mutation = useMutation({
+    mutationFn: () =>
+      api.mutate(runContentAutomationStrategyForProductDocument, {
+        productId,
+        strategyName,
+      }),
+  });
+  return (
+    <div className="space-y-2">
       <Button
         type="button"
         variant="outline"
@@ -36,8 +82,28 @@ export function RunContentAutomationsButton({
         onClick={() => mutation.mutate()}
       >
         <PlayIcon className="mr-2 h-3.5 w-3.5" />
-        {mutation.isPending ? 'Queueing…' : 'Run content automations'}
+        {mutation.isPending
+          ? `Running ${strategyName}…`
+          : `Run ${strategyName}`}
       </Button>
-    </PermissionGuard>
+      <div role="status" aria-live="polite" className="text-sm">
+        {!mutation.isPending &&
+          mutation.data?.runContentAutomationStrategyForProduct.map(
+            (result) => (
+              <p key={result.languageCode}>
+                {result.languageCode}:{' '}
+                {result.generated
+                  ? result.resultMessage || 'Content generated.'
+                  : 'Skipped: no matching input or strategy returned no result.'}
+              </p>
+            ),
+          )}
+      </div>
+      {mutation.error && (
+        <p role="alert" className="text-destructive text-sm">
+          {mutation.error.message} Earlier languages may already have completed.
+        </p>
+      )}
+    </div>
   );
 }

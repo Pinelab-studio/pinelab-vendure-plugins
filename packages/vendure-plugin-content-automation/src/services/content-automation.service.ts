@@ -105,6 +105,61 @@ export class ContentAutomationService implements OnApplicationBootstrap {
     return { jobsCreated };
   }
 
+  /** Lists strategies that can be manually run for a product. */
+  getProductStrategyNames(): string[] {
+    return (this.options.automationStrategies ?? [])
+      .filter((strategy) => strategy.entityType === 'product')
+      .map((strategy) => strategy.name);
+  }
+
+  /**
+   * Runs one product strategy synchronously across active-channel languages, bypassing hash checks.
+   * Errors propagate to the caller; completed languages are not rolled back.
+   */
+  async runStrategyForProduct(
+    ctx: RequestContext,
+    productId: ID,
+    strategyName: string,
+  ) {
+    const strategy = (this.options.automationStrategies ?? []).find(
+      (candidate) =>
+        candidate.name === strategyName && candidate.entityType === 'product',
+    );
+    if (!strategy) {
+      throw new Error(`Unknown product automation strategy '${strategyName}'`);
+    }
+    const channel = await this.channelService.getChannelFromToken(
+      ctx.channel.token,
+    );
+    const results = [];
+    for (const languageCode of this.getLanguages(channel)) {
+      const languageCtx = await this.requestContextService.create({
+        apiType: 'admin',
+        channelOrToken: channel,
+        languageCode,
+      });
+      const inputs = await strategy.loadInputData(languageCtx, this.injector);
+      const input = inputs.find(
+        (candidate) => String(candidate.id) === String(productId),
+      );
+      const update = input
+        ? await this.generateAndStore(
+            languageCtx,
+            strategy,
+            input,
+            this.hashInput(languageCtx, strategy, input),
+            { force: true },
+          )
+        : undefined;
+      results.push({
+        languageCode,
+        generated: !!update,
+        resultMessage: update?.resultMessage ?? null,
+      });
+    }
+    return results;
+  }
+
   /**
    * Creates a job per strategy and language for a single product, in the active channel, for every
    * strategy whose `entityType` is `'product'`. Only inputs with the product's id are used.

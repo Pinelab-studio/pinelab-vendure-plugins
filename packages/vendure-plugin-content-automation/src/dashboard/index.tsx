@@ -12,7 +12,6 @@ defineDashboardExtension({
   pageBlocks: [
     {
       id: 'content-automation',
-      title: 'Content automation',
       location: {
         pageId: 'product-detail',
         column: 'main',

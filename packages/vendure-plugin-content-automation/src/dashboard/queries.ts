@@ -20,10 +20,18 @@ export const contentAutomationUpdateListDocument = graphql(`
   }
 `);
 
-export const runContentAutomationForProductDocument = graphql(`
-  mutation RunContentAutomationForProduct($productId: ID!) {
-    runContentAutomationForProduct(productId: $productId) {
-      jobsCreated
+export const productContentAutomationStrategiesDocument = graphql(`
+  query ProductContentAutomationStrategies {
+    productContentAutomationStrategies
+  }
+`);
+
+export const runContentAutomationStrategyForProductDocument = graphql(`
+  mutation RunContentAutomationStrategyForProduct($productId: ID!, $strategyName: String!) {
+    runContentAutomationStrategyForProduct(productId: $productId, strategyName: $strategyName) {
+      languageCode
+      generated
+      resultMessage
     }
   }
 `);

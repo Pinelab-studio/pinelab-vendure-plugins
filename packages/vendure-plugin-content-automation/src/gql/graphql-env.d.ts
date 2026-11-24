@@ -3375,6 +3375,32 @@ export type introspection_types = {
       };
     };
   };
+  ContentAutomationStrategyResult: {
+    kind: 'OBJECT';
+    name: 'ContentAutomationStrategyResult';
+    fields: {
+      generated: {
+        name: 'generated';
+        type: {
+          kind: 'NON_NULL';
+          name: never;
+          ofType: { kind: 'SCALAR'; name: 'Boolean'; ofType: null };
+        };
+      };
+      languageCode: {
+        name: 'languageCode';
+        type: {
+          kind: 'NON_NULL';
+          name: never;
+          ofType: { kind: 'ENUM'; name: 'LanguageCode'; ofType: null };
+        };
+      };
+      resultMessage: {
+        name: 'resultMessage';
+        type: { kind: 'SCALAR'; name: 'String'; ofType: null };
+      };
+    };
+  };
   ContentAutomationUpdate: {
     kind: 'OBJECT';
     name: 'ContentAutomationUpdate';
@@ -13467,6 +13493,26 @@ export type introspection_types = {
           };
         };
       };
+      runContentAutomationStrategyForProduct: {
+        name: 'runContentAutomationStrategyForProduct';
+        type: {
+          kind: 'NON_NULL';
+          name: never;
+          ofType: {
+            kind: 'LIST';
+            name: never;
+            ofType: {
+              kind: 'NON_NULL';
+              name: never;
+              ofType: {
+                kind: 'OBJECT';
+                name: 'ContentAutomationStrategyResult';
+                ofType: null;
+              };
+            };
+          };
+        };
+      };
       runContentCheckForCollection: {
         name: 'runContentCheckForCollection';
         type: {
@@ -16394,8 +16440,6 @@ export type introspection_types = {
       | 'ReadZone'
       | 'UpdateZone'
       | 'DeleteZone'
-      | 'ContentAutomation'
-      | 'ContentHealth'
       | 'ReadDashboardGlobalViews'
       | 'WriteDashboardGlobalViews';
   };
@@ -19758,6 +19802,22 @@ export type introspection_types = {
       product: {
         name: 'product';
         type: { kind: 'OBJECT'; name: 'Product'; ofType: null };
+      };
+      productContentAutomationStrategies: {
+        name: 'productContentAutomationStrategies';
+        type: {
+          kind: 'NON_NULL';
+          name: never;
+          ofType: {
+            kind: 'LIST';
+            name: never;
+            ofType: {
+              kind: 'NON_NULL';
+              name: never;
+              ofType: { kind: 'SCALAR'; name: 'String'; ofType: null };
+            };
+          };
+        };
       };
       productOption: {
         name: 'productOption';

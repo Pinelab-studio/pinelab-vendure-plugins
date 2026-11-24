@@ -27,7 +27,15 @@ export const adminApiExtensions = gql`
     jobsCreated: Int!
   }
 
+  type ContentAutomationStrategyResult {
+    languageCode: LanguageCode!
+    generated: Boolean!
+    resultMessage: String
+  }
+
   extend type Query {
+    "Names of product automation strategies available for manual execution"
+    productContentAutomationStrategies: [String!]!
     "Content automation updates in the active channel"
     contentAutomationUpdates(
       options: ContentAutomationUpdateListOptions
@@ -35,6 +43,11 @@ export const adminApiExtensions = gql`
   }
 
   extend type Mutation {
+    "Runs one product strategy synchronously in every active-channel language, even for unchanged inputs. Errors are returned to the caller; earlier languages may already have completed."
+    runContentAutomationStrategyForProduct(
+      productId: ID!
+      strategyName: String!
+    ): [ContentAutomationStrategyResult!]!
     "Regenerates the content of a product now, with every strategy whose entityType is 'product', for every language of the active channel. Creates one job per strategy and language."
     runContentAutomationForProduct(productId: ID!): ContentAutomationRunResult!
   }
