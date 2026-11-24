@@ -45,13 +45,15 @@ export function RunContentAutomationsButton({
             No product automation strategies configured.
           </p>
         )}
-        {data?.productContentAutomationStrategies.map((strategyName) => (
-          <StrategyAction
-            key={`${productId}:${strategyName}`}
-            productId={productId}
-            strategyName={strategyName}
-          />
-        ))}
+        <div className="flex flex-wrap items-start gap-2">
+          {data?.productContentAutomationStrategies.map((strategyName) => (
+            <StrategyAction
+              key={`${productId}:${strategyName}`}
+              productId={productId}
+              strategyName={strategyName}
+            />
+          ))}
+        </div>
       </CollapsibleContent>
     </Collapsible>
   );
