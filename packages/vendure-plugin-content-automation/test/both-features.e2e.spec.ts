@@ -25,9 +25,9 @@ describe('Automation and content health', () => {
     ]);
   });
 
-  it('Gives SuperAdmins both Dashboard permissions', async () => {
+  it('Does not add custom Dashboard permissions', async () => {
     const permissions = await getContentPermissions(adminClient);
-    expect(permissions).toEqual(['ContentAutomation', 'ContentHealth']);
+    expect(permissions).toEqual([]);
   });
 
   afterAll(async () => {

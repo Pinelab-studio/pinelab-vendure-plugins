@@ -33,12 +33,12 @@ describe('Content health only', () => {
     ]);
   });
 
-  it('Gives SuperAdmins only the content health Dashboard permission', async () => {
+  it('Does not add custom Dashboard permissions', async () => {
     const permissions = await getContentPermissions(adminClient);
-    expect(permissions).toEqual(['ContentHealth']);
+    expect(permissions).toEqual([]);
   });
 
-  it('Keeps the existing API permissions for administrators without the Dashboard permission', async () => {
+  it('Allows reading health results with the built-in ReadProduct permission', async () => {
     await createCatalogReader(adminClient);
     await adminClient.asUserWithCredentials('reader@test.com', 'test');
     const { contentCheckOverview } = await adminClient.query(
@@ -54,14 +54,14 @@ describe('Content health only', () => {
 });
 
 /**
- * Creates an administrator `reader@test.com` whose role only has `ReadCatalog`
+ * Creates an administrator `reader@test.com` whose role only has `ReadProduct`
  */
 async function createCatalogReader(adminClient: SimpleGraphQLClient) {
   const { createRole } = await adminClient.query(CREATE_ROLE, {
     input: {
       code: 'catalog-reader',
       description: 'Catalog reader',
-      permissions: ['ReadCatalog'],
+      permissions: ['ReadProduct'],
     },
   });
   await adminClient.query(CREATE_ADMINISTRATOR, {

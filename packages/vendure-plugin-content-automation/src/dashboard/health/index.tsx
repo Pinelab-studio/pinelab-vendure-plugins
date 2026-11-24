@@ -14,8 +14,7 @@ import {
 } from './queries';
 
 /**
- * The content health Dashboard UI. Everything is only shown to administrators with the `ContentHealth`
- * permission, which only exists when content health is enabled.
+ * The content health Dashboard UI uses Vendure's built-in ReadProduct permission.
  */
 export const contentHealthDashboardExtension: DashboardExtension = {
   routes: [contentCheckIssuesListRoute, contentCheckIssueDetailRoute],
@@ -62,8 +61,7 @@ export const contentHealthDashboardExtension: DashboardExtension = {
       description: '',
       severity: 'error',
       check: async () => {
-        // Alerts have no permission option. Without the permission, content health may be
-        // disabled, and then its API doesn't exist.
+        // Alerts have no permission option, so check access before querying.
         if (!(await hasContentHealthPermission())) {
           return 0;
         }
@@ -93,7 +91,7 @@ export const contentHealthDashboardExtension: DashboardExtension = {
 };
 
 /**
- * Whether the administrator has the `ContentHealth` permission in the active channel
+ * Whether the administrator has ReadProduct permission in the active channel
  */
 async function hasContentHealthPermission(): Promise<boolean> {
   const { me, activeChannel } = await api.query(dashboardPermissionsDocument);

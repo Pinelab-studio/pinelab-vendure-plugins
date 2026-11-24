@@ -33,11 +33,11 @@ plugins: [
 ```
 
 2. Run a [database migration](https://docs.vendure.io/guides/developer-guide/migrations/) to add the `ContentAutomationUpdate` and `ContentCheckResult` entities. Both are always registered, also when a feature is disabled. If you just added `DefaultSchedulerPlugin`, the migration also adds the tables required by that plugin.
-3. Give the `ContentAutomation` and/or `ContentHealth` permission to the roles that should see the Dashboard UI. SuperAdmins get them automatically. See [Dashboard](#dashboard).
+3. Give roles the built-in `UpdateProduct` permission for content automation and `ReadProduct` for content health. See [Dashboard](#dashboard).
 4. For content automation: implement a strategy, see [Writing a strategy](#content-automation-writing-a-strategy), and run the [initial population](#content-automation-initial-population) once, before the first nightly run.
 5. For content health: configure what to check, see [Content health checks](#content-health-checks) and [Content health options](#content-health-options).
 
-A feature that isn't configured registers no Admin API, scheduled task or Dashboard permission. Passing neither `automationStrategies` nor `contentHealth` is valid, and does nothing.
+A feature that isn't configured registers no Admin API or scheduled task. Its Dashboard UI remains visible to roles with the relevant built-in permission, but API calls for that feature fail. Passing neither `automationStrategies` nor `contentHealth` is valid.
 
 ## Upgrading to 1.0
 
@@ -61,7 +61,7 @@ ContentAutomationPlugin.init({
 ```
 
 3. Generate a database migration. If you used only one of the plugins, it creates the table of the other one. Existing tables, check results, stored strategy names and hashes are kept, so nothing is regenerated or rescanned.
-4. Give the new `ContentAutomation` and `ContentHealth` permissions to every non-SuperAdmin role that should still see the Dashboard UI. The Admin API permissions haven't changed.
+4. Ensure roles have `UpdateProduct` for content automation and `ReadProduct` for the content health Dashboard. No custom permissions are required. Listing automation updates now also requires `UpdateProduct`.
 
 All content health options, callbacks, helpers, `additionalChecks`, events, Admin API operations and stored results are unchanged. The health constants are renamed to `CONTENT_HEALTH_OPTIONS` and `contentHealthLoggerCtx`, so they don't conflict with the automation constants.
 
@@ -204,7 +204,7 @@ Job data is fully serializable, so it also works with job queues that pass jobs 
 
 ## Manually running content automation for a product
 
-The SEO / content checks block on the product detail page has a **Run content automations** button. It runs every strategy with `entityType: 'product'` for that product, in every language of the active channel. Because the button lives in the content health block, it's only available when content health is enabled too, and only shown to administrators with the `ContentAutomation` permission.
+The Content automation block on the product detail page has a **Run content automations** button. It runs every strategy with `entityType: 'product'` for that product, in every language of the active channel. The block is independent of content health and is only shown to administrators with the `UpdateProduct` permission.
 
 - Content is always regenerated, also when the input didn't change since the last generation.
 - Each strategy and language becomes a background job, with the same retries and stored results as the nightly run. The button reports how many jobs were queued; the results appear on the Content automation page once the jobs are done.
@@ -240,7 +240,7 @@ When a job runs and the hash of its input was already stored in the meantime, fo
 
 ### Admin API
 
-The updates of the active channel can be queried via the Admin API, with Vendure's standard list options for filtering, sorting and pagination. Requires the `ReadCatalog` permission.
+The updates of the active channel can be queried via the Admin API, with Vendure's standard list options for filtering, sorting and pagination. Requires the `UpdateProduct` permission.
 
 ```graphql
 query {
@@ -513,13 +513,13 @@ The content automation task (`content-automation`) runs at 02:00, and the conten
 
 ## Dashboard
 
-The Dashboard UI of a feature is only shown to administrators with that feature's permission in the active channel: `ContentAutomation` or `ContentHealth`. A feature that isn't configured doesn't register its permission, so its UI is hidden for everyone. SuperAdmins get all registered permissions automatically. The permissions only control what the Dashboard shows: the Admin API keeps its own permission requirements, like `ReadCatalog`. When you disable a feature, also remove its permission from your roles.
+The Dashboard uses Vendure's built-in permissions in the active channel: `UpdateProduct` for content automation and `ReadProduct` for content health. No custom permissions are registered. These permissions do not indicate whether a feature is enabled: disabled features remain visible, but their Admin API calls fail. Health mutations keep their existing update-permission requirements.
 
-Content automation adds a **Content automation** page under the Catalog section. It lists all updates of the active channel, with the strategy, language, result message and a link to the updated entity.
+Content automation adds a **Content automation** page under the Catalog section. It lists all updates of the active channel, with the strategy, language, result message and a link to the updated entity. It also adds a separate product-detail block with a [Run content automations](#manually-running-content-automation-for-a-product) button, whether or not content health is enabled.
 
 Content health adds:
 
-- A findings block on the product/collection detail page, with a "Check now" button. On products, it also has a "Run content automations" button when content automation is enabled, see [Manually running content automation for a product](#manually-running-content-automation-for-a-product).
+- A findings block on the product/collection detail page, with a "Check now" button.
 - A dashboard-home overview widget, linking through to the full issues page.
 - A full, filterable, paginated **"SEO / content issues" list page** under the Catalog nav section (`/content-health/issues`), listing every entity with a current warning or error — deduplicated across every language it was checked in, with an error/warning count, a message preview, and the affected languages. Supports searching by name and filtering by type and severity (errors vs. warnings-only). Each row has a "Go to entity" button for direct navigation (to the product/collection detail page for the built-ins, or the URL the `additionalChecks` result provided for a custom entity type — hidden if none was given), and clicking the name goes to this plugin's own **issue detail page** (`/content-health/issues/:entityType/:entityId`), which shows the entity's full findings across every checked language and its own "Go to entity" link. For products/collections, a "Check now" button re-checks the entity on demand, and a deleted entity is shown with a "could not be found" state rather than a broken link; a blank/whitespace-only name falls back to `Untitled product #<id>` / `Untitled collection #<id>`. Custom entity types (from `additionalChecks`) have no "Check now" button — see [below](#additionalchecks-custom-entities) — and use the `label` captured at check time instead, falling back to `Untitled <entityType> #<id>` if blank.
 - An error-only alert, also linking through to the issues list.
@@ -530,5 +530,5 @@ Content health adds:
 - Inputs that return `false` are offered to your strategy again on every run. Return `false` before doing expensive work, like calling an AI provider.
 - `loadInputData()` returns all inputs of a channel and language at once, so they are all kept in memory during the run. Keep inputs small for very large catalogs.
 - Only the latest successful state is retained per entity, strategy, channel and language. Previous generation results are overwritten.
-- The "Run content automations" button is only available on products, and only when content health is enabled, because it's part of the content checks block.
-- The Dashboard permissions only hide navigation items, blocks, widgets and alerts. A page of a disabled feature can still be opened by its URL, but its Admin API calls then fail.
+- The "Run content automations" button is only available on products.
+- Disabled features remain visible in the Dashboard to roles with the relevant built-in permission; their Admin API calls fail.

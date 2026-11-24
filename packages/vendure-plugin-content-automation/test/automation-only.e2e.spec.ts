@@ -41,9 +41,9 @@ describe('Automation only', () => {
     expect(checkProduct).not.toHaveBeenCalled();
   });
 
-  it('Gives SuperAdmins only the content automation Dashboard permission', async () => {
+  it('Does not add custom Dashboard permissions', async () => {
     const permissions = await getContentPermissions(adminClient);
-    expect(permissions).toEqual(['ContentAutomation']);
+    expect(permissions).toEqual([]);
   });
 
   afterAll(async () => {

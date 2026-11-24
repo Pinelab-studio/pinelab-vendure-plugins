@@ -97,14 +97,32 @@ describe('Manual content automation, with nightly automation turned off', () => 
   });
 
   it('Requires the UpdateProduct permission', async () => {
-    await createCatalogReader(adminClient);
+    await createCatalogAdministrator(adminClient, 'reader@test.com', [
+      'ReadCatalog',
+    ]);
     await adminClient.asUserWithCredentials('reader@test.com', 'test');
     await expect(
       adminClient.query(RUN_FOR_PRODUCT, { productId: 'T_1' }),
     ).rejects.toThrow('You are not currently authorized');
+    await expect(adminClient.query(GET_UPDATES)).rejects.toThrow(
+      'You are not currently authorized',
+    );
     await adminClient.asSuperAdmin();
     const { jobs } = await adminClient.query(GET_JOBS);
     expect(jobs.totalItems).toBe(12);
+  });
+
+  it('Allows reading automation updates with UpdateProduct and no custom permissions', async () => {
+    await createCatalogAdministrator(adminClient, 'editor@test.com', [
+      'UpdateProduct',
+    ]);
+    await adminClient.asUserWithCredentials('editor@test.com', 'test');
+    try {
+      const { contentAutomationUpdates } = await adminClient.query(GET_UPDATES);
+      expect(contentAutomationUpdates.totalItems).toBeGreaterThanOrEqual(0);
+    } finally {
+      await adminClient.asSuperAdmin();
+    }
   });
 
   afterAll(async () => {
@@ -179,21 +197,25 @@ async function createSecondChannel(adminClient: SimpleGraphQLClient) {
 }
 
 /**
- * Creates an administrator `reader@test.com` whose role only has `ReadCatalog`
+ * Creates an administrator with only the supplied built-in permissions.
  */
-async function createCatalogReader(adminClient: SimpleGraphQLClient) {
+async function createCatalogAdministrator(
+  adminClient: SimpleGraphQLClient,
+  emailAddress: string,
+  permissions: string[],
+) {
   const { createRole } = await adminClient.query(CREATE_ROLE, {
     input: {
-      code: 'catalog-reader',
-      description: 'Catalog reader',
-      permissions: ['ReadCatalog'],
+      code: emailAddress,
+      description: 'Catalog administrator',
+      permissions,
     },
   });
   await adminClient.query(CREATE_ADMINISTRATOR, {
     input: {
       firstName: 'Catalog',
       lastName: 'Reader',
-      emailAddress: 'reader@test.com',
+      emailAddress,
       password: 'test',
       roleIds: [createRole.id],
     },

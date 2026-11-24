@@ -7,7 +7,7 @@ import { runContentAutomationForProductDocument } from '../queries';
 
 /**
  * Queues every content automation strategy with `entityType: 'product'` for this product, in all
- * languages of the active channel. Only shown when content automation is enabled, via its permission.
+ * languages of the active channel. Only shown to administrators with UpdateProduct permission.
  */
 export function RunContentAutomationsButton({
   productId,

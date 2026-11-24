@@ -3,15 +3,12 @@ import { concatAST } from 'graphql';
 import { adminApiExtensions } from './api/api-extensions';
 import { ContentAutomationResolver } from './api/content-automation.resolver';
 import { contentAutomationTask } from './config/content-automation-scheduled-task';
-import { contentAutomationPermission, PLUGIN_INIT_OPTIONS } from './constants';
+import { PLUGIN_INIT_OPTIONS } from './constants';
 import { ContentAutomationUpdate } from './entities/content-automation-update.entity';
 import { adminApiExtensions as contentHealthApiExtensions } from './health/api/api-extensions';
 import { ContentHealthResolver } from './health/api/content-health.resolver';
 import { buildContentHealthScanTask } from './health/config/content-health-scheduled-task';
-import {
-  CONTENT_HEALTH_OPTIONS,
-  contentHealthPermission,
-} from './health/constants';
+import { CONTENT_HEALTH_OPTIONS } from './health/constants';
 import { ContentCheckResult } from './health/entities/content-check-result.entity';
 import { ContentCheckService } from './health/services/content-check.service';
 import { ContentCheckResultService } from './health/services/content-check-result.service';
@@ -30,7 +27,7 @@ import { ContentAutomationPluginOptions } from './types';
  * - **Content health** (`contentHealth`): validates Vendure catalog data and the rendered storefront
  *   output of products and collections, and shows the findings in the Dashboard. See `ContentHealthPluginOptions`.
  *
- * A disabled feature registers no Admin API, scheduled task or Dashboard permission.
+ * A disabled feature registers no Admin API or scheduled task. Dashboard UI remains visible.
  * The nightly health scan (03:00) runs after the automation task (02:00), but doesn't wait for
  * automation jobs to finish. Product and collection updates, including those saved by automation
  * strategies, still trigger an immediate health check.
@@ -54,7 +51,7 @@ import { ContentAutomationPluginOptions } from './types';
       useFactory: () => ContentAutomationPlugin.options.contentHealth,
     },
   ],
-  // A disabled feature registers no API, scheduled task or permission
+  // A disabled feature registers no API or scheduled task
   adminApiExtensions: {
     schema: () => {
       const schemas = enabledFeatures().map((f) => f.schema);
@@ -66,9 +63,6 @@ import { ContentAutomationPluginOptions } from './types';
     const features = enabledFeatures();
     config.schedulerOptions.tasks.push(
       ...features.flatMap((f) => (f.scheduledTask ? [f.scheduledTask()] : [])),
-    );
-    config.authOptions.customPermissions.push(
-      ...features.map((f) => f.permission),
     );
     return config;
   },
@@ -101,7 +95,7 @@ export class ContentAutomationPlugin {
 }
 
 /**
- * The API, scheduled task and Dashboard permission of each feature that is enabled in the plugin options.
+ * The API and scheduled task of each feature that is enabled in the plugin options.
  * The scheduled task is created lazily, because the health task is configured from its options.
  */
 function enabledFeatures() {
@@ -114,14 +108,12 @@ function enabledFeatures() {
       // Undefined when nightly automation is turned off
       scheduledTask:
         nightlyAutomation === false ? undefined : () => contentAutomationTask,
-      permission: contentAutomationPermission,
     },
     contentHealth && {
       schema: contentHealthApiExtensions,
       resolver: ContentHealthResolver,
       scheduledTask: () =>
         buildContentHealthScanTask(contentHealth.scheduledTask),
-      permission: contentHealthPermission,
     },
   ].filter((feature) => !!feature);
 }

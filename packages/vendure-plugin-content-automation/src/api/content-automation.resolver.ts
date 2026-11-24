@@ -16,7 +16,7 @@ export class ContentAutomationResolver {
   constructor(private readonly service: ContentAutomationService) {}
 
   @Query()
-  @Allow(Permission.ReadCatalog)
+  @Allow(Permission.UpdateProduct)
   async contentAutomationUpdates(
     @Ctx() ctx: RequestContext,
     @Args('options') options?: ListQueryOptions<ContentAutomationUpdate>,
