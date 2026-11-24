@@ -19,3 +19,19 @@ export const contentAutomationUpdateListDocument = graphql(`
     }
   }
 `);
+
+export const productContentAutomationStrategiesDocument = graphql(`
+  query ProductContentAutomationStrategies {
+    productContentAutomationStrategies
+  }
+`);
+
+export const runContentAutomationStrategyForProductDocument = graphql(`
+  mutation RunContentAutomationStrategyForProduct($productId: ID!, $strategyName: String!) {
+    runContentAutomationStrategyForProduct(productId: $productId, strategyName: $strategyName) {
+      languageCode
+      generated
+      resultMessage
+    }
+  }
+`);

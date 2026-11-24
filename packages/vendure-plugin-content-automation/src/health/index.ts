@@ -1,6 +1,5 @@
 export * from './checks';
 export * from './constants';
-export * from './content-health.plugin';
 export * from './entities/content-check-result.entity';
 export * from './events/channel-content-scan-completed-event';
 export * from './services/content-check.service';

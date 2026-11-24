@@ -1,14 +1,18 @@
 {
   "name": "@pinelab/vendure-plugin-content-automation",
-  "version": "0.1.1",
-  "description": "Vendure plugin that orchestrates bulk generation and enrichment of entity content (e.g. SEO meta tags) per channel and language, via consumer-provided strategies.",
+  "version": "1.0.0",
+  "description": "Vendure plugin that generates and checks entity content per channel and language: bulk content automation via consumer-provided strategies, and storefront/catalog content health checks (meta tags, hreflang, JSON-LD, sitemap inclusion) shown in the dashboard. Both features are optional.",
   "keywords": [
     "vendure",
     "content",
     "automation",
     "ai",
     "seo",
-    "bulk generation"
+    "bulk generation",
+    "hreflang",
+    "sitemap",
+    "structured data",
+    "monitoring"
   ],
   "author": "Surafel Tariku <surafelmelese09@gmail.com>",
   "homepage": "https://engineering.pinelab.studio/",
@@ -34,6 +38,8 @@
     "lint": "biome check ."
   },
   "dependencies": {
-    "catch-unknown": "^2.0.0"
+    "catch-unknown": "^2.0.0",
+    "cheerio": "^1.0.0",
+    "fast-xml-parser": "^4.5.1"
   }
 }

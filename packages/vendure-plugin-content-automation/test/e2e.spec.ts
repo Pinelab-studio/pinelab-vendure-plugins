@@ -196,6 +196,7 @@ describe('ContentAutomationPlugin (e2e)', () => {
   beforeAll(async () => {
     registerInitializer('sqljs', new SqljsInitializer('__data__'));
     const config = mergeConfig(testConfig, {
+      apiOptions: { port: 3057 },
       logger: new DefaultLogger({ level: LogLevel.Info }),
       plugins: [
         ContentAutomationPlugin.init({
@@ -265,7 +266,7 @@ describe('ContentAutomationPlugin (e2e)', () => {
     );
   });
 
-  it('Loads inputs once per strategy, channel and language', async () => {
+  it('Loads inputs and generates content for every channel and language', async () => {
     inputs = [
       { id: '1', text: 'a' },
       { id: '2', text: 'b' },
@@ -277,6 +278,20 @@ describe('ContentAutomationPlugin (e2e)', () => {
       testStrategy.loadInputData.mock.calls.map(([ctx]) => ctxKey(ctx)).sort(),
     ).toEqual(ALL_CONTEXTS);
     expect(skippingStrategy.loadInputData).toHaveBeenCalledTimes(3);
+    // Finish these jobs before beforeEach clears the strategy mocks for the next test.
+    await waitForSettledJobs(9);
+    const calls = testStrategy.generateAndSaveContent.mock.calls.map(
+      ([ctx, _injector, input]) => `${ctxKey(ctx)}:${input.id}`,
+    );
+    expect(calls.sort()).toEqual([
+      '__default_channel__:en:1',
+      '__default_channel__:en:2',
+      '__default_channel__:nl:1',
+      '__default_channel__:nl:2',
+      'second-channel:en:1',
+      'second-channel:en:2',
+    ]);
+    expect(skippingStrategy.generateAndSaveContent).toHaveBeenCalledTimes(3);
   });
 
   it('Passes a ctx that can be used to load variants with prices', async () => {
@@ -300,17 +315,6 @@ describe('ContentAutomationPlugin (e2e)', () => {
         (job: { data: { hash: string } }) => job.data.hash === 'custom-hash',
       ),
     ).toBe(true);
-  });
-
-  it('Calls generateAndSaveContent with the ctx and input of each job', async () => {
-    await waitForSettledJobs(9);
-    const calls = testStrategy.generateAndSaveContent.mock.calls.map(
-      ([ctx, _injector, input]) => `${ctxKey(ctx)}:${input.id}`,
-    );
-    expect(calls.sort()).toEqual(
-      ALL_CONTEXTS.flatMap((key) => [`${key}:1`, `${key}:2`]),
-    );
-    expect(skippingStrategy.generateAndSaveContent).toHaveBeenCalledTimes(3);
   });
 
   it('Stores state for results, but not for deliberately skipped inputs', async () => {

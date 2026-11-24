@@ -61,7 +61,9 @@ export class ContentAutomationService implements OnApplicationBootstrap {
   /** Validates strategy names at startup before registering the job queue. */
   async onApplicationBootstrap(): Promise<void> {
     const duplicates = findDuplicates(
-      this.options.automationStrategies.map((strategy) => strategy.name),
+      (this.options.automationStrategies ?? []).map(
+        (strategy) => strategy.name,
+      ),
     );
     if (duplicates.length) {
       throw new Error(
@@ -103,6 +105,117 @@ export class ContentAutomationService implements OnApplicationBootstrap {
     return { jobsCreated };
   }
 
+  /** Lists strategies that can be manually run for a product. */
+  getProductStrategyNames(): string[] {
+    return (this.options.automationStrategies ?? [])
+      .filter((strategy) => strategy.entityType === 'product')
+      .map((strategy) => strategy.name);
+  }
+
+  /**
+   * Runs one product strategy synchronously across active-channel languages, bypassing hash checks.
+   * Errors propagate to the caller; completed languages are not rolled back.
+   */
+  async runStrategyForProduct(
+    ctx: RequestContext,
+    productId: ID,
+    strategyName: string,
+  ) {
+    const strategy = (this.options.automationStrategies ?? []).find(
+      (candidate) =>
+        candidate.name === strategyName && candidate.entityType === 'product',
+    );
+    if (!strategy) {
+      throw new Error(`Unknown product automation strategy '${strategyName}'`);
+    }
+    const channel = await this.channelService.getChannelFromToken(
+      ctx.channel.token,
+    );
+    const results = [];
+    for (const languageCode of this.getLanguages(channel)) {
+      const languageCtx = await this.requestContextService.create({
+        apiType: 'admin',
+        channelOrToken: channel,
+        languageCode,
+      });
+      const inputs = await strategy.loadInputData(languageCtx, this.injector);
+      const input = inputs.find(
+        (candidate) => String(candidate.id) === String(productId),
+      );
+      const update = input
+        ? await this.generateAndStore(
+            languageCtx,
+            strategy,
+            input,
+            this.hashInput(languageCtx, strategy, input),
+            { force: true },
+          )
+        : undefined;
+      results.push({
+        languageCode,
+        generated: !!update,
+        resultMessage: update?.resultMessage ?? null,
+      });
+    }
+    return results;
+  }
+
+  /**
+   * Creates a job per strategy and language for a single product, in the active channel, for every
+   * strategy whose `entityType` is `'product'`. Only inputs with the product's id are used.
+   * Loading inputs fails per strategy and language: the error is logged and the rest is processed.
+   */
+  async createJobsForProduct(
+    ctx: RequestContext,
+    productId: ID,
+  ): Promise<{ jobsCreated: number }> {
+    // Loaded via the ChannelService, so the channel includes its default tax and shipping zones
+    const channel = await this.channelService.getChannelFromToken(
+      ctx.channel.token,
+    );
+    const strategies = (this.options.automationStrategies ?? []).filter(
+      (strategy) => strategy.entityType === 'product',
+    );
+    let jobsCreated = 0;
+    for (const strategy of strategies) {
+      for (const languageCode of this.getLanguages(channel)) {
+        const languageCtx = await this.requestContextService.create({
+          apiType: 'admin',
+          channelOrToken: channel,
+          languageCode,
+        });
+        try {
+          const inputs = await strategy.loadInputData(
+            languageCtx,
+            this.injector,
+          );
+          for (const input of inputs) {
+            if (String(input.id) !== String(productId)) continue;
+            await this.jobQueue.add(
+              {
+                ctx: languageCtx.serialize(),
+                strategyName: strategy.name,
+                input,
+                hash: this.hashInput(languageCtx, strategy, input),
+                // A manual run regenerates, also when the input didn't change
+                force: true,
+              },
+              { retries: JOB_RETRIES },
+            );
+            jobsCreated++;
+          }
+        } catch (e) {
+          Logger.error(
+            `Failed to create content automation jobs of strategy '${strategy.name}' for product ${productId} and language '${languageCode}': ${asError(e).message}`,
+            loggerCtx,
+            asError(e).stack,
+          );
+        }
+      }
+    }
+    return { jobsCreated };
+  }
+
   /**
    * Does the same as the nightly run, but processes the changed inputs
    * sequentially instead of creating jobs. Use this to populate the initial
@@ -139,7 +252,7 @@ export class ContentAutomationService implements OnApplicationBootstrap {
    */
   async handleJob(data: ContentAutomationJobData): Promise<void> {
     const ctx = RequestContext.deserialize(data.ctx);
-    const strategy = this.options.automationStrategies.find(
+    const strategy = (this.options.automationStrategies ?? []).find(
       (s) => s.name === data.strategyName,
     );
     if (!strategy) {
@@ -147,21 +260,28 @@ export class ContentAutomationService implements OnApplicationBootstrap {
         `No content automation strategy with name '${data.strategyName}' configured`,
       );
     }
-    await this.generateAndStore(ctx, strategy, data.input, data.hash);
+    await this.generateAndStore(ctx, strategy, data.input, data.hash, {
+      force: data.force,
+    });
   }
 
   /**
    * Calls the strategy to generate and save the content, and stores a
    * `ContentAutomationUpdate` only when the strategy returns a result.
-   * Skips the input if this hash was stored in the meantime, e.g. by a duplicate job.
+   * Skips the input if this hash was stored in the meantime, e.g. by a duplicate job,
+   * unless `force` is set.
    */
   async generateAndStore(
     ctx: RequestContext,
     strategy: AnyStrategy,
     input: { id: ID },
     hash: string,
+    options?: { force?: boolean },
   ): Promise<ContentAutomationUpdate | undefined> {
-    if (await this.isProcessed(ctx, strategy.name, input.id, hash)) {
+    if (
+      !options?.force &&
+      (await this.isProcessed(ctx, strategy.name, input.id, hash))
+    ) {
       return;
     }
     const result = await strategy.generateAndSaveContent(
@@ -228,7 +348,7 @@ export class ContentAutomationService implements OnApplicationBootstrap {
     // Loaded via the ChannelService, so the channels include their default tax and
     // shipping zones, which are needed by services that calculate prices.
     const { items: channels } = await this.channelService.findAll(defaultCtx);
-    for (const strategy of this.options.automationStrategies) {
+    for (const strategy of this.options.automationStrategies ?? []) {
       for (const channel of channels) {
         for (const languageCode of this.getLanguages(channel)) {
           const ctx = await this.requestContextService.create({
@@ -271,11 +391,7 @@ export class ContentAutomationService implements OnApplicationBootstrap {
     }
     for (const input of inputs) {
       try {
-        const hash = normalizeHash(
-          strategy.generateHash
-            ? strategy.generateHash(ctx, input)
-            : defaultHash(input),
-        );
+        const hash = this.hashInput(ctx, strategy, input);
         if (processedHashes.get(String(input.id)) === hash) continue;
         await handler(ctx, strategy, input, hash);
       } catch (e) {
@@ -332,6 +448,19 @@ export class ContentAutomationService implements OnApplicationBootstrap {
         },
       });
     return latest?.hash === hash;
+  }
+
+  /** Returns the strategy's hash of an input, or the default hash of all its fields. */
+  private hashInput(
+    ctx: RequestContext,
+    strategy: AnyStrategy,
+    input: { id: ID },
+  ): string {
+    return normalizeHash(
+      strategy.generateHash
+        ? strategy.generateHash(ctx, input)
+        : defaultHash(input),
+    );
   }
 
   private getLanguages(channel: Channel): LanguageCode[] {

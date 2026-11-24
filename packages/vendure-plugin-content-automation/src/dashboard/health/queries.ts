@@ -99,3 +99,17 @@ export const runContentHealthFullScanDocument = graphql(`
     }
   }
 `);
+
+export const dashboardPermissionsDocument = graphql(`
+  query ContentHealthDashboardPermissions {
+    me {
+      channels {
+        id
+        permissions
+      }
+    }
+    activeChannel {
+      id
+    }
+  }
+`);

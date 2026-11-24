@@ -5,7 +5,8 @@ import {
   DashboardRouteDefinition,
   ListPage,
 } from '@vendure/dashboard';
-import { ExternalLinkIcon, SparklesIcon } from 'lucide-react';
+import { ExternalLinkIcon, PlayIcon } from 'lucide-react';
+import { CONTENT_AUTOMATION_PERMISSION } from '../permissions';
 import { contentAutomationUpdateListDocument } from '../queries';
 
 /**
@@ -94,6 +95,7 @@ export const contentAutomationUpdateListRoute: DashboardRouteDefinition = {
     sectionId: 'catalog',
     id: 'content-automation',
     title: 'Content Automation',
-    icon: SparklesIcon,
+    icon: PlayIcon,
+    requiresPermission: CONTENT_AUTOMATION_PERMISSION,
   },
 };

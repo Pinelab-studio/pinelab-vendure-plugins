@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { useRef } from 'react';
 import { toast } from 'sonner';
+import { CONTENT_HEALTH_PERMISSION } from '../../permissions';
 import { entityTypeLabel } from '../entity-type-label';
 import {
   contentCheckEntityTypesDocument,
@@ -237,5 +238,6 @@ export const contentCheckIssuesListRoute: DashboardRouteDefinition = {
     id: 'content-health-issues',
     title: 'Content issues',
     icon: AlertTriangleIcon,
+    requiresPermission: CONTENT_HEALTH_PERMISSION,
   },
 };

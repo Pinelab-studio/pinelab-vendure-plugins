@@ -4,6 +4,7 @@ import {
   RequestContext,
   SerializedRequestContext,
 } from '@vendure/core';
+import type { ContentHealthPluginOptions } from './health/types';
 
 /**
  * The result of a successful content generation, stored on the
@@ -29,6 +30,13 @@ export interface ContentAutomationStrategy<
    * Used in persisted processing state, so don't change it after going live.
    */
   name: string;
+
+  /**
+   * Optional type of the entity that the input ids belong to. Strategies with `'product'` are run
+   * by the "Run content automations" button on the product detail page, for that product only.
+   * Not used by the nightly run or the initial population.
+   */
+  entityType?: 'product' | (string & {});
 
   /**
    * Called once per language per channel. Should return all input data needed
@@ -70,14 +78,32 @@ export interface ContentAutomationJobData {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Consumer-defined serializable fields
   input: { id: ID; [key: string]: any };
   hash: string;
+  /** Generate even when this hash was already stored, e.g. for a manual run */
+  force?: boolean;
 }
 
 /**
  * The options passed to `ContentAutomationPlugin.init()`.
+ * Content automation and content health are independently optional:
+ * omit a key to disable that feature entirely.
  */
 export interface ContentAutomationPluginOptions {
   /**
-   * Different strategies may automate different entity types or use different content providers.
+   * Enables content automation. Different strategies may automate different
+   * entity types or use different content providers.
    */
-  automationStrategies: Array<ContentAutomationStrategy<{ id: ID }>>;
+  automationStrategies?: Array<ContentAutomationStrategy<{ id: ID }>>;
+  /**
+   * Set to `false` to turn off the nightly content automation run: the `content-automation`
+   * scheduled task is then not registered. Manual runs and the initial population keep working.
+   * For a temporary pause, you can also disable the task on the Scheduled tasks page of the Dashboard.
+   *
+   * @default true
+   */
+  nightlyAutomation?: boolean;
+  /**
+   * Enables content health: storefront and catalog content checks.
+   * See `ContentHealthPluginOptions`.
+   */
+  contentHealth?: ContentHealthPluginOptions;
 }

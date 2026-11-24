@@ -31,7 +31,6 @@ export const pluginIcons: Record<string, PluginVisual> = {
     logo: 'coinbase.png',
   },
   'vendure-plugin-content-automation': { icon: 'rocket', color: '#c084fc' },
-  'vendure-plugin-content-health': { icon: 'heart', color: '#fb7185' },
   'vendure-plugin-customer-managed-groups': {
     icon: 'list-format',
     color: '#a78bfa',
