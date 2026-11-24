@@ -8,6 +8,7 @@ import {
 } from '@vendure/dashboard';
 import { ChevronDownIcon, PlayIcon } from 'lucide-react';
 import { useState } from 'react';
+import { toast } from 'sonner';
 import {
   productContentAutomationStrategiesDocument,
   runContentAutomationStrategyForProductDocument,
@@ -59,7 +60,7 @@ export function RunContentAutomationsButton({
   );
 }
 
-/** Runs a single strategy and displays the completed results, skips or error inline. */
+/** Runs a single strategy and reports completed results, skips or errors via Dashboard toasts. */
 function StrategyAction({
   productId,
   strategyName,
@@ -73,39 +74,38 @@ function StrategyAction({
         productId,
         strategyName,
       }),
+    onSuccess: ({ runContentAutomationStrategyForProduct: results }) => {
+      const notify = results.some((result) => result.generated)
+        ? toast.success
+        : toast.info;
+      notify(strategyName, {
+        description: results
+          .map(
+            (result) =>
+              `${result.languageCode}: ${
+                result.generated
+                  ? result.resultMessage || 'Content generated.'
+                  : 'Skipped: no matching input or strategy returned no result.'
+              }`,
+          )
+          .join('\n'),
+      });
+    },
+    onError: (error) =>
+      toast.error(`${strategyName} failed`, {
+        description: `${error.message} Earlier languages may already have completed.`,
+      }),
   });
   return (
-    <div className="space-y-2">
-      <Button
-        type="button"
-        variant="outline"
-        size="sm"
-        disabled={mutation.isPending}
-        onClick={() => mutation.mutate()}
-      >
-        <PlayIcon className="mr-2 h-3.5 w-3.5" />
-        {mutation.isPending
-          ? `Running ${strategyName}…`
-          : `Run ${strategyName}`}
-      </Button>
-      <div role="status" aria-live="polite" className="text-sm">
-        {!mutation.isPending &&
-          mutation.data?.runContentAutomationStrategyForProduct.map(
-            (result) => (
-              <p key={result.languageCode}>
-                {result.languageCode}:{' '}
-                {result.generated
-                  ? result.resultMessage || 'Content generated.'
-                  : 'Skipped: no matching input or strategy returned no result.'}
-              </p>
-            ),
-          )}
-      </div>
-      {mutation.error && (
-        <p role="alert" className="text-destructive text-sm">
-          {mutation.error.message} Earlier languages may already have completed.
-        </p>
-      )}
-    </div>
+    <Button
+      type="button"
+      variant="outline"
+      size="sm"
+      disabled={mutation.isPending}
+      onClick={() => mutation.mutate()}
+    >
+      <PlayIcon className="mr-2 h-3.5 w-3.5" />
+      {mutation.isPending ? `Running ${strategyName}…` : `Run ${strategyName}`}
+    </Button>
   );
 }

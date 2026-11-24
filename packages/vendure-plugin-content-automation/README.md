@@ -207,7 +207,7 @@ Job data is fully serializable, so it also works with job queues that pass jobs 
 Expand the collapsed **Content automation** block on a product detail page to see one **Run <strategy name>** button per strategy with `entityType: 'product'`. Each button runs only that strategy for the product in every language of the active channel. The block is independent of content health and requires `UpdateProduct`.
 
 - Content is always regenerated, also when the input didn't change since the last generation.
-- Manual strategy runs are synchronous: the button stays busy until generation finishes and then shows results or skips per language. Errors appear inline; earlier languages may already have completed. There are no background jobs or automatic retries for these runs. Long-running strategies can exceed HTTP request timeouts.
+- Manual strategy runs are synchronous: the button stays busy until generation finishes and then reports results or skips per language in a Dashboard toast. Errors also appear as toasts; earlier languages may already have completed. There are no background jobs or automatic retries for these runs. Long-running strategies can exceed HTTP request timeouts.
 - `loadInputData()` is called for the selected strategy per language; only the input with the product's id is used. Successful results are stored as usual.
 - The nightly run and the existing bulk `runContentAutomationForProduct` mutation still queue background jobs.
 
