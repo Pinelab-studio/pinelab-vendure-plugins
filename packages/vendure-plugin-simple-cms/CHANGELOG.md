@@ -1,4 +1,4 @@
-# 0.2.0 (2026-11-26)
+# 0.3.0 (2026-11-26)
 
 - Add Dashboard support for adding, removing and reordering relation lists.
 - Resolve Shop API relations in the request language and channel, preserving list order and omitting unavailable references.
