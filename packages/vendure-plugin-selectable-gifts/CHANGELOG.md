@@ -1,3 +1,7 @@
+# 1.6.1 (2026-11-26)
+
+- Fix selectable gift eligibility before gift selection on Vendure 3.7.4
+
 # 1.6.0 (2026-02-05)
 
 - Upgraded to Vendure 3.6.3

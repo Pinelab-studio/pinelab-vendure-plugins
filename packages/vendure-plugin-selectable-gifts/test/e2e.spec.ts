@@ -43,6 +43,8 @@ beforeAll(async () => {
   await server.init({
     initialData: {
       ...initialData,
+      // Collections are unrelated to gifts and enqueue background SQL.js writes.
+      collections: [],
       paymentMethods: [
         {
           name: testPaymentMethod.code,
@@ -141,7 +143,7 @@ describe('Storefront free gift selection', () => {
     expect(eligibleGifts.length).toBe(0);
   });
 
-  it('Add item to order, so the order has a total > $0', async () => {
+  it('Offers a gift before any discount is applied to a qualifying order', async () => {
     const { addItemToOrder: order } = await shopClient.query(
       ADD_ITEM_TO_ORDER,
       {
@@ -151,9 +153,8 @@ describe('Storefront free gift selection', () => {
     );
     expect(order.lines.length).toBe(1);
     expect(order.totalWithTax).toBeGreaterThan(0);
-  });
+    expect(order.discounts).toEqual([]);
 
-  it('Has 1 eligible gift for order > $0', async () => {
     const eligibleGifts = await getEligibleGifts(shopClient);
     expect(eligibleGifts.length).toBe(1);
     expect(eligibleGifts[0].id).toBe(giftForOrdersAbove0);
@@ -168,6 +169,7 @@ describe('Storefront free gift selection', () => {
       (line) => line.productVariant.id === giftForOrdersAbove0,
     );
     expect(order.lines.length).toBe(2);
+    expect(giftLine.quantity).toBe(1);
     expect(giftLine.customFields.isSelectedAsGift).toBe(true);
     expect(giftLine.discountedUnitPriceWithTax).toBe(0);
     expect(giftLine.discountedLinePriceWithTax).toBe(0);

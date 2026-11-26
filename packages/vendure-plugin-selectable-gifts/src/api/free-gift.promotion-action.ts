@@ -23,6 +23,8 @@ export const freeGiftPromotionAction = new PromotionItemAction({
     },
   },
   init(_injector) {},
+  // Keep the promotion active before a gift is selected, when execute returns 0.
+  onActivate: () => undefined,
   async execute(ctx, orderLine, _args, _state) {
     if ((orderLine.customFields as any).isSelectedAsGift) {
       Logger.verbose(
