@@ -1,10 +1,12 @@
 import { CustomFormComponent, FormFieldWrapper } from '@vendure/dashboard';
+import { ComponentProps } from 'react';
 import { Control } from 'react-hook-form';
 import {
   mapSimpleCmsFieldToFieldDef,
   SimpleCmsFieldDto,
   SimpleCmsStructSubFieldDto,
 } from './field-def-mapping';
+import { RelationListInput } from './relation-list-input';
 
 interface RenderFieldProps {
   field: SimpleCmsFieldDto | SimpleCmsStructSubFieldDto;
@@ -44,16 +46,24 @@ export function RenderField({ field, name, control }: RenderFieldProps) {
     );
   }
 
-  const fieldDef = mapSimpleCmsFieldToFieldDef(field);
+  const fieldDef = mapSimpleCmsFieldToFieldDef(field) as ComponentProps<
+    typeof CustomFormComponent
+  >['fieldDef'];
 
   return (
     <FormFieldWrapper
       control={control}
       name={name}
       label={field.name}
-      render={({ field: rhfField }) => (
-        <CustomFormComponent {...rhfField} fieldDef={fieldDef as any} />
-      )}
+      render={({ field: rhfField }) =>
+        asTopLevel.type === 'relation' &&
+        asTopLevel.list &&
+        !asTopLevel.ui?.component ? (
+          <RelationListInput {...rhfField} fieldDef={fieldDef} />
+        ) : (
+          <CustomFormComponent {...rhfField} fieldDef={fieldDef} />
+        )
+      }
     />
   );
 }

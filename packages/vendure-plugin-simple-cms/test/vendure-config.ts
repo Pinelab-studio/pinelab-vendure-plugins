@@ -2,6 +2,7 @@ import path from 'node:path';
 import { AssetServerPlugin } from '@vendure/asset-server-plugin';
 import {
   Asset,
+  Collection,
   DefaultLogger,
   DefaultSearchPlugin,
   LogLevel,
@@ -17,6 +18,7 @@ import { SimpleCmsPlugin } from '../src';
 export const config: VendureConfig = mergeConfig(testConfig, {
   logger: new DefaultLogger({ level: LogLevel.Debug }),
   apiOptions: {
+    port: Number(process.env.SIMPLE_CMS_PORT ?? 3050),
     adminApiPlayground: {},
     shopApiPlayground: {},
   },
@@ -121,6 +123,27 @@ export const config: VendureConfig = mergeConfig(testConfig, {
                 component: 'product-multi-form-input',
                 selectionMode: 'variant',
               },
+            },
+          ],
+        },
+        quickFilter: {
+          displayName: 'Quick Filter',
+          allowMultiple: true,
+          fields: [
+            { name: 'key', type: 'string', isTranslatable: false },
+            {
+              name: 'collections',
+              type: 'relation',
+              entity: Collection,
+              graphQLType: 'Collection',
+              list: true,
+            },
+            {
+              name: 'featuredCollection',
+              type: 'relation',
+              entity: Collection,
+              graphQLType: 'Collection',
+              nullable: true,
             },
           ],
         },

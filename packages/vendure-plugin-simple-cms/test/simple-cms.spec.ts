@@ -1,10 +1,4 @@
-import { VendureConfig } from '@vendure/core';
-import {
-  createTestEnvironment,
-  registerInitializer,
-  SimpleGraphQLClient,
-  SqljsInitializer,
-} from '@vendure/testing';
+import { SimpleGraphQLClient } from '@vendure/testing';
 import { TestServer } from '@vendure/testing/lib/test-server';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { initialData } from '../../test/src/initial-data';
@@ -24,8 +18,9 @@ import {
   IntrospectionSchema,
   typeRefToString,
 } from './simple-cms-helpers';
-import { config } from './vendure-config';
+import { createCmsTestEnvironment } from './test-environment';
 
+let environment: Awaited<ReturnType<typeof createCmsTestEnvironment>>;
 let server: TestServer;
 let adminClient: SimpleGraphQLClient;
 let shopClient: SimpleGraphQLClient;
@@ -34,12 +29,8 @@ let shopSchema: IntrospectionSchema;
 let adminSchema: IntrospectionSchema;
 
 beforeAll(async () => {
-  registerInitializer('sqljs', new SqljsInitializer('__data__'));
-  // Override from dev-server
-  (config.dbConnectionOptions as any).autoSave = false;
-  ({ server, adminClient, shopClient } = createTestEnvironment(
-    config as Required<VendureConfig>,
-  ));
+  environment = await createCmsTestEnvironment();
+  ({ server, adminClient, shopClient } = environment);
   await server.init({
     initialData: {
       ...initialData,
@@ -54,7 +45,7 @@ beforeAll(async () => {
 }, 60000);
 
 afterAll(async () => {
-  await server?.destroy();
+  await environment?.destroy();
 }, 30000);
 
 describe('SimpleCmsPlugin', () => {
@@ -154,7 +145,7 @@ describe('SimpleCmsPlugin', () => {
     it('Exposes content type metadata (incl. ui config) via the admin API', async () => {
       const { simpleCmsContentTypes } =
         await adminClient.query(GET_CONTENT_TYPES);
-      expect(simpleCmsContentTypes).toHaveLength(3);
+      expect(simpleCmsContentTypes).toHaveLength(4);
 
       const featured = simpleCmsContentTypes.find(
         (c: { code: string }) => c.code === 'featuredProduct',

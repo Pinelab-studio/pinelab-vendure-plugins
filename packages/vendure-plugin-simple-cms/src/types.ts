@@ -82,7 +82,9 @@ export interface RelationFieldDefinition extends BaseField {
   graphQLType: string;
   eager?: boolean;
   /**
-   * If true, the field stores an array of related entities (multi-select).
+   * If true, the field stores an ordered array of related entities.
+   * The Dashboard's default input supports adding, removing and reordering
+   * references using Vendure's entity picker. An explicit ui.component overrides it.
    * If false or omitted, the field stores a single related entity.
    */
   list?: boolean;

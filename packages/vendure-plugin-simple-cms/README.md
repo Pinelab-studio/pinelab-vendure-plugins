@@ -231,12 +231,10 @@ SimpleCmsPlugin.init({
 ### Field types reference
 
 - `string`, `text`, `int`, `float`, `boolean`, `date` — primitives
-- `relation` — references another Vendure entity (`Asset`, `Product`, `ProductVariant`, …)
+- `relation` — references another Vendure entity (`Asset`, `Product`, `ProductVariant`, `Collection`, …). Set `list: true` for an ordered list. The default Dashboard input supports adding, removing and reordering selections; omit `ui.component` to use it. Relation IDs are shared between languages, while related names/slugs resolve in the Shop API request language. Channel-aware relations are restricted to the request channel.
 - `struct` — nested object containing primitive sub-fields
 
 Set `isTranslatable: true` on any primitive or struct field to store a value per language. A struct is translatable as a whole — its sub-fields cannot individually opt in or out.
 Set `allowMultiple: false` to enforce a single entry per channel (singletons like a Hero or Footer).
 
-## TODO
-
-- Relation saving and fetching: Saving seems to work, but on refresh no relation is shown
+Run `yarn playwright install chromium` once before running the Dashboard browser regression test with `yarn test`.

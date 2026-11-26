@@ -2,10 +2,12 @@ import { Inject, Injectable, Type } from '@nestjs/common';
 import { Args, Query, Resolver } from '@nestjs/graphql';
 import {
   Ctx,
+  ID,
   Logger,
   RequestContext,
   TransactionalConnection,
   TranslatorService,
+  VendureEntity,
 } from '@vendure/core';
 import { In } from 'typeorm';
 import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
@@ -59,8 +61,8 @@ export function createShopResolver(
     /**
      * Resolves relation fields by loading the related entities from the database.
      *
-     * Single relations use `findOne`; list relations use `findBy` with `In(ids)`
-     * and preserve the order of the input array.
+     * Channel-aware entities are scoped to the request channel. Lists preserve
+     * the input order and omit deleted or unavailable entities.
      *
      * If the loaded entity is `Translatable` (i.e. has a `translations` relation
      * with a `languageCode`), it is run through {@link TranslatorService.translate}
@@ -118,26 +120,19 @@ export function createShopResolver(
       if (!Array.isArray(value) || value.length === 0) return;
       const ids = value.map((v) => v.id).filter((id) => id != null);
       if (ids.length === 0) return;
-      const repository = this.connection.getRepository(ctx, field.entity);
-      const hasTranslations = repository.metadata.relations.some(
-        (r) => r.propertyName === 'translations',
-      );
-      const loaded = (await repository.find({
-        where: { id: In(ids as never) },
-        ...(hasTranslations ? { relations: ['translations'] } : {}),
-      })) as unknown[];
+      const loaded = await this.loadRelationEntities(field, ids, ctx);
       const idMap = new Map(
-        loaded.map((entity) => [(entity as { id: unknown }).id, entity]),
+        loaded.map((entity) => [String(entity.id), entity]),
       );
       const ordered: unknown[] = [];
       for (const id of ids) {
-        const entity = idMap.get(id);
+        const entity = idMap.get(String(id));
         if (entity) ordered.push(this.translateRelation(entity, ctx));
       }
       return ordered;
     }
 
-    /** Loads one relation while leaving unresolved references unchanged. */
+    /** Loads one relation, returning null for deleted or out-of-channel references. */
     async resolveSingleRelation(
       value: unknown,
       field: RelationFieldDefinition,
@@ -145,15 +140,39 @@ export function createShopResolver(
     ): Promise<unknown> {
       const relation = value as Record<string, unknown> | undefined;
       if (!relation || relation.id == null) return;
+      const [loaded] = await this.loadRelationEntities(
+        field,
+        [relation.id as ID],
+        ctx,
+      );
+      return loaded ? this.translateRelation(loaded, ctx) : null;
+    }
+
+    /** Loads live references with translations, restricting channel-aware entities to the request channel. */
+    async loadRelationEntities(
+      field: RelationFieldDefinition,
+      ids: ID[],
+      ctx: RequestContext,
+    ): Promise<VendureEntity[]> {
       const repository = this.connection.getRepository(ctx, field.entity);
       const hasTranslations = repository.metadata.relations.some(
         (r) => r.propertyName === 'translations',
       );
-      const loaded = await repository.findOne({
-        where: { id: relation.id as never },
-        ...(hasTranslations ? { relations: ['translations'] } : {}),
-      });
-      if (loaded) return this.translateRelation(loaded, ctx);
+      const isChannelAware = repository.metadata.relations.some(
+        (r) => r.propertyName === 'channels',
+      );
+      return isChannelAware
+        ? this.connection.findByIdsInChannel(
+            ctx,
+            field.entity,
+            ids,
+            ctx.channelId,
+            hasTranslations ? { relations: ['translations'] } : {},
+          )
+        : repository.find({
+            where: { id: In(ids) },
+            ...(hasTranslations ? { relations: ['translations'] } : {}),
+          });
     }
 
     /** Translates only entities with a nonempty translations relation. */

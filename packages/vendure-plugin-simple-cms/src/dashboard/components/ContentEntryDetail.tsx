@@ -263,6 +263,10 @@ export function ContentEntryDetail({
     mode: 'onChange',
   });
 
+  // Subscribe to both states even while loading or clean. Short-circuiting
+  // these reads can leave relation-only changes with a disabled save button.
+  const { isDirty, isValid } = form.formState;
+
   // Reset form once entry data has loaded.
   useEffect(() => {
     form.reset(defaultValues);
@@ -270,19 +274,21 @@ export function ContentEntryDetail({
 
   const createMutation = useMutation({
     mutationFn: (input: any) => api.mutate(createContentEntryDoc, { input }),
-    onSuccess: async (res: any) => {
+    onSuccess: async () => {
       toast.success('Content entry created');
-      const newId = res?.createContentEntry?.id;
       await queryClient.invalidateQueries({ queryKey: ['ContentEntries'] });
-      // Reset the form to mark it as clean so the Page component does not
-      // show an "unsaved changes" warning when navigating to the new entry.
-      form.reset();
-      if (newId) {
-        navigate({ to: '/content/$id', params: { id: newId } as any });
-      }
+      form.reset(form.getValues());
     },
     onError: (err: any) => toast.error(err.message ?? 'Create failed'),
   });
+
+  const createdId = createMutation.data?.createContentEntry?.id;
+  useEffect(() => {
+    // Navigate only after the clean form state has reached Page's navigation guard.
+    if (isCreate && createdId && !isDirty) {
+      navigate({ to: '/content/$id', params: { id: createdId } as any });
+    }
+  }, [isCreate, createdId, isDirty, navigate]);
 
   const updateMutation = useMutation({
     mutationFn: (vars: { id: string; input: any }) =>
@@ -389,8 +395,7 @@ export function ContentEntryDetail({
     ? `New ${contentType.displayName}`
     : ((entry as any)?.displayName ?? contentType.displayName);
 
-  const submitDisabled =
-    isPending || !form.formState.isDirty || !form.formState.isValid;
+  const submitDisabled = isPending || !isDirty || !isValid;
 
   // Show the language switcher only when the content type has at least
   // one translatable field — otherwise switching languages is a no-op.
